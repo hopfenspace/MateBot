@@ -231,7 +231,7 @@ def communismQuery(bot, update):
 
 		creator = communism.creator['name']
 		text = "Communism by {}\n{} paid {}\n{} received {}\nDescription: {}" \
-			.format(creator, userListToString(self.members), amount / float(100),
+			.format(creator, userListToString(communism.members), amount / float(100),
 			creator, communism.amountEuro(), communism.reason)
 		communism.message.edit_text(text)
 
