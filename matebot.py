@@ -11,6 +11,7 @@ with open("state.json", "r") as fd:
 logFd = open("transactions.log", "a")
 
 communisms = {}
+pays = {}
 
 def saveState():
 	with open("state.json", "w") as fd:
@@ -19,7 +20,7 @@ def saveState():
 def createTransaction(user, diff, reason):
 	log = {
 		'timestamp': datetime.datetime.now().timestamp(),
-		'from': user["id"],
+		'user': user["id"],
 		'diff': diff,
 		'reason': reason
 	}
@@ -59,6 +60,13 @@ def parseAmount(text, min=0, max=config["max-amount"]):
 			return None
 	except:
 		return None
+
+def userListToString(users):
+	names = []
+	for member in users:
+		names.append(member['name'])
+
+	return ", ".join(names)
 
 ARG_TEXT = 0
 ARG_AMOUNT = 1
@@ -163,16 +171,9 @@ class Communism:
 	def amountEuro(self):
 		return self.amount / float(100)
 
-	def memberList(self):
-		names = []
-		for member in self.members:
-			names.append(member['name'])
-
-		return ", ".join(names)
-
 	def __str__(self):
-		return "Communism by {}\nAmount: {}\nReason: {}\nCommunists: {}\n" \
-			.format(self.creator['name'], self.amountEuro(), self.reason, self.memberList())
+		return "Communism by {}\nAmount: {}€\nReason: {}\nCommunists: {}\n" \
+			.format(self.creator['name'], self.amountEuro(), self.reason, userListToString(self.members))
 
 def communism(bot, update):
 	amount, reason = parseArgs(update.message, [ARG_AMOUNT, ARG_REST], "\nUsage: /communism <amount> <reason ...>")
@@ -196,7 +197,6 @@ def communismQuery(bot, update):
 		print(split)
 		raise Exception("invalid callback query")
 	elif split[1] not in communisms:
-		print(split[1], communisms)
 		raise Exception("invalid ID")
 
 	communism = communisms[split[1]]
@@ -231,12 +231,115 @@ def communismQuery(bot, update):
 
 		creator = communism.creator['name']
 		text = "Communism by {}\n{} paid {}\n{} received {}\nDescription: {}" \
-			.format(creator, communism.memberList(), amount / float(100), creator, communism.amountEuro(), communism.reason)
+			.format(creator, userListToString(self.members), amount / float(100),
+			creator, communism.amountEuro(), communism.reason)
 		communism.message.edit_text(text)
 
 	elif isAdmin and split[2] == "cancel":
 		del communisms[split[1]]
 		communism.message.edit_text("Communism canceled")
+
+class Pay:
+	def __init__(self, creator, amount, reason):
+		self.creator = creator
+		self.amount = amount
+		self.reason = reason
+		self.approved = []
+		self.disapproved = []
+		self.message = None
+
+		prefix = "pay " + str(creator['id'])
+		self.message_markup = telegram.InlineKeyboardMarkup([
+			[
+				telegram.InlineKeyboardButton("APPROVE", callback_data=prefix + " approve"),
+			],
+			[
+				telegram.InlineKeyboardButton("DISAPPROVE", callback_data=prefix + " disapprove"),
+			],
+		])
+
+	def amountEuro(self):
+		return self.amount / float(100)
+
+	def __str__(self):
+		return "Pay by {}\nAmount: {}€\nReason: {}\nApprovers: {}\nDisapprovers: {}\n" \
+			.format(self.creator['name'], self.amountEuro(), self.reason,
+			userListToString(self.approved), userListToString(self.disapproved))
+
+def pay(bot, update):
+	amount, reason = parseArgs(update.message, [ARG_AMOUNT, ARG_REST], "\nUsage: /pay <amount> <reason ...>")
+
+	sender = getOrCreateUser(update.message.from_user)
+	id = str(sender['id'])
+
+	if id in pays:
+		update.message.reply_text("You already have a pay in progress")
+		return
+
+	pay = Pay(sender, amount, reason)
+	pay.message = update.message.reply_text(str(pay), reply_markup=pay.message_markup)
+	pays[id] = pay
+
+def payQuery(bot, update):
+	sender = getOrCreateUser(update.callback_query.from_user)
+	split = update.callback_query.data.split(" ")
+
+	if len(split) != 3:
+		print(split)
+		raise Exception("invalid callback query")
+	elif split[1] not in pays:
+		raise Exception("invalid ID")
+
+	pay = pays[split[1]]
+	approved = pay.approved
+	disapproved = pay.disapproved
+	changed = False
+	#isAdmin = sender == pay.creator
+
+	if sender == pay.creator:
+		if split[2] == "disapprove":
+			del pays[split[1]]
+			pay.message.edit_text("Pay canceled (the creator disapproves himself).")
+			return
+	elif split[2] == "approve":
+		if sender not in approved:
+			approved.append(sender)
+			changed = True
+		if sender in disapproved:
+			disapproved.remove(sender)
+	elif split[2] == "disapprove":
+		if sender in approved:
+			approved.remove(sender)
+		if sender not in disapproved:
+			disapproved.append(sender)
+			changed = True
+
+	def checkList(users):
+		if len(users) < config['pay-min-users']:
+			return False
+
+		hasAdmin = False
+		for user in users:
+			if user['id'] in config['admins']:
+				hasAdmin = True
+				break
+
+		return hasAdmin
+
+	if checkList(pay.disapproved):
+		del pays[split[1]]
+		pay.message.edit_text("DISAPPROVED\n" + str(pay))
+	elif checkList(pay.approved):
+		del pays[split[1]]
+		createTransaction(pay.creator, pay.amount, "pay for {}, approved by {}" \
+			.format(pay.reason, userListToString(pay.approved)))
+		pay.message.edit_text("APPROVED\n" + str(pay))
+	elif changed:
+		pay.message.edit_text(str(pay), reply_markup=pay.message_markup)
+	else:
+		update.callback_query.answer()
+
+
 
 updater = Updater(config["bot-token"])
 
@@ -253,8 +356,10 @@ updater.dispatcher.add_handler(CommandHandler("balance", tryWrap(balance)))
 updater.dispatcher.add_handler(CommandHandler("drink", tryWrap(drink)))
 updater.dispatcher.add_handler(CommandHandler("send", tryWrap(send)))
 updater.dispatcher.add_handler(CommandHandler("communism", tryWrap(communism)))
+updater.dispatcher.add_handler(CommandHandler("pay", tryWrap(pay)))
 
 updater.dispatcher.add_handler(CallbackQueryHandler(tryWrap(communismQuery), pattern="^communism"))
+updater.dispatcher.add_handler(CallbackQueryHandler(tryWrap(payQuery), pattern="^pay"))
 
 updater.start_polling()
 updater.idle()
