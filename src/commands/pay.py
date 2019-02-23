@@ -1,4 +1,5 @@
 import telegram
+from config import config
 from state import getOrCreateUser, createTransaction, userListToString
 from args import parseArgs, ARG_AMOUNT, ARG_REST
 
