@@ -8,6 +8,10 @@ def send(bot, update):
 	receiver = args[1]
 	amount = args[0]
 
+	if sender == receiver:
+		update.message.reply_text("You cannot send money to youself")
+		return
+
 	createTransaction(sender, -amount, "sent to {}".format(receiver['id']))
 	createTransaction(receiver, amount, "received from {}".format(sender['id']))
 	update.message.reply_text("OK, you sent {}€ to {}" \
