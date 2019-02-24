@@ -4,12 +4,19 @@ from state import getOrCreateUser, findUserByNick
 def parseAmount(text, min=0, max=config["max-amount"]):
 	try:
 		val = float(text)
-		if val > 0 and val <= max and int(val * 100) / float(100) == val:
-			return int(val * 100)
+		if val < 0:
+			return None, "less than zero"
+		elif val == 0:
+			return None, "zero"
+		elif val > max:
+			return None, "larger than the maximum allowed amount"
+		elif int(val * 100) / float(100) != val:
+			return None, "too precise ({} would turn into {})" \
+				.format(val, int(val * 100) / float(100))
 		else:
-			return None
+			return int(val * 100), None
 	except:
-		return None
+		return None, "not a number"
 
 ARG_TEXT = 0
 ARG_AMOUNT = 1
@@ -32,9 +39,9 @@ def parseArgs(msg, argDef, usage=""):
 		if expected == ARG_TEXT:
 			result.append(arg)
 		elif expected == ARG_AMOUNT:
-			val = parseAmount(arg)
+			val, error = parseAmount(arg)
 			if val is None:
-				error = "Argument {} should be an amount but is '{}'".format(i, arg)
+				error = "Argument {} should be an amount but is {}".format(i, error)
 				break
 			result.append(val)
 		elif expected == ARG_USER:
