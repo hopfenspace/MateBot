@@ -31,7 +31,11 @@ class Communism:
 			.format(self.creator['name'], self.amountEuro(), self.reason, userListToString(self.members))
 
 def communism(bot, update):
-	amount, reason = parseArgs(update.message, [ARG_AMOUNT, ARG_REST], "\nUsage: /communism <amount> <reason ...>")
+	amount, reason = parseArgs(update.message,
+		[ARG_AMOUNT, ARG_REST],
+		[None, ""],
+		"\nUsage: /communism <amount> [reason ...]"
+	)
 
 	sender = getOrCreateUser(update.message.from_user)
 	id = str(sender['id'])

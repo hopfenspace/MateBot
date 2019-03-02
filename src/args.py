@@ -19,10 +19,11 @@ def parseAmount(text, min=0, max=config["max-amount"]):
 		return None, "not a number"
 
 ARG_TEXT = 0
-ARG_AMOUNT = 1
-ARG_USER = 2
-ARG_REST = 3
-def parseArgs(msg, argDef, usage=""):
+ARG_INT = 1
+ARG_AMOUNT = 2
+ARG_USER = 3
+ARG_REST = 4
+def parseArgs(msg, argDef, defaults, usage=""):
 	split = msg.text.split(" ")
 	result = []
 	error = None
@@ -33,11 +34,22 @@ def parseArgs(msg, argDef, usage=""):
 	for i, expected in enumerate(argDef):
 		if i < len(split):
 			arg = split[i]
+		elif i < len(defaults) and defaults[i] is not None:
+			result.append(defaults[i])
+			continue
 		else:
-			arg = ""
+			error = "Argument {} not specified".format(i)
+			break
 
 		if expected == ARG_TEXT:
 			result.append(arg)
+		elif expected == ARG_INT:
+			try:
+				val = int(arg)
+				result.append(val)
+			except:
+				error = "Argument {} should be an int but is '{}'".format(i, arg)
+				break
 		elif expected == ARG_AMOUNT:
 			val, error = parseAmount(arg)
 			if val is None:

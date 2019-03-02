@@ -2,7 +2,11 @@ from state import getOrCreateUser, createTransaction, userListToString
 from args import parseArgs, ARG_AMOUNT, ARG_USER
 
 def send(bot, update):
-	args = parseArgs(update.message, [ARG_AMOUNT, ARG_USER], "\nUsage: /send <amount> <user>")
+	args = parseArgs(update.message,
+		[ARG_AMOUNT, ARG_USER],
+		[None, None],
+		"\nUsage: /send <amount> <user>"
+	)
 
 	sender = getOrCreateUser(update.message.from_user)
 	receiver = args[1]

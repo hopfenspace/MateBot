@@ -33,7 +33,11 @@ class Pay:
 			userListToString(self.approved), userListToString(self.disapproved))
 
 def pay(bot, update):
-	amount, reason = parseArgs(update.message, [ARG_AMOUNT, ARG_REST], "\nUsage: /pay <amount> <reason ...>")
+	amount, reason = parseArgs(update.message,
+		[ARG_AMOUNT, ARG_REST],
+		[None, ""],
+		"\nUsage: /pay <amount> [reason ...]"
+	)
 
 	sender = getOrCreateUser(update.message.from_user)
 	id = str(sender['id'])
