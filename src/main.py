@@ -6,6 +6,7 @@ from config import config
 
 from commands.balance import balance
 from commands.consume import drink
+from commands.history import history
 from commands.send import send
 from commands.communism import communism, communismQuery
 from commands.pay import pay, payQuery
@@ -23,6 +24,7 @@ def tryWrap(func):
 	return wrapper
 
 updater.dispatcher.add_handler(CommandHandler("balance", tryWrap(balance)))
+updater.dispatcher.add_handler(CommandHandler("history", tryWrap(history)))
 updater.dispatcher.add_handler(CommandHandler("drink", tryWrap(drink), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("send", tryWrap(send), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("communism", tryWrap(communism), filters=filter))
