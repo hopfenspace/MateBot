@@ -16,7 +16,7 @@ def send(bot, update):
 		update.message.reply_text("You cannot send money to youself")
 		return
 
-	createTransaction(sender, -amount, "sent to {}".format(receiver['id']))
-	createTransaction(receiver, amount, "received from {}".format(sender['id']))
+	createTransaction(sender, -amount, "sent to {}".format(receiver['name']))
+	createTransaction(receiver, amount, "received from {}".format(sender['name']))
 	update.message.reply_text("OK, you sent {}€ to {}" \
 		.format(amount / float(100), receiver['name']))
