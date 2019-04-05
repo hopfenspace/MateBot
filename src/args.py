@@ -4,7 +4,7 @@ from state import getOrCreateUser, findUserByNick
 def parseAmount(text, min=0, max=config["max-amount"]):
 	try:
 		if text.find(",") != -1:
-			text.replace(",", ".")
+			text = text.replace(",", ".")
 		val = float(text)
 		if val < 0:
 			return None, "less than zero"
