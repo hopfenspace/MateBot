@@ -5,7 +5,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 from config import config
 
 from commands.balance import balance
-from commands.consume import drink
+from commands.consume import drink, water, pizza, ice
 from commands.history import history
 from commands.send import send
 from commands.communism import communism, communismQuery
@@ -26,6 +26,9 @@ def tryWrap(func):
 updater.dispatcher.add_handler(CommandHandler("balance", tryWrap(balance)))
 updater.dispatcher.add_handler(CommandHandler("history", tryWrap(history)))
 updater.dispatcher.add_handler(CommandHandler("drink", tryWrap(drink), filters=filter))
+updater.dispatcher.add_handler(CommandHandler("water", tryWrap(water), filters=filter))
+updater.dispatcher.add_handler(CommandHandler("pizza", tryWrap(pizza), filters=filter))
+updater.dispatcher.add_handler(CommandHandler("ice", tryWrap(ice), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("send", tryWrap(send), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("communism", tryWrap(communism), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("pay", tryWrap(pay), filters=filter))
