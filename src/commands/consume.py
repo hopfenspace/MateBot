@@ -1,14 +1,22 @@
 from state import getOrCreateUser, createTransaction
+import random
 
 def drink(bot, update):
 	user = getOrCreateUser(update.message.from_user)
 	createTransaction(user, -100, "drink")
 	update.message.reply_text("OK, enjoy your 🍹!", disable_notification=True)
 
+hydrationMessages = [
+	"OK, enjoy your 🍼!",
+	"HYDRATION! 💦",
+	"Hydrier dich!",
+	"Hydrieren sie sich bitte!",
+	"Der Bahnbabo sagt: Hydriert euch! 💪"
+]
 def water(bot, update):
 	user = getOrCreateUser(update.message.from_user)
 	createTransaction(user, -50, "water")
-	update.message.reply_text("OK, enjoy your 🍼!", disable_notification=True)
+	update.message.reply_text(random.choice(hydrationMessages), disable_notification=True)
 
 def pizza(bot, update):
 	user = getOrCreateUser(update.message.from_user)
