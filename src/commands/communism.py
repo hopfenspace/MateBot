@@ -90,7 +90,7 @@ def communismQuery(bot, update):
 		if communism.amount % count != 0:
 			amount = amount + 1
 
-		reason = "communism by " + communism.creator['nick']
+		reason = "communism by " + communism.creator['name']
 		for member in members:
 			createTransaction(member, -amount, reason)
 
