@@ -11,11 +11,16 @@ class Communism:
 		self.reason = reason
 		self.members = [creator]
 		self.message = None
+		self.externs = 0
 
 		prefix = "communism " + str(creator['id'])
 		self.message_markup = telegram.InlineKeyboardMarkup([
 			[
 				telegram.InlineKeyboardButton("JOIN/LEAVE", callback_data=prefix + " join/leave"),
+			],
+			[
+				telegram.InlineKeyboardButton("EXTERN -", callback_data=prefix + " extern-"),
+				telegram.InlineKeyboardButton("EXTERN +", callback_data=prefix + " extern+"),
 			],
 			[
 				telegram.InlineKeyboardButton("OK", callback_data=prefix + " ok"),
@@ -26,9 +31,12 @@ class Communism:
 	def amountEuro(self):
 		return self.amount / float(100)
 
+	def updateText(self):
+		self.message.edit_text(str(self), reply_markup=self.message_markup)
+
 	def __str__(self):
-		return "Communism by {}\nAmount: {}€\nReason: {}\nCommunists: {}\n" \
-			.format(self.creator['name'], self.amountEuro(), self.reason, userListToString(self.members))
+		return "Communism by {}\nAmount: {}€\nReason: {}\nExterns: {}\nCommunists: {}\n" \
+			.format(self.creator['name'], self.amountEuro(), self.reason, self.externs, userListToString(self.members))
 
 def communism(bot, update):
 	amount, reason = parseArgs(update.message,
@@ -73,9 +81,9 @@ def communismQuery(bot, update):
 			del communisms[split[1]]
 			communism.message.edit_text("Everyone left, the communism died")
 		else:
-			communism.message.edit_text(str(communism), reply_markup=communism.message_markup)
+			communism.updateText()
 	elif isAdmin and split[2] == "ok":
-		count = len(members)
+		count = len(members) + communism.externs
 		amount = communism.amount // count
 
 		# if the amount can't be split equally eveyone pays 1 cent more
@@ -86,15 +94,28 @@ def communismQuery(bot, update):
 		for member in members:
 			createTransaction(member, -amount, reason)
 
-		createTransaction(communism.creator, communism.amount, reason)
+		payout = communism.amount - communism.externs * amount
+		createTransaction(communism.creator, payout, reason)
 		del communisms[split[1]]
 
 		creator = communism.creator['name']
-		text = "Communism by {}\n{} paid {}\n{} received {}\nDescription: {}" \
-			.format(creator, userListToString(communism.members), amount / float(100),
-			creator, communism.amountEuro(), communism.reason)
+		amountf = amount / float(100)
+		text = "Communism by {}\n{} paid {}\n{} received {}\n{} has to be collected from {} externs\nDescription: {}" \
+			.format(creator, userListToString(communism.members), amountf,
+			creator, payout / float(100), amountf, communism.externs, communism.reason)
 		communism.message.edit_text(text)
 
 	elif isAdmin and split[2] == "cancel":
 		del communisms[split[1]]
 		communism.message.edit_text("Communism canceled")
+
+	elif isAdmin and split[2] == "extern-":
+		if communism.externs > 0:
+			communism.externs -= 1
+			communism.updateText()
+		else:
+			update.message.reply_text("Cannot reduce externs below zero")
+
+	elif isAdmin and split[2] == "extern+":
+		communism.externs += 1
+		communism.updateText()
