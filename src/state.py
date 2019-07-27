@@ -34,7 +34,16 @@ def getOrCreateUser(user):
 		}
 		saveState()
 
-	return users[id]
+	userState = users[id]
+
+	if user.username != userState['nick']:
+		userState['nick'] = user.username
+		saveState()
+	if user.full_name != userState['name']:
+		userState['name'] = user.full_name
+		saveState()
+
+	return userState
 
 def findUserByNick(nick):
 	for id in users:
