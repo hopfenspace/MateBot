@@ -13,7 +13,7 @@ def send(bot, update):
 	amount = args[0]
 
 	if sender == receiver:
-		update.message.reply_text("You cannot send money to youself")
+		update.message.reply_text("You cannot send money to yourself")
 		return
 
 	createTransaction(sender, -amount, "sent to {}".format(receiver['name']))
