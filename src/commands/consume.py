@@ -20,7 +20,7 @@ def water(bot, update):
 
 def pizza(bot, update):
 	user = getOrCreateUser(update.message.from_user)
-	createTransaction(user, -150, "pizza")
+	createTransaction(user, -200, "pizza")
 	update.message.reply_text("Buon appetito! 🍕", disable_notification=True)
 
 def ice(bot, update):
