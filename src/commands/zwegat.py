@@ -1,6 +1,6 @@
 from state import users
 
-def zwegert(bot, update):
+def zwegat(bot, update):
 	total = 0
 	for id in users:
 		total -= users[id]["balance"]

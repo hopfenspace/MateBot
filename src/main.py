@@ -7,7 +7,7 @@ from config import config
 from commands.balance import balance
 from commands.consume import drink, water, pizza, ice
 from commands.history import history
-from commands.zwegert import zwegert
+from commands.zwegat import zwegat
 from commands.send import send
 from commands.communism import communism, communismQuery
 from commands.pay import pay, payQuery
@@ -26,7 +26,7 @@ def tryWrap(func):
 
 updater.dispatcher.add_handler(CommandHandler("balance", tryWrap(balance)))
 updater.dispatcher.add_handler(CommandHandler("history", tryWrap(history)))
-updater.dispatcher.add_handler(CommandHandler("zwegert", tryWrap(zwegert)))
+updater.dispatcher.add_handler(CommandHandler("zwegat", tryWrap(zwegat)))
 updater.dispatcher.add_handler(CommandHandler("drink", tryWrap(drink), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("water", tryWrap(water), filters=filter))
 updater.dispatcher.add_handler(CommandHandler("pizza", tryWrap(pizza), filters=filter))
