@@ -88,13 +88,13 @@ def payQuery(bot, update):
 		if len(users) < config['pay-min-users']:
 			return False
 
-		hasAdmin = False
+		hasMember = False
 		for user in users:
-			if user['id'] in config['admins']:
-				hasAdmin = True
+			if user['id'] in config['members']:
+				hasMember = True
 				break
 
-		return hasAdmin
+		return hasMember
 
 	if checkList(pay.disapproved):
 		del pays[split[1]]

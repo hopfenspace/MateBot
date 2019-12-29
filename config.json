@@ -5,7 +5,7 @@
 	"max-amount": 50,
 	"pay-min-users": 2,
 
-	"admins": [
+	"members": [
 		0,
 	]
 }
