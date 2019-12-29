@@ -4,7 +4,7 @@ from config import config
 from state import getOrCreateUser, findUserByNick
 
 def parseAmount(text, min=0, max=config["max-amount"]):
-	match = re.match("^(\d*)([,.](\d*))?$", text)
+	match = re.match("^(\d+)([,.](\d+))?$", text)
 	if not match:
 		return None, "not a positive number"
 	val = int(match.group(1)) * 100
