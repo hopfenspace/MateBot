@@ -1,24 +1,27 @@
+import re
+
 from config import config
 from state import getOrCreateUser, findUserByNick
 
 def parseAmount(text, min=0, max=config["max-amount"]):
-	try:
-		if text.find(",") != -1:
-			text = text.replace(",", ".")
-		val = float(text)
-		if val < 0:
-			return None, "less than zero"
-		elif val == 0:
-			return None, "zero"
-		elif val > max:
-			return None, "larger than the maximum allowed amount"
-		elif int(val * 100) / float(100) != val:
-			return None, "too precise ({} would turn into {})" \
-				.format(val, int(val * 100) / float(100))
+	match = re.match("^(\d+)([,.](\d+))?$", text)
+	if not match:
+		return None, "not a positive number"
+	val = int(match.group(1)) * 100
+
+	if match.group(3):
+		if len(match.group(3)) > 2:
+			return None, "too precise ({} only two decimals are supported)" \
+				.format(match.group(0))
 		else:
-			return int(val * 100), None
-	except:
-		return None, "not a number"
+			val += int(match.group(3))
+
+	elif val == 0:
+		return None, "zero"
+	elif val > max:
+		return None, "larger than the maximum allowed amount"
+
+	return val, None
 
 ARG_TEXT = 0
 ARG_INT = 1
