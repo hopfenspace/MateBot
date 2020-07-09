@@ -16,9 +16,9 @@ def parseAmount(text, min=0, max=config["max-amount"]):
 		else:
 			val += int(match.group(3))
 
-	elif val == 0:
+	if val == 0:
 		return None, "zero"
-	elif val > max:
+	elif val > max * 100:
 		return None, "larger than the maximum allowed amount"
 
 	return val, None
