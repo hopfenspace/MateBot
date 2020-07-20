@@ -9,17 +9,18 @@ def parseAmount(text, min=0, max=config["max-amount"]):
 		return None, "not a positive number"
 	val = int(match.group(1)) * 100
 
-	if match.group(3):
-		if len(match.group(3)) > 2:
-			return None, "too precise ({} only two decimals are supported)" \
-				.format(match.group(0))
-		else:
-			val += int(match.group(3))
+    if match.group(3):
+        if len(match.group(3)) > 2:
+            return None, "too precise ({} only two decimals are supported)".format(match.group(0))
+        elif len(match.group(3)) == 1:
+            val += int(match.group(3) * 10)
+        else:
+            val += int(match.group(3))
 
-	if val == 0:
-		return None, "zero"
-	elif val > max * 100:
-		return None, "larger than the maximum allowed amount"
+    if val == 0:
+        return None, "zero"
+    elif val > max_amount * 100:
+        return None, "larger than the maximum allowed amount"
 
 	return val, None
 
