@@ -13,7 +13,7 @@ def parseAmount(text, min=0, max=config["max-amount"]):
         if len(match.group(3)) > 2:
             return None, "too precise ({} only two decimals are supported)".format(match.group(0))
         elif len(match.group(3)) == 1:
-            val += int(match.group(3) * 10)
+            val += int(match.group(3)) * 10
         else:
             val += int(match.group(3))
 
