@@ -1,4 +1,5 @@
-import json, sys
+import json
+import sys
 
 if len(sys.argv) != 4:
 	print("Usage: recalculate-state.py <start state> <transactions> <start timestamp>")

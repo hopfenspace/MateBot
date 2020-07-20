@@ -1,5 +1,4 @@
 import traceback
-import telegram
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
 from config import config
@@ -9,34 +8,36 @@ from commands.consume import drink, water, pizza, ice
 from commands.history import history
 from commands.zwegat import zwegat
 from commands.send import send
-from commands.communism import communism, communismQuery
-from commands.pay import pay, payQuery
+from commands.communism import communism, communism_query
+from commands.pay import pay, pay_query
 
 updater = Updater(config["bot-token"])
-filter = Filters.chat(config["chat-id"])
+filter_id = Filters.chat(config["chat-id"])
 
-def tryWrap(func):
-	def wrapper(*args, **kwargs):
-		try:
-			func(*args, **kwargs)
-		except:
-			print(traceback.format_exc())
 
-	return wrapper
+def try_wrap(func):
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except:
+            print(traceback.format_exc())
 
-updater.dispatcher.add_handler(CommandHandler("balance", tryWrap(balance)))
-updater.dispatcher.add_handler(CommandHandler("history", tryWrap(history)))
-updater.dispatcher.add_handler(CommandHandler("zwegat", tryWrap(zwegat)))
-updater.dispatcher.add_handler(CommandHandler("drink", tryWrap(drink), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("water", tryWrap(water), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("pizza", tryWrap(pizza), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("ice", tryWrap(ice), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("send", tryWrap(send), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("communism", tryWrap(communism), filters=filter))
-updater.dispatcher.add_handler(CommandHandler("pay", tryWrap(pay), filters=filter))
+    return wrapper
 
-updater.dispatcher.add_handler(CallbackQueryHandler(tryWrap(communismQuery), pattern="^communism"))
-updater.dispatcher.add_handler(CallbackQueryHandler(tryWrap(payQuery), pattern="^pay"))
+
+updater.dispatcher.add_handler(CommandHandler("balance", try_wrap(balance)))
+updater.dispatcher.add_handler(CommandHandler("history", try_wrap(history)))
+updater.dispatcher.add_handler(CommandHandler("zwegat", try_wrap(zwegat)))
+updater.dispatcher.add_handler(CommandHandler("drink", try_wrap(drink), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("water", try_wrap(water), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("pizza", try_wrap(pizza), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("ice", try_wrap(ice), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("send", try_wrap(send), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("communism", try_wrap(communism), filters=filter_id))
+updater.dispatcher.add_handler(CommandHandler("pay", try_wrap(pay), filters=filter_id))
+
+updater.dispatcher.add_handler(CallbackQueryHandler(try_wrap(communism_query), pattern="^communism"))
+updater.dispatcher.add_handler(CallbackQueryHandler(try_wrap(pay_query), pattern="^pay"))
 
 updater.start_polling()
 updater.idle()
