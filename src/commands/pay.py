@@ -28,7 +28,7 @@ class Pay:
 		return self.amount / float(100)
 
 	def __str__(self):
-		return "Pay by {}\nAmount: {}€\nReason: {}\nApprovers: {}\nDisapprovers: {}\n" \
+		return "Pay by {}\nAmount: {:.2f}€\nReason: {}\nApprovers: {}\nDisapprovers: {}\n" \
 			.format(self.creator['name'], self.amountEuro(), self.reason,
 			userListToString(self.approved), userListToString(self.disapproved))
 
