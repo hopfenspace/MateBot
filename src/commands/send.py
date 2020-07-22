@@ -18,5 +18,5 @@ def send(bot, update):
 
 	createTransaction(sender, -amount, "sent to {}".format(receiver['name']))
 	createTransaction(receiver, amount, "received from {}".format(sender['name']))
-	update.message.reply_text("OK, you sent {}€ to {}" \
+	update.message.reply_text("OK, you sent {:.2f}€ to {}" \
 		.format(amount / float(100), receiver['name']))

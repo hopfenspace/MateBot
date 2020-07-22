@@ -21,7 +21,7 @@ def history(bot, update):
 	texts = []
 	for entry in entries[offset : offset + count]:
 		time = datetime.datetime.fromtimestamp(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
-		texts.append("{} {}€ {}".format(time, entry['diff'] / float(100), entry['reason']))
+		texts.append("{} {:.2f}€ {}".format(time, entry['diff'] / float(100), entry['reason']))
 
 	msg = "Transaction history for {}\n{}".format(user['name'], "\n".join(texts))
 	update.message.reply_text(msg, disable_notification=True)

@@ -8,7 +8,7 @@ def zwegat(bot, update):
 	total = float(total) / 100
 	if total <= 0:
 		update.message.reply_text(
-			"Peter errechnet ein massives Vermögen von {}€".format(-1 * total))
+			"Peter errechnet ein massives Vermögen von {:.2f}€".format(-1 * total))
 	else:
 		update.message.reply_text(
-			"Peter errechnet Gesamtschulden von {}€".format(total))
+			"Peter errechnet Gesamtschulden von {:.2f}€".format(total))
