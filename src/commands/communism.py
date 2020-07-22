@@ -35,7 +35,7 @@ class Communism:
 		self.message.edit_text(str(self), reply_markup=self.message_markup)
 
 	def __str__(self):
-		return "Communism by {}\nAmount: {}€\nReason: {}\nExterns: {}\nCommunists: {}\n" \
+		return "Communism by {}\nAmount: {:.2f}€\nReason: {}\nExterns: {}\nCommunists: {}\n" \
 			.format(self.creator['name'], self.amountEuro(), self.reason, self.externs, userListToString(self.members))
 
 def communism(bot, update):
@@ -100,7 +100,7 @@ def communismQuery(bot, update):
 
 		creator = communism.creator['name']
 		amountf = amount / float(100)
-		text = "Communism by {}\n{} paid {}\n{} received {}\n{} has to be collected from {} externs\nDescription: {}" \
+		text = "Communism by {}\n{} paid {:.2f}\n{} received {}\n{:.2f} has to be collected from {} externs\nDescription: {}" \
 			.format(creator, userListToString(communism.members), amountf,
 			creator, payout / float(100), amountf, communism.externs, communism.reason)
 		communism.message.edit_text(text)
