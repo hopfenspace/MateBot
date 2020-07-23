@@ -3,7 +3,7 @@ import re
 from config import config
 from state import getOrCreateUser, findUserByNick
 
-def parseAmount(text, min=0, max=config["max-amount"]):
+def parseAmount(text, min=0, max_amount=config["max-amount"]):
 	match = re.match("^(\d+)([,.](\d+))?$", text)
 	if not match:
 		return None, "not a positive number"
