@@ -89,15 +89,3 @@ def find_user_by_nick(nick: str) -> Union[MateBotUser, None]:
             return user
     else:
         return None
-
-
-def user_list_to_string(user_list: List[MateBotUser]) -> str:
-    """
-    Convert a list of users into a string.
-
-    :param user_list: List of users
-    :type user_list: List[Dict]
-    :return: String representation of the list
-    :rtype: str
-    """
-    return ", ".join(map(lambda x: x.name, user_list))

@@ -1,6 +1,8 @@
 import telegram
+
 from config import config
-from state import get_or_create_user, create_transaction, user_list_to_string
+from .common_util import user_list_to_string, get_data_from_query
+from state import get_or_create_user, create_transaction
 from args import parse_args, ARG_AMOUNT, ARG_REST
 
 pays = {}
@@ -54,17 +56,8 @@ def pay(_, update):
 
 
 def pay_query(_, update):
-    sender = get_or_create_user(update.callback_query.from_user)
-    split = update.callback_query.data.split(" ")
+    sender, pay, split = get_data_from_query(update, pays)
 
-    if len(split) != 3:
-        print(split)
-        raise Exception("invalid callback query")
-    elif split[1] not in pays:
-        print(split)
-        raise Exception("invalid ID")
-
-    pay = pays[split[1]]
     approved = pay.approved
     disapproved = pay.disapproved
     changed = False

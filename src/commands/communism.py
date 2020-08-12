@@ -1,5 +1,7 @@
 import telegram
-from state import get_or_create_user, create_transaction, user_list_to_string
+
+from .common_util import user_list_to_string, get_data_from_query
+from state import get_or_create_user, create_transaction
 from args import parse_args, ARG_AMOUNT, ARG_REST
 
 communisms = {}
@@ -60,17 +62,8 @@ def communism(_, update):
 
 
 def communism_query(_, update):
-    sender = get_or_create_user(update.callback_query.from_user)
-    split = update.callback_query.data.split(" ")
+    sender, selected_communism, split = get_data_from_query(update, communisms)
 
-    if len(split) != 3:
-        print(split)
-        raise Exception("invalid callback query")
-    elif split[1] not in communisms:
-        print(split)
-        raise Exception("invalid ID")
-
-    selected_communism = communisms[split[1]]
     members = selected_communism.members
     is_admin = sender == selected_communism.creator
 
