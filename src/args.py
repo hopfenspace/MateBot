@@ -82,7 +82,7 @@ def parse_int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[st
 
 
 def parse_amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
-               min_amount: float = 0, max_amount: float = config["max-amount"]) -> int:
+                     min_amount: float = 0, max_amount: float = config["max-amount"]) -> int:
     """
     Convert the string into an amount of money.
 
@@ -107,18 +107,21 @@ def parse_amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List
     :return: Amount of money in cent
     :rtype: int
     """
-    match = re.match(r"^(\d+)([,.](\d+))?$", arg)
+    # Regex explanation:
+    # It matches any non-zero number of digits with an optional , or . followed by exactly one or two digits
+    # If there is a , or . then the first decimal is required
+    #
+    # The match's groups:
+    # 1st group: leading number, 2nd group: 1st decimal, 3rd group: 2nd decimal
+    match = re.match(r"^(\d+)(?:[,.](\d)(\d)?)?$", arg)
     if match is None:
-        raise ParsingError("Argument {} should be an amount but is not a positive number".format(i))
+        raise ParsingError("Argument {} doesn't match an amount's regex".format(i))
 
     val = int(match.group(1)) * 100
+    if match.group(2):
+        val += int(match.group(2)) * 10
     if match.group(3):
-        if len(match.group(3)) > 2:
-            raise ParsingError("Argument {} should be an amount but is too precise".format(i))
-        elif len(match.group(3)) == 1:
-            val += int(match.group(3)) * 10
-        else:
-            val += int(match.group(3))
+        val += int(match.group(3))
 
     if val == 0:
         raise ParsingError("Argument {} should be an amount but is zero".format(i))
