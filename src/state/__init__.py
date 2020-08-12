@@ -1,8 +1,10 @@
 import datetime
 import json
-from typing import List, Dict, Union
+from typing import List, Union
 
-from telegram import User
+import telegram
+
+from .user import MateBotUser
 
 
 with open("state.json", "r") as fd:
@@ -12,16 +14,17 @@ logFd = open("transactions.log", "a")
 
 
 def save_state():
-    with open("state.json", "w") as fd:
-        json.dump(users, fd)
+    # with open("state.json", "w") as fd:
+    #     json.dump(users, fd)
+    raise NotImplementedError("The new user representation can't simply be saved as json")
 
 
-def create_transaction(user: Dict, diff: int, reason: str) -> None:
+def create_transaction(user: MateBotUser, diff: int, reason: str) -> None:
     """
     Change a user's balance and log this change.
 
     :param user: The user whose balance is to be changed
-    :type user: Dict
+    :type user: MateBotUser
     :param diff: Amount to change the ``user``'s balance by in cent
         positive values mean gain, negative values mean loss for the ``user``
     :type diff: int
@@ -30,37 +33,32 @@ def create_transaction(user: Dict, diff: int, reason: str) -> None:
     """
     log = {
         'timestamp': datetime.datetime.now().timestamp(),
-        'user': user["id"],
+        'user': user.id,
         'diff': diff,
         'reason': reason
     }
     logFd.write(json.dumps(log) + '\n')
     logFd.flush()
 
-    user['balance'] += diff
+    user.balance += diff
     save_state()
 
 
-def get_or_create_user(user: User) -> Dict:
+def get_or_create_user(user: telegram.User) -> MateBotUser:
     """
     Convert telegram's user representation into ours.
 
-    Use telegram's user id too look up our dict representation.
-    If there isn't any, create one.
+    Use telegram's user id too look up the our user object.
+    If there isn't one, create it.
 
-    :param user: A telegram user
-    :type user: User
+    :param user: A Telegram user
+    :type user: telegram.User
     :return: A MateBot user
-    :rtype: Dict
+    :rtype: MateBotUser
     """
     user_id = str(user.id)
     if user_id not in users:
-        users[user_id] = {
-            'id': user.id,
-            'name': user.full_name,
-            'nick': user.username,
-            'balance': 0
-        }
+        users[user_id] = MateBotUser(user)
         save_state()
 
     user_state = users[user_id]
@@ -76,24 +74,24 @@ def get_or_create_user(user: User) -> Dict:
     return user_state
 
 
-def find_user_by_nick(nick: str) -> Union[Dict, None]:
+def find_user_by_nick(nick: str) -> Union[MateBotUser, None]:
     """
     Find a user by his nickname.
 
-    :param nick: A user's nickname on telegram
+    :param nick: A user's nickname on Telegram
     :type nick: str
     :return: The user or ``None``
-    :rtype: Dict or None
+    :rtype: MateBotUser or None
     """
     for user_id in users:
         user = users[user_id]
-        if user['nick'] == nick:
+        if user.nick == nick:
             return user
     else:
         return None
 
 
-def user_list_to_string(user_list: List[Dict]) -> str:
+def user_list_to_string(user_list: List[MateBotUser]) -> str:
     """
     Convert a list of users into a string.
 
@@ -102,4 +100,4 @@ def user_list_to_string(user_list: List[Dict]) -> str:
     :return: String representation of the list
     :rtype: str
     """
-    return ", ".join(map(lambda x: x["names"], user_list))
+    return ", ".join(map(lambda x: x.name, user_list))
