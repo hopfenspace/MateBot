@@ -1,5 +1,5 @@
 import re
-from typing import List, Any
+from typing import List, Any, Callable
 from telegram import Message
 
 from config import config
@@ -7,114 +7,106 @@ from state import get_or_create_user, find_user_by_nick
 
 
 class ParsingError(Exception):
-	pass
+    pass
 
 
-def parseAmount(text: str, min_amount: int = 0, max_amount: int = config["max-amount"]) -> int:
-	"""
-	Take a string representation of an amount of money and return the amount as a integer in cent.
-
-	:param text: string representing an amount like "0,10" for 10 cents
-	:param min_amount: The minimum valid amount (in cent)
-	:param max_amount: The maximum valid amount (in cent)
-	:raises ParsingError:
-	:return: Money amount (in cent)
-	"""
-	match = re.match("^(\d+)([,.](\d+))?$", text)
-	if match is None:
-		raise ParsingError("not a positive number")
-
-	val = int(match.group(1)) * 100
-	if match.group(3):
-		if len(match.group(3)) > 2:
-			raise ParsingError("too precise ({} only two decimals are supported)".format(match.group(0)))
-		elif len(match.group(3)) == 1:
-			val += int(match.group(3)) * 10
-		else:
-			val += int(match.group(3))
-
-	# TODO make use of min
-	if val == 0:
-		raise ParsingError("zero")
-	elif val > max_amount * 100:
-		raise ParsingError("larger than the maximum allowed amount")
-
-	return val
+def abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Any:
+    pass
 
 
-ARG_TEXT = 0
-ARG_INT = 1
-ARG_AMOUNT = 2
-ARG_USER = 3
-ARG_REST = 4
+def text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
+    return arg
 
 
-def parseArgs(msg: Message, arg_types: List[int], defaults: List[Any], usage: str = "") -> List[Any]:
-	"""
-	Parse a message string for arguments contained.
+def int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> int:
+    try:
+        return int(arg)
+    except ValueError:
+        raise ParsingError("Argument {} should be an int but is '{}'".format(i, arg))
 
-	If an error occurs, its error message will be replied back to the msg and raised.
 
-	:param msg: the incoming message
-	:param arg_types: a list of constants defining which type of argument should be at its position
-	:param defaults: a list of values to use if the msg is shorter than arg_types might expect
-	:param usage: a string appended to error messages
-	:raises Exception:
-	:return: a list of values contained in the msg
-	"""
-	try:
-		split = msg.text.split(" ")
-		result = []
-		error = None
+def amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
+               min_amount: int = 0, max_amount: int = config["max-amount"]) -> int:
+    match = re.match(r"^(\d+)([,.](\d+))?$", arg)
+    if match is None:
+        raise ParsingError("Argument {} should be an amount but is not a positive number".format(i))
 
-		offset = len(split[0]) + 1
-		split = split[1 : ]
+    val = int(match.group(1)) * 100
+    if match.group(3):
+        if len(match.group(3)) > 2:
+            raise ParsingError("Argument {} should be an amount but is too precise".format(i))
+        elif len(match.group(3)) == 1:
+            val += int(match.group(3)) * 10
+        else:
+            val += int(match.group(3))
 
-		for i, expected in enumerate(arg_types):
-			if i < len(split):
-				arg = split[i]
-			elif i < len(defaults) and defaults[i] is not None:
-				result.append(defaults[i])
-				continue
-			else:
-				raise ParsingError("Argument {} not specified".format(i))
+    # TODO make use of min
+    if val == 0:
+        raise ParsingError("Argument {} should be an amount but is zero".format(i))
+    elif val > max_amount * 100:
+        raise ParsingError("Argument {} should be an amount but is larger than the maximum allowed amount".format(i))
 
-			if expected == ARG_TEXT:
-				result.append(arg)
-			elif expected == ARG_INT:
-				try:
-					result.append(int(arg))
-				except ValueError:
-					raise ParsingError("Argument {} should be an int but is '{}'".format(i, arg))
-			elif expected == ARG_AMOUNT:
-				try:
-					result.append(parseAmount(arg))
-				except ParsingError as e:
-					raise ParsingError("Argument {} should be an amount but is {}".format(i, str(e)))
-			elif expected == ARG_USER:
-				user = None
-				for entity in msg.entities:
-					if entity.offset == offset:
-						if entity.type == "mention":
-							user = findUserByNick(arg[1 : ])
-							break
-						elif entity.type == "text_mention":
-							user = getOrCreateUser(entity.user)
-							break
+    return val
 
-				if user is None:
-					raise ParsingError("Argument {} should be an user but is '{}'".format(i, arg))
 
-				result.append(user)
-			elif expected == ARG_REST:
-				result.append(" ".join(split[i:]))
-				break
+def user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Any:
+    for entity in msg.entities:
+        if entity.offset == offset:
+            if entity.type == "mention":
+                return findUserByNick(arg[1:])
+            elif entity.type == "text_mention":
+                return getOrCreateUser(entity.user)
+    else:
+        raise ParsingError("Argument {} should be an user but is '{}'".format(i, arg))
 
-			offset = offset + len(arg) + 1
 
-		return result
+def rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
+    return " ".join([arg] + [unparsed.pop(0) for _ in range(len(unparsed))])
 
-	except ParsingError as e:
-		error = str(e) + usage
-		msg.reply_text(error)
-		raise Exception(error)
+
+ARG_TEXT = text_arg
+ARG_INT = int_arg
+ARG_AMOUNT = amount_arg
+ARG_USER = user_arg
+ARG_REST = rest_arg
+
+
+def parseArgs(msg: Message, arg_types: List[Callable], defaults: List[Any], usage: str = "") -> List[Any]:
+    """
+    Parse a message string for arguments contained.
+
+    If an error occurs, its error message will be replied back to the msg and raised.
+
+    :param msg: the incoming message
+    :param arg_types: a list of constants defining which type of argument should be at its position
+    :param defaults: a list of values to use if the msg is shorter than arg_types might expect
+    :param usage: a string appended to error messages
+    :raises Exception:
+    :return: a list of values contained in the msg
+    """
+    try:
+        unparsed = msg.text.split(" ")
+        result = []
+
+        offset = len(unparsed[0]) + 1
+        unparsed = unparsed[1:]
+
+        for i, expected in enumerate(arg_types):
+            if len(unparsed) > 0:
+                arg = unparsed.pop(0)
+            elif i < len(defaults) and defaults[i] is not None:
+                result.append(defaults[i])
+                continue
+            else:
+                raise ParsingError("Argument {} not specified".format(i))
+
+            result.append(expected(arg, i, msg, offset, unparsed))
+
+            offset = offset + len(arg) + 1
+
+        return result
+
+    except ParsingError as error:
+        error_msg = str(error) + usage
+        msg.reply_text(error_msg)
+        raise Exception(error_msg)
