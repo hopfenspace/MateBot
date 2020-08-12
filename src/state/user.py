@@ -11,15 +11,21 @@ class MateBotUser:
     :type user: telegram.User
     """
 
-    def __init__(self, user: telegram.User):
-        self.id = user.id
+    def __init__(self, user: telegram.User = None, id: int = 0, name: str = "", nick: str = "", balance: int = 0):
+        self.id = id
         """The user's id"""
-        self.name = user.full_name
+        self.name = name
         """The user's name"""
-        self.nick = user.username
+        self.nick = nick
         """The user's nickname or username"""
-        self.balance = 0
+        self.balance = balance
         """The user's balance is an amount of money in cent. Positive values mean the bot ows the user."""
+
+        # Update self using the telegram.User
+        if user is not None:
+            self.id = user.id
+            self.name = user.full_name
+            self.nick = user.username
 
     def __getitem__(self, key: str) -> Any:
         """

@@ -5,18 +5,15 @@ from typing import List, Union
 import telegram
 
 from .user import MateBotUser
+from .io import load, save
 
 
-with open("state.json", "r") as fd:
-    users = json.load(fd)
-
+users = load("state.json")
 logFd = open("transactions.log", "a")
 
 
 def save_state():
-    # with open("state.json", "w") as fd:
-    #     json.dump(users, fd)
-    raise NotImplementedError("The new user representation can't simply be saved as json")
+    save(users, "state.json")
 
 
 def create_transaction(user: MateBotUser, diff: int, reason: str) -> None:
