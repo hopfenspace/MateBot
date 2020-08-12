@@ -1,5 +1,9 @@
 import datetime
 import json
+from typing import List, Dict, Union
+
+from telegram import User
+
 
 with open("state.json", "r") as fd:
     users = json.load(fd)
@@ -12,7 +16,18 @@ def save_state():
         json.dump(users, fd)
 
 
-def create_transaction(user, diff, reason):
+def create_transaction(user: Dict, diff: int, reason: str) -> None:
+    """
+    Change a user's balance and log this change.
+
+    :param user: The user whose balance is to be changed
+    :type user: Dict
+    :param diff: Amount to change the ``user``'s balance by in cent
+        positive values mean gain, negative values mean loss for the ``user``
+    :type diff: int
+    :param reason: A reason to make the log easier to understand
+    :type reason: str
+    """
     log = {
         'timestamp': datetime.datetime.now().timestamp(),
         'user': user["id"],
@@ -26,7 +41,18 @@ def create_transaction(user, diff, reason):
     save_state()
 
 
-def get_or_create_user(user):
+def get_or_create_user(user: User) -> Dict:
+    """
+    Convert telegram's user representation into ours.
+
+    Use telegram's user id too look up our dict representation.
+    If there isn't any, create one.
+
+    :param user: A telegram user
+    :type user: User
+    :return: A MateBot user
+    :rtype: Dict
+    """
     user_id = str(user.id)
     if user_id not in users:
         users[user_id] = {
@@ -39,6 +65,7 @@ def get_or_create_user(user):
 
     user_state = users[user_id]
 
+    # Update user's nickname or name if he changed it on telegram.
     if user.username != user_state['nick']:
         user_state['nick'] = user.username
         save_state()
@@ -49,18 +76,30 @@ def get_or_create_user(user):
     return user_state
 
 
-def find_user_by_nick(nick):
+def find_user_by_nick(nick: str) -> Union[Dict, None]:
+    """
+    Find a user by his nickname.
+
+    :param nick: A user's nickname on telegram
+    :type nick: str
+    :return: The user or ``None``
+    :rtype: Dict or None
+    """
     for user_id in users:
         user = users[user_id]
         if user['nick'] == nick:
             return user
+    else:
+        return None
 
-    return None
 
+def user_list_to_string(user_list: List[Dict]) -> str:
+    """
+    Convert a list of users into a string.
 
-def user_list_to_string(user):
-    names = []
-    for member in user:
-        names.append(member['name'])
-
-    return ", ".join(names)
+    :param user_list: List of users
+    :type user_list: List[Dict]
+    :return: String representation of the list
+    :rtype: str
+    """
+    return ", ".join(map(lambda x: x["names"], user_list))
