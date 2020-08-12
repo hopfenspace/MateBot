@@ -230,4 +230,4 @@ def parse_args(msg: Message, arg_types: List[Callable], defaults: List[Any], usa
     except ParsingError as error:
         error_msg = str(error) + usage
         msg.reply_text(error_msg)
-        raise Exception(error_msg)
+        raise ParsingError(error_msg)
