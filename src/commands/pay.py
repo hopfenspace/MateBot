@@ -56,24 +56,24 @@ def pay(_, update):
 
 
 def pay_query(_, update):
-    sender, pay, split = get_data_from_query(update, pays)
+    sender, selected_pay, cmd, sender_id, action = get_data_from_query(update, pays)
 
-    approved = pay.approved
-    disapproved = pay.disapproved
+    approved = selected_pay.approved
+    disapproved = selected_pay.disapproved
     changed = False
 
-    if sender == pay.creator:
-        if split[2] == "disapprove":
-            del pays[split[1]]
-            pay.message.edit_text("Pay canceled (the creator disapproves himself).")
+    if sender == selected_pay.creator:
+        if action == "disapprove":
+            del pays[sender_id]
+            selected_pay.message.edit_text("Pay canceled (the creator disapproves himself).")
             return
-    elif split[2] == "approve":
+    elif action == "approve":
         if sender not in approved:
             approved.append(sender)
             changed = True
         if sender in disapproved:
             disapproved.remove(sender)
-    elif split[2] == "disapprove":
+    elif action == "disapprove":
         if sender in approved:
             approved.remove(sender)
         if sender not in disapproved:
@@ -92,15 +92,15 @@ def pay_query(_, update):
 
         return has_member
 
-    if check_list(pay.disapproved):
-        del pays[split[1]]
-        pay.message.edit_text("DISAPPROVED\n" + str(pay))
-    elif check_list(pay.approved):
-        del pays[split[1]]
-        create_transaction(pay.creator, pay.amount,
-                           "pay for {}, approved by {}".format(pay.reason, user_list_to_string(pay.approved)))
-        pay.message.edit_text("APPROVED\n" + str(pay))
+    if check_list(selected_pay.disapproved):
+        del pays[sender_id]
+        selected_pay.message.edit_text("DISAPPROVED\n" + str(selected_pay))
+    elif check_list(selected_pay.approved):
+        del pays[sender_id]
+        create_transaction(selected_pay.creator, selected_pay.amount,
+                           "pay for {}, approved by {}".format(selected_pay.reason, user_list_to_string(selected_pay.approved)))
+        selected_pay.message.edit_text("APPROVED\n" + str(selected_pay))
     elif changed:
-        pay.message.edit_text(str(pay), reply_markup=pay.message_markup)
+        selected_pay.message.edit_text(str(selected_pay), reply_markup=selected_pay.message_markup)
     else:
         update.callback_query.answer()

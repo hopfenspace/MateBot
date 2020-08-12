@@ -16,7 +16,7 @@ def user_list_to_string(user_list: List[MateBotUser]) -> str:
     return ", ".join(map(lambda x: x.name, user_list))
 
 
-def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tuple[MateBotUser, Any, List[str]]:
+def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tuple[MateBotUser, Any, str, str, str]:
     """
     Get the sender, the object the query is meant for and the split message
 
@@ -26,7 +26,7 @@ def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tup
     :type update: telegram.Update
     :param objects: Of which to find the object the query is for
     :type objects: Dict[Any]
-    :return: sender, object, split message
+    :return: sender, object, cmd, sender_id, action
     :rtype: Tuple[MateBotUser, Any, List[str]]
     """
     sender = get_or_create_user(update.callback_query.from_user)
@@ -39,4 +39,4 @@ def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tup
         print(split)
         raise Exception("invalid ID")
 
-    return sender, objects[split[1]], split
+    return sender, objects[split[1]], split[1], split[2], split[3]

@@ -62,12 +62,12 @@ def communism(_, update):
 
 
 def communism_query(_, update):
-    sender, selected_communism, split = get_data_from_query(update, communisms)
+    sender, selected_communism, cmd, sender_id, action = get_data_from_query(update, communisms)
 
     members = selected_communism.members
     is_admin = sender == selected_communism.creator
 
-    if split[2] == "join/leave":
+    if action == "join/leave":
         if sender in members:
             members.remove(sender)
         else:
@@ -78,7 +78,7 @@ def communism_query(_, update):
             selected_communism.message.edit_text("Everyone left, the communism died")
         else:
             selected_communism.update_text()
-    elif is_admin and split[2] == "ok":
+    elif is_admin and action == "ok":
         count = len(members) + selected_communism.externs
         amount = selected_communism.amount // count
 
@@ -101,17 +101,17 @@ def communism_query(_, update):
                     creator, payout / float(100), amountf, selected_communism.externs, selected_communism.reason)
         selected_communism.message.edit_text(text)
 
-    elif is_admin and split[2] == "cancel":
-        del communisms[split[1]]
+    elif is_admin and action == "cancel":
+        del communisms[sender_id]
         selected_communism.message.edit_text("Communism canceled")
 
-    elif is_admin and split[2] == "extern-":
+    elif is_admin and action == "extern-":
         if selected_communism.externs > 0:
             selected_communism.externs -= 1
             selected_communism.update_text()
         else:
             update.message.reply_text("Cannot reduce externs below zero")
 
-    elif is_admin and split[2] == "extern+":
+    elif is_admin and action == "extern+":
         selected_communism.externs += 1
         selected_communism.update_text()
