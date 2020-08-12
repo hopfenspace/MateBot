@@ -1,7 +1,10 @@
 import traceback
+from functools import wraps
+from typing import Callable
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
 from config import config
+from args import ParsingError
 
 from commands.balance import balance
 from commands.consume import drink, water, pizza, ice
@@ -15,13 +18,27 @@ updater = Updater(config["bot-token"])
 filter_id = Filters.chat(config["chat-id"])
 
 
-def try_wrap(func):
+def try_wrap(func: Callable) -> Callable:
+    """
+    Wrap a function with a try-statement.
+
+    ``ParsingError`` will be ignored, because they are the user's fault and don't need to be logged.
+    Any other exception will be caught and printed to stdout for the admin to fix.
+    Use this around any command to prevent the bot from stopping if a command is flawed.
+
+    :param func: any function
+    :type func: Callable
+    :return: exception save function
+    :rtype: Callable
+    """
+    @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
+        except ParsingError:
+            pass
         except:
             print(traceback.format_exc())
-
     return wrapper
 
 
