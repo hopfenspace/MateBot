@@ -10,7 +10,7 @@ class ParsingError(Exception):
     pass
 
 
-def abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Any:
+def parse_abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Any:
     """
     A dummy function for ``parseArgs``' types.
 
@@ -22,7 +22,7 @@ def abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -34,7 +34,7 @@ def abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str
     pass
 
 
-def text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
+def parse_text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
     """
     Simply return the argument as string.
 
@@ -44,7 +44,7 @@ def text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -56,7 +56,7 @@ def text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
     return arg
 
 
-def int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> int:
+def parse_int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> int:
     """
     Try converting the argument string into an integer.
 
@@ -66,7 +66,7 @@ def int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) ->
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -81,7 +81,7 @@ def int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) ->
         raise ParsingError("Argument {} should be an int but is '{}'".format(i, arg))
 
 
-def amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
+def parse_amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
                min_amount: float = 0, max_amount: float = config["max-amount"]) -> int:
     """
     Convert the string into an amount of money.
@@ -94,7 +94,7 @@ def amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -130,7 +130,7 @@ def amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str],
     return val
 
 
-def user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Dict:
+def parse_user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> Dict:
     """
     Return a user as defined in ``state.py``
 
@@ -140,7 +140,7 @@ def user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -159,7 +159,7 @@ def user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
         raise ParsingError("Argument {} should be an user but is '{}'".format(i, arg))
 
 
-def rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
+def parse_rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -> str:
     """
     Consume all unparsed arguments and add them into one string (separated by space)
 
@@ -169,7 +169,7 @@ def rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
     :type i: int
     :param msg: Telegram's message object being parsed
     :type msg: Message
-    :param offset:
+    :param offset: Starting position of ``arg`` in the original message's string
     :type offset: int
     :param unparsed: The following and therefore still unparsed arguments.
         Use ``.pop()`` to consume more than one argument
@@ -182,14 +182,14 @@ def rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[str]) -
     return " ".join([arg] + [unparsed.pop(0) for _ in range(len(unparsed))])
 
 
-ARG_TEXT = text_arg
-ARG_INT = int_arg
-ARG_AMOUNT = amount_arg
-ARG_USER = user_arg
-ARG_REST = rest_arg
+ARG_TEXT = parse_text_arg
+ARG_INT = parse_int_arg
+ARG_AMOUNT = parse_amount_arg
+ARG_USER = parse_user_arg
+ARG_REST = parse_rest_arg
 
 
-def parseArgs(msg: Message, arg_types: List[Callable], defaults: List[Any], usage: str = "") -> List[Any]:
+def parse_args(msg: Message, arg_types: List[Callable], defaults: List[Any], usage: str = "") -> List[Any]:
     """
     Parse a message string for arguments contained.
 
@@ -206,10 +206,10 @@ def parseArgs(msg: Message, arg_types: List[Callable], defaults: List[Any], usag
         unparsed = msg.text.split(" ")
         result = []
 
-        offset = len(unparsed[0]) + 1
-        unparsed = unparsed[1:]
+        command = unparsed.pop(0)
+        offset = len(command) + 1  # + 1 for the split away space
 
-        for i, expected in enumerate(arg_types):
+        for i, arg_type in enumerate(arg_types):
             if len(unparsed) > 0:
                 arg = unparsed.pop(0)
             elif i < len(defaults) and defaults[i] is not None:
@@ -218,9 +218,9 @@ def parseArgs(msg: Message, arg_types: List[Callable], defaults: List[Any], usag
             else:
                 raise ParsingError("Argument {} not specified".format(i))
 
-            result.append(expected(arg, i, msg, offset, unparsed))
+            result.append(arg_type(arg, i, msg, offset, unparsed))
 
-            offset = offset + len(arg) + 1
+            offset += len(arg) + 1  # + 1 for the split away space
 
         return result
 
