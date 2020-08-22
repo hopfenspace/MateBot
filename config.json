@@ -6,6 +6,14 @@
 	"pay-min-users": 2,
 
 	"members": [
-		0,
-	]
+		0
+	],
+
+	"database": {
+		"host": "localhost",
+		"db": "database_name",
+		"user": "username",
+		"password": "password",
+		"charset": "utf8mb4"
+	}
 }
