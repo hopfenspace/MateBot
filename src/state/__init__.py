@@ -45,7 +45,7 @@ def get_or_create_user(user: telegram.User) -> MateBotUser:
     """
     Convert telegram's user representation into ours.
 
-    Use telegram's user id too look up the our user object.
+    Use telegram's user id too look up our user object.
     If there isn't one, create it.
 
     :param user: A Telegram user
