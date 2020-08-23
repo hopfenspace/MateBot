@@ -16,10 +16,6 @@ Creation
 
 .. code-block:: sql
 
-    CREATE DATABASE matedb;
-    CREATE USER matebot_user IDENTIFIED BY 'mate2moneyPW=great';
-    GRANT ALL PRIVILEGES ON matedb.* TO matebot_user;
-    USE matedb;
     CREATE TABLE users (
             `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
             `tid` BIGINT UNIQUE NOT NULL,
