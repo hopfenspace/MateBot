@@ -24,7 +24,7 @@ class MateBotUser:
 
         self._user = user
 
-        state, values = _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+        state, values = self._get_remote_record()
 
         if state == 0 and len(values) == 0:
             _execute(
@@ -32,28 +32,41 @@ class MateBotUser:
                 (self._user.id, self._user.name, self._user.full_name)
             )
 
-            state, values = _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+            state, values = self._get_remote_record()
 
         if state == 1 and len(values) == 1:
-            record = values[0]
-            self._id = record["id"]
-            self._name = record["name"]
-            self._username = record["username"]
-            self._balance = record["balance"]
-            self._permission = record["permission"]
-            self._created = record["tscreated"]
-            self._accessed = record["tsaccessed"]
-
-            if self._name != self._user.full_name:
-                self._name = self._update_record("name", self._user.full_name)
-
-            if self._username != self._user.name:
-                self._username = self._update_record("username", self._user.name)
+            self._update_local(values[0])
 
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
         return False
+
+    def _get_remote_record(self) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
+        """
+        Retrieve the remote record for the current user (internal use only!)
+
+        :return: number of affected rows and fetched data record
+        """
+
+        return _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+
+    def _unpack_record(self, record: typing.Dict[str, typing.Any]) -> None:
+        """
+        Unpack a database record dict to overwrite the internal attributes (internal use only!)
+
+        :param record: database record as returned by a `SELECT * FROM users` query
+        :type record: dict
+        :return: None
+        """
+
+        self._id = record["id"]
+        self._name = record["name"]
+        self._username = record["username"]
+        self._balance = record["balance"]
+        self._permission = record["permission"]
+        self._created = record["tscreated"]
+        self._accessed = record["tsaccessed"]
 
     def _update_record(self, column: str, value: typing.Union[str, int, bool]) -> typing.Union[str, int]:
         """
@@ -90,6 +103,35 @@ class MateBotUser:
         )
         self._accessed = result[0]["tsaccessed"]
         return result[0][column]
+
+    def _update_local(self, record: typing.Dict[str, typing.Any]) -> None:
+        """
+        Apply a database record to the local copy and check for consistency with Telegram
+
+        :param record: database record as returned by a `SELECT * FROM users` query
+        :type record: dict
+        :return: None
+        """
+
+        self._unpack_record(record)
+
+        if self._name != self._user.full_name:
+            self._name = self._update_record("name", self._user.full_name)
+
+        if self._username != self._user.name:
+            self._username = self._update_record("username", self._user.name)
+
+    def update(self) -> None:
+        """
+        Re-read the internal values from the database
+
+        :return: None
+        """
+
+        state, values = self._get_remote_record()
+
+        if state == 1 and len(values) == 1:
+            self._update_local(values[0])
 
     @property
     def user(self) -> telegram.User:
