@@ -8,6 +8,28 @@ from .dbhelper import execute as _execute
 
 
 class MateBotUser:
+class BaseBotUser:
+    """
+    Base class for MateBot users
+    """
+
+    _user = None
+    _id = 0
+    _name = ""
+    _username = ""
+    _balance = 0
+    _permission = 0
+    _created = datetime.datetime.fromtimestamp(0)
+    _accessed = datetime.datetime.fromtimestamp(0)
+
+
+class CommunityUser(BaseBotUser):
+    """
+    Special user which receives consume transactions and sends payment transactions
+    """
+
+
+class MateBotUser(BaseBotUser):
     """
     MateBotUser convenience class storing all information about a user
 
