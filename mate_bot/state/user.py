@@ -21,6 +21,38 @@ class MateBotUser:
 
         self._user = user
 
+        state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
+
+        if state == 1 and len(values) == 1:
+            record = values[0]
+            self._id = record["id"]
+            self._name = record["name"]
+            self._username = record["username"]
+            self._balance = record["balance"]
+            self._permission = record["permission"]
+            self._created = record["tscreated"]
+            self._accessed = record["tsaccessed"]
+
+            if self._name != self._user.full_name:
+                _execute("UPDATE users SET name={} WHERE tid={}".format(
+                    self._user.full_name,
+                    self._user.id
+                ))
+
+                _, result = _execute("SELECT name, tsaccessed FROM users WHERE tid={}".format(self._user.id))
+                self._name = result[0]["name"]
+                self._accessed = result[0]["tsaccessed"]
+
+            if self._username != self._user.username:
+                _execute("UPDATE users SET username={} WHERE tid={}".format(
+                    self._user.username,
+                    self._user.id
+                ))
+
+                _, result = _execute("SELECT username, tsaccessed FROM users WHERE tid={}".format(self._user.id))
+                self._username = result[0]["username"]
+                self._accessed = result[0]["tsaccessed"]
+
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
