@@ -3,6 +3,8 @@
 import datetime
 import telegram
 
+from .dbhelper import execute as _execute
+
 
 class MateBotUser:
     """
@@ -53,9 +55,8 @@ class MateBotUser:
             if self._name != self._user.full_name:
                 self._name = _update_record("name", self._user.full_name)
 
-            if self._username != self._user.username:
-                self._username = _update_record("username", self._user.username)
-
+            if self._username != self._user.name:
+                self._username = _update_record("username", self._user.name)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
@@ -76,11 +77,11 @@ class MateBotUser:
 
     @property
     def username(self) -> str:
-        return self._user.username
+        return self._username
 
     @property
     def name(self) -> str:
-        return self._user.full_name
+        return self._name
 
     @property
     def balance(self) -> int:
