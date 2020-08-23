@@ -63,8 +63,12 @@
 	+------------+--------------+------+-----+-------------------+-----------------------------+
 
 The `tid` value is the Telegram user ID.
-The `username` is the Telegram username (starting with `@`).
-The `name` is the optional Telegram name.
+
+The `username` is the Telegram username (starting with `@`)
+if this was set. Otherwise, `username` equals to `name`.
+The `name` is the Telegram name consisting of the first and
+last name (as far as this was set). You can be sure that
+`username` and `name` will always be strings.
 
 The `balance` is measured in Cent.
 
