@@ -5,6 +5,8 @@ Database
 
 .. toctree::
 
+.. _database:
+
 ********************
 Database Information
 ********************
