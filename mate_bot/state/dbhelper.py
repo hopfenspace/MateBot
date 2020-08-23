@@ -22,7 +22,6 @@ def execute(cmd: str) -> typing.Tuple[int, typing.Any]:
 
     connection = _pymysql.connect(**_config["database"], cursorclass = _pymysql.cursors.DictCursor)
     if connection.open:
-        connection.show_warnings()  # TODO
         try:
             with connection.cursor() as cursor:
                 state = cursor.execute(cmd)
