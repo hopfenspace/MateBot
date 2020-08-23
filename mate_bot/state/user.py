@@ -21,7 +21,6 @@ class BaseBotUser:
     _created = datetime.datetime.fromtimestamp(0)
     _accessed = datetime.datetime.fromtimestamp(0)
 
-
     def _get_remote_record(self) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
         """
         Retrieve the remote record for the current user (internal use only!)
@@ -101,11 +100,47 @@ class BaseBotUser:
         if self._username != self._user.name:
             self._username = self._update_record("username", self._user.name)
 
+    @property
+    def uid(self) -> int:
+        return self._id
+
+    @property
+    def tid(self) -> int:
+        return self._user.id
+
+    @property
+    def username(self) -> str:
+        return self._username
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def balance(self) -> int:
+        return self._balance
+
+    @property
+    def permission(self) -> bool:
+        return bool(self._permission)
+
+    @property
+    def created(self) -> datetime.datetime:
+        return self._created
+
+    @property
+    def accessed(self) -> datetime.datetime:
+        return self._accessed
+
 
 class CommunityUser(BaseBotUser):
     """
     Special user which receives consume transactions and sends payment transactions
     """
+
+    @property
+    def user(self) -> None:
+        return self._user
 
 
 class MateBotUser(BaseBotUser):
@@ -160,36 +195,8 @@ class MateBotUser(BaseBotUser):
         return self._user
 
     @property
-    def uid(self) -> int:
-        return self._id
-
-    @property
-    def tid(self) -> int:
-        return self._user.id
-
-    @property
-    def username(self) -> str:
-        return self._username
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def balance(self) -> int:
-        return self._balance
-
-    @property
     def permission(self) -> bool:
         return bool(self._permission)
-
-    @property
-    def created(self) -> datetime.datetime:
-        return self._created
-
-    @property
-    def accessed(self) -> datetime.datetime:
-        return self._accessed
 
     @permission.setter
     def permission(self, new: bool):
