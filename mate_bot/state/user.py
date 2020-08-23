@@ -1,54 +1,63 @@
 #!/usr/bin/env python3
 
-from typing import Any
-
+import datetime
 import telegram
 
 
 class MateBotUser:
     """
-    This class represents a MateBot's user and stores his balance.
+    MateBotUser convenience class storing all information about a user
 
-    :param user: The Telegram user to create a MateBotUser for
-    :type user: telegram.User
+    Specify a Telegram User object to initialize this object. It will
+    fetch all available data from the database in the background.
+    Do not cache these values for consistency reasons.
     """
 
-    def __init__(self, user: telegram.User = None, id: int = 0, name: str = "", nick: str = "", balance: int = 0):
-        self.id = id
-        """The user's id"""
-        self.name = name
-        """The user's name"""
-        self.nick = nick
-        """The user's nickname or username"""
-        self.balance = balance
-        """The user's balance is an amount of money in cent. Positive values mean the bot ows the user."""
-
-        # Update self using the telegram.User
-        if user is not None:
-            self.id = user.id
-            self.name = user.full_name
-            self.nick = user.username
-
-    def __getitem__(self, key: str) -> Any:
+    def __init__(self, user: telegram.User):
         """
-        Legacy function. Users used to be dicts.
-
-        :param key:
-        :type key: str
-        :return:
-        :rtype: Any
+        :param user: the Telegram user to create a MateBot user for
+        :type user: telegram.User
         """
 
-        return self.__getattribute__(key)
+        self._user = user
 
-    def __setitem__(self, key: str, value: Any) -> None:
-        """
-        Legacy function. Users used to be dicts.
+    def __eq__(self, other) -> bool:
+        if isinstance(other, type(self)):
+            return self.uid == other.uid and self.tid == other.tid
+        return False
 
-        :param key:
-        :type key: str
-        :param value:
-        :type value: Any
-        """
+    @property
+    def user(self) -> telegram.User:
+        return self._user
 
-        self.__setattr__(key, value)
+    @property
+    def uid(self) -> int:
+        return self._id
+
+    @property
+    def tid(self) -> int:
+        return self._user.id
+
+    @property
+    def username(self) -> str:
+        return self._user.username
+
+    @property
+    def name(self) -> str:
+        return self._user.full_name
+
+    @property
+    def balance(self) -> int:
+        return self._balance
+
+    @property
+    def permission(self) -> bool:
+        return self._permission
+
+    @property
+    def created(self) -> datetime.datetime:
+        return self._created
+
+    @property
+    def accessed(self) -> datetime.datetime:
+        return self._accessed
