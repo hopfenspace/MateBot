@@ -7,7 +7,6 @@ import telegram
 from .dbhelper import execute as _execute
 
 
-class MateBotUser:
 class BaseBotUser:
     """
     Base class for MateBot users
@@ -22,47 +21,6 @@ class BaseBotUser:
     _created = datetime.datetime.fromtimestamp(0)
     _accessed = datetime.datetime.fromtimestamp(0)
 
-
-class CommunityUser(BaseBotUser):
-    """
-    Special user which receives consume transactions and sends payment transactions
-    """
-
-
-class MateBotUser(BaseBotUser):
-    """
-    MateBotUser convenience class storing all information about a user
-
-    Specify a Telegram User object to initialize this object. It will
-    fetch all available data from the database in the background.
-    Do not cache these values for consistency reasons.
-    """
-
-    def __init__(self, user: telegram.User):
-        """
-        :param user: the Telegram user to create a MateBot user for
-        :type user: telegram.User
-        """
-
-        self._user = user
-
-        state, values = self._get_remote_record()
-
-        if state == 0 and len(values) == 0:
-            _execute(
-                "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
-                (self._user.id, self._user.name, self._user.full_name)
-            )
-
-            state, values = self._get_remote_record()
-
-        if state == 1 and len(values) == 1:
-            self._update_local(values[0])
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, type(self)):
-            return self.uid == other.uid and self.tid == other.tid
-        return False
 
     def _get_remote_record(self) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
         """
@@ -142,6 +100,48 @@ class MateBotUser(BaseBotUser):
 
         if self._username != self._user.name:
             self._username = self._update_record("username", self._user.name)
+
+
+class CommunityUser(BaseBotUser):
+    """
+    Special user which receives consume transactions and sends payment transactions
+    """
+
+
+class MateBotUser(BaseBotUser):
+    """
+    MateBotUser convenience class storing all information about a user
+
+    Specify a Telegram User object to initialize this object. It will
+    fetch all available data from the database in the background.
+    Do not cache these values for consistency reasons.
+    """
+
+    def __init__(self, user: telegram.User):
+        """
+        :param user: the Telegram user to create a MateBot user for
+        :type user: telegram.User
+        """
+
+        self._user = user
+
+        state, values = self._get_remote_record()
+
+        if state == 0 and len(values) == 0:
+            _execute(
+                "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
+                (self._user.id, self._user.name, self._user.full_name)
+            )
+
+            state, values = self._get_remote_record()
+
+        if state == 1 and len(values) == 1:
+            self._update_local(values[0])
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, type(self)):
+            return self.uid == other.uid and self.tid == other.tid
+        return False
 
     def update(self) -> None:
         """
