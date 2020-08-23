@@ -143,9 +143,35 @@ class CommunityUser(BaseBotUser):
     Special user which receives consume transactions and sends payment transactions
     """
 
+    def __init__(self, uid: int):
+        """
+        :param uid: ID of the user's record in the database
+        :type uid: int
+        :raises RuntimeError: when no user with the specified ID was found
+        """
+
+        User = collections.namedtuple("User", ["id", "name", "username", "full_name"])
+
+        self._id = uid
+        state, values = self._get_remote_record(False)
+
+        if state == 0 or len(values) == 0:
+            raise RuntimeError(
+                "No community user created for ID {} yet! Do this manually and try again.".format(uid)
+            )
+
+        elif state == 1 and len(values) == 1:
+            self._unpack_record(values[0])
+            self._user = User(
+                values[0]["tid"],
+                self._name,
+                self._username,
+                self._name
+            )
+
     @property
     def user(self) -> None:
-        return self._user
+        return None
 
 
 class MateBotUser(BaseBotUser):
