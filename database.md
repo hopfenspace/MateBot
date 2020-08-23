@@ -8,10 +8,10 @@
 	USE matedb;
 	CREATE TABLE users (
 		`id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-		`tid` BIGINT NOT NULL,
+		`tid` BIGINT UNIQUE NOT NULL,
 		`username` VARCHAR(255),
 		`name` VARCHAR(255),
-		`balance` MEDIUMINT NOT NULL,
+		`balance` MEDIUMINT NOT NULL DEFAULT 0,
 		`permission` BOOLEAN NOT NULL DEFAULT false,
 		`tscreated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		`tsaccessed` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -53,10 +53,10 @@
 	| Field      | Type         | Null | Key | Default           | Extra                       |
 	+------------+--------------+------+-----+-------------------+-----------------------------+
 	| id         | int(11)      | NO   | PRI | NULL              | auto_increment              |
-	| tid        | bigint(20)   | NO   |     | NULL              |                             |
+	| tid        | bigint(20)   | NO   | UNI | NULL              |                             |
 	| username   | varchar(255) | YES  |     | NULL              |                             |
 	| name       | varchar(255) | YES  |     | NULL              |                             |
-	| balance    | mediumint(9) | NO   |     | NULL              |                             |
+	| balance    | mediumint(9) | NO   |     | 0                 |                             |
 	| permission | tinyint(1)   | NO   |     | 0                 |                             |
 	| tscreated  | timestamp    | NO   |     | CURRENT_TIMESTAMP |                             |
 	| tsaccessed | timestamp    | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
