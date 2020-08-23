@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from typing import List, Dict, Any, Tuple
 import telegram
 
@@ -13,6 +15,7 @@ def user_list_to_string(user_list: List[MateBotUser]) -> str:
     :return: String representation of the list
     :rtype: str
     """
+
     return ", ".join(map(lambda x: x.name, user_list))
 
 
@@ -29,6 +32,7 @@ def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tup
     :return: sender, object, cmd, sender_id, action
     :rtype: Tuple[MateBotUser, Any, List[str]]
     """
+
     sender = get_or_create_user(update.callback_query.from_user)
     split = update.callback_query.data.split(" ")
 

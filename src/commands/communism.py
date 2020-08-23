@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import telegram
 
 from .common_util import user_list_to_string, get_data_from_query

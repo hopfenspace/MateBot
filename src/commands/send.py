@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from state import get_or_create_user, create_transaction
 from args import parse_args, ARG_AMOUNT, ARG_USER
 

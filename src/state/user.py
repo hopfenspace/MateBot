@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from typing import Any
 
 import telegram
@@ -36,6 +38,7 @@ class MateBotUser:
         :return:
         :rtype: Any
         """
+
         return self.__getattribute__(key)
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -47,4 +50,5 @@ class MateBotUser:
         :param value:
         :type value: Any
         """
+
         self.__setattr__(key, value)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import re
 from typing import List, Dict, Any, Callable
 from telegram import Message
@@ -31,6 +33,7 @@ def parse_abstract_arg(arg: str, i: int, msg: Message, offset: int, unparsed: Li
     :return: Parsed value
     :rtype: Any
     """
+
     pass
 
 
@@ -53,6 +56,7 @@ def parse_text_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[s
     :return: ``arg``
     :rtype: str
     """
+
     return arg
 
 
@@ -75,6 +79,7 @@ def parse_int_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[st
     :return: Parsed integer
     :rtype: int
     """
+
     try:
         return int(arg)
     except ValueError:
@@ -107,6 +112,7 @@ def parse_amount_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List
     :return: Amount of money in cent
     :rtype: int
     """
+
     # Regex explanation:
     # It matches any non-zero number of digits with an optional , or . followed by exactly one or two digits
     # If there is a , or . then the first decimal is required
@@ -152,6 +158,7 @@ def parse_user_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[s
     :return: Parsed user
     :rtype: Any
     """
+
     for entity in msg.entities:
         if entity.offset == offset:
             if entity.type == "mention":
@@ -180,6 +187,7 @@ def parse_rest_arg(arg: str, i: int, msg: Message, offset: int, unparsed: List[s
     :raises ParsingError:
     :return: Parsed value
     """
+
     # Pop all items from unparsed and combine them with arg before giving this list to " ".join
     # The pop operations have to be done in order to empty the unparsed
     return " ".join([arg] + [unparsed.pop(0) for _ in range(len(unparsed))])
@@ -205,6 +213,7 @@ def parse_args(msg: Message, arg_types: List[Callable], defaults: List[Any], usa
     :raises Exception:
     :return: a list of values contained in the ``msg``
     """
+
     try:
         unparsed = msg.text.split(" ")
         result = []

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import datetime
 import json
 from typing import List, Union
@@ -28,6 +30,7 @@ def create_transaction(user: MateBotUser, diff: int, reason: str) -> None:
     :param reason: A reason to make the log easier to understand
     :type reason: str
     """
+
     log = {
         'timestamp': datetime.datetime.now().timestamp(),
         'user': user.id,
@@ -53,6 +56,7 @@ def get_or_create_user(user: telegram.User) -> MateBotUser:
     :return: A MateBot user
     :rtype: MateBotUser
     """
+
     user_id = str(user.id)
     if user_id not in users:
         users[user_id] = MateBotUser(user)
@@ -80,6 +84,7 @@ def find_user_by_nick(nick: str) -> Union[MateBotUser, None]:
     :return: The user or ``None``
     :rtype: MateBotUser or None
     """
+
     for user_id in users:
         user = users[user_id]
         if user.nick == nick:

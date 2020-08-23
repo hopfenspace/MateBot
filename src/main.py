@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from traceback import print_exc
 from functools import wraps
 from typing import Callable
@@ -28,6 +30,7 @@ def try_wrap(func: Callable) -> Callable:
     :return: exception save function
     :rtype: Callable
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
