@@ -172,6 +172,7 @@ Table collectives_users
 This table maps collectives and users together.
 
 The `vote` has the following meaning:
- - `.` means ignoring the entry as the collective is a payment
- - `-` means a disapproving vote by the specified user
- - `+` means an approving vote by the specified user
+
+- `.` means ignoring the entry as the collective is a payment
+- `-` means a disapproving vote by the specified user
+- `+` means an approving vote by the specified user
