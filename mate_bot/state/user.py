@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import typing
 import datetime
 import telegram
 
@@ -21,26 +22,18 @@ class MateBotUser:
         :type user: telegram.User
         """
 
-        def _update_record(column: str, value: str) -> str:
-            if not isinstance(value, str):
-                raise TypeError("expected str")
-
-            _execute("UPDATE users SET {}='{}' WHERE tid={}".format(
-                column,
-                value,
-                self._user.id
-            ))
-
-            _, result = _execute("SELECT {}, tsaccessed FROM users WHERE tid={}".format(
-                column,
-                self._user.id
-            ))
-            self._accessed = result[0]["tsaccessed"]
-            return result[0][column]
-
         self._user = user
 
         state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
+
+        if state == 0 and len(values) == 0:
+            _execute("INSERT INTO users (tid, username, name) VALUES ({}, '{}', '{}')".format(
+                self._user.id,
+                self._user.name,
+                self._user.full_name
+            ))
+
+            state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
 
         if state == 1 and len(values) == 1:
             record = values[0]
@@ -53,15 +46,42 @@ class MateBotUser:
             self._accessed = record["tsaccessed"]
 
             if self._name != self._user.full_name:
-                self._name = _update_record("name", self._user.full_name)
+                self._name = self._update_record("name", self._user.full_name)
 
             if self._username != self._user.name:
-                self._username = _update_record("username", self._user.name)
+                self._username = self._update_record("username", self._user.name)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
         return False
+
+    def _update_record(self, column: str, value: typing.Union[str, int, bool]) -> typing.Union[str, int]:
+        if isinstance(value, str):
+            value = "'{}'".format(value)
+        if isinstance(value, float):
+            if value.is_integer():
+                value = int(value)
+            else:
+                raise TypeError("No floats allowed")
+        if not isinstance(value, (bool, int)):
+            raise TypeError("Unsupported type")
+
+        if column not in ["username", "name", "balance", "permission"]:
+            raise RuntimeError("Operation not allowed")
+
+        _execute("UPDATE users SET {}={} WHERE tid={}".format(
+            column,
+            value,
+            self._user.id
+        ))
+
+        state, result = _execute("SELECT {}, tsaccessed FROM users WHERE tid={}".format(
+            column,
+            self._user.id
+        ))
+        self._accessed = result[0]["tsaccessed"]
+        return result[0][column]
 
     @property
     def user(self) -> telegram.User:
