@@ -19,6 +19,23 @@ class MateBotUser:
         :type user: telegram.User
         """
 
+        def _update_record(column: str, value: str) -> str:
+            if not isinstance(value, str):
+                raise TypeError("expected str")
+
+            _execute("UPDATE users SET {}='{}' WHERE tid={}".format(
+                column,
+                value,
+                self._user.id
+            ))
+
+            _, result = _execute("SELECT {}, tsaccessed FROM users WHERE tid={}".format(
+                column,
+                self._user.id
+            ))
+            self._accessed = result[0]["tsaccessed"]
+            return result[0][column]
+
         self._user = user
 
         state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
@@ -34,24 +51,11 @@ class MateBotUser:
             self._accessed = record["tsaccessed"]
 
             if self._name != self._user.full_name:
-                _execute("UPDATE users SET name={} WHERE tid={}".format(
-                    self._user.full_name,
-                    self._user.id
-                ))
-
-                _, result = _execute("SELECT name, tsaccessed FROM users WHERE tid={}".format(self._user.id))
-                self._name = result[0]["name"]
-                self._accessed = result[0]["tsaccessed"]
+                self._name = _update_record("name", self._user.full_name)
 
             if self._username != self._user.username:
-                _execute("UPDATE users SET username={} WHERE tid={}".format(
-                    self._user.username,
-                    self._user.id
-                ))
+                self._username = _update_record("username", self._user.username)
 
-                _, result = _execute("SELECT username, tsaccessed FROM users WHERE tid={}".format(self._user.id))
-                self._username = result[0]["username"]
-                self._accessed = result[0]["tsaccessed"]
 
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
