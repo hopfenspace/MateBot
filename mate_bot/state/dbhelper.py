@@ -20,7 +20,7 @@ def execute(cmd: str) -> typing.Tuple[int, typing.Any]:
     :rtype: tuple
     """
 
-    connection = _pymysql.connect(**_config["database"], cursorclass = _pymysql.cursors.DictCursor)
+    connection = _pymysql.connect(**_config["database"], cursorclass=_pymysql.cursors.DictCursor)
     if connection.open:
         try:
             with connection.cursor() as cursor:

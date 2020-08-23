@@ -3,7 +3,7 @@
 from state import users
 
 
-def zwegat(bot, update):
+def zwegat(_, update):
     total = 0
     for user_id in users:
         total += users[user_id]["balance"]

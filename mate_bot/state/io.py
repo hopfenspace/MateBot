@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import json
-from typing import Dict, List
+from typing import Dict
 
 from .user import MateBotUser
 
