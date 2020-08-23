@@ -3,6 +3,7 @@
 import typing
 import datetime
 import telegram
+import collections
 
 from .dbhelper import execute as _execute
 
@@ -20,6 +21,11 @@ class BaseBotUser:
     _permission = 0
     _created = datetime.datetime.fromtimestamp(0)
     _accessed = datetime.datetime.fromtimestamp(0)
+
+    def __eq__(self, other: typing.Any) -> bool:
+        if isinstance(other, type(self)):
+            return self.uid == other.uid and self.tid == other.tid
+        return False
 
     def _get_remote_record(self, use_tid: bool = True) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
         """
@@ -203,11 +209,6 @@ class MateBotUser(BaseBotUser):
 
         if state == 1 and len(values) == 1:
             self._update_local(values[0])
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, type(self)):
-            return self.uid == other.uid and self.tid == other.tid
-        return False
 
     def update(self) -> None:
         """
