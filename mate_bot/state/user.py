@@ -21,14 +21,19 @@ class BaseBotUser:
     _created = datetime.datetime.fromtimestamp(0)
     _accessed = datetime.datetime.fromtimestamp(0)
 
-    def _get_remote_record(self) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
+    def _get_remote_record(self, use_tid: bool = True) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
         """
         Retrieve the remote record for the current user (internal use only!)
 
+        :param use_tid: switch whether to use Telegram ID (True) or internal database ID (False)
+        :type use_tid: boolean
         :return: number of affected rows and fetched data record
         """
 
-        return _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+        if use_tid:
+            return _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+        else:
+            return _execute("SELECT * FROM users WHERE id=%s", (self._id,))
 
     def _unpack_record(self, record: typing.Dict[str, typing.Any]) -> None:
         """
