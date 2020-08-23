@@ -47,6 +47,6 @@ To do so execute the following statements (don't forget to change the password!)
     CREATE DATABASE matedb;
     CREATE USER matebot_user IDENTIFIED BY 'mate2moneyPW=great';
     GRANT ALL PRIVILEGES ON matedb.* TO matebot_user;
-    FLUSH PRIVILEGES
+    FLUSH PRIVILEGES;
 
 For more information regarding the database see :ref:`database`
