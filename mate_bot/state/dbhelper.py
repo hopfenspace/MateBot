@@ -10,7 +10,7 @@ import pymysql as _pymysql
 from config import config as _config
 
 
-def execute(cmd: str) -> typing.Tuple[int, typing.Any]:
+def execute(cmd: str) -> typing.Tuple[int, typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]]:
     """
     Connect to the database, execute a single query and return results
 
