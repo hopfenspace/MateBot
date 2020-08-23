@@ -14,7 +14,7 @@
 		`balance` MEDIUMINT NOT NULL,
 		`permission` BOOLEAN NOT NULL DEFAULT false,
 		`tscreated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		`tsaccess` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		`tsaccessed` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 	);
 	CREATE TABLE transactions (
 		`id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
@@ -59,7 +59,7 @@
 	| balance    | mediumint(9) | NO   |     | NULL              |                             |
 	| permission | tinyint(1)   | NO   |     | 0                 |                             |
 	| tscreated  | timestamp    | NO   |     | CURRENT_TIMESTAMP |                             |
-	| tsaccess   | timestamp    | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
+	| tsaccessed | timestamp    | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
 	+------------+--------------+------+-----+-------------------+-----------------------------+
 
 The `tid` value is the Telegram user ID.
