@@ -24,16 +24,15 @@ class MateBotUser:
 
         self._user = user
 
-        state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
+        state, values = _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
 
         if state == 0 and len(values) == 0:
-            _execute("INSERT INTO users (tid, username, name) VALUES ({}, '{}', '{}')".format(
-                self._user.id,
-                self._user.name,
-                self._user.full_name
-            ))
+            _execute(
+                "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
+                (self._user.id, self._user.name, self._user.full_name)
+            )
 
-            state, values = _execute("SELECT * FROM users WHERE tid={}".format(self._user.id))
+            state, values = _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
 
         if state == 1 and len(values) == 1:
             record = values[0]
@@ -70,16 +69,15 @@ class MateBotUser:
         if column not in ["username", "name", "balance", "permission"]:
             raise RuntimeError("Operation not allowed")
 
-        _execute("UPDATE users SET {}={} WHERE tid={}".format(
-            column,
-            value,
-            self._user.id
-        ))
+        _execute(
+            "UPDATE users SET %s=%s WHERE tid=%s",
+            (column, value, self._user.id)
+        )
 
-        state, result = _execute("SELECT {}, tsaccessed FROM users WHERE tid={}".format(
-            column,
-            self._user.id
-        ))
+        state, result = _execute(
+            "SELECT %s, tsaccessed FROM users WHERE tid=%s",
+            (column, self._user.id)
+        )
         self._accessed = result[0]["tsaccessed"]
         return result[0][column]
 
