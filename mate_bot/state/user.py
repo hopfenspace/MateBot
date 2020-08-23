@@ -56,6 +56,16 @@ class MateBotUser:
         return False
 
     def _update_record(self, column: str, value: typing.Union[str, int, bool]) -> typing.Union[str, int]:
+        """
+        Update a value in the column of the current user record in the database
+
+        :param column: name of the database column
+        :type column: str
+        :param value: value to be set for the current user in the specified column
+        :type value: str, int or bool
+        :return: str or int
+        """
+
         if isinstance(value, str):
             value = "'{}'".format(value)
         if isinstance(value, float):
@@ -107,7 +117,7 @@ class MateBotUser:
 
     @property
     def permission(self) -> bool:
-        return self._permission
+        return bool(self._permission)
 
     @property
     def created(self) -> datetime.datetime:
@@ -116,3 +126,7 @@ class MateBotUser:
     @property
     def accessed(self) -> datetime.datetime:
         return self._accessed
+
+    @permission.setter
+    def permission(self, new: bool):
+        self._permission = self._update_record("permission", bool(new))
