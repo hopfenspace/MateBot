@@ -111,6 +111,18 @@ class BaseBotUser:
         if self._username != self._user.name:
             self._username = self._update_record("username", self._user.name)
 
+    def update(self) -> None:
+        """
+        Re-read the internal values from the database
+
+        :return: None
+        """
+
+        state, values = self._get_remote_record()
+
+        if state == 1 and len(values) == 1:
+            self._update_local(values[0])
+
     @property
     def uid(self) -> int:
         return self._id
@@ -206,18 +218,6 @@ class MateBotUser(BaseBotUser):
             )
 
             state, values = self._get_remote_record()
-
-        if state == 1 and len(values) == 1:
-            self._update_local(values[0])
-
-    def update(self) -> None:
-        """
-        Re-read the internal values from the database
-
-        :return: None
-        """
-
-        state, values = self._get_remote_record()
 
         if state == 1 and len(values) == 1:
             self._update_local(values[0])
