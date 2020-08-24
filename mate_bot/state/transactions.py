@@ -8,12 +8,12 @@ class Transaction:
     Money transaction between two users
     """
 
-    def __init__(self, src: user.MateBotUser, dst: user.MateBotUser, amount: int, reason: str = ""):
+    def __init__(self, src: user.BaseBotUser, dst: user.BaseBotUser, amount: int, reason: str = ""):
         """
         :param src: user that sends money to someone else
-        :type src: user.MateBotUser
+        :type src: user.BaseBotUser
         :param dst: user that receives money from someone else
-        :type dst: user.MateBotUser
+        :type dst: user.BaseBotUser
         :param amount: money measured in Cent (must always be positive!)
         :type amount: int
         :param reason: optional description of / reason for the transactions
@@ -36,11 +36,11 @@ class Transaction:
         """
 
     @property
-    def src(self) -> user.MateBotUser:
+    def src(self) -> user.BaseBotUser:
         return self._src
 
     @property
-    def dst(self) -> user.MateBotUser:
+    def dst(self) -> user.BaseBotUser:
         return self._dst
 
     @property
