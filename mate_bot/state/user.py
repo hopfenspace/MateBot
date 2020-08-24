@@ -69,14 +69,12 @@ class BaseBotUser:
         :return: str or int
         """
 
-        if isinstance(value, str):
-            value = "'{}'".format(value)
         if isinstance(value, float):
             if value.is_integer():
                 value = int(value)
             else:
                 raise TypeError("No floats allowed")
-        if not isinstance(value, (bool, int)):
+        if not isinstance(value, (str, int, bool)):
             raise TypeError("Unsupported type")
 
         if column not in ["username", "name", "balance", "permission"]:
