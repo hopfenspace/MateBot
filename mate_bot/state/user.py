@@ -22,6 +22,8 @@ class BaseBotUser:
     _created = datetime.datetime.fromtimestamp(0)
     _accessed = datetime.datetime.fromtimestamp(0)
 
+    _ALLOWED_UPDATES = []
+
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
@@ -77,7 +79,7 @@ class BaseBotUser:
         if not isinstance(value, (str, int, bool)):
             raise TypeError("Unsupported type")
 
-        if column not in ["username", "name", "balance", "permission"]:
+        if column not in self._ALLOWED_UPDATES:
             raise RuntimeError("Operation not allowed")
 
         _execute(
@@ -159,6 +161,8 @@ class CommunityUser(BaseBotUser):
     Special user which receives consume transactions and sends payment transactions
     """
 
+    _ALLOWED_UPDATES = ["balance"]
+
     def __init__(self, uid: int):
         """
         :param uid: ID of the user's record in the database
@@ -198,6 +202,8 @@ class MateBotUser(BaseBotUser):
     fetch all available data from the database in the background.
     Do not cache these values for consistency reasons.
     """
+
+    _ALLOWED_UPDATES = ["username", "name", "balance", "permission"]
 
     def __init__(self, user: telegram.User):
         """
