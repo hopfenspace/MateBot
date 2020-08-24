@@ -3,15 +3,15 @@
 from typing import List, Dict, Any, Tuple
 import telegram
 
-from state import MateBotUser, get_or_create_user
+from state import BaseBotUser, get_or_create_user
 
 
-def user_list_to_string(user_list: List[MateBotUser]) -> str:
+def user_list_to_string(user_list: List[BaseBotUser]) -> str:
     """
     Convert a list of users into a string.
 
     :param user_list: List of users
-    :type user_list: List[Dict]
+    :type user_list: List[BaseBotUser]
     :return: String representation of the list
     :rtype: str
     """
@@ -19,7 +19,7 @@ def user_list_to_string(user_list: List[MateBotUser]) -> str:
     return ", ".join(map(lambda x: x.name, user_list))
 
 
-def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tuple[MateBotUser, Any, str, str, str]:
+def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tuple[BaseBotUser, Any, str, str, str]:
     """
     Get the sender, the object the query is meant for and the split message
 
@@ -30,7 +30,7 @@ def get_data_from_query(update: telegram.Update, objects: Dict[str, Any]) -> Tup
     :param objects: Of which to find the object the query is for
     :type objects: Dict[Any]
     :return: sender, object, cmd, sender_id, action
-    :rtype: Tuple[MateBotUser, Any, List[str]]
+    :rtype: Tuple[BaseBotUser, Any, List[str]]
     """
 
     sender = get_or_create_user(update.callback_query.from_user)
