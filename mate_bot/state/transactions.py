@@ -18,15 +18,23 @@ class Transaction:
         :type amount: int
         :param reason: optional description of / reason for the transactions
         :type reason: str
+        :raises ValueError: when amount is not positive
+        :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
         """
 
         if amount <= 0:
-            raise RuntimeError("No negative transactions!")
+            raise ValueError("Not a positive amount!")
+        if not isinstance(src, user.BaseBotUser) or not isinstance(dst, user.BaseBotUser):
+            raise TypeError("Expected BaseBotUser or its subclasses!")
 
         self._src = src
         self._dst = dst
-        self._amount = amount
-        self._reason = reason
+        self._amount = int(amount)
+        self._reason = str(reason)
+        self._committed = False
+
+    def __bool__(self) -> bool:
+        return self._committed
 
     def commit(self) -> None:
         """
@@ -50,3 +58,7 @@ class Transaction:
     @property
     def reason(self) -> str:
         return self._reason
+
+    @property
+    def committed(self) -> bool:
+        return self._committed
