@@ -20,6 +20,8 @@ To deploy your own instance of the MateBot, you have to gather a BotToken from t
                 0
         ],
 
+        "community-id": -1,
+
         "database": {
                 "host": "localhost",
                 "port": 3306,
@@ -33,11 +35,16 @@ To deploy your own instance of the MateBot, you have to gather a BotToken from t
 
 The parameter `chat-id` specifies the chat, the bot should accept incoming commands from.
 
-The parameter `max-amount` specifies the maximum amount a user can send or pay.
+The parameter `max-amount` specifies the maximum amount a user can send or pay measured in Euro.
 
 The parameter `pay-min-user` specifies the overall delta of members which has to approve. E.g. the pay / communism is approved if 1 member disapprove, but 3 approve.
 
 The parameter `members` specifies the members which have the possibility to approve or disapprove pays / communisms. The members are represented as chat-ids.
+**This parameter is outdated and will be removed in a future version.** See the `permission` flag in the `users` table in the configuration for the :ref:`database`.
+
+The parameter `community-id` sets the internal user ID of the special community user. This user receives money when someone consumes something and sends money when someone fulfills a payment request successfully.
+Make sure that you create the community user before adding all other users and extract its internal user ID to store it in the config file.
+The bot will not work properly without the special community user.
 
 The parameter `database` specifies the connection details to your database. Only MySQL / MariaDB are currently supported. The user has to have full permission on the database to create the needed tables.
 To do so execute the following statements (don't forget to change the password!):
@@ -49,4 +56,4 @@ To do so execute the following statements (don't forget to change the password!)
     GRANT ALL PRIVILEGES ON matedb.* TO matebot_user;
     FLUSH PRIVILEGES;
 
-For more information regarding the database see :ref:`database`
+For more information regarding the database, see :ref:`database`.
