@@ -24,6 +24,36 @@ class BaseBotUser:
 
     _ALLOWED_UPDATES = []
 
+    @classmethod
+    def get_uid_from_tid(cls, tid: int) -> typing.Optional[int]:
+        """
+        Retrieve the user ID from the database using the Telegram ID as selector
+
+        :param tid: Telegram user ID
+        :type tid: int
+        :return: int or None
+        """
+
+        s, v = _execute("SELECT id FROM users WHERE tid=%s", (tid,))
+        if s == 1 and len(v) == 1:
+            return v[0]["id"]
+        return None
+
+    @classmethod
+    def get_tid_from_uid(cls, uid: int) -> typing.Optional[int]:
+        """
+        Retrieve the Telegram ID from the database using the user ID as selector
+
+        :param uid: internal user ID
+        :type uid: int
+        :return: int or None
+        """
+
+        s, v = _execute("SELECT tid FROM users WHERE id=%s", (uid,))
+        if s == 1 and len(v) == 1:
+            return v[0]["tid"]
+        return None
+
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
