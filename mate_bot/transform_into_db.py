@@ -24,7 +24,7 @@ def main():
     from config import config
     from state.dbhelper import execute
     from state.transactions import Transaction
-    from state.user import MateBotUser, CommunityUser
+    from state.user import CommunityUser
 
     def askExit(text = "Press Enter to continue or type EXIT to quit: "):
         v = input(text)
@@ -32,6 +32,12 @@ def main():
             print("Exiting.")
             exit(1)
         return v
+
+    def insertUser(userdata: dict):
+        return execute(
+            "INSERT INTO users (tid, username, name, balance) VALUES (%s, %s, %s, %s)",
+            (userdata["id"], userdata["nick"], userdata["name"], userdata["balance"])
+        )
 
     print(__doc__)
 
@@ -122,6 +128,9 @@ def main():
         print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
         askExit()
 
+        print("\nAdding community user to the database...")
+        insertUser(community)
+
     print("\nCalculating the initial balance...")
 
     def find(id_):
@@ -142,6 +151,23 @@ def main():
 
     print("\nPlease verify that everything is correct.")
     askExit()
+
+    print("\nCreating new records in the database...")
+    for user in state:
+        s, _ = insertUser(user)
+        print("User {} was created: {}".format(user["name"], s == 1))
+
+    print("\nRetrieving internal user IDs and creating User objects...")
+    community["u"] = CommunityUser(community["uid"])
+    users = [community["u"]]
+    for user in state:
+        s, v = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
+        if s == 1:
+            user["uid"] = v[0]["id"]
+        # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
+        user["u"] = CommunityUser(user["uid"])
+        users.append(user["u"])
+        print("User {} has internal ID {} now @ {}.".format(user["name"], user["uid"], user["u"]))
 
 
 if __name__ == "__main__":
