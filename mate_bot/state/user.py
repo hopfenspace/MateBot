@@ -113,8 +113,8 @@ class BaseBotUser:
             raise RuntimeError("Operation not allowed")
 
         _execute(
-            "UPDATE users SET %s=%s WHERE tid=%s",
-            (column, value, self._user.id)
+            "UPDATE users SET {}=%s WHERE tid=%s".format(column),
+            (value, self._user.id)
         )
 
         state, result = _execute(
