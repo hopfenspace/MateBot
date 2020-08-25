@@ -243,7 +243,7 @@ class CommunityUser(BaseBotUser):
             self._unpack_record(values[0])
             self._user = User(
                 values[0]["tid"],
-                self._name,
+                self._username,
                 self._username,
                 self._name
             )

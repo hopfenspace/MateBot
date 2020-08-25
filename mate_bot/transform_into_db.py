@@ -39,11 +39,14 @@ def main():
             (userdata["id"], userdata["nick"], userdata["name"])
         )
 
+    def makeConsumeReason(r: str) -> str:
+        return "consume: " + r
+
     def makePayReason(r: str) -> str:
         return r
 
     def makeSendReason(r: str) -> str:
-        return r
+        return "send: <no description>"
 
     print(__doc__)
 
@@ -195,7 +198,7 @@ def main():
                     user["u"],
                     community["u"],
                     -entry["diff"],
-                    entry["reason"]
+                    makeConsumeReason(entry["reason"])
                 ).commit()
 
             elif entry["reason"].startswith("pay"):
