@@ -89,3 +89,46 @@ class Transaction(InactiveTransaction):
     @property
     def committed(self) -> bool:
         return self._committed
+
+
+class TransactionLog:
+    """
+    Transaction history for a specific user based on the logs in the database
+    """
+
+    def __init__(self, uid: typing.Union[int, user.BaseBotUser], mode: int = 0):
+        """
+        :param uid: internal user ID or BaseBotUser instance (or subclass thereof)
+        :type uid: int or user.BaseBotUser
+        :param mode: direction of listed transactions (negative means from, positive means to, zero means both)
+        :type mode: int
+        """
+
+        if isinstance(uid, int):
+            self._uid = uid
+        elif isinstance(uid, user.BaseBotUser):
+            self._uid = uid.uid
+        else:
+            raise TypeError("UID of bad type {}".format(type(uid)))
+
+        self._mode = mode
+
+        if self._mode < 0:
+            rows, self._log = _execute(
+                "SELECT * FROM transactions WHERE fromuser=%s",
+                (self._uid,)
+            )
+        elif self._mode > 0:
+            rows, self._log = _execute(
+                "SELECT * FROM transactions WHERE touser=%s",
+                (self._uid,)
+            )
+        else:
+            rows, self._log = _execute(
+                "SELECT * FROM transactions WHERE fromuser=%s OR touser=%s",
+                (self._uid, self._uid)
+            )
+
+        self._valid = True
+        if rows == 0 and user.BaseBotUser.get_tid_from_uid(self._uid) is None:
+            self._valid = False
