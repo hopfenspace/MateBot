@@ -39,6 +39,12 @@ def main():
             (userdata["id"], userdata["nick"], userdata["name"])
         )
 
+    def makePayReason(r: str) -> str:
+        return r
+
+    def makeSendReason(r: str) -> str:
+        return r
+
     print(__doc__)
 
     print("Let's go...")
@@ -169,6 +175,58 @@ def main():
         user["u"] = CommunityUser(user["uid"])
         users.append(user["u"])
         print("User {} has internal ID {} now @ {}.".format(user["name"], user["uid"], user["u"]))
+
+    print("\nCommitting initial transactions (using reason 'data migration')...")
+    for user in state:
+        if user["init"] > 0:
+            Transaction(community["u"], user["u"], abs(user["init"]), "data migration").commit()
+        elif user["init"] < 0:
+            Transaction(user["u"], community["u"], abs(user["init"]), "data migration").commit()
+
+    print("\nTransferring the transactions from the log file into the database...")
+    failed = []
+    with open(log_path) as f:
+        for line in f.readlines():
+            entry = json.loads(line)
+            user = find(entry["user"])
+
+            if entry["reason"] in ["drink", "ice", "water", "pizza"]:
+                Transaction(
+                    user["u"],
+                    community["u"],
+                    -entry["diff"],
+                    entry["reason"]
+                ).commit()
+
+            elif entry["reason"].startswith("pay"):
+                Transaction(
+                    community["u"],
+                    user["u"],
+                    entry["diff"],
+                    makePayReason(entry["reason"])
+                ).commit()
+
+            elif entry["reason"].startswith("sent"):
+                receiver = int(entry["reason"].split(" ")[2])
+                Transaction(
+                    user["u"],
+                    find(receiver)["u"],
+                    -entry["diff"],
+                    makeSendReason(entry["reason"])
+                ).commit()
+
+            elif entry["reason"].startswith("received"):
+                pass
+
+            else:
+                failed.append(entry)
+                print(
+                    "\nError (not loaded into database):",
+                    json.dumps(entry, indent = 4, sort_keys = True),
+                    sep = "\n"
+                )
+
+    print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
 
 
 if __name__ == "__main__":
