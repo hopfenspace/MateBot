@@ -126,8 +126,8 @@ def main():
             "balance": zwegat,
             "uid": config["community-id"],
             "id": 0,
-            "nick": "",
-            "name": ""
+            "nick": None,
+            "name": None
         }
 
         print("No community user was found. The following was generated:", community, sep = "\n")
@@ -174,7 +174,7 @@ def main():
         # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
         user["u"] = CommunityUser(user["uid"])
         users.append(user["u"])
-        print("User {} has internal ID {} now @ {}.".format(user["name"], user["uid"], user["u"]))
+        print("User {} has internal ID {} now.".format(user["name"], user["uid"]))
 
     print("\nCommitting initial transactions (using reason 'data migration')...")
     for user in state:
