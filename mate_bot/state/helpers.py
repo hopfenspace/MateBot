@@ -35,7 +35,37 @@ def create_user_from_record(record: typing.Dict[str, typing.Union[str, int]]) ->
     ))
 
 
-def find_user_by_username(username: str) -> typing.Optional[user.MateBotUser]:
+def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
+    """
+    Find a MateBotUser by his name
+
+    Note that this function will always try to return exactly one result.
+    If there are multiple records in the database, all matching the pattern,
+    then this function will return None. If it's okay for you to get a list of
+    possible names, then you may look into `find_names_by_pattern`.
+
+    :param name: the user's username on Telegram
+    :type name: str
+    :param matching: switch if pattern matching should be enabled
+    :type matching: bool
+    :return: MateBotUser or None
+    """
+
+    if matching:
+        name = "%" + name + "%"
+
+    rows, values = _execute(
+        "SELECT * FROM users WHERE username LIKE %s",
+        (name,)
+    )
+
+    if rows != 1 or len(values) != 1:
+        return None
+
+    return create_user_from_record(values[0])
+
+
+def find_user_by_username(username: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
     """
     Find a MateBotUser by his username
 
@@ -46,12 +76,15 @@ def find_user_by_username(username: str) -> typing.Optional[user.MateBotUser]:
 
     :param username: the user's username on Telegram
     :type username: str
+    :param matching: switch if pattern matching should be enabled
+    :type matching: bool
     :return: MateBotUser or None
     """
 
     if username.startswith("@"):
         username = username[1:]
-    username = "%" + username + "%"
+    if matching:
+        username = "%" + username + "%"
 
     rows, values = _execute(
         "SELECT * FROM users WHERE username LIKE %s",
