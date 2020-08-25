@@ -169,6 +169,20 @@ class TransactionLog:
 
         return "\n".join(logs)
 
+    def to_json(self) -> typing.List[typing.Dict[str, typing.Union[int, str]]]:
+        """
+        Return a JSON-serializable list of transaction entries
+
+        Note that the datetime objects will be converted to integers representing UNIX timestamps.
+
+        :return: list
+        """
+
+        result = self._log[:]
+        for entry in result:
+            entry["transtime"] = int(entry["transtime"].timestamp())
+        return result
+
     @property
     def uid(self) -> int:
         return self._uid
