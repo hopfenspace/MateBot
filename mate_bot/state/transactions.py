@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 from . import user
+from .dbhelper import execute as _execute
 
 
-class Transaction:
+class InactiveTransaction:
     """
-    Money transaction between two users
+    Historic money transaction between two users (read-only data)
     """
 
     def __init__(self, src: user.BaseBotUser, dst: user.BaseBotUser, amount: int, reason: str = ""):
@@ -34,6 +35,31 @@ class Transaction:
         self._committed = False
 
     def __bool__(self) -> bool:
+        return True
+
+    @property
+    def src(self) -> user.BaseBotUser:
+        return self._src
+
+    @property
+    def dst(self) -> user.BaseBotUser:
+        return self._dst
+
+    @property
+    def amount(self) -> int:
+        return self._amount
+
+    @property
+    def reason(self) -> str:
+        return self._reason
+
+
+class Transaction(InactiveTransaction):
+    """
+    Money transaction between two users
+    """
+
+    def __bool__(self) -> bool:
         return self._committed
 
     def commit(self) -> None:
@@ -59,22 +85,6 @@ class Transaction:
             self._src._update_record("balance", self._src.balance - self._amount)
             self._dst._update_record("balance", self._dst.balance + self._amount)
             self._committed = True
-
-    @property
-    def src(self) -> user.BaseBotUser:
-        return self._src
-
-    @property
-    def dst(self) -> user.BaseBotUser:
-        return self._dst
-
-    @property
-    def amount(self) -> int:
-        return self._amount
-
-    @property
-    def reason(self) -> str:
-        return self._reason
 
     @property
     def committed(self) -> bool:
