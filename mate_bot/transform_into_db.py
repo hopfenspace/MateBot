@@ -35,8 +35,8 @@ def main():
 
     def insertUser(userdata: dict):
         return execute(
-            "INSERT INTO users (tid, username, name, balance) VALUES (%s, %s, %s, %s)",
-            (userdata["id"], userdata["nick"], userdata["name"], userdata["balance"])
+            "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
+            (userdata["id"], userdata["nick"], userdata["name"])
         )
 
     print(__doc__)
@@ -130,6 +130,7 @@ def main():
 
         print("\nAdding community user to the database...")
         insertUser(community)
+        community["uid"] = execute("SELECT id FROM users WHERE tid=%s", (community["id"]))[1][0]["id"]
 
     print("\nCalculating the initial balance...")
 
@@ -161,9 +162,9 @@ def main():
     community["u"] = CommunityUser(community["uid"])
     users = [community["u"]]
     for user in state:
-        s, v = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
+        s, values = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
         if s == 1:
-            user["uid"] = v[0]["id"]
+            user["uid"] = values[0]["id"]
         # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
         user["u"] = CommunityUser(user["uid"])
         users.append(user["u"])
