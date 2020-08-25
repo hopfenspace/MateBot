@@ -40,8 +40,25 @@ class Transaction:
         """
         Fulfill the transaction and store it in the database
 
+        :raises RuntimeError: when amount is negative or zero
         :return: None
         """
+
+        if self._amount < 0:
+            raise RuntimeError("No negative transactions!")
+        if self._amount == 0:
+            raise RuntimeError("Empty transaction!")
+
+        if not self._committed:
+            _execute(
+                "INSERT INTO transactions (fromuser, touser, amount, reason) VALUES (%s, %s, %s, %s)",
+                (self._src.uid, self._dst.uid, self._amount, self._reason)
+            )
+            self._src.update()
+            self._dst.update()
+            self._src._update_record("balance", self._src.balance - self._amount)
+            self._dst._update_record("balance", self._dst.balance + self._amount)
+            self._committed = True
 
     @property
     def src(self) -> user.BaseBotUser:
