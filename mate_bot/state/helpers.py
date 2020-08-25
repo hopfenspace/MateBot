@@ -7,6 +7,34 @@ from . import user
 from .dbhelper import execute as _execute
 
 
+def create_user_from_record(record: typing.Dict[str, typing.Union[str, int]]) -> user.MateBotUser:
+    """
+    Create a MateBotUser object based on a record of the database
+
+    :param record: database record containing all necessary information
+    :type record: dict
+    :return: MateBotUser object
+    """
+
+    last_name = None
+    if record["name"].count(" ") > 0:
+        last_name = record["name"].split(" ")[1:]
+    username = None
+    if record["username"]:
+        if record["username"].startswith("@"):
+            username = record["username"][1:]
+        else:
+            username = record["username"]
+
+    return user.MateBotUser(telegram.User(
+        record["tid"],
+        record["name"].split(" ")[0],
+        False,
+        last_name,
+        username
+    ))
+
+
 def find_user_by_username(username: str) -> typing.Optional[user.MateBotUser]:
     """
     Find a MateBotUser by his username
@@ -33,20 +61,5 @@ def find_user_by_username(username: str) -> typing.Optional[user.MateBotUser]:
     if rows != 1 or len(values) != 1:
         return None
 
-    last_name = None
-    if values[0]["name"].count(" ") > 0:
-        last_name = values[0]["name"].split(" ")[1:]
-    username = None
-    if values[0]["username"]:
-        if values[0]["username"].startswith("@"):
-            username = values[0]["username"][1:]
-        else:
-            username = values[0]["username"]
+    return create_user_from_record(values[0])
 
-    return user.MateBotUser(telegram.User(
-        values[0]["tid"],
-        values[0]["name"].split(" ")[0],
-        False,
-        last_name,
-        username
-    ))
