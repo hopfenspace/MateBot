@@ -162,9 +162,21 @@ class TransactionLog:
                     time.strftime("%d.%m.%Y %H:%M:%S", entry["transtime"].timetuple()),
                     amount,
                     direction,
-                    partner,
+                    user.BaseBotUser.get_name_from_uid(partner),
                     entry["reason"]
                 )
             )
 
         return "\n".join(logs)
+
+    @property
+    def uid(self) -> int:
+        return self._uid
+
+    @property
+    def valid(self) -> bool:
+        return self._valid
+
+    @property
+    def history(self) -> typing.List[typing.Dict[str, typing.Any]]:
+        return self._log
