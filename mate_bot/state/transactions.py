@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import time
+import typing
+
 from . import user
 from .dbhelper import execute as _execute
 
@@ -132,3 +135,36 @@ class TransactionLog:
         self._valid = True
         if rows == 0 and user.BaseBotUser.get_tid_from_uid(self._uid) is None:
             self._valid = False
+
+    def to_string(self) -> str:
+        """
+        Return a pretty formatted version of the transaction log
+
+        :return: str
+        """
+
+        logs = []
+        for entry in self._log:
+            amount = entry["amount"] / 100
+
+            if entry["touser"] == self._uid:
+                direction = "<-"
+                partner = entry["fromuser"]
+            elif entry["fromuser"] == self._uid:
+                direction = "->"
+                partner = entry["touser"]
+                amount = -amount
+            else:
+                raise RuntimeError
+
+            logs.append(
+                "{}: {:=+6.2f} {} {} ({})".format(
+                    time.strftime("%d.%m.%Y %H:%M:%S", entry["transtime"].timetuple()),
+                    amount,
+                    direction,
+                    partner,
+                    entry["reason"]
+                )
+            )
+
+        return "\n".join(logs)
