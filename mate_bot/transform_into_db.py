@@ -53,21 +53,9 @@ def main():
     print("Make sure you exactly know this value. If you don't, type EXIT.")
     zwegat = int(askExit("Enter the community balance in Cent: "))
 
-    print("Detected community user ID {}.".format(config["community-id"]))
+    print("\nDetected community user ID {} in the config file.".format(config["community-id"]))
     print("Please verify that this is correct.")
     askExit()
-
-    rows, data = execute("SELECT * FROM users WHERE id=%s", (config["community-id"],))
-    if rows == 0:
-        print("\nUnable to detect community user with this ID!")
-
-    rows, data = execute("SELECT * FROM users")
-
-    if rows != 1 or len(data) != 1:
-        print("\nWe found {} users in the database.".format(len(data)))
-        print("Make sure that you start with a fresh database where only the community user exists!")
-        print("Doing otherwise leads to unknown behavior!\n")
-        askExit()
 
     with open(state_path) as f:
         state = json.load(f)
@@ -80,6 +68,59 @@ def main():
         *["Telegram ID {id}, Balance {balance}, Name {name}, Nick {nick}".format(**e) for e in state],
         sep = "\n"
     )
+
+    print("\nYou entered {} as community user balance.".format(zwegat))
+    total = sum(u["balance"] for u in state)
+    print("The sum of all users' balances is currently {}.".format(total))
+    if total != zwegat:
+        print("Something seems to be wrong here! Please verify the data sets!")
+        askExit()
+        print("\nAre you really sure?")
+        askExit()
+        print("If you say so... We now use the specified community balance value.")
+
+    rows, data = execute("SELECT * FROM users WHERE id=%s", (config["community-id"],))
+    if rows == 0:
+        print("\nUnable to detect community user with ID {}!".format(config["community-id"]))
+
+    rows, data = execute("SELECT * FROM users")
+    print("\nWe found {} users in the database.".format(len(data)))
+
+    if rows == 1 and len(data) == 1:
+        if zwegat != data[0]["balance"]:
+            print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
+            print("This seems to be wrong! Please check your config.")
+            askExit()
+
+        community = {
+            "balance": zwegat,
+            "uid": data[0]["id"],
+            "id": data[0]["tid"],
+            "nick": data[0]["username"],
+            "name": data[0]["name"]
+        }
+
+        print("Selecting the following community user:", community, sep = "\n")
+        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
+        askExit()
+
+    else:
+        print("Make sure that you start with a fresh database.")
+        print("Only the community user should exist!")
+        print("Doing otherwise leads to unknown behavior!\n")
+        askExit()
+
+        community = {
+            "balance": zwegat,
+            "uid": config["community-id"],
+            "id": 0,
+            "nick": "",
+            "name": ""
+        }
+
+        print("No community user was found. The following was generated:", community, sep = "\n")
+        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
+        askExit()
 
     print("\nCalculating the initial balance...")
 
