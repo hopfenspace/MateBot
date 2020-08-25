@@ -54,6 +54,35 @@ class BaseBotUser:
             return v[0]["tid"]
         return None
 
+    @classmethod
+    def get_name_from_uid(cls, uid: int) -> typing.Optional[str]:
+        """
+        Retrieve the stored name for the given user ID
+
+        :param uid: internal user ID
+        :type uid: int
+        :return: str or None
+        """
+
+        s, v = _execute("SELECT name FROM users WHERE id=%s", (uid,))
+        if s == 1 and len(v) == 1:
+            return v[0]["name"]
+        return None
+
+    @classmethod
+    def get_username_from_uid(cls, uid: int) -> typing.Optional[str]:
+        """
+        Retrieve the stored username for the given user ID
+
+        :param uid:
+        :return:
+        """
+
+        s, v = _execute("SELECT username FROM users WHERE id=%s", (uid,))
+        if s == 1 and len(v) == 1:
+            return v[0]["username"]
+        return None
+
     def __eq__(self, other: typing.Any) -> bool:
         if isinstance(other, type(self)):
             return self.uid == other.uid and self.tid == other.tid
