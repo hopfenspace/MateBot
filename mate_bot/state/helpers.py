@@ -96,3 +96,43 @@ def find_user_by_username(username: str, matching: bool = True) -> typing.Option
 
     return create_user_from_record(values[0])
 
+
+def find_names_by_pattern(pattern: str) -> typing.List[str]:
+    """
+    Find users' names that match the specified pattern
+
+    :param pattern: pattern to search for in the database records
+    :type pattern: str
+    :return: list of strings
+    """
+
+    if not pattern.startswith("%"):
+        pattern = "%" + pattern
+    if not pattern.endswith("%"):
+        pattern += "%"
+
+    results = []
+    for v in _execute("SELECT name FROM users WHERE name LIKE %s", (pattern,))[1]:
+        results.append(v["name"])
+    return results
+
+
+def find_usernames_by_pattern(pattern: str) -> typing.List[str]:
+    """
+    Find usernames that match the specified pattern
+
+    :param pattern: pattern to search for in the database records
+    :type pattern: str
+    :return: list of strings
+    """
+
+    if not pattern.startswith("%"):
+        pattern = "%" + pattern
+    if not pattern.endswith("%"):
+        pattern += "%"
+
+    results = []
+    for v in _execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
+        results.append(v["username"])
+    return results
+
