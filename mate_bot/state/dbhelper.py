@@ -13,7 +13,7 @@ from config import config as _config
 def execute(
         query: str,
         arguments: typing.Union[tuple, list, dict, None] = None
-) -> typing.Tuple[int, typing.Any]:
+) -> typing.Tuple[int, typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]]:
     """
     Connect to the database, execute a single query and return results
 

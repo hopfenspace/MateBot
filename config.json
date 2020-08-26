@@ -9,6 +9,8 @@
 		0
 	],
 
+	"community-id": -1,
+
 	"database": {
 		"host": "localhost",
 		"port": 3306,
