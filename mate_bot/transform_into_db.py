@@ -152,7 +152,8 @@ def main():
         for line in f.readlines():
             entry = json.loads(line)
             user = find(entry["user"])
-            user["calc"] += entry["diff"]
+            if not entry["reason"].startswith("communism"):
+                user["calc"] += entry["diff"]
 
     print("Completed. Overview over the init values:")
     for u in state:
@@ -188,6 +189,7 @@ def main():
 
     print("\nTransferring the transactions from the log file into the database...")
     failed = []
+    communisms = []
     with open(log_path) as f:
         for line in f.readlines():
             entry = json.loads(line)
@@ -211,6 +213,10 @@ def main():
 
             elif entry["reason"].startswith("sent"):
                 receiver = int(entry["reason"].split(" ")[2])
+                if receiver == user["id"]:
+                    print("Warning! Skipping transaction with same sender and receiver:")
+                    print(entry)
+                    continue
                 Transaction(
                     user["u"],
                     find(receiver)["u"],
@@ -219,7 +225,13 @@ def main():
                 ).commit()
 
             elif entry["reason"].startswith("received"):
-                pass
+                sender = int(entry["reason"].split(" ")[2])
+                if sender == user["id"]:
+                    print("Warning! Skipping transaction with same sender and receiver:")
+                    print(entry)
+
+            elif entry["reason"].startswith("communism"):
+                communisms.append(entry)
 
             else:
                 failed.append(entry)
@@ -230,6 +242,12 @@ def main():
                 )
 
     print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
+
+    if len(failed) > 0:
+        print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
+
+    if len(communisms) > 0:
+        print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
 
 
 if __name__ == "__main__":
