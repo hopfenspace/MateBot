@@ -20,6 +20,7 @@ def main():
 
     import os
     import json
+    import datetime
 
     from config import config
     from state.dbhelper import execute
@@ -148,12 +149,17 @@ def main():
             if en["id"] == id_:
                 return en
 
+    first = None
     with open(log_path) as f:
         for line in f.readlines():
             entry = json.loads(line)
             user = find(entry["user"])
             if not entry["reason"].startswith("communism"):
                 user["calc"] += entry["diff"]
+            if first is None:
+                first = entry["timestamp"]
+            elif entry["timestamp"] < first:
+                first = entry["timestamp"]
 
     print("Completed. Overview over the init values:")
     for u in state:
@@ -162,6 +168,10 @@ def main():
 
     print("\nPlease verify that everything is correct.")
     askExit()
+
+    first_ts = datetime.datetime.fromtimestamp(int(first))
+    migration = first_ts.replace(hour = 0, minute = 0, second = 0)
+    print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
 
     print("\nCreating new records in the database...")
     for user in state:
@@ -175,6 +185,7 @@ def main():
         s, values = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
         if s == 1:
             user["uid"] = values[0]["id"]
+
         # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
         user["u"] = CommunityUser(user["uid"])
         users.append(user["u"])
