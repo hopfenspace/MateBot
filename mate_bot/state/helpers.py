@@ -52,7 +52,10 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
     """
 
     if matching:
-        name = "%" + name + "%"
+        if not name.startswith("%"):
+            name = "%" + name
+        if not name.endswith("%"):
+            name += "%"
 
     rows, values = _execute(
         "SELECT * FROM users WHERE username LIKE %s",
@@ -62,7 +65,7 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
     if rows != 1 or len(values) != 1:
         return None
 
-    return create_user_from_record(values[0])
+    return _create_user_from_record(values[0])
 
 
 def find_user_by_username(username: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
@@ -83,8 +86,12 @@ def find_user_by_username(username: str, matching: bool = True) -> typing.Option
 
     if username.startswith("@"):
         username = username[1:]
+
     if matching:
-        username = "%" + username + "%"
+        if not username.startswith("%"):
+            username = "%" + username
+        if not username.endswith("%"):
+            username += "%"
 
     rows, values = _execute(
         "SELECT * FROM users WHERE username LIKE %s",
@@ -94,7 +101,7 @@ def find_user_by_username(username: str, matching: bool = True) -> typing.Option
     if rows != 1 or len(values) != 1:
         return None
 
-    return create_user_from_record(values[0])
+    return _create_user_from_record(values[0])
 
 
 def find_names_by_pattern(pattern: str) -> typing.List[str]:
