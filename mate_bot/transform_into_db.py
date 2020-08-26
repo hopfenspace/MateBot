@@ -157,12 +157,29 @@ def main():
         print("Doing otherwise leads to unknown behavior!\n")
         askExit()
 
+        print("\nAttempting to create a new community user...")
+        print("What's the username of your community user?")
+        username = input("Username (press Enter to skip): ")
+        while username != "" and len(username) < 4:
+            print("The username is too short.")
+            username = input("Username (press Enter to skip): ")
+        if username == "":
+            username = None
+
+        print("What's the full name of your community user?")
+        name = input("Full name (press Enter to skip): ")
+        while name != "" and len(name) < 6:
+            print("The name is too short.")
+            name = input("Full name (press Enter to skip): ")
+        if name == "":
+            name = None
+
         community = {
             "balance": zwegat,
             "uid": config["community-id"],
             "id": 0,
-            "nick": None,
-            "name": None
+            "nick": username,
+            "name": name
         }
 
         print("No community user was found. The following was generated:", community, sep = "\n")
