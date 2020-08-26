@@ -34,10 +34,10 @@ def main():
             exit(1)
         return v
 
-    def insertUser(userdata: dict):
+    def insertUser(userdata: dict, ts_migration: datetime.datetime):
         return execute(
-            "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
-            (userdata["id"], userdata["nick"], userdata["name"])
+            "INSERT INTO users (tid, username, name, tscreated) VALUES (%s, %s, %s, %s)",
+            (userdata["id"], userdata["nick"], userdata["name"], ts_migration)
         )
 
     def makeConsumeReason(r: str) -> str:
@@ -95,6 +95,37 @@ def main():
         askExit()
         print("If you say so... We now use the specified community balance value.")
 
+    print("\nCalculating the initial balance...")
+
+    def find(id_):
+        for en in state:
+            if en["id"] == id_:
+                return en
+
+    first = None
+    with open(log_path) as f:
+        for line in f.readlines():
+            entry = json.loads(line)
+            user = find(entry["user"])
+            if not entry["reason"].startswith("communism"):
+                user["calc"] += entry["diff"]
+            if first is None:
+                first = entry["timestamp"]
+            elif entry["timestamp"] < first:
+                first = entry["timestamp"]
+
+    print("Completed. Overview over the init values:")
+    for u in state:
+        u["init"] = u["balance"] - u["calc"]
+        print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
+
+    print("\nPlease verify that everything is correct.")
+    askExit()
+
+    first_ts = datetime.datetime.fromtimestamp(int(first))
+    migration = first_ts.replace(hour = 0, minute = 0, second = 0)
+    print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
+
     rows, data = execute("SELECT * FROM users WHERE id=%s", (config["community-id"],))
     if rows == 0:
         print("\nUnable to detect community user with ID {}!".format(config["community-id"]))
@@ -139,43 +170,12 @@ def main():
         askExit()
 
         print("\nAdding community user to the database...")
-        insertUser(community)
+        insertUser(community, migration)
         community["uid"] = execute("SELECT id FROM users WHERE tid=%s", (community["id"]))[1][0]["id"]
-
-    print("\nCalculating the initial balance...")
-
-    def find(id_):
-        for en in state:
-            if en["id"] == id_:
-                return en
-
-    first = None
-    with open(log_path) as f:
-        for line in f.readlines():
-            entry = json.loads(line)
-            user = find(entry["user"])
-            if not entry["reason"].startswith("communism"):
-                user["calc"] += entry["diff"]
-            if first is None:
-                first = entry["timestamp"]
-            elif entry["timestamp"] < first:
-                first = entry["timestamp"]
-
-    print("Completed. Overview over the init values:")
-    for u in state:
-        u["init"] = u["balance"] - u["calc"]
-        print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
-
-    print("\nPlease verify that everything is correct.")
-    askExit()
-
-    first_ts = datetime.datetime.fromtimestamp(int(first))
-    migration = first_ts.replace(hour = 0, minute = 0, second = 0)
-    print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
 
     print("\nCreating new records in the database...")
     for user in state:
-        s, _ = insertUser(user)
+        s, _ = insertUser(user, migration)
         print("User {} was created: {}".format(user["name"], s == 1))
 
     print("\nRetrieving internal user IDs and creating User objects...")
@@ -194,9 +194,9 @@ def main():
     print("\nCommitting initial transactions (using reason 'data migration')...")
     for user in state:
         if user["init"] > 0:
-            Transaction(community["u"], user["u"], abs(user["init"]), "data migration").commit()
+            Transaction(community["u"], user["u"], abs(user["init"]), "data migration", migration).commit()
         elif user["init"] < 0:
-            Transaction(user["u"], community["u"], abs(user["init"]), "data migration").commit()
+            Transaction(user["u"], community["u"], abs(user["init"]), "data migration", migration).commit()
 
     print("\nTransferring the transactions from the log file into the database...")
     sent = None
@@ -206,13 +206,15 @@ def main():
         for line in f.readlines():
             entry = json.loads(line)
             user = find(entry["user"])
+            ts = datetime.datetime.fromtimestamp(int(entry["timestamp"]))
 
             if entry["reason"] in ["drink", "ice", "water", "pizza"]:
                 Transaction(
                     user["u"],
                     community["u"],
                     -entry["diff"],
-                    makeConsumeReason(entry["reason"])
+                    makeConsumeReason(entry["reason"]),
+                    ts
                 ).commit()
 
             elif entry["reason"].startswith("pay"):
@@ -220,7 +222,8 @@ def main():
                     community["u"],
                     user["u"],
                     entry["diff"],
-                    makePayReason(entry["reason"])
+                    makePayReason(entry["reason"]),
+                    ts
                 ).commit()
 
             elif entry["reason"].startswith("sent"):
@@ -254,7 +257,8 @@ def main():
                     find(sent["user"])["u"],
                     find(entry["user"])["u"],
                     abs(entry["diff"]),
-                    makeSendReason(entry["reason"])
+                    makeSendReason(entry["reason"]),
+                    ts
                 ).commit()
 
                 sent = None
