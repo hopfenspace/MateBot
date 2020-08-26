@@ -188,6 +188,7 @@ def main():
             Transaction(user["u"], community["u"], abs(user["init"]), "data migration").commit()
 
     print("\nTransferring the transactions from the log file into the database...")
+    sent = None
     failed = []
     communisms = []
     with open(log_path) as f:
@@ -212,23 +213,40 @@ def main():
                 ).commit()
 
             elif entry["reason"].startswith("sent"):
-                receiver = int(entry["reason"].split(" ")[2])
-                if receiver == user["id"]:
-                    print("Warning! Skipping transaction with same sender and receiver:")
+                if sent is not None:
+                    print("Warning! The previous sending transaction was incomplete!")
+                    print(sent)
                     print(entry)
+                    askExit()
+                sent = entry
+
+            elif entry["reason"].startswith("received"):
+                if sent is None:
+                    print("\nError! There is no known sending transaction!")
+                    print(entry)
+                    askExit()
+
+                if sent["user"] == entry["user"]:
+                    print("Warning! Skipping transaction with same sender and receiver:")
+                    print(sent)
+                    print(entry)
+                    sent = None
                     continue
+
+                if sent["diff"] != -entry["diff"]:
+                    print("\nError! The value of the sending and receiving transactions differ!")
+                    print(sent)
+                    print(entry)
+                    askExit()
+
                 Transaction(
-                    user["u"],
-                    find(receiver)["u"],
-                    -entry["diff"],
+                    find(sent["user"])["u"],
+                    find(entry["user"])["u"],
+                    abs(entry["diff"]),
                     makeSendReason(entry["reason"])
                 ).commit()
 
-            elif entry["reason"].startswith("received"):
-                sender = int(entry["reason"].split(" ")[2])
-                if sender == user["id"]:
-                    print("Warning! Skipping transaction with same sender and receiver:")
-                    print(entry)
+                sent = None
 
             elif entry["reason"].startswith("communism"):
                 communisms.append(entry)
@@ -240,8 +258,7 @@ def main():
                     json.dumps(entry, indent = 4, sort_keys = True),
                     sep = "\n"
                 )
-
-    print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
+                askExit()
 
     if len(failed) > 0:
         print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
