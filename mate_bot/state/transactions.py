@@ -2,6 +2,7 @@
 
 import time
 import typing
+import datetime as _datetime
 
 from . import user
 from .dbhelper import execute as _execute
@@ -12,7 +13,14 @@ class InactiveTransaction:
     Historic money transaction between two users (read-only data)
     """
 
-    def __init__(self, src: user.BaseBotUser, dst: user.BaseBotUser, amount: int, reason: str = ""):
+    def __init__(
+            self,
+            src: user.BaseBotUser,
+            dst: user.BaseBotUser,
+            amount: int,
+            reason: typing.Optional[str] = None,
+            ts: typing.Optional[_datetime.datetime] = None
+    ):
         """
         :param src: user that sends money to someone else
         :type src: user.BaseBotUser
@@ -20,8 +28,10 @@ class InactiveTransaction:
         :type dst: user.BaseBotUser
         :param amount: money measured in Cent (must always be positive!)
         :type amount: int
-        :param reason: optional description of / reason for the transactions
-        :type reason: str
+        :param reason: optional description of / reason for the transaction
+        :type reason: str or None
+        :param ts: optional point in time when the transaction was made
+        :type ts: datetime.datetime object or None
         :raises ValueError: when amount is not positive
         :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
         """
@@ -34,7 +44,15 @@ class InactiveTransaction:
         self._src = src
         self._dst = dst
         self._amount = int(amount)
-        self._reason = str(reason)
+        self._reason = reason
+
+        self._ts = ts
+        if ts is None:
+            self._ts = _datetime.datetime.now()
+        elif ts.timestamp() < 0:
+            self._ts = _datetime.datetime.now()
+        self._ts = self._ts.replace(microsecond = 0)
+
         self._committed = False
 
     def __bool__(self) -> bool:
@@ -55,6 +73,14 @@ class InactiveTransaction:
     @property
     def reason(self) -> str:
         return self._reason
+
+    @property
+    def datetime(self) -> _datetime.datetime:
+        return self._ts
+
+    @property
+    def timestamp(self) -> int:
+        return int(self._ts.timestamp())
 
 
 class Transaction(InactiveTransaction):
@@ -80,8 +106,9 @@ class Transaction(InactiveTransaction):
 
         if not self._committed:
             _execute(
-                "INSERT INTO transactions (fromuser, touser, amount, reason) VALUES (%s, %s, %s, %s)",
-                (self._src.uid, self._dst.uid, self._amount, self._reason)
+                "INSERT INTO transactions (fromuser, touser, amount, reason, transtime) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (self._src.uid, self._dst.uid, self._amount, self._reason, self._ts)
             )
             self._src.update()
             self._dst.update()
