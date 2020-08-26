@@ -7,7 +7,7 @@ from . import user
 from .dbhelper import execute as _execute
 
 
-def create_user_from_record(record: typing.Dict[str, typing.Union[str, int]]) -> user.MateBotUser:
+def _create_user_from_record(record: typing.Dict[str, typing.Union[str, int]]) -> user.MateBotUser:
     """
     Create a MateBotUser object based on a record of the database
 
