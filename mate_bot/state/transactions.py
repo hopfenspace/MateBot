@@ -2,15 +2,17 @@
 
 import time
 import typing
-import datetime as _datetime
 
 from . import user
-from .dbhelper import execute as _execute
+from . import dbhelper as _db
 
 
-class InactiveTransaction:
+class Transaction:
     """
-    Historic money transaction between two users (read-only data)
+    Money transactions between two users
+
+    Note that a transaction will not be committed and stored in
+    persistent storage until the .commit() method was called!
     """
 
     def __init__(
@@ -18,8 +20,7 @@ class InactiveTransaction:
             src: user.BaseBotUser,
             dst: user.BaseBotUser,
             amount: int,
-            reason: typing.Optional[str] = None,
-            ts: typing.Optional[_datetime.datetime] = None
+            reason: typing.Optional[str] = None
     ):
         """
         :param src: user that sends money to someone else
@@ -30,8 +31,6 @@ class InactiveTransaction:
         :type amount: int
         :param reason: optional description of / reason for the transaction
         :type reason: str or None
-        :param ts: optional point in time when the transaction was made
-        :type ts: datetime.datetime object or None
         :raises ValueError: when amount is not positive
         :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
         """
@@ -46,17 +45,22 @@ class InactiveTransaction:
         self._amount = int(amount)
         self._reason = reason
 
-        self._ts = ts
-        if ts is None:
-            self._ts = _datetime.datetime.now()
-        elif ts.timestamp() < 0:
-            self._ts = _datetime.datetime.now()
-        self._ts = self._ts.replace(microsecond = 0)
-
         self._committed = False
+        self._id = None
 
     def __bool__(self) -> bool:
-        return True
+        return self._committed
+
+    def get(self) -> typing.Optional[int]:
+        """
+        Return the internal ID of the transaction, if available (after committing)
+
+        :return: internal ID of the transaction, if available
+        :rtype: typing.Optional[int]
+        """
+
+        if self._committed:
+            return self._id
 
     @property
     def src(self) -> user.BaseBotUser:
@@ -75,25 +79,12 @@ class InactiveTransaction:
         return self._reason
 
     @property
-    def datetime(self) -> _datetime.datetime:
-        return self._ts
-
-    @property
-    def timestamp(self) -> int:
-        return int(self._ts.timestamp())
-
-
-class Transaction(InactiveTransaction):
-    """
-    Money transaction between two users
-    """
-
-    def __bool__(self) -> bool:
+    def committed(self) -> bool:
         return self._committed
 
     def commit(self) -> None:
         """
-        Fulfill the transaction and store it in the database
+        Fulfill the transaction and store it in the database persistently
 
         :raises RuntimeError: when amount is negative or zero
         :return: None
@@ -104,21 +95,42 @@ class Transaction(InactiveTransaction):
         if self._amount == 0:
             raise RuntimeError("Empty transaction!")
 
-        if not self._committed:
-            _execute(
-                "INSERT INTO transactions (fromuser, touser, amount, reason, transtime) "
-                "VALUES (%s, %s, %s, %s, %s)",
-                (self._src.uid, self._dst.uid, self._amount, self._reason, self._ts)
-            )
-            self._src.update()
-            self._dst.update()
-            self._src._update_record("balance", self._src.balance - self._amount)
-            self._dst._update_record("balance", self._dst.balance + self._amount)
-            self._committed = True
+        if not self._committed and self._id is None:
+            connection = None
+            try:
+                self._src.update()
+                self._dst.update()
 
-    @property
-    def committed(self) -> bool:
-        return self._committed
+                connection = _db.execute_no_commit(
+                    "INSERT INTO transactions (sender, receiver, amount, reason) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (self._src.uid, self._dst.uid, self._amount, self._reason)
+                )[2]
+
+                rows, values, _ = _db.execute_no_commit("SELECT LAST_INSERT_ID()", connection = connection)
+                if rows == 1:
+                    self._id = values[0]["LAST_INSERT_ID()"]
+
+                _db.execute_no_commit(
+                    "UPDATE users SET balance=%s WHERE id=%s",
+                    (self._src.balance - self.amount, self._src.uid),
+                    connection = connection
+                )
+                _db.execute_no_commit(
+                    "UPDATE users SET balance=%s WHERE id=%s",
+                    (self._dst.balance + self.amount, self._dst.uid),
+                    connection = connection
+                )
+
+                connection.commit()
+
+                self._src.update()
+                self._dst.update()
+                self._committed = True
+
+            finally:
+                if connection:
+                    connection.close()
 
 
 class TransactionLog:
@@ -144,18 +156,18 @@ class TransactionLog:
         self._mode = mode
 
         if self._mode < 0:
-            rows, self._log = _execute(
-                "SELECT * FROM transactions WHERE fromuser=%s",
+            rows, self._log = _db.execute(
+                "SELECT * FROM transactions WHERE sender=%s",
                 (self._uid,)
             )
         elif self._mode > 0:
-            rows, self._log = _execute(
-                "SELECT * FROM transactions WHERE touser=%s",
+            rows, self._log = _db.execute(
+                "SELECT * FROM transactions WHERE receiver=%s",
                 (self._uid,)
             )
         else:
-            rows, self._log = _execute(
-                "SELECT * FROM transactions WHERE fromuser=%s OR touser=%s",
+            rows, self._log = _db.execute(
+                "SELECT * FROM transactions WHERE sender=%s OR receiver=%s",
                 (self._uid, self._uid)
             )
 
@@ -174,19 +186,19 @@ class TransactionLog:
         for entry in self._log:
             amount = entry["amount"] / 100
 
-            if entry["touser"] == self._uid:
+            if entry["receiver"] == self._uid:
                 direction = "<-"
-                partner = entry["fromuser"]
-            elif entry["fromuser"] == self._uid:
+                partner = entry["sender"]
+            elif entry["sender"] == self._uid:
                 direction = "->"
-                partner = entry["touser"]
+                partner = entry["receiver"]
                 amount = -amount
             else:
                 raise RuntimeError
 
             logs.append(
                 "{}: {:=+6.2f} {} {} ({})".format(
-                    time.strftime("%d.%m.%Y %H:%M:%S", entry["transtime"].timetuple()),
+                    time.strftime("%d.%m.%Y %H:%M:%S", entry["registered"].timetuple()),
                     amount,
                     direction,
                     user.BaseBotUser.get_name_from_uid(partner),
@@ -207,7 +219,7 @@ class TransactionLog:
 
         result = self._log[:]
         for entry in result:
-            entry["transtime"] = int(entry["transtime"].timestamp())
+            entry["registered"] = int(entry["registered"].timestamp())
         return result
 
     @property
