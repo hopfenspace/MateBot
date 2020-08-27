@@ -142,4 +142,3 @@ def find_usernames_by_pattern(pattern: str) -> typing.List[str]:
     for v in _execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
         results.append(v["username"])
     return results
-

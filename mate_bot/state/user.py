@@ -179,7 +179,7 @@ class BaseBotUser:
         if self._username != self._user.name:
             self._username = self._update_record("username", self._user.name)
 
-    def _check_external(self) -> bool:
+    def check_external(self) -> bool:
         """
         Check whether the user is listed as external user
 
@@ -196,10 +196,14 @@ class BaseBotUser:
         :return: None
         """
 
-        state, values = self._get_remote_record()
+        rows, values = self._get_remote_record(bool(self._tid))
 
-        if state == 1 and len(values) == 1:
+        if rows == 1 and len(values) == 1:
             self._update_local(values[0])
+
+        ext = self.check_external()
+        if ext != self._external:
+            self.external = ext
 
     @property
     def uid(self) -> int:
@@ -260,7 +264,7 @@ class BaseBotUser:
                 _execute("INSERT INTO externals (external) VALUES (%s)", (self._id,))
             else:
                 _execute("DELETE FROM externals WHERE external=%s", (self._id,))
-            self._external = self._check_external()
+            self._external = self.check_external()
 
 
 class CommunityUser(BaseBotUser):
@@ -293,7 +297,7 @@ class CommunityUser(BaseBotUser):
 
         elif rows == 1 and len(values) == 1:
             self._unpack_record(values[0])
-            if self._check_external():
+            if self.check_external():
                 raise _err.IntegrityError(
                     "The community user is marked external! Fix this issue and try again."
                 )
@@ -359,4 +363,4 @@ class MateBotUser(BaseBotUser):
 
         if rows == 1 and len(values) == 1:
             self._update_local(values[0])
-            self._external = self._check_external()
+            self._external = self.check_external()
