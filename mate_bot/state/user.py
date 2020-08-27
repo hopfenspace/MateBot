@@ -152,12 +152,12 @@ class BaseBotUser:
 
         _execute(
             "UPDATE users SET {}=%s WHERE tid=%s".format(column),
-            (value, self._user.id)
+            (value, self._id)
         )
 
         state, result = _execute(
             "SELECT %s, accessed FROM users WHERE tid=%s",
-            (column, self._user.id)
+            (column, self._id)
         )
         self._accessed = result[0]["accessed"]
         return result[0][column]
@@ -173,11 +173,11 @@ class BaseBotUser:
 
         self._unpack_record(record)
 
-        if self._name != self._user.full_name:
-            self._name = self._update_record("name", self._user.full_name)
-
-        if self._username != self._user.name:
-            self._username = self._update_record("username", self._user.name)
+        if self._user:
+            if self._name != self._user.full_name:
+                self._name = self._update_record("name", self._user.full_name)
+            if self._username != self._user.name:
+                self._username = self._update_record("username", self._user.name)
 
     def check_external(self) -> bool:
         """
@@ -187,7 +187,7 @@ class BaseBotUser:
         """
 
         rows, values = _execute("SELECT * FROM externals WHERE external=%s", (self._id,))
-        return rows == 0 and len(values) == 0
+        return rows != 0 and len(values) != 0
 
     def update(self) -> None:
         """
