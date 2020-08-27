@@ -178,6 +178,16 @@ class BaseBotUser:
         if self._username != self._user.name:
             self._username = self._update_record("username", self._user.name)
 
+    def _check_external(self) -> bool:
+        """
+        Check whether the user is listed as external user
+
+        :return: bool
+        """
+
+        rows, values = _execute("SELECT * FROM externals WHERE external=%s", (self._id,))
+        return rows == 0 and len(values) == 0
+
     def update(self) -> None:
         """
         Re-read the internal values from the database
@@ -241,6 +251,15 @@ class BaseBotUser:
     @property
     def external(self) -> bool:
         return bool(self._external)
+
+    @external.setter
+    def external(self, new: bool):
+        if bool(new) != self.external:
+            if new:
+                _execute("INSERT INTO externals (external) VALUES (%s)", (self._id,))
+            else:
+                _execute("DELETE FROM externals WHERE external=%s", (self._id,))
+            self._external = self._check_external()
 
 
 class CommunityUser(BaseBotUser):
