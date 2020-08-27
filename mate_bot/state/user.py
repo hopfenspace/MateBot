@@ -26,6 +26,7 @@ class BaseBotUser:
     _accessed = _datetime.datetime.fromtimestamp(0)
 
     _ALLOWED_UPDATES = []
+    _ALLOWED_EXTERNAL = False
 
     @classmethod
     def get_uid_from_tid(cls, tid: int) -> typing.Optional[int]:
@@ -254,7 +255,7 @@ class BaseBotUser:
 
     @external.setter
     def external(self, new: bool):
-        if bool(new) != self.external:
+        if bool(new) != self.external and self._ALLOWED_EXTERNAL:
             if new:
                 _execute("INSERT INTO externals (external) VALUES (%s)", (self._id,))
             else:
@@ -274,6 +275,7 @@ class CommunityUser(BaseBotUser):
     """
 
     _ALLOWED_UPDATES = ["balance"]
+    _ALLOWED_EXTERNAL = False
 
     def __init__(self):
         """
@@ -318,6 +320,7 @@ class MateBotUser(BaseBotUser):
     """
 
     _ALLOWED_UPDATES = ["username", "name", "balance", "permission", "active"]
+    _ALLOWED_EXTERNAL = True
 
     def __init__(self, user: typing.Union[_telegram.User, int]):
         """
