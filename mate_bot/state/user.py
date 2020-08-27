@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import typing
-import datetime
-import telegram
-import collections
+import datetime as _datetime
+import telegram as _telegram
 
-from .dbhelper import execute as _execute
+from .dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 class BaseBotUser:
@@ -15,12 +14,15 @@ class BaseBotUser:
 
     _user = None
     _id = 0
+    _tid = None
     _name = ""
     _username = ""
     _balance = 0
     _permission = 0
-    _created = datetime.datetime.fromtimestamp(0)
-    _accessed = datetime.datetime.fromtimestamp(0)
+    _active = False
+    _external = False
+    _created = _datetime.datetime.fromtimestamp(0)
+    _accessed = _datetime.datetime.fromtimestamp(0)
 
     _ALLOWED_UPDATES = []
 
@@ -88,12 +90,12 @@ class BaseBotUser:
             return self.uid == other.uid and self.tid == other.tid
         return False
 
-    def _get_remote_record(self, use_tid: bool = True) -> typing.Tuple[int, typing.List[typing.Dict[str, typing.Any]]]:
+    def _get_remote_record(self, use_tid: bool = True) -> _EXECUTE_TYPE:
         """
         Retrieve the remote record for the current user (internal use only!)
 
         :param use_tid: switch whether to use Telegram ID (True) or internal database ID (False)
-        :type use_tid: boolean
+        :type use_tid: bool
         :return: number of affected rows and fetched data record
         """
 
@@ -112,22 +114,26 @@ class BaseBotUser:
         """
 
         self._id = record["id"]
+        self._tid = record["tid"]
         self._name = record["name"]
         self._username = record["username"]
         self._balance = record["balance"]
         self._permission = record["permission"]
-        self._created = record["tscreated"]
-        self._accessed = record["tsaccessed"]
+        self._active = record["active"]
+        self._created = record["created"]
+        self._accessed = record["accessed"]
 
-    def _update_record(self, column: str, value: typing.Union[str, int, bool]) -> typing.Union[str, int]:
+    def _update_record(self, column: str, value: typing.Union[str, int, bool, None]) -> typing.Union[str, int]:
         """
         Update a value in the column of the current user record in the database
 
         :param column: name of the database column
         :type column: str
         :param value: value to be set for the current user in the specified column
-        :type value: str, int or bool
+        :type value: str, int, bool or None
         :return: str or int
+        :raises TypeError: invalid type for value found
+        :raises RuntimeError: when the column is not marked writeable by configuration
         """
 
         if isinstance(value, float):
@@ -135,8 +141,9 @@ class BaseBotUser:
                 value = int(value)
             else:
                 raise TypeError("No floats allowed")
-        if not isinstance(value, (str, int, bool)):
-            raise TypeError("Unsupported type")
+        if value is not None:
+            if not isinstance(value, (str, int, bool)):
+                raise TypeError("Unsupported type")
 
         if column not in self._ALLOWED_UPDATES:
             raise RuntimeError("Operation not allowed")
@@ -147,10 +154,10 @@ class BaseBotUser:
         )
 
         state, result = _execute(
-            "SELECT %s, tsaccessed FROM users WHERE tid=%s",
+            "SELECT %s, accessed FROM users WHERE tid=%s",
             (column, self._user.id)
         )
-        self._accessed = result[0]["tsaccessed"]
+        self._accessed = result[0]["accessed"]
         return result[0][column]
 
     def _update_local(self, record: typing.Dict[str, typing.Any]) -> None:
@@ -187,11 +194,11 @@ class BaseBotUser:
         return self._id
 
     @property
-    def tid(self) -> int:
+    def tid(self) -> typing.Optional[int]:
         return self._user.id
 
     @property
-    def username(self) -> str:
+    def username(self) -> typing.Optional[str]:
         return self._username
 
     @property
@@ -206,13 +213,25 @@ class BaseBotUser:
     def permission(self) -> bool:
         return bool(self._permission)
 
+    @permission.setter
+    def permission(self, new: bool) -> None:
+        self._permission = self._update_record("permission", bool(new))
+
     @property
-    def created(self) -> datetime.datetime:
+    def created(self) -> _datetime.datetime:
         return self._created
 
     @property
-    def accessed(self) -> datetime.datetime:
+    def accessed(self) -> _datetime.datetime:
         return self._accessed
+
+    @property
+    def user(self) -> typing.Optional[_telegram.User]:
+        return self._user
+
+    @property
+    def virtual(self) -> bool:
+        return self._tid is None
 
 
 class CommunityUser(BaseBotUser):
@@ -248,9 +267,6 @@ class CommunityUser(BaseBotUser):
                 self._name
             )
 
-    @property
-    def user(self) -> None:
-        return None
 
 
 class MateBotUser(BaseBotUser):
@@ -264,7 +280,7 @@ class MateBotUser(BaseBotUser):
 
     _ALLOWED_UPDATES = ["username", "name", "balance", "permission"]
 
-    def __init__(self, user: telegram.User):
+    def __init__(self, user: _telegram.User):
         """
         :param user: the Telegram user to create a MateBot user for
         :type user: telegram.User
@@ -284,15 +300,3 @@ class MateBotUser(BaseBotUser):
 
         if state == 1 and len(values) == 1:
             self._update_local(values[0])
-
-    @property
-    def user(self) -> telegram.User:
-        return self._user
-
-    @property
-    def permission(self) -> bool:
-        return bool(self._permission)
-
-    @permission.setter
-    def permission(self, new: bool):
-        self._permission = self._update_record("permission", bool(new))
