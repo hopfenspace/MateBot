@@ -101,7 +101,7 @@ class BaseBotUser:
         """
 
         if use_tid:
-            return _execute("SELECT * FROM users WHERE tid=%s", (self._user.id,))
+            return _execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
         else:
             return _execute("SELECT * FROM users WHERE id=%s", (self._id,))
 
@@ -309,27 +309,51 @@ class MateBotUser(BaseBotUser):
     Specify a Telegram User object to initialize this object. It will
     fetch all available data from the database in the background.
     Do not cache these values for consistency reasons.
+    If there is no record for this user in the database, a new
+    one will be created implicitly. You can also pass an
+    internal user ID to the constructor to use the record from
+    the database to initialize the MateBotUser object.
+    Note that the attribute `user` which normally holds the
+    Telegram User object, will be set to None in this case.
     """
 
-    _ALLOWED_UPDATES = ["username", "name", "balance", "permission"]
+    _ALLOWED_UPDATES = ["username", "name", "balance", "permission", "active"]
 
-    def __init__(self, user: _telegram.User):
+    def __init__(self, user: typing.Union[_telegram.User, int]):
         """
-        :param user: the Telegram user to create a MateBot user for
-        :type user: telegram.User
+        :param user: the Telegram user to create a MateBotUser for (or its internal ID instead)
+        :type user: telegram.User or int
+        :raises TypeError: when the `user` is neither a Telegram User nor an int
+        :raises pymysql.err.DataError: when the given user ID doesn't exist in the database
         """
 
-        self._user = user
+        self._user = None
 
-        state, values = self._get_remote_record()
+        if isinstance(user, _telegram.User):
+            use_tid = True
+            self._user = user
+            self._tid = user.id
 
-        if state == 0 and len(values) == 0:
+        elif isinstance(user, int):
+            use_tid = False
+            self._id = user
+
+        else:
+            raise TypeError("Invalid type {} for constructor".format(type(user)))
+
+        rows, values = self._get_remote_record(use_tid)
+
+        if rows == 0 and len(values) == 0:
+            if not use_tid:
+                raise _err.DataError("User ID {} was not found in the database.".format(self._id))
+
             _execute(
                 "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
-                (self._user.id, self._user.name, self._user.full_name)
+                (self._user.id, self._user.username, self._user.full_name)
             )
 
-            state, values = self._get_remote_record()
+            rows, values = self._get_remote_record(use_tid)
 
-        if state == 1 and len(values) == 1:
+        if rows == 1 and len(values) == 1:
             self._update_local(values[0])
+            self._external = self._check_external()
