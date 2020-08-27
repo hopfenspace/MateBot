@@ -138,6 +138,8 @@ class TransactionLog:
     Transaction history for a specific user based on the logs in the database
     """
 
+    DEFAULT_NULL_REASON_REPLACE = "<no description>"
+
     def __init__(self, uid: typing.Union[int, user.BaseBotUser], mode: int = 0):
         """
         :param uid: internal user ID or BaseBotUser instance (or subclass thereof)
@@ -174,6 +176,8 @@ class TransactionLog:
         self._valid = True
         if rows == 0 and user.BaseBotUser.get_tid_from_uid(self._uid) is None:
             self._valid = False
+        if len(self._log) == 0:
+            self._log = []
 
     def to_string(self) -> str:
         """
@@ -185,6 +189,9 @@ class TransactionLog:
         logs = []
         for entry in self._log:
             amount = entry["amount"] / 100
+            reason = entry["reason"]
+            if entry["reason"] is None:
+                reason = self.DEFAULT_NULL_REASON_REPLACE
 
             if entry["receiver"] == self._uid:
                 direction = "<-"
@@ -202,11 +209,13 @@ class TransactionLog:
                     amount,
                     direction,
                     user.BaseBotUser.get_name_from_uid(partner),
-                    entry["reason"]
+                    reason
                 )
             )
 
-        return "\n".join(logs)
+        if len(logs) > 0:
+            return "\n".join(logs)
+        return ""
 
     def to_json(self) -> typing.List[typing.Dict[str, typing.Union[int, str]]]:
         """
@@ -217,9 +226,10 @@ class TransactionLog:
         :return: list
         """
 
-        result = self._log[:]
-        for entry in result:
-            entry["registered"] = int(entry["registered"].timestamp())
+        result = []
+        for entry in self._log:
+            result.append(entry.copy())
+            result[-1]["registered"] = int(result[-1]["registered"].timestamp())
         return result
 
     @property
