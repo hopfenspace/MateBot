@@ -47,7 +47,13 @@ Table ``users``
 
 This table stores the whole user base and is the core of the database.
 
-The `tid` value is the Telegram user ID. Virtual users should have set ``NULL`` here.
+The `tid` value is the Telegram user ID. Virtual users must have set
+``NULL`` here as they don't have a valid Telegram account. However, it's
+expected that there is exactly one virtual user that has ``NULL`` here,
+the special community user. This user will e.g. send successful payments
+from its account to the other users. So, **make sure that there is
+only one such user in this table** that has ``NULL`` here. Ignoring
+this warning leads to unspecified behavior and may corrupt data.
 
 The `username` is the Telegram username (starting with ``@``) if this was set.
 However, the ``@`` will not be stored in the database. If no username is known for a
@@ -194,28 +200,6 @@ The following table lists the different meanings of the `vote` value:
 +-------------+-----------------------------+------------------------+
 | ``-``       | disapproved by user (-1)    | ignored                |
 +-------------+-----------------------------+------------------------+
-
-Table ``virtual``
-^^^^^^^^^^^^^^^^^
-
-+----------+---------+----------+---------+-------------+----------------+
-| Field    | Type    | Null     | Key     | Default     | Extra          |
-+==========+=========+==========+=========+=============+================+
-| id       | int(11) | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
-+----------+---------+----------+---------+-------------+----------------+
-| users_id | int(11) | ``NO``   | ``MUL`` | ``NULL``    |                |
-+----------+---------+----------+---------+-------------+----------------+
-
-All users (identified by the `users_id` which is a link to the ID
-of the table ``users``) in this table are treated as virtual users.
-Virtual users are not expected to have a valid Telegram account,
-therefore the special community user will be listed in this table.
-Furthermore, the community user should be the only user in this table,
-because the mechanisms will e.g. send successful payments from this
-account to the other users. So, **make sure that there is only one
-user in this table**. One way to achieve this is revoking write
-permissions after the setup of the user data was done. Ignoring
-this warning leads to unspecified behavior and may corrupt data.
 
 Table ``externals``
 ^^^^^^^^^^^^^^^^^^^

@@ -53,9 +53,3 @@ CREATE TABLE externals (
     FOREIGN KEY (external) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE virtual (
-    `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    `users_id` INT NOT NULL,
-    FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
