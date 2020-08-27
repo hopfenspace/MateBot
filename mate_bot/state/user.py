@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import typing
+import pymysql.err as _err
 import datetime as _datetime
 import telegram as _telegram
 
@@ -218,6 +219,10 @@ class BaseBotUser:
         self._permission = self._update_record("permission", bool(new))
 
     @property
+    def active(self) -> bool:
+        return bool(self._active)
+
+    @property
     def created(self) -> _datetime.datetime:
         return self._created
 
@@ -233,40 +238,49 @@ class BaseBotUser:
     def virtual(self) -> bool:
         return self._tid is None
 
+    @property
+    def external(self) -> bool:
+        return bool(self._external)
+
 
 class CommunityUser(BaseBotUser):
     """
     Special user which receives consume transactions and sends payment transactions
+
+    Note that this user is designed as a singleton. In order to get an
+    updated CommunityUser, always use a fresh instance of this class.
+    If there's not exactly one virtual user in the database, the
+    constructor for this class fails. This means that you have to fix
+    some issue with your data set manually to ensure further integrity.
     """
 
     _ALLOWED_UPDATES = ["balance"]
 
-    def __init__(self, uid: int):
+    def __init__(self):
         """
-        :param uid: ID of the user's record in the database
-        :type uid: int
-        :raises RuntimeError: when no user with the specified ID was found
+        :raises pymysql.err.DataError: when no virtual user was found
+        :raises pymysql.err.IntegrityError: when multiple virtual users were found
+        :raises pymysql.err.IntegrityError: when the user is marked external
         """
 
-        User = collections.namedtuple("User", ["id", "name", "username", "full_name"])
+        rows, values = _execute("SELECT * FROM users WHERE tid IS NULL")
 
-        self._id = uid
-        state, values = self._get_remote_record(False)
-
-        if state == 0 or len(values) == 0:
-            raise RuntimeError(
-                "No community user created for ID {} yet! Do this manually and try again.".format(uid)
+        if rows == 0 or len(values) == 0:
+            raise _err.DataError(
+                "No community user created yet! Do this manually and try again."
             )
 
-        elif state == 1 and len(values) == 1:
+        elif rows == 1 and len(values) == 1:
             self._unpack_record(values[0])
-            self._user = User(
-                values[0]["tid"],
-                self._username,
-                self._username,
-                self._name
-            )
+            if self._check_external():
+                raise _err.IntegrityError(
+                    "The community user is marked external! Fix this issue and try again."
+                )
 
+        else:
+            raise _err.IntegrityError(
+                "Multiple community users were found! Fix this issue and try again."
+            )
 
 
 class MateBotUser(BaseBotUser):
