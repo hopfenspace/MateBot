@@ -10,11 +10,17 @@ import pymysql
 from config import config as _config
 
 
+QUERY_RESULT_TYPE = typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]
+QUERY_ROWS_TYPE = int
+EXECUTE_TYPE = typing.Tuple[QUERY_ROWS_TYPE, QUERY_RESULT_TYPE]
+EXECUTE_NO_COMMIT_TYPE = typing.Tuple[QUERY_ROWS_TYPE, QUERY_RESULT_TYPE, pymysql.connections.Connection]
+
+
 def execute_no_commit(
         query: str,
         arguments: typing.Union[tuple, list, dict, None] = None,
         connection: typing.Optional[pymysql.connections.Connection] = None
-) -> typing.Tuple[int, typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]], pymysql.connections.Connection]:
+) -> EXECUTE_NO_COMMIT_TYPE:
     """
     Connect to the database, execute a single query and return results and the database connection
 
@@ -52,17 +58,17 @@ def execute_no_commit(
 
     if connection.open:
         with connection.cursor() as cursor:
-            state = cursor.execute(query, arguments)
+            rows = cursor.execute(query, arguments)
             result = cursor.fetchall()
     else:
         raise pymysql.err.OperationalError("No open connection")
-    return state, result, connection
+    return rows, result, connection
 
 
 def execute(
         query: str,
         arguments: typing.Union[tuple, list, dict, None] = None
-) -> typing.Tuple[int, typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]]:
+) -> EXECUTE_TYPE:
     """
     Connect to the database, execute and commit a single query and return results
 
@@ -76,9 +82,9 @@ def execute(
 
     connection = None
     try:
-        state, result, connection = execute_no_commit(query, arguments)
+        rows, result, connection = execute_no_commit(query, arguments)
         connection.commit()
     finally:
         if connection:
             connection.close()
-    return state, result
+    return rows, result
