@@ -14,6 +14,8 @@ Database Information
 Creation
 ========
 
+.. literalinclude:: ../../create_tables.sql
+    :language: sql
 
 Table layouts
 =============
