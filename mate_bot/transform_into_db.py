@@ -22,7 +22,6 @@ def main():
     import json
     import datetime
 
-    from config import config
     from state.dbhelper import execute
     from state.transactions import Transaction
     from state.user import CommunityUser
@@ -40,6 +39,43 @@ def main():
             (user_data["id"], user_data["nick"], user_data["name"], ts_migration)
         )
 
+    def create_community_user(current_balance: int):
+        print("\nAttempting to create a new community user...")
+        print("What's the username of your community user?")
+        username = input("Username (press Enter to skip): ")
+        while username != "" and len(username) < 4:
+            print("The username is too short.")
+            username = input("Username (press Enter to skip): ")
+        if username == "":
+            username = None
+
+        print("What's the full name of your community user?")
+        name = input("Full name: ")
+        while len(name) < 5:
+            print("The name is too short.")
+            name = input("Full name: ")
+
+        community_user = {
+            "balance": current_balance,
+            "uid": None,
+            "id": None,
+            "nick": username,
+            "name": name
+        }
+
+        print("No community user was found. The following was generated:", community_user, sep = "\n")
+        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
+        askExit()
+
+        print("\nAdding community user to the database...")
+        insert(community_user, migration)
+        community_user["uid"] = execute("SELECT id FROM users WHERE tid IS NULL", (community_user["id"]))[1][0]["id"]
+
+        return community_user
+
+    def setup_freshly():
+        print("This feature is not yet implemented. Stay tuned.")
+
     def makeConsumeReason(r: str) -> str:
         return "consume: " + r
 
@@ -52,6 +88,17 @@ def main():
     print(__doc__)
 
     print("Let's go...")
+
+    answer = input("\nStart with a fresh database (Y) or migrate old data (N)? ")
+    while answer.upper() not in ["Y", "N"] or answer == "":
+        answer = input("\nStart with a fresh database (Y) or migrate old data (N)? ")
+
+    if answer.upper() == "Y":
+        setup_freshly()
+        exit(0)
+
+    elif answer.upper() == "N":
+        print("Okay, going on ...")
 
     config_path = "../config.json"
     while not os.path.exists(config_path):
@@ -166,38 +213,12 @@ def main():
         print("Doing otherwise leads to unknown behavior!\n")
         askExit()
 
-        print("\nAttempting to create a new community user...")
-        print("What's the username of your community user?")
-        username = input("Username (press Enter to skip): ")
-        while username != "" and len(username) < 4:
-            print("The username is too short.")
-            username = input("Username (press Enter to skip): ")
-        if username == "":
-            username = None
-
-        print("What's the full name of your community user?")
-        name = input("Full name (press Enter to skip): ")
-        while name != "" and len(name) < 6:
-            print("The name is too short.")
-            name = input("Full name (press Enter to skip): ")
-        if name == "":
-            name = None
-
-        community = {
-            "balance": zwegat,
-            "uid": config["community-id"],
-            "id": 0,
-            "nick": username,
-            "name": name
-        }
-
-        print("No community user was found. The following was generated:", community, sep = "\n")
-        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
-        askExit()
-
-        print("\nAdding community user to the database...")
-        insertUser(community, migration)
-        community["uid"] = execute("SELECT id FROM users WHERE tid=%s", (community["id"]))[1][0]["id"]
+        community = detect_community()
+        if community is not None:
+            print("\nWe detected the following community user data:")
+            print(community)
+        else:
+            community = create_community_user(zwegat)
 
     print("\nCreating new records in the database...")
     for user in state:
