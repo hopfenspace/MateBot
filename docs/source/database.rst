@@ -14,165 +14,228 @@ Database Information
 Creation
 ========
 
-.. code-block:: sql
 
-    CREATE TABLE users (
-            `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-            `tid` BIGINT UNIQUE NOT NULL,
-            `username` VARCHAR(255),
-            `name` VARCHAR(255),
-            `balance` MEDIUMINT NOT NULL DEFAULT 0,
-            `permission` BOOLEAN NOT NULL DEFAULT false,
-            `tscreated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `tsaccessed` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    );
-    CREATE TABLE transactions (
-            `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-            `fromuser` INT NOT NULL,
-            `touser` INT NOT NULL,
-            `amount` MEDIUMINT NOT NULL,
-            `reason` VARCHAR(255),
-            `transtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (touser) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (fromuser) REFERENCES users(id) ON DELETE CASCADE
-    );
-    CREATE TABLE collectives (
-            `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-            `active` BOOLEAN NOT NULL,
-            `amount` MEDIUMINT NOT NULL,
-            `externs` SMALLINT,
-            `descr` VARCHAR(255),
-            `flag` BOOLEAN NOT NULL,
-            `users_id` INT NOT NULL,
-            FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-    CREATE TABLE collectives_users (
-            `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-            `collectives_id` INT NOT NULL,
-            `users_id` INT NOT NULL,
-            `vote` ENUM('-', '.', '+') NOT NULL,
-            FOREIGN KEY (collectives_id) REFERENCES collectives(id) ON DELETE CASCADE,
-            FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE
-    );
+Table layouts
+=============
 
+Table ``users``
+^^^^^^^^^^^^^^^
 
-Description
-===========
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| Field      | Type         | Null     | Key     | Default               | Extra                       |
++============+==============+==========+=========+=======================+=============================+
+| id         | int(11)      | ``NO``   | ``PRI`` | ``NULL``              | auto_increment              |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| tid        | bigint(20)   | ``YES``  | ``UNI`` | ``NULL``              |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| username   | varchar(255) | ``YES``  |         | ``NULL``              |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| name       | varchar(255) | ``NO``   |         | ``NULL``              |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| balance    | mediumint(9) | ``NO``   |         | ``0``                 |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| permission | tinyint(1)   | ``NO``   |         | ``0``                 |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| active     | tinyint(1)   | ``NO``   |         | ``1``                 |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| created    | timestamp    | ``NO``   |         | ``CURRENT_TIMESTAMP`` |                             |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
+| accessed   | timestamp    | ``NO``   |         | ``CURRENT_TIMESTAMP`` | on update CURRENT_TIMESTAMP |
++------------+--------------+----------+---------+-----------------------+-----------------------------+
 
+This table stores the whole user base and is the core of the database.
 
-Table users
-^^^^^^^^^^^
+The `tid` value is the Telegram user ID. Virtual users should have set ``NULL`` here.
 
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| Field      | Type         | Null | Key | Default           | Extra                       |
-+============+==============+======+=====+===================+=============================+
-| id         | int(11)      | NO   | PRI | NULL              | auto_increment              |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| tid        | bigint(20)   | NO   | UNI | NULL              |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| username   | varchar(255) | YES  |     | NULL              |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| name       | varchar(255) | YES  |     | NULL              |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| balance    | mediumint(9) | NO   |     | 0                 |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| permission | tinyint(1)   | NO   |     | 0                 |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| tscreated  | timestamp    | NO   |     | CURRENT_TIMESTAMP |                             |
-+------------+--------------+------+-----+-------------------+-----------------------------+
-| tsaccessed | timestamp    | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
-+------------+--------------+------+-----+-------------------+-----------------------------+
+The `username` is the Telegram username (starting with ``@``) if this was set.
+However, the ``@`` will not be stored in the database. If no username is known for a
+user, `username` will be ``NULL``. Virtual users should set the username to ``NULL``.
 
-The `tid` value is the Telegram user ID.
+The `name` is the Telegram name consisting of the first and last name (as far as
+the last name was set by the Telegram user). You can be sure that `name` will always
+be a string and set to a valid value. This is also enforced for virtual users.
 
-The `username` is the Telegram username (starting with `@`)
-if this was set. Otherwise, `username` equals to `name`.
-The `name` is the Telegram name consisting of the first and
-last name (as far as this was set). You can be sure that
-`username` and `name` will always be strings.
+The `balance` is measured in Cent. Every new user must start with a balance of ``0``.
 
-The `balance` is measured in Cent.
+The `permission` flag should is ``false`` by default. Any user who was
+white-listed will get the positive flag (``true``). This means that the
+user is permitted to vote on payment operations.
 
-The `permission` flag should always be `FALSE` (or zero).
-Any user who is whitelisted will get the positive flag.
-This means that the user is permitted to vote on payment operations.
+The `active` flag determines if the user is permitted to perform any form of writing
+operation, e.g. sending money to someone or asking for payments. This switch should
+be used to handle inactive users. **Do not delete** users from the table. This would
+also wipe out their transactions and corrupt the whole database's integrity.
 
-Table transactions
-^^^^^^^^^^^^^^^^^^
+The two timestamps `created` and `accessed` should be read-only values from the client.
+The first determines the time when the user record was added to the table while the
+second will be automatically updated on every update of a record and therefore stores
+the time of the last edit of any value associated with a specific user.
 
-+-----------+--------------+------+-----+-------------------+----------------+
-| Field     | Type         | Null | Key | Default           | Extra          |
-+===========+==============+======+=====+===================+================+
-| id        | int(11)      | NO   | PRI | NULL              | auto_increment |
-+-----------+--------------+------+-----+-------------------+----------------+
-| fromuser  | int(11)      | NO   | MUL | NULL              |                |
-+-----------+--------------+------+-----+-------------------+----------------+
-| touser    | int(11)      | NO   | MUL | NULL              |                |
-+-----------+--------------+------+-----+-------------------+----------------+
-| amount    | mediumint(9) | NO   |     | NULL              |                |
-+-----------+--------------+------+-----+-------------------+----------------+
-| reason    | varchar(255) | YES  |     | NULL              |                |
-+-----------+--------------+------+-----+-------------------+----------------+
-| transtime | timestamp    | NO   |     | CURRENT_TIMESTAMP |                |
-+-----------+--------------+------+-----+-------------------+----------------+
+Table ``transactions``
+^^^^^^^^^^^^^^^^^^^^^^
 
-The `amount` is measured in Cent.
++------------+--------------+----------+---------+-----------------------+----------------+
+| Field      | Type         | Null     | Key     | Default               | Extra          |
++============+==============+==========+=========+=======================+================+
+| id         | int(11)      | ``NO``   | ``PRI`` | ``NULL``              | auto_increment |
++------------+--------------+----------+---------+-----------------------+----------------+
+| sender     | int(11)      | ``NO``   | ``MUL`` | ``NULL``              |                |
++------------+--------------+----------+---------+-----------------------+----------------+
+| receiver   | int(11)      | ``NO``   | ``MUL`` | ``NULL``              |                |
++------------+--------------+----------+---------+-----------------------+----------------+
+| amount     | mediumint(9) | ``NO``   |         | ``NULL``              |                |
++------------+--------------+----------+---------+-----------------------+----------------+
+| reason     | varchar(255) | ``YES``  |         | ``NULL``              |                |
++------------+--------------+----------+---------+-----------------------+----------------+
+| registered | timestamp    | ``NO``   |         | ``CURRENT_TIMESTAMP`` |                |
++------------+--------------+----------+---------+-----------------------+----------------+
 
-Table collectives
+This table stores all transactions that were ever committed. The data is
+expected to be consistent if a user's current balance can be calculated
+by adding all its transactions up (when starting with a balance of ``0``).
+
+The `sender` and `receiver` are the two partners of a transaction.
+They refer to users' IDs from the ``users`` table.
+
+The `amount` is measured in Cent. It must be a positive integer value.
+
+The `reason` is an optional description of (or reason for) the transaction.
+But it is strongly encouraged to give a reason for a transaction.
+
+The timestamp `registered` will be set to the current time when
+the record was entered in the database to track the creation time.
+
+Table ``collectives``
+^^^^^^^^^^^^^^^^^^^^^
+
++-------------+--------------+----------+---------+-----------------------+----------------+
+| Field       | Type         | Null     | Key     | Default               | Extra          |
++=============+==============+==========+=========+=======================+================+
+| id          | int(11)      | ``NO``   | ``PRI`` | ``NULL``              | auto_increment |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| active      | tinyint(1)   | ``NO``   |         | ``1``                 |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| amount      | mediumint(9) | ``NO``   |         | ``NULL``              |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| externals   | smallint(6)  | ``YES``  |         | ``NULL``              |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| description | varchar(255) | ``YES``  |         | ``NULL``              |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| communistic | tinyint(1)   | ``NO``   |         | ``NULL``              |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| creator     | int(11)      | ``NO``   | ``MUL`` | ``NULL``              |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+| created     | timestamp    | ``NO``   |         | ``CURRENT_TIMESTAMP`` |                |
++-------------+--------------+----------+---------+-----------------------+----------------+
+
+This table stores all collective operations. More than two users can
+participate in this operations. Also, see the table ``collectives_users``.
+
+At first, a collective will always be active (``true``) by default. This means,
+that it's currently worked on, e.g. users can vote or participate. After
+committing the transaction(s) successfully, the `active` flag should be set
+to ``false``. Users can not vote or participate on the collective anymore.
+
+The `amount` is measured in Cent. It must not be zero. For payments, no
+negative values are allowed. Communisms may use negative values. However,
+this is not really useful in real-world scenarios. Therefore, it's highly
+recommended to only use positive values as `amount` here.
+
+The counter `externs` must be positive. It stores the number of external
+persons without access to the bot that wanted to join a communism.
+A default communism after initialization should store a ``0`` here.
+For payments, this counter is silently ignored and should be ``NULL``.
+
+The `description` is an optional text giving the reason for the collective.
+It is handled similar to the `reason` of a transaction.
+
+The `communistic` flag is a boolean value. If it's ``false``, then the
+collective operation is a payment. Otherwise it is a communism (``true``).
+Remember that the `externs` counter will be ignored on payments.
+
+The field `creator` stores the user ID of the user who has started
+the collective operation. One user may only have one active collective
+operation at the same time if this is enforced by client software.
+
+The timestamp `created` will be set automatically and stores the
+timestamp when the collective was committed to the database.
+
+Table ``collectives_users``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++----------------+---------------------------+----------+---------+-------------+----------------+
+| Field          | Type                      | Null     | Key     | Default     | Extra          |
++================+===========================+==========+=========+=============+================+
+| id             | int(11)                   | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
++----------------+---------------------------+----------+---------+-------------+----------------+
+| collectives_id | int(11)                   | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------------+---------------------------+----------+---------+-------------+----------------+
+| users_id       | int(11)                   | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------------+---------------------------+----------+---------+-------------+----------------+
+| vote           | enum(``-``, ``0``, ``+``) | ``NO``   |         | ``NULL``    |                |
++----------------+---------------------------+----------+---------+-------------+----------------+
+
+This table maps collectives and users together. A single record
+in this table means that the user joined the collective operation.
+
+The `collectives_id` is the key for the ID in the ``collectives`` table.
+The `users_id` is the key for the user ID in the ``users`` table.
+
+The following table lists the different meanings of the `vote` value:
+
++-------------+-----------------------------+------------------------+
+| Vote symbol | Meaning for payments        | Meaning for communisms |
++=============+=============================+========================+
+| ``0``       | **invalid value** (ignored) | *default* (ignored)    |
++-------------+-----------------------------+------------------------+
+| ``+``       | approved by user (+1)       | ignored                |
++-------------+-----------------------------+------------------------+
+| ``-``       | disapproved by user (-1)    | ignored                |
++-------------+-----------------------------+------------------------+
+
+Table ``virtual``
 ^^^^^^^^^^^^^^^^^
 
-+----------+--------------+------+-----+---------+----------------+
-| Field    | Type         | Null | Key | Default | Extra          |
-+==========+==============+======+=====+=========+================+
-| id       | int(11)      | NO   | PRI | NULL    | auto_increment |
-+----------+--------------+------+-----+---------+----------------+
-| active   | tinyint(1)   | NO   |     | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
-| amount   | mediumint(9) | NO   |     | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
-| externs  | smallint(6)  | YES  |     | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
-| descr    | varchar(255) | YES  |     | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
-| flag     | tinyint(1)   | NO   |     | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
-| users_id | int(11)      | NO   | MUL | NULL    |                |
-+----------+--------------+------+-----+---------+----------------+
++----------+---------+----------+---------+-------------+----------------+
+| Field    | Type    | Null     | Key     | Default     | Extra          |
++==========+=========+==========+=========+=============+================+
+| id       | int(11) | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
++----------+---------+----------+---------+-------------+----------------+
+| users_id | int(11) | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------+---------+----------+---------+-------------+----------------+
 
-After committing the transaction(s) successfully,
-the `active` flag should be set to `FALSE` (previously `TRUE`).
+All users (identified by the `users_id` which is a link to the ID
+of the table ``users``) in this table are treated as virtual users.
+Virtual users are not expected to have a valid Telegram account,
+therefore the special community user will be listed in this table.
+Furthermore, the community user should be the only user in this table,
+because the mechanisms will e.g. send successful payments from this
+account to the other users. So, **make sure that there is only one
+user in this table**. One way to achieve this is revoking write
+permissions after the setup of the user data was done. Ignoring
+this warning leads to unspecified behavior and may corrupt data.
 
-The `amount` is considered to be in Cent.
+Table ``externals``
+^^^^^^^^^^^^^^^^^^^
 
-The counter `externs` must be positive. It is ignored if it's no communism.
++----------+-----------+----------+---------+-----------------------+-----------------------------+
+| Field    | Type      | Null     | Key     | Default               | Extra                       |
++==========+===========+==========+=========+=======================+=============================+
+| id       | int(11)   | ``NO``   | ``PRI`` | ``NULL``              | auto_increment              |
++----------+-----------+----------+---------+-----------------------+-----------------------------+
+| internal | int(11)   | ``YES``  | ``MUL`` | ``NULL``              |                             |
++----------+-----------+----------+---------+-----------------------+-----------------------------+
+| external | int(11)   | ``NO``   | ``UNI`` | ``NULL``              |                             |
++----------+-----------+----------+---------+-----------------------+-----------------------------+
+| changed  | timestamp | ``NO``   |         | ``CURRENT_TIMESTAMP`` | on update CURRENT_TIMESTAMP |
++----------+-----------+----------+---------+-----------------------+-----------------------------+
 
-The `flag` should be a boolean value. If it's `FALSE`,
-then the collective operation is a payment.
-Otherwise it is a communism.
-The `externs` will be ignored on payments.
+This table handles external users. Those have valid Telegram accounts
+and are therefore no virtual users. To reduce the risk of abuse, there
+must be an internal user that has to bail for the external user.
 
-The `users_id` field was named `creator` earlier.
-It refers to the user who created the collective operation.
-
-Table collectives_users
-^^^^^^^^^^^^^^^^^^^^^^^
-
-+----------------+-------------------+------+-----+---------+----------------+
-| Field          | Type              | Null | Key | Default | Extra          |
-+================+===================+======+=====+=========+================+
-| id             | int(11)           | NO   | PRI | NULL    | auto_increment |
-+----------------+-------------------+------+-----+---------+----------------+
-| collectives_id | int(11)           | NO   | MUL | NULL    |                |
-+----------------+-------------------+------+-----+---------+----------------+
-| users_id       | int(11)           | NO   | MUL | NULL    |                |
-+----------------+-------------------+------+-----+---------+----------------+
-| vote           | enum('-','.','+') | NO   |     | NULL    |                |
-+----------------+-------------------+------+-----+---------+----------------+
-
-This table maps collectives and users together.
-
-The `vote` has the following meaning:
-
-- `.` means ignoring the entry as the collective is a payment
-- `-` means a disapproving vote by the specified user
-- `+` means an approving vote by the specified user
+Users are automatically marked *external* when their user IDs appear
+in the `external` column of this table. External users do not have vote
+permissions on payments (ignoring their value in the ``users`` table).
+Furthermore, external users do not have permissions to perform operations
+as long as no internal user is attached to their record in this table.
