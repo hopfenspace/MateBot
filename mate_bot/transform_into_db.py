@@ -34,10 +34,10 @@ def main():
             exit(1)
         return v
 
-    def insertUser(userdata: dict, ts_migration: datetime.datetime):
+    def insert(user_data: dict, ts_migration: datetime.datetime):
         return execute(
-            "INSERT INTO users (tid, username, name, tscreated) VALUES (%s, %s, %s, %s)",
-            (userdata["id"], userdata["nick"], userdata["name"], ts_migration)
+            "INSERT INTO users (tid, username, name, created) VALUES (%s, %s, %s, %s)",
+            (user_data["id"], user_data["nick"], user_data["name"], ts_migration)
         )
 
     def makeConsumeReason(r: str) -> str:
@@ -68,10 +68,6 @@ def main():
     print("We need to know the current balance of the community user.")
     print("Make sure you exactly know this value. If you don't, type EXIT.")
     zwegat = int(askExit("Enter the community balance in Cent: "))
-
-    print("\nDetected community user ID {} in the config file.".format(config["community-id"]))
-    print("Please verify that this is correct.")
-    askExit()
 
     with open(state_path) as f:
         state = json.load(f)
@@ -133,6 +129,19 @@ def main():
     rows, data = execute("SELECT * FROM users")
     print("\nWe found {} users in the database.".format(len(data)))
 
+    def detect_community():
+        print("\nDetecting community user automatically...")
+        r, v = execute("SELECT * FROM users WHERE tid IS NULL")
+        if r == 0:
+            print("No community user found by convention.")
+            return None
+        elif r > 0:
+            print(
+                "More than one community user found.\nERROR: Critical! There must never be more than "
+                "one virtual user!\nPlease delete all virtual users and start with a fresh database."
+            )
+            exit(1)
+        return v[0]
     if rows == 1 and len(data) == 1:
         if zwegat != data[0]["balance"]:
             print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
@@ -192,11 +201,11 @@ def main():
 
     print("\nCreating new records in the database...")
     for user in state:
-        s, _ = insertUser(user, migration)
+        s, _ = insert(user, migration)
         print("User {} was created: {}".format(user["name"], s == 1))
 
     print("\nRetrieving internal user IDs and creating User objects...")
-    community["u"] = CommunityUser(community["uid"])
+    community["u"] = CommunityUser()
     users = [community["u"]]
     for user in state:
         s, values = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
@@ -204,7 +213,7 @@ def main():
             user["uid"] = values[0]["id"]
 
         # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
-        user["u"] = CommunityUser(user["uid"])
+        user["u"] = CommunityUser()
         users.append(user["u"])
         print("User {} has internal ID {} now.".format(user["name"], user["uid"]))
 
@@ -230,8 +239,7 @@ def main():
                     user["u"],
                     community["u"],
                     -entry["diff"],
-                    makeConsumeReason(entry["reason"]),
-                    ts
+                    makeConsumeReason(entry["reason"])
                 ).commit()
 
             elif entry["reason"].startswith("pay"):
@@ -239,8 +247,7 @@ def main():
                     community["u"],
                     user["u"],
                     entry["diff"],
-                    makePayReason(entry["reason"]),
-                    ts
+                    makePayReason(entry["reason"])
                 ).commit()
 
             elif entry["reason"].startswith("sent"):
@@ -274,8 +281,7 @@ def main():
                     find(sent["user"])["u"],
                     find(entry["user"])["u"],
                     abs(entry["diff"]),
-                    makeSendReason(entry["reason"]),
-                    ts
+                    makeSendReason(entry["reason"])
                 ).commit()
 
                 sent = None
