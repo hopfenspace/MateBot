@@ -213,14 +213,30 @@ class BaseBotUser:
 
     @property
     def uid(self) -> int:
+        """
+        Get the internal user ID of a user
+        """
+
         return self._id
 
     @property
     def tid(self) -> typing.Optional[int]:
+        """
+        Get the Telegram ID of a user
+
+        This is None for virtual users.
+        """
+
         return self._user.id
 
     @property
     def username(self) -> typing.Optional[str]:
+        """
+        Get and set the Telegram username of a user
+
+        Note that this may be done automatically for non-virtual users by .update().
+        """
+
         return self._username
 
     @username.setter
@@ -229,6 +245,12 @@ class BaseBotUser:
 
     @property
     def name(self) -> str:
+        """
+        Get and set the Telegram name of a user
+
+        Note that this may be done automatically for non-virtual users by .update().
+        """
+
         return self._name
 
     @name.setter
@@ -237,10 +259,20 @@ class BaseBotUser:
 
     @property
     def balance(self) -> int:
+        """
+        Get the current balance of a user measured in Cent
+        """
+
         return self._balance
 
     @property
     def permission(self) -> bool:
+        """
+        Get and set the permission flag of a user
+
+        Permissions are necessary to be able to vote.
+        """
+
         return bool(self._permission)
 
     @permission.setter
@@ -249,6 +281,12 @@ class BaseBotUser:
 
     @property
     def active(self) -> bool:
+        """
+        Get and set the active flag of a user
+
+        If a user is inactive, it can't perform some operations like sending money.
+        """
+
         return bool(self._active)
 
     @active.setter
@@ -257,22 +295,46 @@ class BaseBotUser:
 
     @property
     def created(self) -> _datetime.datetime:
+        """
+        Get the timestamp when the user was created
+        """
+
         return self._created
 
     @property
     def accessed(self) -> _datetime.datetime:
+        """
+        Get the timestamp when the user record was changed the last time
+        """
+
         return self._accessed
 
     @property
     def user(self) -> typing.Optional[_telegram.User]:
+        """
+        Get the Telegram User object of the user
+
+        This is None for virtual users and objects that were created using the UID.
+        """
+
         return self._user
 
     @property
     def virtual(self) -> bool:
+        """
+        Get the virtual flag of a user
+
+        A user is virtual only if there's no valid Telegram ID.
+        """
+
         return self._tid is None
 
     @property
     def external(self) -> bool:
+        """
+        Get and set the external flag of a user
+        """
+
         return bool(self._external)
 
     @external.setter
@@ -385,6 +447,22 @@ class MateBotUser(BaseBotUser):
 
     @property
     def creditor(self):
+        """
+        Get and set the creditor user for a user
+
+        When setting the creditor, only None, integers and other MateBotUser
+        objects are allowed. None removes the current creditor user if there
+        is one. An integer will be interpreted as user ID and transformed into
+        a MateBotUser object. Lastly, MateBotUser objects are used to check
+        if the creditor is an internal or external user. External users
+        can't be creditors for other external users. Only external users
+        need a creditor to be able to perform some kinds of operations.
+
+        Note that the setter property might raise TypeErrors. Also
+        note that this value is not cached in the MateBotUser object.
+        Therefore, all getter and setter accesses produce SQL queries.
+        """
+
         rows, values = _execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
         if rows == 1 and len(values) == 1:
             return values[0]["internal"]
