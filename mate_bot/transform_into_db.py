@@ -55,6 +55,13 @@ def main():
             (user_data["id"], user_data["nick"], user_data["name"], ts_migration)
         )
 
+    def check_existing_database(db_name, mod):
+        r, v = mod.execute("SHOW DATABASES")
+        print(r, v)
+        if r == 0:
+            return False
+        return any(db_name in v[c].values() for c in range(len(v)))
+
     def setup_database(setup_tables_script):
         print("\nCreating the tables based on the setup script...\n")
         with open(setup_tables_script) as fd:
@@ -109,6 +116,19 @@ def main():
 
     def setup_freshly():
         print("This feature is not yet implemented. Stay tuned.")
+
+        import state.dbhelper
+        database_name = state.dbhelper._config["database"]["db"]
+        state.dbhelper._config["database"]["db"] = ""
+        if check_existing_database(database_name, state.dbhelper):
+            print("\nTHE EXISTING DATABASE '{}' WILL BE DELETED AND ALL ITS DATA WILL BE ERASED!".format(database_name))
+            print("Are you sure? If not, you can type EXIT to quit.")
+            ask_exit()
+            state.dbhelper.execute("DROP DATABASE {}".format(database_name))
+        state.dbhelper.execute("CREATE DATABASE {}".format(database_name))
+        state.dbhelper._config["database"]["db"] = database_name
+
+        setup_database(input("Setup script path: "))
 
     def make_reason_consume(r: str) -> str:
         return "consume: " + r
