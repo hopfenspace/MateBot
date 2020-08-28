@@ -215,14 +215,14 @@ def main():
 
     def transform_user_record(record, balance = None):
         user = {
-            "uid": record[0]["id"],
-            "id": record[0]["tid"],
-            "nick": record[0]["username"],
-            "name": record[0]["name"]
+            "uid": record["id"],
+            "id": record["tid"],
+            "nick": record["username"],
+            "name": record["name"]
         }
 
         if balance is None:
-            user["balance"] = record[0]["balance"]
+            user["balance"] = record["balance"]
         else:
             user["balance"] = balance
         return user
@@ -251,7 +251,7 @@ def main():
                 community = transform_user_record(data[0], community_balance)
 
                 print("Selecting the following community user:", community, sep = "\n")
-                print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
+                print("\nMake sure that this is ABSOLUTELY correct.\nDoing otherwise will break the data!\n")
                 ask_exit()
 
         else:
@@ -281,7 +281,7 @@ def main():
         return "send: <no description>"
 
     def migrate_transactions(current_state, transaction_log):
-        print("\nTransferring the transactions from the log file into the database...")
+        print("\nTransferring the transactions from the log file into the database...\n")
         sent = None
         failed = []
         communisms = []
@@ -292,7 +292,7 @@ def main():
                 t = None
                 if tr["reason"] in ["drink", "ice", "water", "pizza"]:
                     t = MigratedTransaction(
-                        find(tr["user"], current_state),
+                        find(tr["user"], current_state)["u"],
                         CommunityUser(),
                         -tr["diff"],
                         make_reason_consume(tr["reason"])
@@ -301,7 +301,7 @@ def main():
                 elif tr["reason"].startswith("pay"):
                     t = MigratedTransaction(
                         CommunityUser(),
-                        find(tr["user"], current_state),
+                        find(tr["user"], current_state)["u"],
                         tr["diff"],
                         make_reason_pay(tr["reason"])
                     )
@@ -364,6 +364,8 @@ def main():
         if len(communisms) > 0:
             print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
 
+        print("Completed import of old transactions.")
+
     def fix_init_balances(current_state, migration):
         print("\nCommitting initial transactions (using reason 'data migration')...")
         for user in current_state:
@@ -375,10 +377,12 @@ def main():
                 t = MigratedTransaction(user["u"], CommunityUser(), abs(user["init"]), "data migration")
                 t.commit()
                 t.fix(migration)
+        print("Completed initial balance fix.")
 
-    def migrate_old_data():
+    def migrate_old_data(community_balance: int = None):
         print("\nMigrating old data...\n")
-        community_balance = get_community_balance()
+        if community_balance is None:
+            community_balance = get_community_balance()
 
         state_path = get_path("state", "state.json", "state.json")
         log_path = get_path("transaction log", "transactions.log", "transactions.log")
@@ -441,7 +445,7 @@ def main():
             print("Finished setup.")
             exit(0)
 
-        migrate_old_data()
+        migrate_old_data(com_user["balance"])
 
     print(__doc__)
 
