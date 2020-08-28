@@ -177,10 +177,6 @@ def main():
     migration = first_ts.replace(hour = 0, minute = 0, second = 0)
     print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
 
-    rows, data = execute("SELECT * FROM users WHERE id=%s", (config["community-id"],))
-    if rows == 0:
-        print("\nUnable to detect community user with ID {}!".format(config["community-id"]))
-
     rows, data = execute("SELECT * FROM users")
     print("\nWe found {} users in the database.".format(len(data)))
 
@@ -197,23 +193,35 @@ def main():
             )
             exit(1)
         return v[0]
+
     if rows == 1 and len(data) == 1:
-        if zwegat != data[0]["balance"]:
-            print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
-            print("This seems to be wrong! Please check your config.")
+        if data[0]["tid"] is not None:
+            print(
+                "The only user found is not the community user. By convention, "
+                "the community user has no Telegram ID (NULL)!"
+            )
             askExit()
 
-        community = {
-            "balance": zwegat,
-            "uid": data[0]["id"],
-            "id": data[0]["tid"],
-            "nick": data[0]["username"],
-            "name": data[0]["name"]
-        }
+            community = create_community_user(zwegat)
 
-        print("Selecting the following community user:", community, sep = "\n")
-        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
-        askExit()
+        else:
+
+            if zwegat != data[0]["balance"]:
+                print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
+                print("This seems to be wrong! Please check your config.")
+                askExit()
+
+            community = {
+                "balance": zwegat,
+                "uid": data[0]["id"],
+                "id": data[0]["tid"],
+                "nick": data[0]["username"],
+                "name": data[0]["name"]
+            }
+
+            print("Selecting the following community user:", community, sep = "\n")
+            print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
+            askExit()
 
     else:
         print("Make sure that you start with a fresh database.")
@@ -249,9 +257,13 @@ def main():
     print("\nCommitting initial transactions (using reason 'data migration')...")
     for user in state:
         if user["init"] > 0:
-            Transaction(community["u"], user["u"], abs(user["init"]), "data migration", migration).commit()
+            t = MigratedTransaction(community["u"], user["u"], abs(user["init"]), "data migration")
+            t.commit()
+            t.fix(migration)
         elif user["init"] < 0:
-            Transaction(user["u"], community["u"], abs(user["init"]), "data migration", migration).commit()
+            t = MigratedTransaction(user["u"], community["u"], abs(user["init"]), "data migration")
+            t.commit()
+            t.fix(migration)
 
     print("\nTransferring the transactions from the log file into the database...")
     sent = None
