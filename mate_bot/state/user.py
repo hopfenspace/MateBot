@@ -217,9 +217,17 @@ class BaseBotUser:
     def username(self) -> typing.Optional[str]:
         return self._username
 
+    @username.setter
+    def username(self, new: str) -> None:
+        self.username = self._update_record("username", new)
+
     @property
     def name(self) -> str:
         return self._name
+
+    @name.setter
+    def name(self, new: str) -> None:
+        self.name = self._update_record("name", new)
 
     @property
     def balance(self) -> int:
@@ -236,6 +244,10 @@ class BaseBotUser:
     @property
     def active(self) -> bool:
         return bool(self._active)
+
+    @active.setter
+    def active(self, new: bool) -> None:
+        self._active = self._update_record("active", bool(new))
 
     @property
     def created(self) -> _datetime.datetime:
@@ -364,3 +376,25 @@ class MateBotUser(BaseBotUser):
         if rows == 1 and len(values) == 1:
             self._update_local(values[0])
             self._external = self.check_external()
+
+    @property
+    def creditor(self):
+        r, v = _execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
+        if r == 1 and len(v) == 1:
+            return v[0]["internal"]
+        return None
+
+    @creditor.setter
+    def creditor(self, new: typing.Union[None, int, BaseBotUser]):
+        if new is not None:
+            if not isinstance(new, (int, BaseBotUser)) or isinstance(new, CommunityUser):
+                raise TypeError("Invalid type {} for creditor".format(type(new)))
+
+        if self.creditor != new:
+            if new is None:
+                _execute("UPDATE externals SET internal=NULL WHERE external=%s", (self._id,))
+                return
+            if isinstance(new, int) and new != CommunityUser().uid:
+                new = MateBotUser(new)
+            if not new.check_external():
+                _execute("UPDATE externals SET internal=%s WHERE external=%s", (new.uid, self._id))
