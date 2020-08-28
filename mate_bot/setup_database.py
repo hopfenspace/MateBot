@@ -446,8 +446,10 @@ def main():
         reset_community_balance(community_balance)
 
         print("\nFinished data migration successfully.")
+        return state, migration
 
     def start_new():
+        migrate = ask_yes_no("Do you want to migrate your old data afterwards (Y) or not (N)? ")
         setup_freshly()
 
         com_user = create_community_user(
@@ -456,15 +458,19 @@ def main():
         )
         print("You have just created the community user:", com_user, "", sep = "\n")
 
-        if not ask_yes_no("Do you want to migrate from a previous data set (Y) or exit (N)? "):
+        if migrate:
+            s, m = migrate_old_data(com_user["balance"])
+            execute(
+                "UPDATE users SET created=%s WHERE tid IS NULL AND id=%s",
+                (m, CommunityUser().uid)
+            )
+        else:
             print("Finished setup.")
             exit(0)
 
-        migrate_old_data(com_user["balance"])
-
     print(__doc__)
 
-    print("Please make sure that your configuration was correctly set up before proceeding.")
+    print("Please make sure that your configuration was correctly set up before proceeding.\n")
 
     if ask_yes_no("Start with a fresh database (Y) or only migrate old data (N)? "):
         start_new()
@@ -481,6 +487,8 @@ def main():
 
         else:
             migrate_old_data()
+
+    print("Exiting.")
 
 
 if __name__ == "__main__":
