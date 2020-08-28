@@ -26,6 +26,14 @@ def main():
     from state.transactions import Transaction
     from state.user import CommunityUser
 
+    class MigratedTransaction(Transaction):
+        def fix(self, timestamp: datetime.datetime):
+            if self._committed and self._id is not None:
+                execute(
+                    "UPDATE transactions SET registered=%s WHERE id=%s",
+                    (timestamp, self._id,)
+                )
+
     def askExit(text = "Press Enter to continue or type EXIT to quit: "):
         v = input(text)
         if "EXIT" in v.upper() or "QUIT" in v.upper():
@@ -253,23 +261,23 @@ def main():
         for line in f.readlines():
             entry = json.loads(line)
             user = find(entry["user"])
-            ts = datetime.datetime.fromtimestamp(int(entry["timestamp"]))
 
+            t = None
             if entry["reason"] in ["drink", "ice", "water", "pizza"]:
-                Transaction(
+                t = MigratedTransaction(
                     user["u"],
                     community["u"],
                     -entry["diff"],
                     makeConsumeReason(entry["reason"])
-                ).commit()
+                )
 
             elif entry["reason"].startswith("pay"):
-                Transaction(
+                t = MigratedTransaction(
                     community["u"],
                     user["u"],
                     entry["diff"],
                     makePayReason(entry["reason"])
-                ).commit()
+                )
 
             elif entry["reason"].startswith("sent"):
                 if sent is not None:
@@ -298,12 +306,12 @@ def main():
                     print(entry)
                     askExit()
 
-                Transaction(
+                t = MigratedTransaction(
                     find(sent["user"])["u"],
                     find(entry["user"])["u"],
                     abs(entry["diff"]),
                     makeSendReason(entry["reason"])
-                ).commit()
+                )
 
                 sent = None
 
@@ -318,6 +326,10 @@ def main():
                     sep = "\n"
                 )
                 askExit()
+
+            if t is not None:
+                t.commit()
+                t.fix(datetime.datetime.fromtimestamp(int(entry["timestamp"])))
 
     if len(failed) > 0:
         print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
