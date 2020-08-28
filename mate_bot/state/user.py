@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import typing
-import pymysql.err as _err
 import datetime as _datetime
+
+import pymysql.err as _err
 import telegram as _telegram
 
 from .dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
@@ -38,9 +39,9 @@ class BaseBotUser:
         :return: int or None
         """
 
-        s, v = _execute("SELECT id FROM users WHERE tid=%s", (tid,))
-        if s == 1 and len(v) == 1:
-            return v[0]["id"]
+        rows, values = _execute("SELECT id FROM users WHERE tid=%s", (tid,))
+        if rows == 1 and len(values) == 1:
+            return values[0]["id"]
         return None
 
     @classmethod
@@ -53,9 +54,9 @@ class BaseBotUser:
         :return: int or None
         """
 
-        s, v = _execute("SELECT tid FROM users WHERE id=%s", (uid,))
-        if s == 1 and len(v) == 1:
-            return v[0]["tid"]
+        rows, values = _execute("SELECT tid FROM users WHERE id=%s", (uid,))
+        if rows == 1 and len(values) == 1:
+            return values[0]["tid"]
         return None
 
     @classmethod
@@ -68,9 +69,9 @@ class BaseBotUser:
         :return: str or None
         """
 
-        s, v = _execute("SELECT name FROM users WHERE id=%s", (uid,))
-        if s == 1 and len(v) == 1:
-            return v[0]["name"]
+        rows, values = _execute("SELECT name FROM users WHERE id=%s", (uid,))
+        if rows == 1 and len(values) == 1:
+            return values[0]["name"]
         return None
 
     @classmethod
@@ -82,9 +83,9 @@ class BaseBotUser:
         :return:
         """
 
-        s, v = _execute("SELECT username FROM users WHERE id=%s", (uid,))
-        if s == 1 and len(v) == 1:
-            return v[0]["username"]
+        rows, values = _execute("SELECT username FROM users WHERE id=%s", (uid,))
+        if rows == 1 and len(values) == 1:
+            return values[0]["username"]
         return None
 
     def __eq__(self, other: typing.Any) -> bool:
@@ -125,7 +126,11 @@ class BaseBotUser:
         self._created = record["created"]
         self._accessed = record["accessed"]
 
-    def _update_record(self, column: str, value: typing.Union[str, int, bool, None]) -> typing.Union[str, int]:
+    def _update_record(
+            self,
+            column: str,
+            value: typing.Union[str, int, bool, None]
+    ) -> typing.Union[str, int]:
         """
         Update a value in the column of the current user record in the database
 
@@ -155,11 +160,12 @@ class BaseBotUser:
             (value, self._id)
         )
 
-        state, result = _execute(
+        rows, result = _execute(
             "SELECT %s, accessed FROM users WHERE tid=%s",
             (column, self._id)
         )
-        self._accessed = result[0]["accessed"]
+        if rows == 1:
+            self._accessed = result[0]["accessed"]
         return result[0][column]
 
     def _update_local(self, record: typing.Dict[str, typing.Any]) -> None:
@@ -379,9 +385,9 @@ class MateBotUser(BaseBotUser):
 
     @property
     def creditor(self):
-        r, v = _execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
-        if r == 1 and len(v) == 1:
-            return v[0]["internal"]
+        rows, values = _execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
+        if rows == 1 and len(values) == 1:
+            return values[0]["internal"]
         return None
 
     @creditor.setter
