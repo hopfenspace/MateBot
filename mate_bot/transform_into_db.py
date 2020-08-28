@@ -57,13 +57,12 @@ def main():
 
     def check_existing_database(db_name, mod):
         r, v = mod.execute("SHOW DATABASES")
-        print(r, v)
         if r == 0:
             return False
         return any(db_name in v[c].values() for c in range(len(v)))
 
     def setup_database(setup_tables_script):
-        print("\nCreating the tables based on the setup script...\n")
+        print("\nCreating the tables based on the setup script...")
         with open(setup_tables_script) as fd:
             c = fd.read()
         r = []
@@ -75,13 +74,14 @@ def main():
 
         for c in " ".join(r).split(";"):
             if c != "":
-                print("Executing:", c)
+                print("\nExecuting:", c)
                 execute(c)
 
-        print("\nCompleted table setup.")
+        print("\nCompleted table setup.\n")
 
-    def create_community_user(current_balance: int):
+    def create_community_user(current_balance: int, ts_for_insertion):
         print("\nAttempting to create a new community user...")
+
         print("What's the username of your community user?")
         username = input("Username (press Enter to skip): ")
         while username != "" and len(username) < 4:
@@ -104,31 +104,58 @@ def main():
             "name": name
         }
 
-        print("No community user was found. The following was generated:", community_user, sep = "\n")
-        print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
+        print(
+            "The following was generated:",
+            community_user,
+            "\nMake sure that this is ABSOLUTELY correct!",
+            sep = "\n"
+        )
         ask_exit()
 
         print("\nAdding community user to the database...")
-        insert(community_user, migration)
-        community_user["uid"] = execute("SELECT id FROM users WHERE tid IS NULL", (community_user["id"]))[1][0]["id"]
+        insert(community_user, ts_for_insertion)
+        community_user["uid"] = execute(
+            "SELECT id FROM users WHERE tid IS NULL",
+            (community_user["id"])
+        )[1][0]["id"]
 
         return community_user
 
-    def setup_freshly():
-        print("This feature is not yet implemented. Stay tuned.")
+    def get_community_balance():
+        print(
+            "What is the current balance of the community? This "
+            "value\nwill be used as starting value for the community "
+            "user.\nMake sure that this is correct, as the community user\n"
+            "is the only user that may start with a non-zero balance.\n"
+            "Note: The amount is measured in Cent.\n"
+        )
 
+        b = input("Current balance: ")
+        while not b.isdecimal():
+            b = input("Current balance: ")
+        return int(b)
+
+    def setup_freshly():
         import state.dbhelper
         database_name = state.dbhelper._config["database"]["db"]
         state.dbhelper._config["database"]["db"] = ""
+
         if check_existing_database(database_name, state.dbhelper):
+            print("We found a database '{}'. Attempting to delete it...".format(database_name))
             print("\nTHE EXISTING DATABASE '{}' WILL BE DELETED AND ALL ITS DATA WILL BE ERASED!".format(database_name))
-            print("Are you sure? If not, you can type EXIT to quit.")
+            print("\n\nAre you sure? If not, you can type EXIT to quit.")
             ask_exit()
+
             state.dbhelper.execute("DROP DATABASE {}".format(database_name))
+            print("Table '{}' deleted.".format(database_name))
+
         state.dbhelper.execute("CREATE DATABASE {}".format(database_name))
         state.dbhelper._config["database"]["db"] = database_name
+        print("Table '{}' created.".format(database_name))
 
-        setup_database(input("Setup script path: "))
+        setup_database(get_path("database table setup", "create_tables.sql", "create_tables.sql"))
+
+        create_community_user(get_community_balance(), datetime.datetime.now().replace(microsecond = 0))
 
     def make_reason_consume(r: str) -> str:
         return "consume: " + r
@@ -140,8 +167,6 @@ def main():
         return "send: <no description>"
 
     print(__doc__)
-
-    print("Let's go...")
 
     answer = input("\nStart with a fresh database (Y) or migrate old data (N)? ")
     while answer.upper() not in ["Y", "N"] or answer == "":
@@ -250,7 +275,7 @@ def main():
             )
             ask_exit()
 
-            community = create_community_user(zwegat)
+            community = create_community_user(zwegat, migration)
 
         else:
 
@@ -282,7 +307,7 @@ def main():
             print("\nWe detected the following community user data:")
             print(community)
         else:
-            community = create_community_user(zwegat)
+            community = create_community_user(zwegat, migration)
 
     def create_users_from_state(current_state):
         print("\nCreating new records in the database...")
