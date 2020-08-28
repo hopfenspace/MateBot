@@ -178,6 +178,7 @@ class TransactionLog:
             self._valid = False
         if len(self._log) == 0:
             self._log = []
+        self._valid = self._valid and self.validate()
 
     def to_string(self) -> str:
         """
@@ -232,14 +233,53 @@ class TransactionLog:
             result[-1]["registered"] = int(result[-1]["registered"].timestamp())
         return result
 
+    def validate(self, start: int = 0) -> typing.Optional[bool]:
+        """
+        Validate the history and verify integrity (full history since start of the logs)
+
+        This method is only useful for full history checks and therefore
+        returns None when the mode was set to a non-zero value.
+
+        :param start: balance of the user when it was first created (should be zero)
+        :type start: int
+        :return: history's validity
+        """
+
+        if self._mode != 0:
+            return None
+
+        current = user.MateBotUser(self._uid).balance
+
+        for entry in self._log:
+            if entry["receiver"] == self._uid:
+                start += entry["amount"]
+            elif entry["sender"] == self._uid:
+                start -= entry["amount"]
+            else:
+                raise RuntimeError
+
+        return start == current
+
     @property
     def uid(self) -> int:
+        """
+        Get the internal user ID for which the log was created
+        """
+
         return self._uid
 
     @property
     def valid(self) -> bool:
+        """
+        Get the valid flag which is set when the transaction log seems to be complete and correct
+        """
+
         return self._valid
 
     @property
     def history(self) -> typing.List[typing.Dict[str, typing.Any]]:
+        """
+        Get the raw data of the user's transaction history
+        """
+
         return self._log
