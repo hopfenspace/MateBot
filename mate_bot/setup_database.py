@@ -61,6 +61,47 @@ def main():
             (user_data["id"], user_data["nick"], user_data["name"], ts_migration)
         )
 
+    def detect_community():
+        print("\nDetecting community user automatically...")
+        r, v = execute("SELECT * FROM users WHERE tid IS NULL")
+        if r == 0:
+            print("No community user found by convention.")
+            return None
+        elif r > 0:
+            print(
+                "More than one community user found.\nERROR: Critical! There must never be more than "
+                "one virtual user!\nPlease delete all virtual users and start with a fresh database."
+            )
+            exit(1)
+        return v[0]
+
+    def find(id_, s):
+        for en in s:
+            if en["id"] == id_:
+                return en
+
+    def get_first_ts_and_calc(current_state, transaction_log_path):
+        first = None
+        with open(transaction_log_path) as fd:
+            for line in fd.readlines():
+                entry = json.loads(line)
+                user = find(entry["user"], current_state)
+
+                if not entry["reason"].startswith("communism"):
+                    user["calc"] += entry["diff"]
+                if first is None:
+                    first = entry["timestamp"]
+                elif entry["timestamp"] < first:
+                    first = entry["timestamp"]
+
+        return first
+
+    def create_users_from_state(current_state, migration):
+        print("\nCreating new records in the database...")
+        for u in current_state:
+            r, _ = insert(u, migration)
+            print("User {} was created: {}".format(u["name"], r == 1))
+
     def check_existing_database(db_name, mod):
         r, v = mod.execute("SHOW DATABASES")
         if r == 0:
@@ -85,7 +126,7 @@ def main():
 
         print("\nCompleted table setup.\n")
 
-    def create_community_user(current_balance: int, ts_for_insertion):
+    def create_community_user(current_balance: int, ts_for_insertion: datetime.datetime):
         print("\nAttempting to create a new community user...")
 
         print("What's the username of your community user?")
@@ -162,7 +203,73 @@ def main():
 
         setup_database(get_path("database table setup", "create_tables.sql", "create_tables.sql"))
 
-        create_community_user(get_community_balance(), datetime.datetime.now().replace(microsecond = 0))
+    def create_user_objects(current_state):
+        print("\nRetrieving internal user IDs and creating User objects...")
+        for u in current_state:
+            s, values = execute("SELECT id FROM users WHERE tid=%s", (u["id"],))
+            if s == 1:
+                u["uid"] = values[0]["id"]
+
+            u["u"] = MateBotUser(u["uid"])
+            print("User {} has internal ID {} now.".format(u["name"], u["uid"]))
+
+    def transform_user_record(record, balance = None):
+        user = {
+            "uid": record[0]["id"],
+            "id": record[0]["tid"],
+            "nick": record[0]["username"],
+            "name": record[0]["name"]
+        }
+
+        if balance is None:
+            user["balance"] = record[0]["balance"]
+        else:
+            user["balance"] = balance
+        return user
+
+    def verify_community_user_data(community_balance, migration):
+        rows, data = execute("SELECT * FROM users")
+        print("\nWe found {} users in the database.".format(len(data)))
+
+        if rows == 1 and len(data) == 1:
+            if data[0]["tid"] is not None:
+                print(
+                    "The only user found is not the community user. By convention, "
+                    "the community user has no Telegram ID (NULL)!"
+                )
+                ask_exit()
+
+                community = create_community_user(community_balance, migration)
+
+            else:
+
+                if community_balance != data[0]["balance"]:
+                    print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
+                    print("This seems to be wrong! Please check your config.")
+                    ask_exit()
+
+                community = transform_user_record(data[0], community_balance)
+
+                print("Selecting the following community user:", community, sep = "\n")
+                print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
+                ask_exit()
+
+        else:
+            print("Make sure that you start with a fresh database.")
+            print("Only the community user should exist!")
+            print("Doing otherwise leads to unknown behavior!\n")
+            ask_exit()
+
+            community = detect_community()
+            if community is not None:
+                print("\nWe detected the following community user data:")
+                community = transform_user_record(community)
+                print(community)
+
+            else:
+                community = create_community_user(community_balance, migration)
+
+        return community
 
     def make_reason_consume(r: str) -> str:
         return "consume: " + r
@@ -173,210 +280,12 @@ def main():
     def make_reason_send() -> str:
         return "send: <no description>"
 
-    def migrate_old_data(setup_completed: bool):
-        print("\nMigrating old data...\n")
-        community_balance = get_community_balance()
-
-        config_path = get_path("config", "config.json", "config.json")
-        state_path = get_path("state", "state.json", "state.json")
-        log_path = get_path("transaction log", "transactions.log", "transactions.log")
-
-    def start_new():
-        setup_freshly()
-
-        com_user = create_community_user(
-            get_community_balance(),
-            datetime.datetime.now().replace(microsecond = 0)
-        )
-        print("You have just created the community user:", com_user, "", sep = "\n")
-
-        if not ask_yes_no("Do you want to migrate from a previous data set (Y) or exit (N)? "):
-            print("Finished setup.")
-            exit(0)
-
-        migrate_old_data(True)
-
-    print(__doc__)
-
-    print("Please make sure that your configuration was correctly set up before proceeding.")
-
-    if ask_yes_no("Start with a fresh database (Y) or only migrate old data (N)? "):
-        start_new()
-
-    else:
-        print(
-            "\nNote: It is highly recommended to start with a fresh database.\n"
-            "You can still import your old data afterwards. Do you really want\n"
-            "to use an existing database (on your own risk)?\n"
-        )
-
-        if not ask_yes_no("Are you sure (Y) that you don't want to run the setup (N)? "):
-            start_new()
-
-        else:
-            migrate_old_data(False)
-
-    with open(state_path) as f:
-        state = json.load(f)
-    state = [state[k] for k in state]
-    for e in state:
-        e.update({"calc": 0})
-
-    print("\nThere are {} users in the state file:".format(len(state)))
-    print(
-        *["Telegram ID {id}, Balance {balance}, Name {name}, Nick {nick}".format(**e) for e in state],
-        sep = "\n"
-    )
-
-    print("\nYou entered {} as community user balance.".format(zwegat))
-    total = sum(u["balance"] for u in state)
-    print("The sum of all users' balances is currently {}.".format(total))
-    if total != zwegat:
-        print("Something seems to be wrong here! Please verify the data sets!")
-        ask_exit()
-        print("\nAre you really sure?")
-        ask_exit()
-        print("If you say so... We now use the specified community balance value.")
-
-    def find(id_, s):
-        for en in s:
-            if en["id"] == id_:
-                return en
-
-    def get_first_ts_and_calc(current_state):
-        first = None
-        with open(log_path) as fd:
-            for line in fd.readlines():
-                entry = json.loads(line)
-                user = find(entry["user"], current_state)
-
-                if not entry["reason"].startswith("communism"):
-                    user["calc"] += entry["diff"]
-                if first is None:
-                    first = entry["timestamp"]
-                elif entry["timestamp"] < first:
-                    first = entry["timestamp"]
-
-        return first
-
-    print("\nCalculating the initial balance...")
-
-    first_timestamp = get_first_ts_and_calc(state)
-
-    def show_state_overview(current_state):
-        for u in current_state:
-            u["init"] = u["balance"] - u["calc"]
-            print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
-
-    print("Completed. Overview over the init values:")
-    show_state_overview(state)
-    print("\nPlease verify that everything is correct.")
-    ask_exit()
-
-    first_ts = datetime.datetime.fromtimestamp(int(first_timestamp))
-    migration = first_ts.replace(hour = 0, minute = 0, second = 0)
-    print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
-
-    rows, data = execute("SELECT * FROM users")
-    print("\nWe found {} users in the database.".format(len(data)))
-
-    def detect_community():
-        print("\nDetecting community user automatically...")
-        r, v = execute("SELECT * FROM users WHERE tid IS NULL")
-        if r == 0:
-            print("No community user found by convention.")
-            return None
-        elif r > 0:
-            print(
-                "More than one community user found.\nERROR: Critical! There must never be more than "
-                "one virtual user!\nPlease delete all virtual users and start with a fresh database."
-            )
-            exit(1)
-        return v[0]
-
-    if rows == 1 and len(data) == 1:
-        if data[0]["tid"] is not None:
-            print(
-                "The only user found is not the community user. By convention, "
-                "the community user has no Telegram ID (NULL)!"
-            )
-            ask_exit()
-
-            community = create_community_user(zwegat, migration)
-
-        else:
-
-            if zwegat != data[0]["balance"]:
-                print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
-                print("This seems to be wrong! Please check your config.")
-                ask_exit()
-
-            community = {
-                "balance": zwegat,
-                "uid": data[0]["id"],
-                "id": data[0]["tid"],
-                "nick": data[0]["username"],
-                "name": data[0]["name"]
-            }
-
-            print("Selecting the following community user:", community, sep = "\n")
-            print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
-            ask_exit()
-
-    else:
-        print("Make sure that you start with a fresh database.")
-        print("Only the community user should exist!")
-        print("Doing otherwise leads to unknown behavior!\n")
-        ask_exit()
-
-        community = detect_community()
-        if community is not None:
-            print("\nWe detected the following community user data:")
-            print(community)
-        else:
-            community = create_community_user(zwegat, migration)
-
-    def create_users_from_state(current_state):
-        print("\nCreating new records in the database...")
-        for u in current_state:
-            r, _ = insert(u, migration)
-            print("User {} was created: {}".format(u["name"], r == 1))
-
-    create_users_from_state(state)
-
-    def create_user_objects(current_state):
-        print("\nRetrieving internal user IDs and creating User objects...")
-        community["u"] = CommunityUser()
-        for u in current_state:
-            s, values = execute("SELECT id FROM users WHERE tid=%s", (u["id"],))
-            if s == 1:
-                u["uid"] = values[0]["id"]
-
-            u["u"] = MateBotUser(u["uid"])
-            print("User {} has internal ID {} now.".format(u["name"], u["uid"]))
-
-    create_user_objects(state)
-
-    def fix_init_balances():
-        print("\nCommitting initial transactions (using reason 'data migration')...")
-        for user in state:
-            if user["init"] > 0:
-                t = MigratedTransaction(community["u"], user["u"], abs(user["init"]), "data migration")
-                t.commit()
-                t.fix(migration)
-            elif user["init"] < 0:
-                t = MigratedTransaction(user["u"], community["u"], abs(user["init"]), "data migration")
-                t.commit()
-                t.fix(migration)
-
-    fix_init_balances()
-
-    def migrate_transactions(current_state):
+    def migrate_transactions(current_state, transaction_log):
         print("\nTransferring the transactions from the log file into the database...")
         sent = None
         failed = []
         communisms = []
-        with open(log_path) as fd:
+        with open(transaction_log) as fd:
             for l in fd.readlines():
                 tr = json.loads(l)
 
@@ -384,14 +293,14 @@ def main():
                 if tr["reason"] in ["drink", "ice", "water", "pizza"]:
                     t = MigratedTransaction(
                         find(tr["user"], current_state),
-                        community["u"],
+                        CommunityUser(),
                         -tr["diff"],
                         make_reason_consume(tr["reason"])
                     )
 
                 elif tr["reason"].startswith("pay"):
                     t = MigratedTransaction(
-                        community["u"],
+                        CommunityUser(),
                         find(tr["user"], current_state),
                         tr["diff"],
                         make_reason_pay(tr["reason"])
@@ -455,14 +364,104 @@ def main():
         if len(communisms) > 0:
             print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
 
-    migrate_transactions(state)
+    def fix_init_balances(current_state, migration):
+        print("\nCommitting initial transactions (using reason 'data migration')...")
+        for user in current_state:
+            if user["init"] > 0:
+                t = MigratedTransaction(CommunityUser(), user["u"], abs(user["init"]), "data migration")
+                t.commit()
+                t.fix(migration)
+            elif user["init"] < 0:
+                t = MigratedTransaction(user["u"], CommunityUser(), abs(user["init"]), "data migration")
+                t.commit()
+                t.fix(migration)
 
+    def migrate_old_data():
+        print("\nMigrating old data...\n")
+        community_balance = get_community_balance()
 
-    if len(failed) > 0:
-        print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
+        state_path = get_path("state", "state.json", "state.json")
+        log_path = get_path("transaction log", "transactions.log", "transactions.log")
 
-    if len(communisms) > 0:
-        print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
+        with open(state_path) as f:
+            state = json.load(f)
+        state = [state[k] for k in state]
+        for e in state:
+            e.update({"calc": 0})
+
+        print("\nThere are {} users in the state file:".format(len(state)))
+        print(
+            *["Telegram ID {id}, Balance {balance}, Name {name}, Nick {nick}".format(**e) for e in state],
+            sep = "\n"
+        )
+
+        print("\nYou entered {} as community user balance.".format(community_balance))
+        total = sum(u["balance"] for u in state)
+        print("The sum of all users' balances is currently {}.".format(total))
+        if total != community_balance:
+            print("Something seems to be wrong here! Please verify the data sets!")
+            ask_exit()
+            print("\nAre you really sure?")
+            ask_exit()
+            print("If you say so... We now use the specified community balance value.")
+
+        print("\nCalculating the initial balance...")
+        first_timestamp = get_first_ts_and_calc(state, log_path)
+
+        def show_state_overview(current_state):
+            for u in current_state:
+                u["init"] = u["balance"] - u["calc"]
+                print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
+
+        print("Completed. Overview over the init values:")
+        show_state_overview(state)
+        print("\nPlease verify that everything is correct.")
+        ask_exit()
+
+        first_ts = datetime.datetime.fromtimestamp(int(first_timestamp))
+        migration = first_ts.replace(hour = 0, minute = 0, second = 0)
+        print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
+
+        verify_community_user_data(community_balance, migration)
+        create_users_from_state(state, migration)
+        create_user_objects(state)
+        fix_init_balances(state, migration)
+        migrate_transactions(state, log_path)
+
+    def start_new():
+        setup_freshly()
+
+        com_user = create_community_user(
+            get_community_balance(),
+            datetime.datetime.now().replace(microsecond = 0)
+        )
+        print("You have just created the community user:", com_user, "", sep = "\n")
+
+        if not ask_yes_no("Do you want to migrate from a previous data set (Y) or exit (N)? "):
+            print("Finished setup.")
+            exit(0)
+
+        migrate_old_data()
+
+    print(__doc__)
+
+    print("Please make sure that your configuration was correctly set up before proceeding.")
+
+    if ask_yes_no("Start with a fresh database (Y) or only migrate old data (N)? "):
+        start_new()
+
+    else:
+        print(
+            "\nNote: It is highly recommended to start with a fresh database.\n"
+            "You can still import your old data afterwards. Do you really want\n"
+            "to use an existing database (on your own risk)?\n"
+        )
+
+        if not ask_yes_no("Are you sure (Y) that you don't want to run the setup (N)? "):
+            start_new()
+
+        else:
+            migrate_old_data()
 
 
 if __name__ == "__main__":
