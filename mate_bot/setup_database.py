@@ -379,6 +379,17 @@ def main():
                 t.fix(migration)
         print("Completed initial balance fix.")
 
+    def reset_community_balance(balance):
+        print(
+            "\nThe database stores a community's balance of {} for now.".format(
+                execute("SELECT balance FROM users WHERE id=%s", (CommunityUser().uid,))[1][0]["balance"]
+            )
+        )
+
+        print("We could reset this value to {} if you want.".format(balance))
+        if ask_yes_no("Reset the community user's balance (Y) or let it untouched (N)? "):
+            execute("UPDATE users SET balance=%s WHERE id=%s", (balance, CommunityUser().uid))
+
     def migrate_old_data(community_balance: int = None):
         print("\nMigrating old data...\n")
         if community_balance is None:
@@ -404,10 +415,11 @@ def main():
         print("The sum of all users' balances is currently {}.".format(total))
         if total != community_balance:
             print("Something seems to be wrong here! Please verify the data sets!")
-            ask_exit()
-            print("\nAre you really sure?")
-            ask_exit()
-            print("If you say so... We now use the specified community balance value.")
+            if ask_yes_no("Set the community user's balance to {} (Y) or not (N)? ".format(total)):
+                community_balance = total
+            else:
+                print("This might be dangerous, but continuing with the value {}...".format(community_balance))
+                ask_exit()
 
         print("\nCalculating the initial balance...")
         first_timestamp = get_first_ts_and_calc(state, log_path)
@@ -431,6 +443,9 @@ def main():
         create_user_objects(state)
         fix_init_balances(state, migration)
         migrate_transactions(state, log_path)
+        reset_community_balance(community_balance)
+
+        print("\nFinished data migration successfully.")
 
     def start_new():
         setup_freshly()
