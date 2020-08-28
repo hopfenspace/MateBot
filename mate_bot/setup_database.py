@@ -124,6 +124,7 @@ def main():
             "SELECT id FROM users WHERE tid IS NULL",
             (community_user["id"])
         )[1][0]["id"]
+        print("Created community user.")
 
         return community_user
 
@@ -172,6 +173,29 @@ def main():
     def make_reason_send() -> str:
         return "send: <no description>"
 
+    def migrate_old_data(setup_completed: bool):
+        print("\nMigrating old data...\n")
+        community_balance = get_community_balance()
+
+        config_path = get_path("config", "config.json", "config.json")
+        state_path = get_path("state", "state.json", "state.json")
+        log_path = get_path("transaction log", "transactions.log", "transactions.log")
+
+    def start_new():
+        setup_freshly()
+
+        com_user = create_community_user(
+            get_community_balance(),
+            datetime.datetime.now().replace(microsecond = 0)
+        )
+        print("You have just created the community user:", com_user, "", sep = "\n")
+
+        if not ask_yes_no("Do you want to migrate from a previous data set (Y) or exit (N)? "):
+            print("Finished setup.")
+            exit(0)
+
+        migrate_old_data(True)
+
     print(__doc__)
 
     print("Please make sure that your configuration was correctly set up before proceeding.")
@@ -186,15 +210,11 @@ def main():
             "to use an existing database (on your own risk)?\n"
         )
 
-    config_path = get_path("config", "config.json", "config.json")
+        if not ask_yes_no("Are you sure (Y) that you don't want to run the setup (N)? "):
+            start_new()
 
-    state_path = get_path("state", "state.json", "state.json")
-
-    log_path = get_path("transaction log", "transactions.log", "transactions.log")
-
-    print("We need to know the current balance of the community user.")
-    print("Make sure you exactly know this value. If you don't, type EXIT.")
-    zwegat = int(ask_exit("Enter the community balance in Cent: "))
+        else:
+            migrate_old_data(False)
 
     with open(state_path) as f:
         state = json.load(f)
