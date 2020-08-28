@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-"""Script to transform the JSON files into database records
+"""Script to setup the database layout for the MateBot and migrate previous data
 
 Note that this script should be run exactly once, when
 the data should be moved to a productive environment.
 The Telegram bot should be powered off during this
 procedure. Make sure that you have the correct version
-of the program installed so full support for MySQL
+of the program installed, so full support for MySQL
 databases is given in advance.
 
 This is an interactive script.
@@ -41,6 +41,12 @@ def main():
             else:
                 default_path = input("Path to the {} file: ".format(file_description))
         return default_path
+
+    def ask_yes_no(prompt) -> bool:
+        answer = input(prompt)
+        while answer.upper() not in ["Y", "N"] or answer == "":
+            answer = input(prompt)
+        return answer.upper() == "Y"
 
     def ask_exit(text = "Press Enter to continue or type EXIT to quit: "):
         v = input(text)
@@ -168,16 +174,17 @@ def main():
 
     print(__doc__)
 
-    answer = input("\nStart with a fresh database (Y) or migrate old data (N)? ")
-    while answer.upper() not in ["Y", "N"] or answer == "":
-        answer = input("\nStart with a fresh database (Y) or migrate old data (N)? ")
+    print("Please make sure that your configuration was correctly set up before proceeding.")
 
-    if answer.upper() == "Y":
-        setup_freshly()
-        exit(0)
+    if ask_yes_no("Start with a fresh database (Y) or only migrate old data (N)? "):
+        start_new()
 
-    elif answer.upper() == "N":
-        print("Okay, going on ...")
+    else:
+        print(
+            "\nNote: It is highly recommended to start with a fresh database.\n"
+            "You can still import your old data afterwards. Do you really want\n"
+            "to use an existing database (on your own risk)?\n"
+        )
 
     config_path = get_path("config", "config.json", "config.json")
 
