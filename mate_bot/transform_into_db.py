@@ -34,6 +34,14 @@ def main():
                     (timestamp, self._id,)
                 )
 
+    def get_path(file_description, file_name = "", default_path = ""):
+        while not os.path.exists(default_path):
+            if file_name != "":
+                default_path = input("Path to the {} file (named {}): ".format(file_description, file_name))
+            else:
+                default_path = input("Path to the {} file: ".format(file_description))
+        return default_path
+
     def ask_exit(text = "Press Enter to continue or type EXIT to quit: "):
         v = input(text)
         if "EXIT" in v.upper() or "QUIT" in v.upper():
@@ -126,17 +134,11 @@ def main():
     elif answer.upper() == "N":
         print("Okay, going on ...")
 
-    config_path = "../config.json"
-    while not os.path.exists(config_path):
-        config_path = input("Path to the config JSON file: ")
+    config_path = get_path("config", "config.json", "config.json")
 
-    state_path = "../data/state.json"
-    while not os.path.exists(state_path):
-        state_path = input("Path to the state JSON file: ")
+    state_path = get_path("state", "state.json", "state.json")
 
-    log_path = "../data/transactions.log"
-    while not os.path.exists(log_path):
-        log_path = input("Path to the transactions log file: ")
+    log_path = get_path("transaction log", "transactions.log", "transactions.log")
 
     print("We need to know the current balance of the community user.")
     print("Make sure you exactly know this value. If you don't, type EXIT.")
