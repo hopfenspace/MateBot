@@ -34,7 +34,7 @@ def main():
                     (timestamp, self._id,)
                 )
 
-    def askExit(text = "Press Enter to continue or type EXIT to quit: "):
+    def ask_exit(text = "Press Enter to continue or type EXIT to quit: "):
         v = input(text)
         if "EXIT" in v.upper() or "QUIT" in v.upper():
             print("Exiting.")
@@ -73,7 +73,7 @@ def main():
 
         print("No community user was found. The following was generated:", community_user, sep = "\n")
         print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise may break the data!\n")
-        askExit()
+        ask_exit()
 
         print("\nAdding community user to the database...")
         insert(community_user, migration)
@@ -84,13 +84,13 @@ def main():
     def setup_freshly():
         print("This feature is not yet implemented. Stay tuned.")
 
-    def makeConsumeReason(r: str) -> str:
+    def make_reason_consume(r: str) -> str:
         return "consume: " + r
 
-    def makePayReason(r: str) -> str:
+    def make_reason_pay(r: str) -> str:
         return r
 
-    def makeSendReason(r: str) -> str:
+    def make_reason_send() -> str:
         return "send: <no description>"
 
     print(__doc__)
@@ -122,7 +122,7 @@ def main():
 
     print("We need to know the current balance of the community user.")
     print("Make sure you exactly know this value. If you don't, type EXIT.")
-    zwegat = int(askExit("Enter the community balance in Cent: "))
+    zwegat = int(ask_exit("Enter the community balance in Cent: "))
 
     with open(state_path) as f:
         state = json.load(f)
@@ -141,9 +141,9 @@ def main():
     print("The sum of all users' balances is currently {}.".format(total))
     if total != zwegat:
         print("Something seems to be wrong here! Please verify the data sets!")
-        askExit()
+        ask_exit()
         print("\nAre you really sure?")
-        askExit()
+        ask_exit()
         print("If you say so... We now use the specified community balance value.")
 
     def find(id_, s):
@@ -153,8 +153,8 @@ def main():
 
     def get_first_ts_and_calc(current_state):
         first = None
-        with open(log_path) as f:
-            for line in f.readlines():
+        with open(log_path) as fd:
+            for line in fd.readlines():
                 entry = json.loads(line)
                 user = find(entry["user"], current_state)
 
@@ -179,7 +179,7 @@ def main():
     print("Completed. Overview over the init values:")
     show_state_overview(state)
     print("\nPlease verify that everything is correct.")
-    askExit()
+    ask_exit()
 
     first_ts = datetime.datetime.fromtimestamp(int(first_timestamp))
     migration = first_ts.replace(hour = 0, minute = 0, second = 0)
@@ -208,7 +208,7 @@ def main():
                 "The only user found is not the community user. By convention, "
                 "the community user has no Telegram ID (NULL)!"
             )
-            askExit()
+            ask_exit()
 
             community = create_community_user(zwegat)
 
@@ -217,7 +217,7 @@ def main():
             if zwegat != data[0]["balance"]:
                 print("The balance of the community user in the database is {}.".format(data[0]["balance"]))
                 print("This seems to be wrong! Please check your config.")
-                askExit()
+                ask_exit()
 
             community = {
                 "balance": zwegat,
@@ -229,13 +229,13 @@ def main():
 
             print("Selecting the following community user:", community, sep = "\n")
             print("\nMake sure that this is *ABSOLUTELY* correct. Doing otherwise will break the data!\n")
-            askExit()
+            ask_exit()
 
     else:
         print("Make sure that you start with a fresh database.")
         print("Only the community user should exist!")
         print("Doing otherwise leads to unknown behavior!\n")
-        askExit()
+        ask_exit()
 
         community = detect_community()
         if community is not None:
@@ -279,7 +279,7 @@ def main():
 
     fix_init_balances()
 
-    def migrate_transactions():
+    def migrate_transactions(current_state):
         print("\nTransferring the transactions from the log file into the database...")
         sent = None
         failed = []
@@ -291,18 +291,18 @@ def main():
                 t = None
                 if tr["reason"] in ["drink", "ice", "water", "pizza"]:
                     t = MigratedTransaction(
-                        find(tr["user"]),
+                        find(tr["user"], current_state),
                         community["u"],
                         -tr["diff"],
-                        makeConsumeReason(tr["reason"])
+                        make_reason_consume(tr["reason"])
                     )
 
                 elif tr["reason"].startswith("pay"):
                     t = MigratedTransaction(
                         community["u"],
-                        find(tr["user"]),
+                        find(tr["user"], current_state),
                         tr["diff"],
-                        makePayReason(tr["reason"])
+                        make_reason_pay(tr["reason"])
                     )
 
                 elif tr["reason"].startswith("sent"):
@@ -310,14 +310,14 @@ def main():
                         print("Warning! The previous sending transaction was incomplete!")
                         print(sent)
                         print(tr)
-                        askExit()
+                        ask_exit()
                     sent = tr
 
                 elif tr["reason"].startswith("received"):
                     if sent is None:
                         print("\nError! There is no known sending transaction!")
                         print(tr)
-                        askExit()
+                        ask_exit()
 
                     if sent["user"] == tr["user"]:
                         print("Warning! Skipping transaction with same sender and receiver:")
@@ -330,13 +330,13 @@ def main():
                         print("\nError! The value of the sending and receiving transactions differ!")
                         print(sent)
                         print(tr)
-                        askExit()
+                        ask_exit()
 
                     t = MigratedTransaction(
-                        find(sent["user"])["u"],
-                        find(tr["user"])["u"],
+                        find(sent["user"], current_state)["u"],
+                        find(tr["user"], current_state)["u"],
                         abs(tr["diff"]),
-                        makeSendReason(tr["reason"])
+                        make_reason_send()
                     )
 
                     sent = None
@@ -351,7 +351,7 @@ def main():
                         json.dumps(tr, indent = 4, sort_keys = True),
                         sep = "\n"
                     )
-                    askExit()
+                    ask_exit()
 
                 if t is not None:
                     t.commit()
@@ -363,7 +363,7 @@ def main():
         if len(communisms) > 0:
             print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
 
-    migrate_transactions()
+    migrate_transactions(state)
 
 
     if len(failed) > 0:
