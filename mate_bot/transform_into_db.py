@@ -265,83 +265,92 @@ def main():
             t.commit()
             t.fix(migration)
 
-    print("\nTransferring the transactions from the log file into the database...")
-    sent = None
-    failed = []
-    communisms = []
-    with open(log_path) as f:
-        for line in f.readlines():
-            entry = json.loads(line)
-            user = find(entry["user"])
+    def migrate_transactions():
+        print("\nTransferring the transactions from the log file into the database...")
+        sent = None
+        failed = []
+        communisms = []
+        with open(log_path) as fd:
+            for l in fd.readlines():
+                tr = json.loads(l)
 
-            t = None
-            if entry["reason"] in ["drink", "ice", "water", "pizza"]:
-                t = MigratedTransaction(
-                    user["u"],
-                    community["u"],
-                    -entry["diff"],
-                    makeConsumeReason(entry["reason"])
-                )
+                t = None
+                if tr["reason"] in ["drink", "ice", "water", "pizza"]:
+                    t = MigratedTransaction(
+                        find(tr["user"]),
+                        community["u"],
+                        -tr["diff"],
+                        makeConsumeReason(tr["reason"])
+                    )
 
-            elif entry["reason"].startswith("pay"):
-                t = MigratedTransaction(
-                    community["u"],
-                    user["u"],
-                    entry["diff"],
-                    makePayReason(entry["reason"])
-                )
+                elif tr["reason"].startswith("pay"):
+                    t = MigratedTransaction(
+                        community["u"],
+                        find(tr["user"]),
+                        tr["diff"],
+                        makePayReason(tr["reason"])
+                    )
 
-            elif entry["reason"].startswith("sent"):
-                if sent is not None:
-                    print("Warning! The previous sending transaction was incomplete!")
-                    print(sent)
-                    print(entry)
-                    askExit()
-                sent = entry
+                elif tr["reason"].startswith("sent"):
+                    if sent is not None:
+                        print("Warning! The previous sending transaction was incomplete!")
+                        print(sent)
+                        print(tr)
+                        askExit()
+                    sent = tr
 
-            elif entry["reason"].startswith("received"):
-                if sent is None:
-                    print("\nError! There is no known sending transaction!")
-                    print(entry)
-                    askExit()
+                elif tr["reason"].startswith("received"):
+                    if sent is None:
+                        print("\nError! There is no known sending transaction!")
+                        print(tr)
+                        askExit()
 
-                if sent["user"] == entry["user"]:
-                    print("Warning! Skipping transaction with same sender and receiver:")
-                    print(sent)
-                    print(entry)
+                    if sent["user"] == tr["user"]:
+                        print("Warning! Skipping transaction with same sender and receiver:")
+                        print(sent)
+                        print(tr)
+                        sent = None
+                        continue
+
+                    if sent["diff"] != -tr["diff"]:
+                        print("\nError! The value of the sending and receiving transactions differ!")
+                        print(sent)
+                        print(tr)
+                        askExit()
+
+                    t = MigratedTransaction(
+                        find(sent["user"])["u"],
+                        find(tr["user"])["u"],
+                        abs(tr["diff"]),
+                        makeSendReason(tr["reason"])
+                    )
+
                     sent = None
-                    continue
 
-                if sent["diff"] != -entry["diff"]:
-                    print("\nError! The value of the sending and receiving transactions differ!")
-                    print(sent)
-                    print(entry)
+                elif tr["reason"].startswith("communism"):
+                    communisms.append(tr)
+
+                else:
+                    failed.append(tr)
+                    print(
+                        "\nError (not loaded into database):",
+                        json.dumps(tr, indent = 4, sort_keys = True),
+                        sep = "\n"
+                    )
                     askExit()
 
-                t = MigratedTransaction(
-                    find(sent["user"])["u"],
-                    find(entry["user"])["u"],
-                    abs(entry["diff"]),
-                    makeSendReason(entry["reason"])
-                )
+                if t is not None:
+                    t.commit()
+                    t.fix(datetime.datetime.fromtimestamp(int(tr["timestamp"])))
 
-                sent = None
+        if len(failed) > 0:
+            print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
 
-            elif entry["reason"].startswith("communism"):
-                communisms.append(entry)
+        if len(communisms) > 0:
+            print("\nThere are {} entries regarding communisms. We ignore them.".format(len(communisms)))
 
-            else:
-                failed.append(entry)
-                print(
-                    "\nError (not loaded into database):",
-                    json.dumps(entry, indent = 4, sort_keys = True),
-                    sep = "\n"
-                )
-                askExit()
+    migrate_transactions()
 
-            if t is not None:
-                t.commit()
-                t.fix(datetime.datetime.fromtimestamp(int(entry["timestamp"])))
 
     if len(failed) > 0:
         print("\nThere were {} entries that could not be loaded in the database automatically.".format(len(failed)))
