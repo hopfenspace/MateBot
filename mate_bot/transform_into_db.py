@@ -47,6 +47,24 @@ def main():
             (user_data["id"], user_data["nick"], user_data["name"], ts_migration)
         )
 
+    def setup_database(setup_tables_script):
+        print("\nCreating the tables based on the setup script...\n")
+        with open(setup_tables_script) as fd:
+            c = fd.read()
+        r = []
+
+        for i in c.split("\n"):
+            if i == "" or i.strip().startswith("--"):
+                continue
+            r.append(i.strip())
+
+        for c in " ".join(r).split(";"):
+            if c != "":
+                print("Executing:", c)
+                execute(c)
+
+        print("\nCompleted table setup.")
+
     def create_community_user(current_balance: int):
         print("\nAttempting to create a new community user...")
         print("What's the username of your community user?")
