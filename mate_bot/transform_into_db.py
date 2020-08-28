@@ -24,7 +24,7 @@ def main():
 
     from state.dbhelper import execute
     from state.transactions import Transaction
-    from state.user import CommunityUser
+    from state.user import CommunityUser, MateBotUser
 
     class MigratedTransaction(Transaction):
         def fix(self, timestamp: datetime.datetime):
@@ -146,34 +146,42 @@ def main():
         askExit()
         print("If you say so... We now use the specified community balance value.")
 
-    print("\nCalculating the initial balance...")
-
-    def find(id_):
-        for en in state:
+    def find(id_, s):
+        for en in s:
             if en["id"] == id_:
                 return en
 
-    first = None
-    with open(log_path) as f:
-        for line in f.readlines():
-            entry = json.loads(line)
-            user = find(entry["user"])
-            if not entry["reason"].startswith("communism"):
-                user["calc"] += entry["diff"]
-            if first is None:
-                first = entry["timestamp"]
-            elif entry["timestamp"] < first:
-                first = entry["timestamp"]
+    def get_first_ts_and_calc(current_state):
+        first = None
+        with open(log_path) as f:
+            for line in f.readlines():
+                entry = json.loads(line)
+                user = find(entry["user"], current_state)
+
+                if not entry["reason"].startswith("communism"):
+                    user["calc"] += entry["diff"]
+                if first is None:
+                    first = entry["timestamp"]
+                elif entry["timestamp"] < first:
+                    first = entry["timestamp"]
+
+        return first
+
+    print("\nCalculating the initial balance...")
+
+    first_timestamp = get_first_ts_and_calc(state)
+
+    def show_state_overview(current_state):
+        for u in current_state:
+            u["init"] = u["balance"] - u["calc"]
+            print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
 
     print("Completed. Overview over the init values:")
-    for u in state:
-        u["init"] = u["balance"] - u["calc"]
-        print("Name {name}, Balance {balance}, Calc {calc}, Init {init}".format(**u))
-
+    show_state_overview(state)
     print("\nPlease verify that everything is correct.")
     askExit()
 
-    first_ts = datetime.datetime.fromtimestamp(int(first))
+    first_ts = datetime.datetime.fromtimestamp(int(first_timestamp))
     migration = first_ts.replace(hour = 0, minute = 0, second = 0)
     print("\nFirst timestamp: '{}'\nWe use '{}' as data migration timestamp now.".format(first_ts, migration))
 
@@ -236,34 +244,40 @@ def main():
         else:
             community = create_community_user(zwegat)
 
-    print("\nCreating new records in the database...")
-    for user in state:
-        s, _ = insert(user, migration)
-        print("User {} was created: {}".format(user["name"], s == 1))
+    def create_users_from_state(current_state):
+        print("\nCreating new records in the database...")
+        for u in current_state:
+            r, _ = insert(u, migration)
+            print("User {} was created: {}".format(u["name"], r == 1))
 
-    print("\nRetrieving internal user IDs and creating User objects...")
-    community["u"] = CommunityUser()
-    users = [community["u"]]
-    for user in state:
-        s, values = execute("SELECT id FROM users WHERE tid=%s", (user["id"],))
-        if s == 1:
-            user["uid"] = values[0]["id"]
+    create_users_from_state(state)
 
-        # CommunityUser objects don't need Telegram User objects, therefore no MateBotUser
-        user["u"] = CommunityUser()
-        users.append(user["u"])
-        print("User {} has internal ID {} now.".format(user["name"], user["uid"]))
+    def create_user_objects(current_state):
+        print("\nRetrieving internal user IDs and creating User objects...")
+        community["u"] = CommunityUser()
+        for u in current_state:
+            s, values = execute("SELECT id FROM users WHERE tid=%s", (u["id"],))
+            if s == 1:
+                u["uid"] = values[0]["id"]
 
-    print("\nCommitting initial transactions (using reason 'data migration')...")
-    for user in state:
-        if user["init"] > 0:
-            t = MigratedTransaction(community["u"], user["u"], abs(user["init"]), "data migration")
-            t.commit()
-            t.fix(migration)
-        elif user["init"] < 0:
-            t = MigratedTransaction(user["u"], community["u"], abs(user["init"]), "data migration")
-            t.commit()
-            t.fix(migration)
+            u["u"] = MateBotUser(u["uid"])
+            print("User {} has internal ID {} now.".format(u["name"], u["uid"]))
+
+    create_user_objects(state)
+
+    def fix_init_balances():
+        print("\nCommitting initial transactions (using reason 'data migration')...")
+        for user in state:
+            if user["init"] > 0:
+                t = MigratedTransaction(community["u"], user["u"], abs(user["init"]), "data migration")
+                t.commit()
+                t.fix(migration)
+            elif user["init"] < 0:
+                t = MigratedTransaction(user["u"], community["u"], abs(user["init"]), "data migration")
+                t.commit()
+                t.fix(migration)
+
+    fix_init_balances()
 
     def migrate_transactions():
         print("\nTransferring the transactions from the log file into the database...")
