@@ -159,7 +159,7 @@ It is handled similar to the `reason` of a transaction.
 
 The `communistic` flag is a boolean value. If it's ``false``, then the
 collective operation is a payment. Otherwise it is a communism (``true``).
-Remember that the `externs` counter will be ignored on payments.
+Remember that the `externals` counter will be ignored on payments.
 
 The field `creator` stores the user ID of the user who has started
 the collective operation. One user may only have one active collective
