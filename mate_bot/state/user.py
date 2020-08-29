@@ -227,6 +227,8 @@ class BaseBotUser:
         This is None for virtual users.
         """
 
+        if self._user is None:
+            return self._tid
         return self._user.id
 
     @property

@@ -149,7 +149,7 @@ negative values are allowed. Communisms may use negative values. However,
 this is not really useful in real-world scenarios. Therefore, it's highly
 recommended to only use positive values as `amount` here.
 
-The counter `externs` must be positive. It stores the number of external
+The counter `externals` must be positive. It stores the number of external
 persons without access to the bot that wanted to join a communism.
 A default communism after initialization should store a ``0`` here.
 For payments, this counter is silently ignored and should be ``NULL``.
