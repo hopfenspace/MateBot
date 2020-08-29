@@ -39,7 +39,7 @@ CREATE TABLE collectives_users (
     `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     `collectives_id` INT NOT NULL,
     `users_id` INT NOT NULL,
-    `vote` ENUM('-', '0', '+') NOT NULL,
+    `vote` ENUM('-', '+') NOT NULL,
     FOREIGN KEY (collectives_id) REFERENCES collectives(id) ON DELETE CASCADE,
     FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE
 );
