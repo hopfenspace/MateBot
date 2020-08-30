@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+MateBot money transaction (sending/receiving) helper library
+"""
+
 import time
 import typing
 
@@ -64,22 +68,42 @@ class Transaction:
 
     @property
     def src(self) -> user.BaseBotUser:
+        """
+        Get the sender of a transaction
+        """
+
         return self._src
 
     @property
     def dst(self) -> user.BaseBotUser:
+        """
+        Get the receiver of a transaction
+        """
+
         return self._dst
 
     @property
     def amount(self) -> int:
+        """
+        Get the height of the transaction (amount)
+        """
+
         return self._amount
 
     @property
-    def reason(self) -> str:
+    def reason(self) -> typing.Optional[str]:
+        """
+        Get the optional reason for the transaction (description)
+        """
+
         return self._reason
 
     @property
     def committed(self) -> bool:
+        """
+        Get the flag whether the transaction has been committed yet
+        """
+
         return self._committed
 
     def commit(self) -> None:
@@ -107,19 +131,22 @@ class Transaction:
                     (self._src.uid, self._dst.uid, self._amount, self._reason)
                 )[2]
 
-                rows, values, _ = _db.execute_no_commit("SELECT LAST_INSERT_ID()", connection = connection)
+                rows, values, _ = _db.execute_no_commit(
+                    "SELECT LAST_INSERT_ID()",
+                    connection=connection
+                )
                 if rows == 1:
                     self._id = values[0]["LAST_INSERT_ID()"]
 
                 _db.execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._src.balance - self.amount, self._src.uid),
-                    connection = connection
+                    connection=connection
                 )
                 _db.execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._dst.balance + self.amount, self._dst.uid),
-                    connection = connection
+                    connection=connection
                 )
 
                 connection.commit()
@@ -136,6 +163,13 @@ class Transaction:
 class TransactionLog:
     """
     Transaction history for a specific user based on the logs in the database
+
+    When instantiating a TransactionLog object, one can filter the
+    transactions based on their "direction" using the `mode` keyword.
+    The default value of zero means that all transactions will be used.
+    Any negative integer means that only negative operations (the specified
+    user is the sender) will be used while any positive integer means that
+    only positive operations will be used (the specified user is the receiver).
     """
 
     DEFAULT_NULL_REASON_REPLACE = "<no description>"
@@ -144,7 +178,7 @@ class TransactionLog:
         """
         :param uid: internal user ID or BaseBotUser instance (or subclass thereof)
         :type uid: int or user.BaseBotUser
-        :param mode: direction of listed transactions (negative means from, positive means to, zero means both)
+        :param mode: direction of listed transactions
         :type mode: int
         """
 
