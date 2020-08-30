@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Database management helper
+MateBot database management helper library
 """
 
 import typing
@@ -11,9 +11,8 @@ from config import config as _config
 
 
 QUERY_RESULT_TYPE = typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]
-QUERY_ROWS_TYPE = int
-EXECUTE_TYPE = typing.Tuple[QUERY_ROWS_TYPE, QUERY_RESULT_TYPE]
-EXECUTE_NO_COMMIT_TYPE = typing.Tuple[QUERY_ROWS_TYPE, QUERY_RESULT_TYPE, pymysql.connections.Connection]
+EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
+EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
 
 def execute_no_commit(
@@ -52,7 +51,7 @@ def execute_no_commit(
     """
 
     if connection is None:
-        connection = pymysql.connect(**_config["database"], cursorclass = pymysql.cursors.DictCursor)
+        connection = pymysql.connect(**_config["database"], cursorclass=pymysql.cursors.DictCursor)
     elif not isinstance(connection, pymysql.connections.Connection):
         raise TypeError("Invalid connection type")
 

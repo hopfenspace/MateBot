@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+MateBot user definitions
+"""
+
 import typing
 import datetime as _datetime
 
