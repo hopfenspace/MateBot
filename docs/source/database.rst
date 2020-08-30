@@ -199,6 +199,9 @@ The following table lists the different meanings of the `vote` value:
 | ``-``       | disapproved by user (-1)    | ignored                |
 +-------------+-----------------------------+------------------------+
 
+While being ignored by communism operations, the implementation uses
+``-`` as default value when no explicit vote was given by the user.
+
 Table ``externals``
 ^^^^^^^^^^^^^^^^^^^
 
