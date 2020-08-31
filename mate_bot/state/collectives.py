@@ -4,7 +4,7 @@ import typing
 import datetime
 
 from . import err
-from . import user
+from .user import MateBotUser
 from .dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
@@ -23,7 +23,10 @@ class BaseCollective:
     _members = []
 
     @classmethod
-    def get_cid_from_active_creator(cls, creator: typing.Union[int, user.MateBotUser]) -> typing.Optional[int]:
+    def get_cid_from_active_creator(
+            cls,
+            creator: typing.Union[int, MateBotUser]
+    ) -> typing.Optional[int]:
         """
         Retrieve the collective's ID from the database using the creator's ID
 
@@ -38,7 +41,7 @@ class BaseCollective:
         :raises err.DesignViolation: when more than one collective is active for this creator
         """
 
-        if isinstance(creator, user.MateBotUser):
+        if isinstance(creator, MateBotUser):
             creator = creator.uid
         if not isinstance(creator, int):
             raise TypeError("Expected integer or MateBotUser instance")
@@ -76,3 +79,36 @@ class BaseCollective:
             "WHERE collectives.id=%s",
             (self._id,)
         )
+
+    @property
+    def active(self) -> bool:
+        """
+        Get the active flag of the collective operation
+        """
+
+        return self._active
+
+    @property
+    def amount(self) -> int:
+        """
+        Get the amount (value) of the collective operation
+        """
+
+        return self._amount
+
+    @property
+    def creator(self) -> MateBotUser:
+        """
+        Get the creator of the collective operation
+        """
+
+        return self._creator
+
+    @property
+    def created(self) -> datetime.datetime:
+        """
+        Get the timestamp when the collective operation was created
+        """
+
+        return self._created
+
