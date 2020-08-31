@@ -128,6 +128,26 @@ class BaseCollective:
         return self._amount
 
     @property
+    def description(self) -> typing.Optional[str]:
+        """
+        Get and set the description of the collective operation
+        """
+
+        return self._description
+
+    @description.setter
+    def description(self, new: typing.Optional[str]) -> None:
+        if new is not None:
+            if not isinstance(new, str):
+                raise TypeError("Expected None or str")
+
+        self._description = new
+        _execute(
+            "UPDATE collectives SET description=%s WHERE id=%s",
+            (new, self._id)
+        )
+
+    @property
     def creator(self) -> MateBotUser:
         """
         Get the creator of the collective operation
