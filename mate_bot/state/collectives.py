@@ -80,6 +80,37 @@ class BaseCollective:
             (self._id,)
         )
 
+    def _is_participating(
+            self,
+            user: typing.Union[int, MateBotUser]
+    ) -> typing.Tuple[bool, typing.Optional[str]]:
+        """
+        Determine whether the user is participating in this collective operation
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :return: tuple whether the user is participating and the (optional) vote
+        :rtype: typing.Tuple[bool, typing.Optional[str]]
+        :raises err.DesignViolation: when more than one match was found
+        """
+
+        if isinstance(user, MateBotUser):
+            user = user.uid
+        if not isinstance(user, int):
+            raise TypeError("Expected integer or MateBotUser instance")
+
+        rows, values = _execute(
+            "SELECT * FROM collectives_users "
+            "WHERE collectives_id=%s AND users_id=%s",
+            (self._id, user)
+        )
+
+        if rows == 0 and len(values) == 0:
+            return False, None
+        if rows > 0 and len(values) > 0:
+            raise err.DesignViolation
+        return True, values[0]["vote"]
+
     @property
     def active(self) -> bool:
         """
