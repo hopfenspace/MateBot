@@ -22,6 +22,24 @@ class BaseCollective:
     _created = datetime.datetime.fromtimestamp(0)
     _members = []
 
+    @staticmethod
+    def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
+        """
+        Extract the user ID from a given user object
+
+        :param user: MateBotUser instance or integer
+        :type user: typing.Union[int, MateBotUser]
+        :return: user ID as integer
+        :rtype: int
+        :raises TypeError: when the user is neither int nor MateBotUser instance
+        """
+
+        if isinstance(user, MateBotUser):
+            user = user.uid
+        if not isinstance(user, int):
+            raise TypeError("Expected integer or MateBotUser instance")
+        return user
+
     @classmethod
     def get_cid_from_active_creator(
             cls,
@@ -41,11 +59,7 @@ class BaseCollective:
         :raises err.DesignViolation: when more than one collective is active for this creator
         """
 
-        if isinstance(creator, MateBotUser):
-            creator = creator.uid
-        if not isinstance(creator, int):
-            raise TypeError("Expected integer or MateBotUser instance")
-
+        creator = cls._get_uid(creator)
         rows, values = _execute(
             "SELECT id FROM collectives WHERE active=true AND creator=%s",
             (creator,)
@@ -55,6 +69,22 @@ class BaseCollective:
             return values[0]["id"]
         if rows > 1 and len(values) > 1:
             raise err.DesignViolation
+
+    def __bool__(self) -> bool:
+        """
+        Determine whether the collective operation is still active
+
+        This method returns False if the locally stored ID
+        for the collective was not found in the database.
+
+        :return: whether this collective operation is active
+        :rtype: bool
+        """
+
+        rows, values = _execute("SELECT active FROM collectives WHERE id=%s", (self._id,))
+        if rows == 0 and len(values) == 0:
+            return False
+        return bool(values[0]["active"])
 
     def _get_remote_record(self) -> _EXECUTE_TYPE:
         """
@@ -94,11 +124,7 @@ class BaseCollective:
         :raises err.DesignViolation: when more than one match was found
         """
 
-        if isinstance(user, MateBotUser):
-            user = user.uid
-        if not isinstance(user, int):
-            raise TypeError("Expected integer or MateBotUser instance")
-
+        user = self._get_uid(user)
         rows, values = _execute(
             "SELECT * FROM collectives_users "
             "WHERE collectives_id=%s AND users_id=%s",
