@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+MateBot group transaction ("collective operation") base library
+"""
+
 import typing
 import datetime
 
@@ -259,6 +263,26 @@ class BaseCollective:
 
             return True
         return False
+
+    def abort(self, user: MateBotUser) -> bool:
+        """
+        Abort the current pending collective operation without fulfilling the transactions
+
+        Note that this will also delete the bindings which users
+        participated in the collective operation without a possibility
+        to restore it. The `user` parameter will only be used to
+        check whether the user is permitted to perform this action.
+
+        :param user: user who wants to abort the collective operation
+        :type user: MateBotUser
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        if user.uid != self._creator:
+            return False
+
+        return self._abort()
 
     def get(self) -> int:
         """
