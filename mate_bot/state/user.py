@@ -16,6 +16,10 @@ from .dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
 class BaseBotUser:
     """
     Base class for MateBot users
+
+    This class is not usable without being modified (subclassed).
+    For easy usability, at least a constructor is needed. Use
+    the advanced subclasses MateBotUser or CommunityUser instead.
     """
 
     _user = None

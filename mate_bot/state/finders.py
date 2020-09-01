@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+MateBot helper methods to find users, names or usernames
+"""
+
 import typing
 import telegram
 
@@ -68,7 +72,10 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
     return _create_user_from_record(values[0])
 
 
-def find_user_by_username(username: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
+def find_user_by_username(
+        username: str,
+        matching: bool = True
+) -> typing.Optional[user.MateBotUser]:
     """
     Find a MateBotUser by his username
 
@@ -119,8 +126,8 @@ def find_names_by_pattern(pattern: str) -> typing.List[str]:
         pattern += "%"
 
     results = []
-    for v in _execute("SELECT name FROM users WHERE name LIKE %s", (pattern,))[1]:
-        results.append(v["name"])
+    for values in _execute("SELECT name FROM users WHERE name LIKE %s", (pattern,))[1]:
+        results.append(values["name"])
     return results
 
 
@@ -139,6 +146,6 @@ def find_usernames_by_pattern(pattern: str) -> typing.List[str]:
         pattern += "%"
 
     results = []
-    for v in _execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
-        results.append(v["username"])
+    for values in _execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
+        results.append(values["username"])
     return results
