@@ -5,7 +5,11 @@ import datetime
 
 from . import err
 from .user import MateBotUser
-from .dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
+from .dbhelper import (
+    execute as _execute,
+    execute_no_commit as _execute_no_commit,
+    EXECUTE_TYPE as _EXECUTE_TYPE
+)
 
 
 class BaseCollective:
@@ -179,7 +183,7 @@ class BaseCollective:
                 (self._id, user, vote)
             )
 
-            return rows == 1
+            return rows == 1 and len(values) == 1
         return False
 
     def _remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
@@ -200,7 +204,40 @@ class BaseCollective:
                 (self._id, user)
             )
 
-            return rows == 1
+            return rows == 1 and len(values) == 1
+        return False
+
+    def _abort(self) -> bool:
+        """
+        Abort the current pending collective operation without fulfilling the transactions
+
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        if self._active:
+            connection = None
+
+            try:
+                connection = _execute_no_commit(
+                    "UPDATE collectives SET active=%s WHERE id=%s",
+                    (False, self._id)
+                )[2]
+                _execute_no_commit(
+                    "DELETE FROM collectives_users WHERE collectives_id=%s",
+                    (self._id,),
+                    connection=connection
+                )
+
+                connection.commit()
+
+            finally:
+                if connection:
+                    connection.close()
+
+            self._active = False
+
+            return True
         return False
 
     @property
