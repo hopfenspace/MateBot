@@ -270,6 +270,39 @@ class BaseCollective:
 
         return self._id
 
+    def update(self) -> bool:
+        """
+        Re-read the internal values from the database
+
+        Important: This method ignores members of a collective operation.
+        Only the attributes of the collective itself will be reloaded.
+
+        :return: whether something has changed
+        :rtype: bool
+        """
+
+        rows, values = self._get_remote_record()
+        record = values[0]
+
+        result = any([
+            self._active != record["active"],
+            self._amount != record["amount"],
+            self._externals != record["externals"],
+            self._description != record["description"],
+            self._creator != record["creator"],
+            self._created != record["created"]
+        ])
+
+        if rows == 1:
+            self._active = record["active"]
+            self._amount = record["amount"]
+            self._externals = record["externals"]
+            self._description = record["description"]
+            self._creator = record["creator"]
+            self._created = record["created"]
+
+        return result and rows == 1
+
     @property
     def active(self) -> bool:
         """
