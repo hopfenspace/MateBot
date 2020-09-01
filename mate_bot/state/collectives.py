@@ -24,7 +24,6 @@ class BaseCollective:
     _description = ""
     _creator = None
     _created = datetime.datetime.fromtimestamp(0)
-    _members = []
 
     @staticmethod
     def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
@@ -207,6 +206,27 @@ class BaseCollective:
             return rows == 1 and len(values) == 1
         return False
 
+    def _toggle_user(
+            self,
+            user: typing.Union[int, MateBotUser],
+            vote: typing.Union[str, bool] = False
+    ) -> bool:
+        """
+        Add or remove a user to/from the collective using the given vote
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :param vote: positive or negative vote (ignored for certain operation types)
+        :type vote: typing.Union[str, bool]
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        if self._is_participating(user)[0]:
+            return self._remove_user(user)
+        else:
+            return self._add_user(user, vote)
+
     def _abort(self) -> bool:
         """
         Abort the current pending collective operation without fulfilling the transactions
@@ -239,6 +259,16 @@ class BaseCollective:
 
             return True
         return False
+
+    def get(self) -> int:
+        """
+        Return the internal ID of the collective operation
+
+        :return: internal ID
+        :rtype: int
+        """
+
+        return self._id
 
     @property
     def active(self) -> bool:
