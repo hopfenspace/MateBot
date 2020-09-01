@@ -19,6 +19,9 @@ from .dbhelper import (
 class BaseCollective:
     """
     Base class for collective operations
+
+    This class is not usable without being modified (subclassed).
+    For easy usability, at least a constructor is needed.
     """
 
     _id = 0
@@ -378,4 +381,3 @@ class BaseCollective:
         """
 
         return self._created
-
