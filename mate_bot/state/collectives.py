@@ -70,6 +70,19 @@ class BaseCollective:
         if rows > 1 and len(values) > 1:
             raise err.DesignViolation
 
+    @classmethod
+    def has_user_active_collective(cls, creator: typing.Union[int, MateBotUser]) -> bool:
+        """
+        Determine whether a given user has already an ongoing collective operation
+
+        :param creator: MateBot user who may have started a collective operation
+        :type creator: typing.Union[int, MateBotUser]
+        :return: whether the user has already started a collective operation
+        :rtype: bool
+        """
+
+        return cls.get_cid_from_active_creator(creator) is not None
+
     def __bool__(self) -> bool:
         """
         Determine whether the collective operation is still active
