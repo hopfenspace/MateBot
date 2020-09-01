@@ -146,9 +146,62 @@ class BaseCollective:
 
         if rows == 0 and len(values) == 0:
             return False, None
-        if rows > 0 and len(values) > 0:
+        if rows > 1 and len(values) > 1:
             raise err.DesignViolation
         return True, values[0]["vote"]
+
+    def _add_user(
+            self,
+            user: typing.Union[int, MateBotUser],
+            vote: typing.Union[str, bool] = False
+    ) -> bool:
+        """
+        Add a user to the collective using the given vote
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :param vote: positive or negative vote (ignored for certain operation types)
+        :type vote: typing.Union[str, bool]
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        user = self._get_uid(user)
+        if isinstance(vote, bool):
+            vote = "+" if vote else "-"
+        if vote not in ("+", "-"):
+            raise ValueError("Expected '+' or '-'")
+
+        if not self._is_participating(user)[0]:
+            rows, values = _execute(
+                "INSERT INTO collectives_users(collectives_id, users_id, vote) "
+                "VALUES (%s, %s, %s)",
+                (self._id, user, vote)
+            )
+
+            return rows == 1
+        return False
+
+    def _remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
+        """
+        Remove a user from the collective
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        user = self._get_uid(user)
+        if self._is_participating(user)[0]:
+            rows, values = _execute(
+                "DELETE FROM collectives_users "
+                "WHERE collectives_id=%s AND users_id=%s",
+                (self._id, user)
+            )
+
+            return rows == 1
+        return False
 
     @property
     def active(self) -> bool:
