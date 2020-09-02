@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import re
-import argparse
 
 import state
 from config import config
@@ -20,15 +19,16 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
     """
     Convert the string into an amount of money.
 
-    If the result is not between ``min_amount`` and ``max_amount`` (including them), a ValueError will be raised.
+    If the result is not between ``min_amount`` and ``max_amount``
+    (including them), a ValueError will be raised.
 
-    :param arg: String to be parsed
+    :param arg: string to be parsed
     :type arg: str
-    :param min_amount: The amount has to be larger than this (given in €)
-    :type min_amount: float, optional
-    :param max_amount: The amount has to be smaller than this (given in €)
-    :type max_amount float, optional
-    :raises ValueError:
+    :param min_amount: The amount has to be larger than this (given in Cent)
+    :type min_amount: float
+    :param max_amount: The amount has to be smaller than this (given in Cent)
+    :type max_amount: float
+    :raises ValueError: when the arg seems to be no valid amount or is out of the allowed range
     :return: Amount of money in cent
     :rtype: int
     """
@@ -61,7 +61,7 @@ def user(arg: str) -> state.MateBotUser:
     :type arg: str
     :return: fully functional MateBot user
     :rtype: state.MateBotUser
-    :raises argparse.ArgumentTypeError: when the argument does not start with @ or @@
+    :raises ValueError: when the argument does not start with @ or @@
     """
 
     # Everything after @@ is the Telegram ID
@@ -74,8 +74,8 @@ def user(arg: str) -> state.MateBotUser:
     elif arg.startswith("@"):
         usr = state.finders.find_user_by_username(arg)
         if usr is None:
-            raise argparse.ArgumentTypeError("Ambiguous username. Please send /start to the bot privately.")
+            raise ValueError("Ambiguous username. Please send /start to the bot privately.")
         return usr
 
     else:
-        raise argparse.ArgumentTypeError("No user mentioned. Try with \"@\".")
+        raise ValueError('No user mentioned. Try with "@".')
