@@ -53,6 +53,23 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
     return val
 
 
+def natural(arg: str) -> int:
+    """
+    Convert the string into a natural number (positive integer)
+
+    :param arg: string to be parsed
+    :type arg: str
+    :return: only positive integers
+    :rtype: int
+    :raises ValueError: when the string seems to be no integer or is not positive
+    """
+
+    result = int(arg)
+    if result <= 0:
+        raise ValueError("Not a positive integer.")
+    return result
+
+
 def user(arg: str) -> state.MateBotUser:
     """
     Return a MateBot user as defined in the `state` package
