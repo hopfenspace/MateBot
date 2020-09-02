@@ -34,7 +34,7 @@ def pre_parse(msg: telegram.Message) -> typing.Iterator[str]:
             replace = "@@" + str(entity.user.id)
 
         # Perform the replacement
-        if replace:
+        if replace is not None:
             text = text[:entity.offset] + replace + text[entity.offset + entity.length:]
 
     # split the input text by spaces then filter out empty strings

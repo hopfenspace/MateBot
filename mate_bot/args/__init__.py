@@ -9,4 +9,3 @@ from .types import amount
 from .types import user
 from .actions import JoinAction
 from .pre_parser import pre_parse
-
