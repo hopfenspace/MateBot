@@ -8,6 +8,7 @@ import telegram
 
 import state
 from args import natural
+from config import config
 from .base import BaseCommand
 
 
@@ -46,6 +47,12 @@ class ConsumeCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
+        if args.number > config["general"]["max-consume"]:
+            update.effective_message.reply_text(
+                "You can't consume that many goods at once!"
+            )
+            return
 
         sender = state.MateBotUser(update.effective_message.from_user)
         reason = "consume: {}x {}".format(args.number, self.name)

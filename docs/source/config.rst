@@ -28,7 +28,8 @@ of the different options the config file provides):
 
     {
         "general": {
-            "max-amount": 10000
+            "max-amount": 10000,
+            "max-consume": 10
         },
         "bot": {
             "token": "<Telegram bot token here>",
@@ -55,6 +56,10 @@ General settings
 The parameter ``max-amount`` specifies the heighest amount
 a user can send to someone else, get back by a community payment
 or collect in a communism. It is measured in Cent.
+
+The option ``max-consume`` sets the upper limit of consumed
+goods in one command. This ensures that no one executes
+something like ``/drink 10000`` which in turn avoids trouble.
 
 Bot settings
 ~~~~~~~~~~~~
