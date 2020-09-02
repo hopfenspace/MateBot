@@ -5,38 +5,9 @@ MateBot helper methods to find users, names or usernames
 """
 
 import typing
-import telegram
 
 from . import user
 from .dbhelper import execute as _execute
-
-
-def _create_user_from_record(record: typing.Dict[str, typing.Union[str, int]]) -> user.MateBotUser:
-    """
-    Create a MateBotUser object based on a record of the database
-
-    :param record: database record containing all necessary information
-    :type record: dict
-    :return: MateBotUser object
-    """
-
-    last_name = None
-    if record["name"].count(" ") > 0:
-        last_name = record["name"].split(" ")[1:]
-    username = None
-    if record["username"]:
-        if record["username"].startswith("@"):
-            username = record["username"][1:]
-        else:
-            username = record["username"]
-
-    return user.MateBotUser(telegram.User(
-        record["tid"],
-        record["name"].split(" ")[0],
-        False,
-        last_name,
-        username
-    ))
 
 
 def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
@@ -69,7 +40,7 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
     if rows != 1 or len(values) != 1:
         return None
 
-    return _create_user_from_record(values[0])
+    return user.MateBotUser(values[0]["id"])
 
 
 def find_user_by_username(
@@ -108,7 +79,7 @@ def find_user_by_username(
     if rows != 1 or len(values) != 1:
         return None
 
-    return _create_user_from_record(values[0])
+    return user.MateBotUser(values[0]["id"])
 
 
 def find_names_by_pattern(pattern: str) -> typing.List[str]:
