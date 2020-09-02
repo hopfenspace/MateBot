@@ -246,8 +246,12 @@ class BaseBotUser:
         Get and set the Telegram username of a user
 
         Note that this may be done automatically for non-virtual users by .update().
+        The username is always prefixed with the @ symbol. Keep in mind that
+        some users didn't set a username, which causes this method to return None.
         """
 
+        if not self._username.startswith("@"):
+            return "@" + self._username
         return self._username
 
     @username.setter
