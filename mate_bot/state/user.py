@@ -164,16 +164,17 @@ class BaseBotUser:
             raise RuntimeError("Operation not allowed")
 
         _execute(
-            "UPDATE users SET {}=%s WHERE tid=%s".format(column),
+            "UPDATE users SET {}=%s WHERE id=%s".format(column),
             (value, self._id)
         )
 
         rows, result = _execute(
-            "SELECT %s, accessed FROM users WHERE tid=%s",
+            "SELECT %s, accessed FROM users WHERE id=%s",
             (column, self._id)
         )
-        if rows == 1:
-            self._accessed = result[0]["accessed"]
+
+        assert rows == 1
+        self._accessed = result[0]["accessed"]
         return result[0][column]
 
     def _update_local(self, record: typing.Dict[str, typing.Any]) -> None:
