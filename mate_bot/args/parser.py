@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 
+"""
+MateBot argument parsing helper library
+"""
+
 import argparse
 
 
 class NonExitingParser(argparse.ArgumentParser):
     """
-    A NonExitingParser, as the name suggests, is an ArgumentParser which does not exit the whole program.
+    Argument parser that does not exit the program
 
-    An argparse's ArgumentParser would exit the program when an error occurs. This is fine in the context of
-    shells where each command is its own program and the program should exit when it doesn't understand what
-    to do. But this is a bot handling multiple commands. It can't just stop when a user messes up the syntax.
-
-    It simply extends the ArgumentParser from the argparse module and overwrites the error and exit methods.
+    The ArgumentParser of the `argparse` module would exit the program
+    when an error occurs. This is fine in the context of shells where each
+    command is a stand-alone program and the program should exit when it
+    doesn't understand what to do. But this is a bot handling multiple
+    commands. It can't just stop when a user messes up the syntax.
+    Therefore, this class overwrites the .error() and .exit() methods
+    of the original `ArgumentParser` class from the `argparse` module.
     """
 
     def exit(self, status: int = 0, message: str = None) -> None:
@@ -23,6 +29,13 @@ class NonExitingParser(argparse.ArgumentParser):
 
 class ParsingError(Exception):
     """
-    The exception raised when the parser has an error (when argparse would just have exited).
+    Exception raised when the parser throws an error
+
+    This is likely to happen when a user messes up the syntax of a
+    particular command. Instead of exiting the program, this exception
+    will be raised. You may use it's string representation to gain
+    additional information about what went wrong. This allows a user
+    to correct its command, in case this caused the parser to fail.
     """
+
     pass
