@@ -402,6 +402,12 @@ class CommunityUser(BaseBotUser):
                 "Multiple community users were found! Fix this issue and try again."
             )
 
+    def __repr__(self) -> str:
+        return "CommunityUser({})".format(self.name)
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class MateBotUser(BaseBotUser):
     """
@@ -459,6 +465,15 @@ class MateBotUser(BaseBotUser):
         if rows == 1 and len(values) == 1:
             self._update_local(values[0])
             self._external = self.check_external()
+
+    def __repr__(self) -> str:
+        return "MateBotUser(uid={}, tid={})".format(self.uid, self.tid)
+
+    def __str__(self) -> str:
+        result = "User {}".format(self.name)
+        if self.username is not None:
+            result += " ({})".format(self.username)
+        return result
 
     @property
     def creditor(self):
