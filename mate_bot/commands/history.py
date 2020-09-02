@@ -2,31 +2,34 @@
 
 import datetime
 import json
+import telegram
+import argparse
 
-from args import parse_args, ARG_INT
 from state import get_or_create_user
+from .base import BaseCommand
 
 
-def history(_, update):
-    offset, count = parse_args(update.message,
-                               [ARG_INT, ARG_INT],
-                               [0, 10],
-                               "\nUsage: /history [offset = 0] [count = 10]"
-                               )
+class HistoryCommand(BaseCommand):
 
-    user = get_or_create_user(update.message.from_user)
-    entries = []
+    def __init__(self):
+        super().__init__("history")
+        self.parser.add_argument("offset", nargs="?", default=0, type=int)
+        self.parser.add_argument("count", nargs="?", default=10, type=int)
 
-    with open("transactions.log", "r") as fd:
-        for line in fd.readlines():
-            entry = json.loads(line)
-            if entry['user'] == user['id']:
-                entries.insert(0, entry)
+    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+        user = get_or_create_user(msg.from_user)
+        entries = []
 
-    texts = []
-    for entry in entries[offset: offset + count]:
-        time = datetime.datetime.fromtimestamp(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
-        texts.append("{} {:.2f}€ {}".format(time, entry['diff'] / float(100), entry['reason']))
+        with open("transactions.log", "r") as fd:
+            for line in fd.readlines():
+                entry = json.loads(line)
+                if entry['user'] == user['id']:
+                    entries.insert(0, entry)
 
-    msg = "Transaction history for {}\n{}".format(user['name'], "\n".join(texts))
-    update.message.reply_text(msg, disable_notification=True)
+        texts = []
+        for entry in entries[args.offset: args.soffset + args.count]:
+            time = datetime.datetime.fromtimestamp(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
+            texts.append("{} {:.2f}€ {}".format(time, entry['diff'] / float(100), entry['reason']))
+
+        reply = "Transaction history for {}\n{}".format(user['name'], "\n".join(texts))
+        msg.reply_text(reply, disable_notification=True)
