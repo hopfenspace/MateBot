@@ -10,7 +10,7 @@ from . import user
 from .dbhelper import execute as _execute
 
 
-def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.MateBotUser]:
+def find_user_by_name(name: str, matching: bool = False) -> typing.Optional[user.MateBotUser]:
     """
     Find a MateBotUser by his name
 
@@ -19,7 +19,7 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
     then this function will return None. If it's okay for you to get a list of
     possible names, then you may look into `find_names_by_pattern`.
 
-    :param name: the user's username on Telegram
+    :param name: the user's name on Telegram
     :type name: str
     :param matching: switch if pattern matching should be enabled
     :type matching: bool
@@ -31,11 +31,16 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
             name = "%" + name
         if not name.endswith("%"):
             name += "%"
+        rows, values = _execute(
+            "SELECT * FROM users WHERE name LIKE %s",
+            (name,)
+        )
 
-    rows, values = _execute(
-        "SELECT * FROM users WHERE username LIKE %s",
-        (name,)
-    )
+    else:
+        rows, values = _execute(
+            "SELECT * FROM users WHERE name=%s",
+            (name,)
+        )
 
     if rows != 1 or len(values) != 1:
         return None
@@ -45,7 +50,7 @@ def find_user_by_name(name: str, matching: bool = True) -> typing.Optional[user.
 
 def find_user_by_username(
         username: str,
-        matching: bool = True
+        matching: bool = False
 ) -> typing.Optional[user.MateBotUser]:
     """
     Find a MateBotUser by his username
@@ -70,11 +75,16 @@ def find_user_by_username(
             username = "%" + username
         if not username.endswith("%"):
             username += "%"
+        rows, values = _execute(
+            "SELECT * FROM users WHERE username LIKE %s",
+            (username,)
+        )
 
-    rows, values = _execute(
-        "SELECT * FROM users WHERE username LIKE %s",
-        (username,)
-    )
+    else:
+        rows, values = _execute(
+            "SELECT * FROM users WHERE username=%s",
+            (username,)
+        )
 
     if rows != 1 or len(values) != 1:
         return None
