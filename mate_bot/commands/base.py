@@ -1,54 +1,70 @@
 #!/usr/bin/env python3
 
-from args import NonExitingParser
-from args import ParsingError
-from args import pre_parse
-from traceback import print_exc
+"""
+MateBot command handling base library
+"""
+
+import sys
 import argparse
-import telegram
+from traceback import print_exc as _print_exc
+
+import telegram.ext
+
+from args import NonExitingParser, ParsingError, pre_parse
 
 
 class BaseCommand:
     """
-    Base class for all commands given to a CommandHandler.
+    Base class for all MateBot commands executed by the CommandHandler
 
-    It handles argument parsing and exception catching/ handling.
-    A command should inherit this, add arguments to the parser in the constructor and overwrite the run method.
+    It handles argument parsing and exception catching / handling. Some
+    specific implementation should be a subclass of this class. It must add
+    arguments to the parser in the constructor and overwrite the run method.
     """
 
     def __init__(self, name: str):
+        """
+        :param name: name of the command
+        :type name: str
+        """
+
         self.name = name
         self.parser = NonExitingParser(prog=name)
 
-    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
+        Perform command-specific actions
+
         This method should be overwritten in actual commands to perform the desired action.
 
-        :param args: The namespace containing the arguments
+        :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param msg: The message to reply to
-        :type msg: telegram.Message
-        :raises NotImplementedError: this method should be overwritten by subclasses
-        """
-        raise NotImplementedError("The BaseCommand's run method should be overwritten by subclasses")
-
-    def __call__(self, bot: telegram.Bot, update: telegram.Update) -> None:
-        """
-        The callback the telegram.CommandHandler uses.
-
-        Parse the arguments and call the run method.
-        Catch any occurring exceptions.
-
-        :param bot:
-        :type bot: telegram.Bot
-        :param update:
+        :param update: incoming Telegram update
         :type update: telegram.Update
+        :raises NotImplementedError: because this method should be overwritten by subclasses
         """
+
+        raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
+
+    def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
+        """
+        Parse arguments of the incoming update and execute the .run() method
+
+        This method is the callback method used by telegram.CommandHandler.
+        Note that this method also catches any exceptions and prints them.
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :param context: Telegram callback context
+        :type context: telegram.ext.CallbackContext
+        """
+
         try:
-            argv = pre_parse(update.message)
+            argv = pre_parse(update.effective_message)
             args = self.parser.parse_args(argv)
-            self.run(args, update.message)
+            self.run(args, update)
         except ParsingError as err:
-            update.message.reply_text(str(err))
-        except:
-            print_exc()
+            update.effective_message.reply_text(str(err))
+        finally:
+            if sys.exc_info()[0] is not None:
+                _print_exc()
