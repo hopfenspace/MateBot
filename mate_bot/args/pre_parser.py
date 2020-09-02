@@ -23,7 +23,7 @@ def pre_parse(msg: telegram.Message) -> typing.Iterator[str]:
     """
     text = msg.text
 
-    for entity in msg.entities:
+    for entity in reversed(msg.entities):
         # String to replace the entity with
         replace = None
 
