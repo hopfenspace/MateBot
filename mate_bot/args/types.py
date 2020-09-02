@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+import argparse
 
 import state
 from config import config
@@ -54,18 +55,27 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
 
 def user(arg: str) -> state.MateBotUser:
     """
-    Return a user as defined in ``state``
+    Return a MateBot user as defined in the `state` package
 
-    :param arg: String to be parsed
+    :param arg: string to be parsed
     :type arg: str
-    :raises ValueError:
-    :return: Parsed user
+    :return: fully functional MateBot user
     :rtype: state.MateBotUser
+    :raises argparse.ArgumentTypeError: when the argument does not start with @ or @@
     """
-    # TODO use new state module
-    if arg.startswith("@@"): # text mention
-        return get_or_create_user(entity.user)
-    elif arg.startswith("@"): # mention
-        return find_user_by_nick(arg[1:])
+
+    # Everything after @@ is the Telegram ID
+    if arg.startswith("@@"):
+        tid = int(arg[2:])
+        uid = state.MateBotUser.get_uid_from_tid(tid)
+        return state.MateBotUser(uid)
+
+    # Everything after @ is the Telegram username
+    elif arg.startswith("@"):
+        usr = state.finders.find_user_by_username(arg)
+        if usr is None:
+            raise argparse.ArgumentTypeError("Ambiguous username. Please send /start to the bot privately.")
+        return usr
+
     else:
-        raise ValueError("No user mentioned. Try \"@\"")
+        raise argparse.ArgumentTypeError("No user mentioned. Try with \"@\".")
