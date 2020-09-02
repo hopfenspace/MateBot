@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import telegram
+import argparse
 
 from config import config
 from .common_util import user_list_to_string, get_data_from_query
+from .base import BaseCommand
 from state import get_or_create_user, create_transaction
-from args import parse_args, ARG_AMOUNT, ARG_REST
+from args import amount as amount_type
+from args import JoinAction
 
 pays = {}
 
@@ -38,23 +41,24 @@ class Pay:
                     user_list_to_string(self.approved), user_list_to_string(self.disapproved))
 
 
-def pay(_, update):
-    amount, reason = parse_args(update.message,
-                                [ARG_AMOUNT, ARG_REST],
-                                [None, ""],
-                                "\nUsage: /pay <amount> [reason ...]"
-                                )
+class PayCommand(BaseCommand):
 
-    sender = get_or_create_user(update.message.from_user)
-    sender_id = str(sender['id'])
+    def __init__(self):
+        super().__init__("pay")
+        self.parser.add_argument("amount", type=amount_type)
+        self.parser.add_argument("reason", action=JoinAction, nargs="*")
 
-    if sender_id in pays:
-        update.message.reply_text("You already have a pay in progress")
-        return
+    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+        sender = get_or_create_user(msg.from_user)
+        sender_id = str(sender['id'])
 
-    user_pay = Pay(sender, amount, reason)
-    user_pay.message = update.message.reply_text(str(user_pay), reply_markup=user_pay.message_markup)
-    pays[sender_id] = user_pay
+        if sender_id in pays:
+            msg.reply_text("You already have a pay in progress")
+            return
+
+        user_pay = Pay(sender, args.amount, args.sreason)
+        user_pay.message = msg.reply_text(str(user_pay), reply_markup=user_pay.message_markup)
+        pays[sender_id] = user_pay
 
 
 def pay_query(_, update):

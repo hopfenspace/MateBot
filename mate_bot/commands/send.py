@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 
+import telegram
+import argparse
+
 from state import get_or_create_user, create_transaction
-from args import parse_args, ARG_AMOUNT, ARG_USER
+from .base import BaseCommand
+from args import amount as amount_type
+from args import user as user_type
 
 
-def send(_, update):
-    args = parse_args(update.message,
-                      [ARG_AMOUNT, ARG_USER],
-                      [None, None],
-                      "\nUsage: /send <amount> <user>")
+class SendCommand(BaseCommand):
 
-    sender = get_or_create_user(update.message.from_user)
-    receiver = args[1]
-    amount = args[0]
+    def __init__(self):
+        super().__init__("send")
+        self.parser.add_argument("amount", type=amount_type)
+        self.parser.add_argument("receiver", type=user_type)
 
-    if sender == receiver:
-        update.message.reply_text("You cannot send money to yourself")
-        return
+    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+        sender = get_or_create_user(msg.from_user)
 
-    create_transaction(sender, -amount, "sent to {}".format(receiver['name']))
-    create_transaction(receiver, amount, "received from {}".format(sender['name']))
-    update.message.reply_text("OK, you sent {}€ to {}".format(amount / float(100), receiver['name']))
+        if sender == args.receiver:
+            msg.reply_text("You cannot send money to yourself")
+            return
+
+        create_transaction(sender, -args.amount, "sent to {}".format(args.receiver['name']))
+        create_transaction(args.receiver, args.amount, "received from {}".format(sender['name']))
+        msg.reply_text("OK, you sent {}€ to {}".format(args.amount / float(100), args.receiver['name']))
