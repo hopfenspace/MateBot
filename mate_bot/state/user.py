@@ -191,8 +191,8 @@ class BaseBotUser:
         if self._user:
             if self._name != self._user.full_name:
                 self._name = self._update_record("name", self._user.full_name)
-            if self._username != self._user.name:
-                self._username = self._update_record("username", self._user.name)
+            if self._username != self._user.username:
+                self._username = self._update_record("username", self._user.username)
 
     def check_external(self) -> bool:
         """
