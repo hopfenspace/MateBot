@@ -7,7 +7,7 @@ MateBot group transaction ("collective operation") base library
 import typing
 import datetime
 
-from . import err
+import err
 from .user import MateBotUser
 from .dbhelper import (
     execute as _execute,
