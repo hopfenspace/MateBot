@@ -250,8 +250,9 @@ class BaseBotUser:
         some users didn't set a username, which causes this method to return None.
         """
 
-        if not self._username.startswith("@"):
-            return "@" + self._username
+        if self._username is not None:
+            if not self._username.startswith("@"):
+                return "@" + self._username
         return self._username
 
     @username.setter
@@ -470,7 +471,7 @@ class MateBotUser(BaseBotUser):
         return "MateBotUser(uid={}, tid={})".format(self.uid, self.tid)
 
     def __str__(self) -> str:
-        result = "User {}".format(self.name)
+        result = self.name
         if self.username is not None:
             result += " ({})".format(self.username)
         return result
