@@ -1,35 +1,36 @@
 #!/usr/bin/env python3
 
-import datetime
-import json
-import telegram
 import argparse
 
-from state import get_or_create_user
+import telegram
+
+import state
+from args import natural
 from .base import BaseCommand
 
 
 class HistoryCommand(BaseCommand):
+    """
+    Command executor for /history
+    """
 
     def __init__(self):
         super().__init__("history")
-        self.parser.add_argument("offset", nargs="?", default=0, type=int)
-        self.parser.add_argument("count", nargs="?", default=10, type=int)
+        self.parser.add_argument("length", nargs="?", default=10, type=natural)
 
-    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
-        user = get_or_create_user(msg.from_user)
-        entries = []
+    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
 
-        with open("transactions.log", "r") as fd:
-            for line in fd.readlines():
-                entry = json.loads(line)
-                if entry['user'] == user['id']:
-                    entries.insert(0, entry)
-
-        texts = []
-        for entry in entries[args.offset: args.soffset + args.count]:
-            time = datetime.datetime.fromtimestamp(entry['timestamp']).strftime("%Y-%m-%d %H:%M")
-            texts.append("{} {:.2f}€ {}".format(time, entry['diff'] / float(100), entry['reason']))
-
-        reply = "Transaction history for {}\n{}".format(user['name'], "\n".join(texts))
-        msg.reply_text(reply, disable_notification=True)
+        user = state.MateBotUser(update.effective_message.from_user)
+        logs = state.TransactionLog(user).to_string().split("\n")
+        answer = "\n".join(logs[-args.length:])
+        update.effective_message.reply_text(
+            "Transaction history for {}:\n{}".format(user.name, answer),
+            disable_notification=True
+        )
