@@ -10,7 +10,8 @@ from traceback import print_exc as _print_exc
 
 import telegram.ext
 
-from args import NonExitingParser, ParsingError, pre_parse
+from err import ParsingError
+from args import NonExitingParser, pre_parse
 
 
 class BaseCommand:

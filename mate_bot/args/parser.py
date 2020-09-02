@@ -6,6 +6,8 @@ MateBot argument parsing helper library
 
 import argparse
 
+import err
+
 
 class NonExitingParser(argparse.ArgumentParser):
     """
@@ -24,18 +26,4 @@ class NonExitingParser(argparse.ArgumentParser):
         raise RuntimeError("The parser for \"{}\" tried to exit".format(self.prog))
 
     def error(self, message: str) -> None:
-        raise ParsingError(message)
-
-
-class ParsingError(Exception):
-    """
-    Exception raised when the parser throws an error
-
-    This is likely to happen when a user messes up the syntax of a
-    particular command. Instead of exiting the program, this exception
-    will be raised. You may use it's string representation to gain
-    additional information about what went wrong. This allows a user
-    to correct its command, in case this caused the parser to fail.
-    """
-
-    pass
+        raise err.ParsingError(message)
