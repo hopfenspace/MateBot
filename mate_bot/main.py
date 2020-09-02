@@ -17,7 +17,7 @@ from commands.pay import PayCommand, pay_query
 
 if __name__ == "__main__":
     updater = Updater(config["bot"]["token"], use_context = True)
-    filter_id = Filters.chat(config["chat-id"])
+    filter_id = Filters.chat(config["bot"]["chat"])
 
     updater.dispatcher.add_handler(CommandHandler("balance", BalanceCommand()))
     updater.dispatcher.add_handler(CommandHandler("history", HistoryCommand()))

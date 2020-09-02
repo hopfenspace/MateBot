@@ -15,7 +15,7 @@ __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")
 # 1st group: leading number, 2nd group: 1st decimal, 3rd group: 2nd decimal
 
 
-def amount(arg: str, min_amount: float = 0, max_amount: float = config["max_amount"]) -> int:
+def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"]["max-amount"]) -> int:
     """
     Convert the string into an amount of money.
 
@@ -44,9 +44,9 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["max_amou
 
     if val == 0:
         raise ValueError("An amount can't be zero")
-    elif val > max_amount * 100:
+    elif val > max_amount:
         raise ValueError("The amount is too high")
-    elif val < min_amount * 100:
+    elif val < min_amount:
         raise ValueError("The amount is too low")
 
     return val
