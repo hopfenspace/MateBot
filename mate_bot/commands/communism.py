@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import telegram
+import argparse
 
 from .common_util import user_list_to_string, get_data_from_query
+from .base import BaseCommand
 from state import get_or_create_user, create_transaction
-from args import parse_args, ARG_AMOUNT, ARG_REST
+from args import amount as amount_type
+from args import JoinAction
 
 communisms = {}
 
@@ -45,22 +48,24 @@ class Communism:
                     user_list_to_string(self.members))
 
 
-def communism(_, update):
-    amount, reason = parse_args(update.message,
-                                [ARG_AMOUNT, ARG_REST],
-                                [None, ""],
-                                "\nUsage: /communism <amount> [reason ...]")
+class CommunismCommand(BaseCommand):
 
-    sender = get_or_create_user(update.message.from_user)
-    sender_id = str(sender['id'])
+    def __init__(self):
+        super().__init__("/communism")
+        self.parser.add_argument("amount", type=amount_type)
+        self.parser.add_argument("reason", action=JoinAction)
 
-    if sender_id in communisms:
-        update.message.reply_text("You already have a communism in progress")
-        return
+    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+        sender = get_or_create_user(msg.from_user)
+        sender_id = str(sender['id'])
 
-    user_communism = Communism(sender, amount, reason)
-    user_communism.message = update.message.reply_text(str(user_communism), reply_markup=user_communism.message_markup)
-    communisms[sender_id] = user_communism
+        if sender_id in communisms:
+            msg.reply_text("You already have a communism in progress")
+            return
+
+        user_communism = Communism(sender, args.amount, args.reason)
+        user_communism.message = msg.reply_text(str(user_communism), reply_markup=user_communism.message_markup)
+        communisms[sender_id] = user_communism
 
 
 def communism_query(_, update):
