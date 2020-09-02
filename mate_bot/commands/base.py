@@ -41,6 +41,7 @@ class BaseCommand:
         :type args: argparse.Namespace
         :param update: incoming Telegram update
         :type update: telegram.Update
+        :return: None
         :raises NotImplementedError: because this method should be overwritten by subclasses
         """
 

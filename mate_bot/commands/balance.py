@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import telegram
 import argparse
 
+import telegram
+
+import state
 from .base import BaseCommand
-from ..state import MateBotUser
 
 
 class BalanceCommand(BaseCommand):
@@ -13,5 +14,13 @@ class BalanceCommand(BaseCommand):
         super().__init__("balance")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
-        user = MateBotUser(update.effective_message.from_user)
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        user = state.MateBotUser(update.effective_message.from_user)
         update.effective_message.reply_text("Your balance is: {:.2f}€".format(user.balance / 100))
