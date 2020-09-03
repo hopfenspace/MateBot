@@ -7,6 +7,9 @@ MateBot group transaction ("collective operation") base library
 import typing
 import datetime
 
+import pytz as _tz
+import tzlocal as _local_tz
+
 import err
 from .user import MateBotUser
 from .dbhelper import (
@@ -326,7 +329,7 @@ class BaseCollective:
             self._externals = record["externals"]
             self._description = record["description"]
             self._creator = record["creator"]
-            self._created = record["created"]
+            self._created = _tz.utc.localize(record["created"])
 
         return result and rows == 1
 
@@ -380,4 +383,4 @@ class BaseCollective:
         Get the timestamp when the collective operation was created
         """
 
-        return self._created
+        return self._created.astimezone(_local_tz.get_localzone())
