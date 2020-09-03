@@ -171,8 +171,8 @@ class BaseBotUser:
         )
 
         rows, result = _execute(
-            "SELECT %s, accessed FROM users WHERE id=%s",
-            (column, self._id)
+            "SELECT * FROM users WHERE id=%s",
+            (self._id,)
         )
 
         assert rows == 1
