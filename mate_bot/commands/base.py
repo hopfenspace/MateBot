@@ -21,6 +21,18 @@ class BaseCommand:
     It handles argument parsing and exception catching / handling. Some
     specific implementation should be a subclass of this class. It must add
     arguments to the parser in the constructor and overwrite the run method.
+
+    A minimal working example class may look like this:
+
+        class ExampleCommand(BaseCommand):
+            def __init__(self):
+                super().__init__("example")
+                self.parser.add_argument("number", type=int)
+
+            def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+                update.effective_message.reply_text(
+                    " ".join(["Example!"] * max(1, args.number))
+                )
     """
 
     def __init__(self, name: str):
