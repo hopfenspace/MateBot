@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 
-import telegram
 import argparse
 
-from .common_util import user_list_to_string, get_data_from_query
-from .base import BaseCommand
+import telegram
+
 import state
-from args import amount as amount_type
-from args import JoinAction
+from args import amount as amount_type, JoinAction
+from .base import BaseCommand, BaseQuery
 
-communisms = {}
-
-
-class Communism:
+class Communism(state.BaseCollective):
     def __init__(self, creator, amount, reason):
         self.creator = creator
         self.amount = amount
@@ -60,12 +56,26 @@ class CommunismCommand(BaseCommand):
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
-    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
-        sender = get_or_create_user(msg.from_user)
-        sender_id = str(sender['id'])
+    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
 
-        if sender_id in communisms:
-            msg.reply_text("You already have a communism in progress")
+        sender = update.effective_message.from_user
+        if sender.is_bot:
+            return
+
+        if state.MateBotUser.get_uid_from_tid(sender.id) is None:
+            update.effective_message.reply_text("You need to /start first.")
+            return
+
+        user = state.MateBotUser(sender)
+        if state.BaseCollective.has_user_active_collective(user):
+            update.effective_message.reply_text("You already have a collective in progress.")
             return
 
         user_communism = Communism(sender, args.amount, args.reason)
