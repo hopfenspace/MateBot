@@ -9,6 +9,9 @@ from .base import BaseCommand
 
 
 class BalanceCommand(BaseCommand):
+    """
+    Command executor for /balance
+    """
 
     def __init__(self):
         super().__init__("balance")

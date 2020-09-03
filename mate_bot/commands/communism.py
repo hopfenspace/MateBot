@@ -5,7 +5,7 @@ import argparse
 
 from .common_util import user_list_to_string, get_data_from_query
 from .base import BaseCommand
-from state import get_or_create_user, create_transaction
+import state
 from args import amount as amount_type
 from args import JoinAction
 
@@ -49,11 +49,16 @@ class Communism:
 
 
 class CommunismCommand(BaseCommand):
+    """
+    Command executor for /communism
+
+    Note that the majority of the functionality is located in the query handler.
+    """
 
     def __init__(self):
-        super().__init__("/communism")
+        super().__init__("communism")
         self.parser.add_argument("amount", type=amount_type)
-        self.parser.add_argument("reason", action=JoinAction)
+        self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
     def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
         sender = get_or_create_user(msg.from_user)

@@ -18,7 +18,7 @@ class SendCommand(BaseCommand):
         super().__init__("send")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("receiver", type=user_type)
-        self.parser.add_argument("reason", default="<no description>", nargs = "*")
+        self.parser.add_argument("reason", default="<no description>", nargs="*")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
