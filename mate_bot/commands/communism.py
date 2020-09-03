@@ -33,15 +33,18 @@ class Communism(state.BaseCollective):
 
     def __init__(self, arguments: COMMUNISM_ARGUMENTS):
         """
-        :param arguments:
-        :type arguments:
-        :raises ValueError:
-        :raises TypeError:
+        :param arguments: either internal ID or tuple of arguments for creation
+        :type arguments: typing.Union[int, typing.Tuple[state.MateBotUser, int, str]]
+        :raises ValueError: when a supplied argument has an invalid value
+        :raises TypeError: when a supplied argument has the wrong type
+        :raises RuntimeError: when the internal collective ID points to a payment operation
         """
 
         if isinstance(arguments, int):
             self._id = arguments
             self.update()
+            if not self._communistic:
+                raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
             if len(arguments) != 3:
@@ -57,11 +60,13 @@ class Communism(state.BaseCollective):
             if len(reason) < 3:
                 raise ValueError("Reason too short")
 
-            self._creator = user
+            self._creator = user.uid
             self._amount = amount
             self._description = reason
             self._externals = 0
             self._active = True
+
+            self._create_new_record()
 
         else:
             raise TypeError("Expected int or tuple of arguments")
@@ -154,9 +159,7 @@ class CommunismCommand(BaseCommand):
             update.effective_message.reply_text("You already have a collective in progress.")
             return
 
-        user_communism = Communism(sender, args.amount, args.reason)
-        user_communism.message = msg.reply_text(str(user_communism), reply_markup=user_communism.message_markup)
-        communisms[sender_id] = user_communism
+        Communism((user, args.amount, args.reason))
 
 
 class CommunismQuery(BaseQuery):
