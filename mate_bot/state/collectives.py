@@ -27,13 +27,15 @@ class BaseCollective:
     For easy usability, at least a constructor is needed.
     """
 
-    _id = 0
+    _id = None
     _active = False
     _amount = 0
     _externals = 0
     _description = ""
     _creator = None
-    _created = datetime.datetime.fromtimestamp(0)
+    _created = None
+
+    _communistic = None
 
     _ALLOWED_COLUMNS = []
 
@@ -113,6 +115,55 @@ class BaseCollective:
         if rows == 0 and len(values) == 0:
             return False
         return bool(values[0]["active"])
+
+    def _create_new_record(self) -> bool:
+        """
+        Create the record for the current collective in the database if it doesn't exist
+
+        Note that the attribute `_communistic` must be
+        present in order for this method to work properly.
+        Remember that one user can only have one collective
+        operation active at the same time.
+
+        :return: whether the new record was created
+        :rtype: bool
+        :raises ValueError: when attribute values are wrong
+        :raises TypeError: when attribute types don't match
+        """
+
+        if self.has_user_active_collective(self.creator):
+            return False
+
+        if not isinstance(self._communistic, bool):
+            raise TypeError("Attribute isn't of type bool")
+        if self._id is not None:
+            raise ValueError("Internal ID is already set")
+        if self._externals != 0:
+            raise ValueError("No externals allowed for creation")
+
+        connection = None
+        try:
+            connection = _execute_no_commit(
+                "INSERT INTO collectives (amount, externals, description, communistic, creator) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (self._amount, 0, self._description, self._communistic, self._creator)
+            )[2]
+
+            rows, values, connection = _execute_no_commit(
+                "SELECT LAST_INSERT_ID()",
+                connection=connection
+            )
+            assert rows == 1
+            self._id = values[0]["LAST_INSERT_ID()"]
+
+            connection.commit()
+            self.update()
+
+        finally:
+            if connection:
+                connection.close()
+
+        return True
 
     def _set_remote_value(self, column: str, value: typing.Union[str, int, bool, None]) -> None:
         """
