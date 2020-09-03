@@ -7,6 +7,9 @@ MateBot money transaction (sending/receiving) helper library
 import time
 import typing
 
+import pytz as _tz
+import tzlocal as _local_tz
+
 from . import user
 from . import dbhelper as _db
 
@@ -214,11 +217,14 @@ class TransactionLog:
             self._log = []
         self._valid = self._valid and self.validate()
 
-    def to_string(self) -> str:
+    def to_string(self, localized: bool = True) -> str:
         """
         Return a pretty formatted version of the transaction log
 
-        :return: str
+        :param localized: switch whether the timestamps should be in localtime or UTC
+        :type localized: bool
+        :return: fully formatted string including all transactions of a user
+        :rtype: str
         """
 
         logs = []
@@ -238,9 +244,13 @@ class TransactionLog:
             else:
                 raise RuntimeError
 
+            ts = _tz.utc.localize(entry["registered"])
+            if localized:
+                ts = ts.astimezone(_local_tz.get_localzone())
+
             logs.append(
                 "{}: {:>+6.2f}: me {} {:<11} :: {}".format(
-                    time.strftime("%d.%m.%Y %H:%M", entry["registered"].timetuple()),
+                    time.strftime("%d.%m.%Y %H:%M", ts.timetuple()),
                     amount,
                     direction,
                     user.BaseBotUser.get_name_from_uid(partner),
