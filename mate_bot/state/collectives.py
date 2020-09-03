@@ -35,6 +35,8 @@ class BaseCollective:
     _creator = None
     _created = datetime.datetime.fromtimestamp(0)
 
+    _ALLOWED_COLUMNS = []
+
     @staticmethod
     def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
         """
@@ -111,6 +113,44 @@ class BaseCollective:
         if rows == 0 and len(values) == 0:
             return False
         return bool(values[0]["active"])
+
+    def _set_remote_value(self, column: str, value: typing.Union[str, int, bool, None]) -> None:
+        """
+        Set the remote value in a specific column and trigger .update()
+
+        :param column: name of the column
+        :type column: str
+        :param value: value to be set for the current user in the specified column
+        :type value: typing.Union[str, int, bool, None]
+        :return: None
+        :raises TypeError: when an invalid type for value is found
+        :raises RuntimeError: when the column is not marked writeable by configuration
+        """
+
+        if isinstance(value, float):
+            if value.is_integer():
+                value = int(value)
+            else:
+                raise TypeError("No floats allowed")
+        if value is not None:
+            if not isinstance(value, (str, int, bool)):
+                raise TypeError("Unsupported type")
+
+        if column not in self._ALLOWED_COLUMNS:
+            raise RuntimeError("Operation not allowed")
+
+        _execute(
+            "UPDATE collectives SET {}=%s WHERE id=%s".format(column),
+            (value, self._id)
+        )
+
+        rows, result = _execute(
+            "SELECT * FROM collectives WHERE id=%s",
+            (self._id,)
+        )
+
+        assert rows == 1
+        return result[0][column]
 
     def _get_remote_record(self) -> _EXECUTE_TYPE:
         """
@@ -320,7 +360,7 @@ class BaseCollective:
             self._externals != record["externals"],
             self._description != record["description"],
             self._creator != record["creator"],
-            self._created != record["created"]
+            self._created != _tz.utc.localize(record["created"])
         ])
 
         if rows == 1:
