@@ -82,3 +82,66 @@ class BaseCommand:
         finally:
             if sys.exc_info()[0] is not None:
                 _print_exc()
+
+
+class BaseQuery:
+    """
+    Base class for all MateBot callback queries executed by the CallbackQueryHandler
+
+    It provides the stripped data of a callback button as string
+    in the data attribute. Some specific implementation should be
+    a subclass of this class. It must either overwrite the run method
+    or provide the constructor's parameter `targets` to work properly.
+    The `targets` parameter is a dictionary connecting the data with
+    associated function calls. Those functions or methods must
+    expect one parameter `update` which is filled with the correct
+    telegram.Update object. No return value is expected. This
+    class provides the method `example` to illustrate this behavior.
+
+    In order to properly use this class or a subclass thereof, you
+    must supply a pattern to filter the callback query against to
+    the CallbackQueryHandler. This pattern must start with `^` to
+    ensure that it's the start of the callback query data string.
+    Furthermore, this pattern must match the name you give as
+    first argument to the constructor of this class.
+
+    Example: Imagine you have a command `/hello`. The callback query
+    data should by convention start with "hello". So, you set
+    "hello" as the name of this handler. Furthermore, you set
+    "^hello" as pattern to filter callback queries against.
+    """
+
+    def __init__(
+            self,
+            name: str,
+            targets: typing.Optional[typing.Dict[str, typing.Callable]] = None
+    ):
+        """
+        :param name: name of the command the callback is for
+        :type name: str
+        """
+
+        self.name = name
+        self.targets = targets
+
+    def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :param context: Telegram callback context
+        :type context: telegram.ext.CallbackContext
+        :return: None
+        :raises RuntimeError: when either no callback data or no pattern match is present
+        """
+
+    def run(self, update: telegram.Update) -> None:
+        """
+        Perform command-specific operations
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        :raises NotImplementedError: because this method should be overwritten by subclasses
+        """
+
+        raise NotImplementedError("Overwrite the BaseQuery.run() method in a subclass")
