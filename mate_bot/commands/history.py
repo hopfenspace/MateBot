@@ -28,8 +28,13 @@ class HistoryCommand(BaseCommand):
         """
 
         user = state.MateBotUser(update.effective_message.from_user)
-        logs = state.TransactionLog(user).to_string().split("\n")
-        answer = "\n".join(logs[-args.length:])
+        logs = state.TransactionLog(user).to_string()
+        if len(logs) == 0:
+            update.effective_message.reply_text("You don't have any registered transactions yet.")
+            return
+
+        log = logs.split("\n")
+        answer = "\n".join(log[-args.length:])
         update.effective_message.reply_markdown_v2(
             "Transaction history for {}:\n```\n{}```".format(user.name, answer),
             disable_notification=True
