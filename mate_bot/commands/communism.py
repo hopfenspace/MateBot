@@ -88,6 +88,26 @@ class Communism(state.BaseCollective):
         ])
         """
 
+    @property
+    def externals(self) -> int:
+        """
+        Get and set the number of external users for the communism
+        """
+
+        return self._externals
+
+    @externals.setter
+    def externals(self, new: int) -> None:
+        if not isinstance(new, int):
+            raise TypeError("Expected integer")
+        if new < 0:
+            raise ValueError("External user count can't be negative")
+        if abs(self._externals - new) > 1:
+            raise ValueError("External count must be increased or decreased by 1")
+
+        self._externals = new
+        self._set_remote_value("externals", new)
+
     def amount_euro(self):
         return self.amount / float(100)
 
