@@ -139,6 +139,69 @@ class CommunismCommand(BaseCommand):
         communisms[sender_id] = user_communism
 
 
+class CommunismQuery(BaseQuery):
+    """
+    Callback query executor for /communism
+    """
+
+    def __init__(self):
+        super().__init__(
+            "communism",
+            {
+                "toggle": self.toggle,
+                "increase": self.increase,
+                "decrease": self.decrease,
+                "accept": self.accept,
+                "cancel": self.cancel
+            }
+        )
+
+    def toggle(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
+    def increase(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
+    def decrease(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
+    def accept(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
+    def cancel(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
+
 def communism_query(_, update):
     sender, selected_communism, cmd, sender_id, action = get_data_from_query(update, communisms)
 
