@@ -124,7 +124,7 @@ class BaseQuery:
         :type targets: typing.Optional[typing.Dict[str, typing.Callable]]
         """
 
-        if not isinstance(targets, dict):
+        if not isinstance(targets, dict) and targets is not None:
             raise TypeError("Expected dict or None")
 
         self.name = name
