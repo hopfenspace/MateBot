@@ -7,6 +7,8 @@ MateBot user definitions
 import typing
 import datetime as _datetime
 
+import pytz as _tz
+import tzlocal as _local_tz
 import pymysql.err as _err
 import telegram as _telegram
 
@@ -131,8 +133,8 @@ class BaseBotUser:
         self._balance = record["balance"]
         self._permission = record["permission"]
         self._active = record["active"]
-        self._created = record["created"]
-        self._accessed = record["accessed"]
+        self._created = _tz.utc.localize(record["created"])
+        self._accessed = _tz.utc.localize(record["accessed"])
 
     def _update_record(
             self,
@@ -174,7 +176,7 @@ class BaseBotUser:
         )
 
         assert rows == 1
-        self._accessed = result[0]["accessed"]
+        self._accessed = _tz.utc.localize(result[0]["accessed"])
         return result[0][column]
 
     def _update_local(self, record: typing.Dict[str, typing.Any]) -> None:
@@ -312,18 +314,18 @@ class BaseBotUser:
     @property
     def created(self) -> _datetime.datetime:
         """
-        Get the timestamp when the user was created
+        Get the timestamp when the user was created in local time
         """
 
-        return self._created
+        return self._created.astimezone(_local_tz.get_localzone())
 
     @property
     def accessed(self) -> _datetime.datetime:
         """
-        Get the timestamp when the user record was changed the last time
+        Get the timestamp when the user record was changed the last time in local time
         """
 
-        return self._accessed
+        return self._accessed.astimezone(_local_tz.get_localzone())
 
     @property
     def user(self) -> typing.Optional[_telegram.User]:
