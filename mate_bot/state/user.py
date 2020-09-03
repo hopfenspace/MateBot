@@ -452,7 +452,10 @@ class MateBotUser(BaseBotUser):
 
         rows, values = self._get_remote_record(use_tid)
 
+        existing = True
         if rows == 0 and len(values) == 0:
+            existing = False
+
             if not use_tid:
                 raise _err.DataError("User ID {} was not found in the database.".format(self._id))
 
@@ -465,6 +468,8 @@ class MateBotUser(BaseBotUser):
 
         if rows == 1 and len(values) == 1:
             self._update_local(values[0])
+            if not existing:
+                self.external = True
             self._external = self.check_external()
 
     def __repr__(self) -> str:
