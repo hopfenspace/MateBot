@@ -229,18 +229,18 @@ class TransactionLog:
                 reason = self.DEFAULT_NULL_REASON_REPLACE
 
             if entry["receiver"] == self._uid:
-                direction = "<-"
+                direction = "<<"
                 partner = entry["sender"]
             elif entry["sender"] == self._uid:
-                direction = "->"
+                direction = ">>"
                 partner = entry["receiver"]
                 amount = -amount
             else:
                 raise RuntimeError
 
             logs.append(
-                "{}: {:=+6.2f} {} {} ({})".format(
-                    time.strftime("%d.%m.%Y %H:%M:%S", entry["registered"].timetuple()),
+                "{}: {:>+6.2f}: me {} {:<11} :: {}".format(
+                    time.strftime("%d.%m.%Y %H:%M", entry["registered"].timetuple()),
                     amount,
                     direction,
                     user.BaseBotUser.get_name_from_uid(partner),

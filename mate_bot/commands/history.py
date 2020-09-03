@@ -30,7 +30,7 @@ class HistoryCommand(BaseCommand):
         user = state.MateBotUser(update.effective_message.from_user)
         logs = state.TransactionLog(user).to_string().split("\n")
         answer = "\n".join(logs[-args.length:])
-        update.effective_message.reply_text(
-            "Transaction history for {}:\n{}".format(user.name, answer),
+        update.effective_message.reply_markdown_v2(
+            "Transaction history for {}:\n```\n{}```".format(user.name, answer),
             disable_notification=True
         )
