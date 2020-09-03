@@ -410,6 +410,7 @@ class BaseCollective:
             self._amount != record["amount"],
             self._externals != record["externals"],
             self._description != record["description"],
+            self._communistic != record["communistic"],
             self._creator != record["creator"],
             self._created != _tz.utc.localize(record["created"])
         ])
@@ -419,6 +420,7 @@ class BaseCollective:
             self._amount = record["amount"]
             self._externals = record["externals"]
             self._description = record["description"]
+            self._communistic = record["communistic"]
             self._creator = record["creator"]
             self._created = _tz.utc.localize(record["created"])
 
@@ -455,10 +457,7 @@ class BaseCollective:
                 raise TypeError("Expected None or str")
 
         self._description = new
-        _execute(
-            "UPDATE collectives SET description=%s WHERE id=%s",
-            (new, self._id)
-        )
+        self._set_remote_value("description", new)
 
     @property
     def creator(self) -> MateBotUser:
