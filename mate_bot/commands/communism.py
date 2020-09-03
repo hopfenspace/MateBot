@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import typing
 import argparse
 
 import telegram
@@ -8,10 +9,64 @@ import state
 from args import amount as amount_type, JoinAction
 from .base import BaseCommand, BaseQuery
 
+
+COMMUNISM_ARGUMENTS = typing.Union[int, typing.Tuple[state.MateBotUser, int, str]]
+
+
 class Communism(state.BaseCollective):
-    def __init__(self, creator, amount, reason):
-        self.creator = creator
-        self.amount = amount
+    """
+    Communism class to collect money from various other persons
+
+    The constructor of this class accepts two different argument
+    types. You can specify a single integer to get the Communism object
+    that matches a remote record where the integer is the internal
+    collectives ID. Alternatively, you can specify a tuple containing
+    three objects: the creator of the new Communism as a MateBotUser
+    object, the amount of the communism as integer measured in Cent
+    and the description of the communism as string. While being optional
+    in the database, you have to specify at least three chars as reason.
+    """
+
+    _communistic = True
+
+    _ALLOWED_COLUMNS = ["externals", "active"]
+
+    def __init__(self, arguments: COMMUNISM_ARGUMENTS):
+        """
+        :param arguments:
+        :type arguments:
+        :raises ValueError:
+        :raises TypeError:
+        """
+
+        if isinstance(arguments, int):
+            self._id = arguments
+            self.update()
+
+        elif isinstance(arguments, tuple):
+            if len(arguments) != 3:
+                raise ValueError("Expected three arguments for the tuple")
+
+            user, amount, reason = arguments
+            if not isinstance(user, state.MateBotUser):
+                raise TypeError("Expected MateBotUser object as first element")
+            if not isinstance(amount, int):
+                raise TypeError("Expected int object as second element")
+            if not isinstance(reason, str):
+                raise TypeError("Expected str object as third element")
+            if len(reason) < 3:
+                raise ValueError("Reason too short")
+
+            self._creator = user
+            self._amount = amount
+            self._description = reason
+            self._externals = 0
+            self._active = True
+
+        else:
+            raise TypeError("Expected int or tuple of arguments")
+
+        """
         self.reason = reason
         self.members = [creator]
         self.message = None
@@ -31,6 +86,7 @@ class Communism(state.BaseCollective):
                 telegram.InlineKeyboardButton("CANCEL", callback_data=prefix + " cancel"),
             ],
         ])
+        """
 
     def amount_euro(self):
         return self.amount / float(100)
