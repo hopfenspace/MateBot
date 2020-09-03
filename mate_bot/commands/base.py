@@ -5,6 +5,7 @@ MateBot command handling base library
 """
 
 import sys
+import typing
 import argparse
 from traceback import print_exc as _print_exc
 
@@ -18,8 +19,8 @@ class BaseCommand:
     """
     Base class for all MateBot commands executed by the CommandHandler
 
-    It handles argument parsing and exception catching / handling. Some
-    specific implementation should be a subclass of this class. It must add
+    It handles argument parsing and exception catching. Some specific
+    implementation should be a subclass of this class. It must add
     arguments to the parser in the constructor and overwrite the run method.
 
     A minimal working example class may look like this:
@@ -71,6 +72,7 @@ class BaseCommand:
         :type update: telegram.Update
         :param context: Telegram callback context
         :type context: telegram.ext.CallbackContext
+        :return: None
         """
 
         try:
@@ -95,8 +97,7 @@ class BaseQuery:
     The `targets` parameter is a dictionary connecting the data with
     associated function calls. Those functions or methods must
     expect one parameter `update` which is filled with the correct
-    telegram.Update object. No return value is expected. This
-    class provides the method `example` to illustrate this behavior.
+    telegram.Update object. No return value is expected.
 
     In order to properly use this class or a subclass thereof, you
     must supply a pattern to filter the callback query against to
@@ -119,9 +120,15 @@ class BaseQuery:
         """
         :param name: name of the command the callback is for
         :type name: str
+        :param targets: dict to associate data replies with function calls
+        :type targets: typing.Optional[typing.Dict[str, typing.Callable]]
         """
 
+        if not isinstance(targets, dict):
+            raise TypeError("Expected dict or None")
+
         self.name = name
+        self.data = None
         self.targets = targets
 
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
@@ -132,7 +139,29 @@ class BaseQuery:
         :type context: telegram.ext.CallbackContext
         :return: None
         :raises RuntimeError: when either no callback data or no pattern match is present
+        :raises IndexError: when a callback data string has no target callable
+        :raises TypeError: when a target is not a callable object
         """
+
+        data = update.callback_query.data
+        if data is None:
+            raise RuntimeError("No callback data found")
+        if context.match is None:
+            raise RuntimeError("No pattern match found")
+
+        self.data = (data[:context.match.start()] + data[context.match.end():]).strip()
+
+        if self.targets is None:
+            self.run(update)
+            return
+
+        if self.data not in self.targets:
+            raise IndexError("No target callable found for: '{}'".format(self.data))
+
+        target = self.targets[self.data]
+        if not hasattr(target, "__call__"):
+            raise TypeError("No callable: {}".format(target))
+        target(update)
 
     def run(self, update: telegram.Update) -> None:
         """
