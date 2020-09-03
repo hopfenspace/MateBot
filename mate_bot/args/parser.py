@@ -26,4 +26,4 @@ class NonExitingParser(argparse.ArgumentParser):
         raise RuntimeError("The parser for \"{}\" tried to exit".format(self.prog))
 
     def error(self, message: str) -> None:
-        raise err.ParsingError(message)
+        raise err.ParsingError(message, self.format_usage())
