@@ -85,6 +85,19 @@ class Communism(state.BaseCollective):
                 telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
             ]
         ])
+
+    def __str__(self) -> str:
+        return (
+            "**Communism by {creator}**\n\nReason: {description}\nAmount: {amount:.2f}\n"
+            "Externals: {externals}\nJoined users: {users}".format(
+                creator = self.creator,
+                description = self.description,
+                amount = self.amount / 100,
+                externals = self.externals,
+                users = ", ".join(self.get_users_names())
+            )
+        )
+
         """
 
     @property
