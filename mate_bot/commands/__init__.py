@@ -8,20 +8,19 @@ MateBot collection of commands
 from .base import BaseCommand, BaseQuery
 
 from .balance import BalanceCommand
-from .bootstrap import StartCommand
 from .communism import CommunismCommand, CommunismQuery, Communism
 from .consume import ConsumeCommand, DrinkCommand, IceCommand, PizzaCommand, WaterCommand
 from .data import DataCommand
 from .history import HistoryCommand
 from .pay import PayCommand, PayQuery, Pay
 from .send import SendCommand
+from .start import StartCommand
 
 
 __all__ = [
     "BaseCommand",
     "BaseQuery",
     "BalanceCommand",
-    "StartCommand",
     "CommunismCommand",
     "CommunismQuery",
     "Communism",
@@ -35,5 +34,6 @@ __all__ = [
     "PayCommand",
     "PayQuery",
     "Pay",
-    "SendCommand"
+    "SendCommand",
+    "StartCommand"
 ]
