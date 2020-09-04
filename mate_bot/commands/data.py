@@ -30,15 +30,7 @@ class DataCommand(BaseCommand):
             update.effective_message.reply_text("This command can only be used in private chat.")
             return
 
-        sender = update.effective_message.from_user
-        if sender.is_bot:
-            return
-
-        if state.MateBotUser.get_uid_from_tid(sender.id) is None:
-            update.effective_message.reply_text("You need to /start first.")
-            return
-
-        user = state.MateBotUser(sender)
+        user = state.MateBotUser(update.effective_message.from_user)
         result = (
             "Overview over currently stored data for {}:\n\n```\n"
             "User ID: {}\nTelegram ID: {}\nName: {}\nUsername: {}\nBalance: {:.2f}€\n"
