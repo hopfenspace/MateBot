@@ -1,0 +1,15 @@
+[Unit]
+Description=MateBot daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env python3 /home/matebot/MateBot/mate_bot/main.py 
+User=matebot
+WorkingDirectory=/home/matebot/MateBot/mate_bot/
+Restart=always
+After=network-online.target
+Wants=network-online.target
+SyslogIdentifier=matebot
+
+[Install]
+WantedBy=multi-user.target
