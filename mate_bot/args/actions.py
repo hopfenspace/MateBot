@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+Collection of parser actions
+See `argparse.ArgumentParser.add_argument`'s action parameter
+
+There is:
+* `JoinAction`: join an arbitrary number of strings with spaces
+"""
+
 import argparse
 import typing
 

@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+"""
+Collection of parser argument types
+See `argparse.ArgumentParser.add_argument`'s type parameter
+
+There are:
+* `amount`: an amount of money
+* `boolean`: a bunch of words or symbols which can be interpreted as truth values
+* `natural`: a natural number (positive integer)
+* `user`: a MateBotUser
+"""
+
 import re
 
 import state

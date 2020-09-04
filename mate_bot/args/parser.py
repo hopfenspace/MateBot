@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 """
-MateBot argument parsing helper library
+MateBot's custom `ArgumentParser`
 """
+
 import sys as _sys
 from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError, HelpFormatter
 from typing import Optional, Sequence, Any, Type
@@ -112,6 +113,7 @@ class PatchedParser(ArgumentParser):
         :return: the converted value
         :rtype: Any
         """
+
         type_func = self._registry_get("type", action.type, action.type)
         if not callable(type_func):
             raise ArgumentError(action, "{} is not callable".format(repr(type_func)))

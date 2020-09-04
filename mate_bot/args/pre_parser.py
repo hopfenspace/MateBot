@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+A function to prepare a message for parsing with the actual parser
+"""
+
 import telegram
 import typing
 
@@ -21,6 +25,7 @@ def pre_parse(msg: telegram.Message) -> typing.Iterator[str]:
     :return: a list to be given to a parser's parse_args
     :rtype: typing.Iterator[str]
     """
+
     text = msg.text
 
     for entity in reversed(msg.entities):
