@@ -21,7 +21,9 @@ BOOLEAN_POSITIVE = [
     "+",
     "true",
     "yes",
-    "good"
+    "good",
+    "allow",
+    "allowed"
 ]
 
 BOOLEAN_NEGATIVE = [
@@ -30,7 +32,9 @@ BOOLEAN_NEGATIVE = [
     "-",
     "false",
     "no",
-    "bad"
+    "bad",
+    "deny",
+    "denied"
 ]
 
 
