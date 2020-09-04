@@ -11,6 +11,7 @@ from traceback import print_exc as _print_exc
 
 import telegram.ext
 
+import state
 from err import ParsingError
 from args import PatchedParser, pre_parse
 
@@ -76,13 +77,19 @@ class BaseCommand:
         """
 
         try:
+            if self.name != "start":
+                if state.MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
+                    update.effective_message.reply_text("You need to /start first.")
+                    return
             argv = pre_parse(update.effective_message)
             args = self.parser.parse_args(argv)
             self.run(args, update)
+
         except ParsingError as err:
             update.effective_message.reply_text(
                 "\n".join(map(str, err.args))
             )
+
         finally:
             if sys.exc_info()[0] is not None:
                 _print_exc()
