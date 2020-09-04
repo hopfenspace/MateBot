@@ -15,6 +15,29 @@ __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")
 # 1st group: leading number, 2nd group: 1st decimal, 3rd group: 2nd decimal
 
 
+BOOLEAN_POSITIVE = [
+    "on",
+    "1",
+    "+",
+    "true",
+    "yes",
+    "good",
+    "allow",
+    "allowed"
+]
+
+BOOLEAN_NEGATIVE = [
+    "off",
+    "0",
+    "-",
+    "false",
+    "no",
+    "bad",
+    "deny",
+    "denied"
+]
+
+
 def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"]["max-amount"]) -> int:
     """
     Convert the string into an amount of money.
@@ -51,6 +74,24 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
         raise ValueError("The amount is too low")
 
     return val
+
+
+def boolean(arg: str) -> bool:
+    """
+    Convert the string into a boolean using allowed phrases (word lists)
+
+    :param arg: string to be parsed
+    :type arg: str
+    :return: properly converted boolean value
+    :rtype: bool
+    :raises ValueError: when the argument could not be converted properly
+    """
+
+    if arg.lower() in BOOLEAN_POSITIVE and not arg.lower() in BOOLEAN_NEGATIVE:
+        return True
+    if arg.lower() in BOOLEAN_NEGATIVE and not arg.lower() in BOOLEAN_POSITIVE:
+        return False
+    raise ValueError("Unknown boolean phrase.")
 
 
 def natural(arg: str) -> int:
