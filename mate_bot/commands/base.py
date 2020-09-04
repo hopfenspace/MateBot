@@ -12,7 +12,7 @@ from traceback import print_exc as _print_exc
 import telegram.ext
 
 from err import ParsingError
-from args import NonExitingParser, pre_parse
+from args import PatchedParser, pre_parse
 
 
 class BaseCommand:
@@ -43,7 +43,7 @@ class BaseCommand:
         """
 
         self.name = name
-        self.parser = NonExitingParser(prog=name)
+        self.parser = PatchedParser(prog=name)
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """

@@ -4,14 +4,14 @@
 MateBot library to easily parse arguments of commands
 """
 
-from .parser import NonExitingParser
+from .parser import PatchedParser
 from .types import amount, natural, user
 from .actions import JoinAction
 from .pre_parser import pre_parse
 
 
 __all__ = [
-    "NonExitingParser",
+    "PatchedParser",
     "amount",
     "natural",
     "user",
