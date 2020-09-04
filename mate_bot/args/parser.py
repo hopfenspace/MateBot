@@ -3,9 +3,9 @@
 """
 MateBot argument parsing helper library
 """
-
-from argparse import Namespace, ArgumentParser
-from typing import Optional, Sequence
+import sys as _sys
+from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError
+from typing import Optional, Sequence, Any
 
 from err import ParsingError
 
@@ -25,6 +25,9 @@ class PatchedParser(ArgumentParser):
     * The error message for unrecognized arguments didn't differentiate between singular and plural.
       It always used plural. This class doesn't. It only adds the plural s if there are more than one
       unrecognized arguments.
+    * Type conversion errors weren't treated equally. argparse dumps ValueError and TypeError's error messages
+      while forwarding ArgumentTypeError's error messages. This class treats all equally and forwards them for all
+      of these three error types.
     """
 
     def parse_args(
@@ -55,6 +58,39 @@ class PatchedParser(ArgumentParser):
                 " ".join(argv)
             ))
         return args
+
+    def _get_value(self, action: Action, arg_string: str) -> Any:
+        """
+        This method uses tries to convert an argument to its specified type.
+
+        Patch:
+        Originally there was a distinction between argparse's ArgumentTypeErrors and python's Value- and TypeErrors.
+        The error messages for the python ones were dumped an replace by a simple "invalid value".
+        Now it uses the same code for all those errors.
+
+        :param action: the action used for the argument
+        :type action: Action
+        :param arg_string: the argument string to convert
+        :type arg_string: str
+        :return: the converted value
+        :rtype: Any
+        """
+        type_func = self._registry_get("type", action.type, action.type)
+        if not callable(type_func):
+            raise ArgumentError(action, "{} is not callable".format(repr(type_func)))
+
+        # convert the value to the appropriate type
+        try:
+            result = type_func(arg_string)
+
+        # ArgumentTypeErrors, TypeError and ValueError indicate errors
+        except (ArgumentTypeError, TypeError, ValueError):
+            name = getattr(action.type, "__name__", repr(action.type))
+            msg = str(_sys.exc_info()[1])
+            raise ArgumentError(action, msg)
+
+        # return the converted value
+        return result
 
     def exit(self, status: int = 0, message: str = None) -> None:
         """
