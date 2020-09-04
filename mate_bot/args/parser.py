@@ -4,8 +4,8 @@
 MateBot argument parsing helper library
 """
 import sys as _sys
-from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError
-from typing import Optional, Sequence, Any
+from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError, HelpFormatter
+from typing import Optional, Sequence, Any, Type
 
 from err import ParsingError
 
@@ -28,7 +28,44 @@ class PatchedParser(ArgumentParser):
     * Type conversion errors weren't treated equally. argparse dumps ValueError and TypeError's error messages
       while forwarding ArgumentTypeError's error messages. This class treats all equally and forwards them for all
       of these three error types.
+    * The help argument will not be added in the constructor.
     """
+    
+    def __init__(
+            self,
+            prog: Optional[str] = None,
+            usage: Optional[str] = None,
+            description: Optional[str] = None,
+            epilog: Optional[str] = None,
+            parents: Sequence[ArgumentParser] = [],
+            formatter_class: Type[HelpFormatter] = HelpFormatter,
+            prefix_chars: str = "-",
+            fromfile_prefix_chars: Optional[str] = None,
+            argument_default: Optional[str] = None,
+            conflict_handler: str = "error",
+            allow_abbrev: bool = True
+    ):
+        """
+        Patch:
+        Do not add the default help argument.
+        """
+        # noinspection PyTypeChecker
+        # the expected type _FormatterClass is nowhere to be found
+        # from argparse's code and documentation it looks like it wants the class HelpFormatter and its subclasses.
+        super(PatchedParser, self).__init__(
+            prog=prog,
+            usage=usage,
+            description=description,
+            epilog=epilog,
+            parents=parents,
+            formatter_class=formatter_class,
+            prefix_chars=prefix_chars,
+            fromfile_prefix_chars=fromfile_prefix_chars,
+            argument_default=argument_default,
+            conflict_handler=conflict_handler,
+            add_help=False,
+            allow_abbrev=allow_abbrev
+        )
 
     def parse_args(
             self,
