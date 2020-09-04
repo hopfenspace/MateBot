@@ -80,7 +80,9 @@ class BaseCommand:
             args = self.parser.parse_args(argv)
             self.run(args, update)
         except ParsingError as err:
-            update.effective_message.reply_text(str(err))
+            update.effective_message.reply_text(
+                "\n".join(map(str, err.args))
+            )
         finally:
             if sys.exc_info()[0] is not None:
                 _print_exc()
