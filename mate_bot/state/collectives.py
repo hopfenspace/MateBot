@@ -227,7 +227,7 @@ class BaseCollective:
             (self._id,)
         )
 
-    def _is_participating(
+    def is_participating(
             self,
             user: typing.Union[int, MateBotUser]
     ) -> typing.Tuple[bool, typing.Optional[str]]:
@@ -254,7 +254,7 @@ class BaseCollective:
             raise err.DesignViolation
         return True, values[0]["vote"]
 
-    def _add_user(
+    def add_user(
             self,
             user: typing.Union[int, MateBotUser],
             vote: typing.Union[str, bool] = False
@@ -286,7 +286,7 @@ class BaseCollective:
             return rows == 1 and len(values) == 1
         return False
 
-    def _remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
+    def remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
         """
         Remove a user from the collective
 
@@ -307,7 +307,7 @@ class BaseCollective:
             return rows == 1 and len(values) == 1
         return False
 
-    def _toggle_user(
+    def toggle_user(
             self,
             user: typing.Union[int, MateBotUser],
             vote: typing.Union[str, bool] = False
@@ -324,9 +324,9 @@ class BaseCollective:
         """
 
         if self._is_participating(user)[0]:
-            return self._remove_user(user)
+            return self.remove_user(user)
         else:
-            return self._add_user(user, vote)
+            return self.add_user(user, vote)
 
     def _abort(self) -> bool:
         """
@@ -380,6 +380,18 @@ class BaseCollective:
             return False
 
         return self._abort()
+
+    def close(self) -> bool:
+        """
+        Close the collective operation and perform all transactions
+
+        This method must be overwritten in a subclass!
+
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        raise NotImplementedError
 
     def get(self) -> int:
         """
