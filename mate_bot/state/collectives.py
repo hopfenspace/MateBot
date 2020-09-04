@@ -227,6 +227,19 @@ class BaseCollective:
             (self._id,)
         )
 
+    def get_users_names(self) -> typing.List[str]:
+        """
+        Return a list of participating users' names
+
+        :return: list of users' names
+        :rtype: typing.List[str]
+        """
+
+        return list(map(
+            lambda r: MateBotUser(r["users_id"]).name,
+            self._get_remote_joined_record()[1]
+        ))
+
     def is_participating(
             self,
             user: typing.Union[int, MateBotUser]
@@ -276,7 +289,7 @@ class BaseCollective:
         if vote not in ("+", "-"):
             raise ValueError("Expected '+' or '-'")
 
-        if not self._is_participating(user)[0]:
+        if not self.is_participating(user)[0]:
             rows, values = _execute(
                 "INSERT INTO collectives_users(collectives_id, users_id, vote) "
                 "VALUES (%s, %s, %s)",
@@ -297,7 +310,7 @@ class BaseCollective:
         """
 
         user = self._get_uid(user)
-        if self._is_participating(user)[0]:
+        if self.is_participating(user)[0]:
             rows, values = _execute(
                 "DELETE FROM collectives_users "
                 "WHERE collectives_id=%s AND users_id=%s",
@@ -323,7 +336,7 @@ class BaseCollective:
         :rtype: bool
         """
 
-        if self._is_participating(user)[0]:
+        if self.is_participating(user)[0]:
             return self.remove_user(user)
         else:
             return self.add_user(user, vote)
