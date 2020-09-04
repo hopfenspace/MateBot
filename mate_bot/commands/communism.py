@@ -71,25 +71,21 @@ class Communism(state.BaseCollective):
         else:
             raise TypeError("Expected int or tuple of arguments")
 
-        """
-        self.reason = reason
-        self.members = [creator]
-        self.message = None
-        self.externs = 0
+        def f(c):
+            return "communism {} {}".format(c, self._id)
 
-        prefix = "communism " + str(creator['id'])
-        self.message_markup = telegram.InlineKeyboardMarkup([
+        self._inline_keyboard = telegram.InlineKeyboardMarkup([
             [
-                telegram.InlineKeyboardButton("JOIN/LEAVE", callback_data=prefix + " join/leave"),
+                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
             ],
             [
-                telegram.InlineKeyboardButton("EXTERN -", callback_data=prefix + " extern-"),
-                telegram.InlineKeyboardButton("EXTERN +", callback_data=prefix + " extern+"),
+                telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
+                telegram.InlineKeyboardButton("EXTERNALS -", callback_data = f("decrease")),
             ],
             [
-                telegram.InlineKeyboardButton("OK", callback_data=prefix + " ok"),
-                telegram.InlineKeyboardButton("CANCEL", callback_data=prefix + " cancel"),
-            ],
+                telegram.InlineKeyboardButton("ACCEPT", callback_data = f("accept")),
+                telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
+            ]
         ])
         """
 
