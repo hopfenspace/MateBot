@@ -7,8 +7,8 @@ ExecStart=/usr/bin/env python3 /home/matebot/MateBot/mate_bot/main.py
 User=matebot
 WorkingDirectory=/home/matebot/MateBot/mate_bot/
 Restart=always
-After=network-online.target
-Wants=network-online.target
+After=network-online.target mariadb.service
+Wants=network-online.target mariadb.service
 SyslogIdentifier=matebot
 
 [Install]
