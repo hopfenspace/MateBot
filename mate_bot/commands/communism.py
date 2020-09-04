@@ -57,8 +57,6 @@ class Communism(state.BaseCollective):
                 raise TypeError("Expected int object as second element")
             if not isinstance(reason, str):
                 raise TypeError("Expected str object as third element")
-            if len(reason) < 3:
-                raise ValueError("Reason too short")
 
             self._creator = user.uid
             self._amount = amount
