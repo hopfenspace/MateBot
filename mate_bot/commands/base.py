@@ -148,8 +148,8 @@ class BaseQuery:
         :type context: telegram.ext.CallbackContext
         :return: None
         :raises RuntimeError: when either no callback data or no pattern match is present
-        :raises IndexError: when a callback data string has no target callable
-        :raises TypeError: when a target is not a callable object
+        :raises IndexError: when a callback data string has no unique target callable
+        :raises TypeError: when a target is not a callable object (implicitly)
         """
 
         data = update.callback_query.data
@@ -164,13 +164,22 @@ class BaseQuery:
             self.run(update)
             return
 
-        if self.data not in self.targets:
+        if self.data in self.targets:
+            self.targets[self.data](update)
+            return
+
+        available = []
+        for k in self.targets:
+            if self.data.startswith(k):
+                available.append(k)
+
+        if len(available) == 0:
             raise IndexError("No target callable found for: '{}'".format(self.data))
 
-        target = self.targets[self.data]
-        if not hasattr(target, "__call__"):
-            raise TypeError("No callable: {}".format(target))
-        target(update)
+        if len(available) > 1:
+            raise IndexError("No unambiguous callable found for: '{}'".format(self.data))
+
+        self.targets[available[0]](update)
 
     def run(self, update: telegram.Update) -> None:
         """
