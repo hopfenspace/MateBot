@@ -3,37 +3,37 @@
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
 from config import config
+
 from commands.balance import BalanceCommand
-from commands.consume import DrinkCommand
-from commands.consume import WaterCommand
-from commands.consume import PizzaCommand
-from commands.consume import IceCommand
-from commands.history import HistoryCommand
-from commands.zwegat import ZwegatCommand
-from commands.send import SendCommand
+from commands.communism import CommunismCommand, CommunismQuery
+from commands.consume import DrinkCommand, IceCommand, PizzaCommand, WaterCommand
+from commands.data import DataCommand
 from commands.help import HelpCommand
-from commands.communism import CommunismCommand, communism_query
-from commands.pay import PayCommand, pay_query
+from commands.history import HistoryCommand
+from commands.pay import PayCommand, PayQuery
+from commands.send import SendCommand
+from commands.start import StartCommand
 
 
 if __name__ == "__main__":
     updater = Updater(config["bot"]["token"], use_context = True)
-    filter_id = Filters.chat(config["bot"]["chat"])
+    internal_filter = Filters.chat(config["bot"]["chat"])
 
     updater.dispatcher.add_handler(CommandHandler("balance", BalanceCommand()))
+    updater.dispatcher.add_handler(CommandHandler("communism", CommunismCommand()))
+    updater.dispatcher.add_handler(CommandHandler("drink", DrinkCommand()))
+    updater.dispatcher.add_handler(CommandHandler("ice", IceCommand()))
+    updater.dispatcher.add_handler(CommandHandler("pizza", PizzaCommand()))
+    updater.dispatcher.add_handler(CommandHandler("water", WaterCommand()))
+    updater.dispatcher.add_handler(CommandHandler("data", DataCommand()))
+    updater.dispatcher.add_handler(CommandHandler("help", HelpCommand()))
     updater.dispatcher.add_handler(CommandHandler("history", HistoryCommand()))
-    updater.dispatcher.add_handler(CommandHandler("zwegat", ZwegatCommand()))
-    updater.dispatcher.add_handler(CommandHandler("drink", DrinkCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("water", WaterCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("pizza", PizzaCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("ice", IceCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("send", SendCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("help", HelpCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("communism", CommunismCommand(), filters=filter_id))
-    updater.dispatcher.add_handler(CommandHandler("pay", PayCommand(), filters=filter_id))
+    updater.dispatcher.add_handler(CommandHandler("pay", PayCommand()))
+    updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
+    updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
 
-    updater.dispatcher.add_handler(CallbackQueryHandler(try_wrap(communism_query), pattern="^communism"))
-    updater.dispatcher.add_handler(CallbackQueryHandler(try_wrap(pay_query), pattern="^pay"))
+    updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
+    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
 
     updater.start_polling()
     updater.idle()
