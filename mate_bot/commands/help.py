@@ -13,7 +13,7 @@ class HelpCommand(BaseCommand):
     """
 
     def __init__(self):
-        super(self).__init__("help")
+        super().__init__("help")
         self.parser.add_argument("command", type=command_type)
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
