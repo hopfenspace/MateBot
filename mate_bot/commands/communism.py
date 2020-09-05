@@ -105,7 +105,22 @@ class Communism(state.BaseCollective):
             )
         )
 
+    def edit(self, message: telegram.Message) -> None:
         """
+        Edit the content of the "main" message that sends the callback queries
+
+        :param message: Telegram message handling the communism interactions
+        :type message: telegram.Message
+        :return: None
+        """
+
+        import random
+        x = random.randint(1, 1000)
+        print("edit message:", message)
+        message.edit_text(
+            "The communism was just created. Here a random number: " + str(x),
+            reply_markup=self._inline_keyboard
+        )
 
     @property
     def externals(self) -> int:
