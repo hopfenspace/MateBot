@@ -6,7 +6,7 @@ import argparse
 from config import config
 from .common_util import user_list_to_string, get_data_from_query
 from .base import BaseCommand
-from state import get_or_create_user, create_transaction
+
 from args.types import amount as amount_type
 from args.actions import JoinAction
 
@@ -49,6 +49,7 @@ class PayCommand(BaseCommand):
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 
     def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+        """
         sender = get_or_create_user(msg.from_user)
         sender_id = str(sender['id'])
 
@@ -59,6 +60,11 @@ class PayCommand(BaseCommand):
         user_pay = Pay(sender, args.amount, args.sreason)
         user_pay.message = msg.reply_text(str(user_pay), reply_markup=user_pay.message_markup)
         pays[sender_id] = user_pay
+        """
+
+
+class PayQuery:
+    pass
 
 
 def pay_query(_, update):
@@ -103,8 +109,8 @@ def pay_query(_, update):
         selected_pay.message.edit_text("DISAPPROVED\n" + str(selected_pay))
     elif check_list(selected_pay.approved):
         del pays[sender_id]
-        create_transaction(selected_pay.creator, selected_pay.amount,
-                           "pay for {}, approved by {}".format(selected_pay.reason, user_list_to_string(selected_pay.approved)))
+        #create_transaction(selected_pay.creator, selected_pay.amount,
+        #                   "pay for {}, approved by {}".format(selected_pay.reason, user_list_to_string(selected_pay.approved)))
         selected_pay.message.edit_text("APPROVED\n" + str(selected_pay))
     elif changed:
         selected_pay.message.edit_text(str(selected_pay), reply_markup=selected_pay.message_markup)
