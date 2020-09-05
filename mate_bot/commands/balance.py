@@ -14,7 +14,7 @@ class BalanceCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("balance")
+        super().__init__("balance", "`/balance [user]`", "")
         self.parser.add_argument("user", type=user_type, nargs="?")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:

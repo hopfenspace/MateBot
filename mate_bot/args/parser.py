@@ -8,7 +8,6 @@ import sys as _sys
 from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError, HelpFormatter
 from typing import Optional, Sequence, Any, Type
 
-from .formatter import ChatHelpFormatter
 from err import ParsingError
 
 
@@ -33,41 +32,8 @@ class PatchedParser(ArgumentParser):
     * The help argument will not be added in the constructor.
     """
     
-    def __init__(
-            self,
-            prog: Optional[str] = None,
-            usage: Optional[str] = None,
-            description: Optional[str] = None,
-            epilog: Optional[str] = None,
-            parents: Sequence[ArgumentParser] = [],
-            #formatter_class: Type[HelpFormatter] = HelpFormatter,
-            prefix_chars: str = "-",
-            fromfile_prefix_chars: Optional[str] = None,
-            argument_default: Optional[str] = None,
-            conflict_handler: str = "error",
-            allow_abbrev: bool = True
-    ):
-        """
-        Patch:
-        Do not add the default help argument.
-        """
-        # noinspection PyTypeChecker
-        # the expected type _FormatterClass is nowhere to be found
-        # from argparse's code and documentation it looks like it wants the class HelpFormatter and its subclasses.
-        super(PatchedParser, self).__init__(
-            prog=prog,
-            usage=usage,
-            description=description,
-            epilog=epilog,
-            parents=parents,
-            formatter_class=ChatHelpFormatter,
-            prefix_chars=prefix_chars,
-            fromfile_prefix_chars=fromfile_prefix_chars,
-            argument_default=argument_default,
-            conflict_handler=conflict_handler,
-            add_help=False,
-            allow_abbrev=allow_abbrev
-        )
+    def __init__(self):
+        super(PatchedParser, self).__init__(add_help=False)
 
     def parse_args(
             self,
@@ -164,4 +130,4 @@ class PatchedParser(ArgumentParser):
         :raises ParsingError: when called
         """
 
-        raise ParsingError(message, self.format_usage())
+        raise ParsingError(message)

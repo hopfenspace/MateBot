@@ -15,9 +15,10 @@ class HelpCommand(BaseCommand):
     def __init__(self):
         super().__init__(
             "help",
-            description="The `/help` command prints the help page for any "
-                        "command. If no argument is passed, it will print its "
-                        "usage and a list of all available commands."
+            "`/help [command]`",
+            "The `/help` command prints the help page for any "
+            "command. If no argument is passed, it will print its "
+            "usage and a list of all available commands."
         )
         self.parser.add_argument("command", type=command_type, nargs="?")
 
@@ -30,7 +31,7 @@ class HelpCommand(BaseCommand):
         :return: None
         """
         if args.command:
-            msg = args.command().parser.format_help()
+            msg = args.command().description
         else:
             msg = self.parser.format_usage()
             msg += "\nList of commands:\n"

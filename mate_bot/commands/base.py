@@ -41,21 +41,25 @@ class BaseCommand:
 
     :param name: name of the command (without the "/")
     :type name: str
-    :param **kwargs: keyword arguments being handed to the parser's constructor
-    :type **kwargs: typing.Union[str, bool, argparse.ArgumentParser, None]
+    :param usage: a single line string showing the basic syntax
+    :type usage: str
+    :param description: a multiline string describing what the command does
+    :type description: str
     """
 
     # Dict to look up a commands class via its name
     COMMAND_DICT = {}
 
-    def __init__(self, name: str, **kwargs: typing.Union[str, bool, argparse.ArgumentParser, None]):
+    def __init__(self, name: str, usage: str, description: str):
 
         # Put the command in the command dict
         if name not in BaseCommand.COMMAND_DICT:
             BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
-        self.parser = PatchedParser(prog="/"+name, **kwargs)
+        self.usage = usage
+        self.description = description
+        self.parser = PatchedParser()
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
@@ -98,7 +102,7 @@ class BaseCommand:
 
         except ParsingError as err:
             update.effective_message.reply_text(
-                "\n".join(map(str, err.args))
+                str(err) + "\n Usage: " + self.usage
             )
 
         finally:

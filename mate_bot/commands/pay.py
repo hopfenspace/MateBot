@@ -44,7 +44,7 @@ class Pay:
 class PayCommand(BaseCommand):
 
     def __init__(self):
-        super().__init__("pay")
+        super().__init__("pay", "`/pay <amount> [reason]`", "")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 

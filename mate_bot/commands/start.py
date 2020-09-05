@@ -15,7 +15,7 @@ class StartCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("start")
+        super().__init__("start", "`/start`", "")
         self.parser.add_argument("trash-bin", nargs="*")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:

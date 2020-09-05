@@ -20,7 +20,7 @@ class ConsumeCommand(BaseCommand):
     the constructor in order to implement a new command.
     """
 
-    def __init__(self, name: str, price: int, messages: _typing.List[str], symbol: str):
+    def __init__(self, name: str, usage: str, description: str, price: int, messages: _typing.List[str], symbol: str):
         """
         :param name: name of the command
         :type name: str
@@ -32,8 +32,8 @@ class ConsumeCommand(BaseCommand):
         :type messages: typing.List[str]
         """
 
-        super().__init__(name)
-        self.parser.add_argument("number", default = 1, type = natural_type, nargs = "?")
+        super().__init__(name, usage, description)
+        self.parser.add_argument("number", default=1, type=natural_type, nargs="?")
 
         self.price = price
         self.messages = messages
@@ -79,6 +79,8 @@ class DrinkCommand(ConsumeCommand):
     def __init__(self):
         super().__init__(
             "drink",
+            "`/drink [number]`",
+            "",
             100,
             ["Okay, enjoy your "],
             "🍹"
@@ -93,6 +95,8 @@ class WaterCommand(ConsumeCommand):
     def __init__(self):
         super().__init__(
             "water",
+            "`/water [number]`",
+            "",
             50,
             [
                 "Okay, enjoy your ",
@@ -113,6 +117,8 @@ class PizzaCommand(ConsumeCommand):
     def __init__(self):
         super().__init__(
             "pizza",
+            "`/pizza [number]`",
+            "",
             200,
             [
                 "Okay, enjoy your ",
@@ -130,6 +136,8 @@ class IceCommand(ConsumeCommand):
     def __init__(self):
         super().__init__(
             "ice",
+            "`/ice [number]`",
+            "",
             50,
             [
                 "Okay, enjoy your ",
