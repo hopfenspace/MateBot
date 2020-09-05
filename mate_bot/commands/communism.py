@@ -72,27 +72,10 @@ class Communism(state.BaseCollective):
 
             self._create_new_record()
 
-            message.reply_markdown(str(self), reply_markup=self._inline_keyboard)
+            message.reply_markdown(str(self), reply_markup=self._gen_inline_keyboard())
 
         else:
             raise TypeError("Expected int or tuple of arguments")
-
-        def f(c):
-            return "communism {} {}".format(c, self._id)
-
-        self._inline_keyboard = telegram.InlineKeyboardMarkup([
-            [
-                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
-            ],
-            [
-                telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
-                telegram.InlineKeyboardButton("EXTERNALS -", callback_data = f("decrease")),
-            ],
-            [
-                telegram.InlineKeyboardButton("ACCEPT", callback_data = f("accept")),
-                telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
-            ]
-        ])
 
     def __str__(self) -> str:
         return (
@@ -106,6 +89,31 @@ class Communism(state.BaseCollective):
             )
         )
 
+    def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+        """
+        Generate the inline keyboard to control the communism
+
+        :return: inline keyboard using callback data strings
+        :rtype: telegram.InlineKeyboardMarkup
+        """
+
+        def f(c):
+            return "communism {} {}".format(c, self.get())
+
+        return telegram.InlineKeyboardMarkup([
+            [
+                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
+            ],
+            [
+                telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
+                telegram.InlineKeyboardButton("EXTERNALS -", callback_data = f("decrease")),
+            ],
+            [
+                telegram.InlineKeyboardButton("ACCEPT", callback_data = f("accept")),
+                telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
+            ]
+        ])
+
     def edit(self, message: telegram.Message) -> None:
         """
         Edit the content of the "main" message that sends the callback queries
@@ -117,7 +125,7 @@ class Communism(state.BaseCollective):
 
         message.edit_text(
             str(self),
-            reply_markup=self._inline_keyboard,
+            reply_markup=self._gen_inline_keyboard(),
             parse_mode="Markdown"
         )
 
