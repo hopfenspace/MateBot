@@ -165,20 +165,12 @@ class CommunismCommand(BaseCommand):
         :return: None
         """
 
-        sender = update.effective_message.from_user
-        if sender.is_bot:
-            return
-
-        if state.MateBotUser.get_uid_from_tid(sender.id) is None:
-            update.effective_message.reply_text("You need to /start first.")
-            return
-
-        user = state.MateBotUser(sender)
+        user = state.MateBotUser(update.effective_message.from_user)
         if state.BaseCollective.has_user_active_collective(user):
             update.effective_message.reply_text("You already have a collective in progress.")
             return
 
-        Communism((user, args.amount, args.reason))
+        Communism((user, args.amount, args.reason, update.effective_message))
 
 
 class CommunismQuery(BaseQuery):
