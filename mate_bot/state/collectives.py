@@ -240,7 +240,10 @@ class BaseCollective:
 
         return list(map(
             lambda r: MateBotUser(r["users_id"]).name,
-            self._get_remote_joined_record()[1]
+            filter(
+                lambda r: r["users_id"] is not None,
+                self._get_remote_joined_record()[1]
+            )
         ))
 
     def is_participating(
