@@ -9,11 +9,14 @@ There are:
 * `boolean`: a bunch of words or symbols which can be interpreted as truth values
 * `natural`: a natural number (positive integer)
 * `user`: a MateBotUser
+* `command`: the class of a command the bot provides
 """
 
 import re
 
 import state
+from commands import BaseCommand
+from typing import Type
 from config import config
 
 
@@ -148,3 +151,20 @@ def user(arg: str) -> state.MateBotUser:
 
     else:
         raise ValueError('No user mentioned. Try with "@".')
+
+
+def command(arg: str) -> Type[BaseCommand]:
+    """
+    Get the class corisponding to the given command.
+
+    :param arg: string to be parsed
+    :type arg: str
+    :return: the command's class
+    :rtype: Type[BaseCommand]
+    :raises ValueError: when the command is unknown
+    """
+
+    if arg in BaseCommand.COMMAND_DICT:
+        return BaseCommand.COMMAND_DICT
+    else:
+        raise ValueError("Unknown command")

@@ -37,11 +37,16 @@ class BaseCommand:
                 )
     """
 
+    COMMAND_DICT = {}
+
     def __init__(self, name: str):
         """
         :param name: name of the command
         :type name: str
         """
+
+        if name not in BaseCommand.COMMAND_DICT:
+            BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
         self.parser = PatchedParser(prog=name)
