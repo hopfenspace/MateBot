@@ -96,9 +96,9 @@ class Communism(state.BaseCollective):
 
     def __str__(self) -> str:
         return (
-            "**Communism by {creator}**\n\nReason: {description}\nAmount: {amount:.2f}\n"
+            "*Communism by {creator}*\n\nReason: {description}\nAmount: {amount:.2f}\n"
             "Externals: {externals}\nJoined users: {users}".format(
-                creator = self.creator,
+                creator = self.creator.name,
                 description = self.description,
                 amount = self.amount / 100,
                 externals = self.externals,
