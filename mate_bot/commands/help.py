@@ -25,4 +25,4 @@ class HelpCommand(BaseCommand):
         :return: None
         """
         parser = args.command().parser
-        update.effective_message.reply_text(parser.format_help())
+        update.effective_message.reply_markdown_v2(parser.format_help())

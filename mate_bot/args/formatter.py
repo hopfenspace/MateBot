@@ -26,7 +26,7 @@ class ChatHelpFormatter(argparse.HelpFormatter):
         """
 
         if prefix is None:
-            prefix = _("Usage: `")
+            prefix = "Usage: `"
 
         # Generate the usage
         usage = super()._format_usage(None, actions, groups, prefix)
