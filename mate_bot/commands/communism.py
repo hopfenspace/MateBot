@@ -72,7 +72,7 @@ class Communism(state.BaseCollective):
 
             self._create_new_record()
 
-            message.reply_markdown(str(self))
+            message.reply_markdown(str(self), reply_markup=self._inline_keyboard)
 
         else:
             raise TypeError("Expected int or tuple of arguments")
@@ -115,12 +115,10 @@ class Communism(state.BaseCollective):
         :return: None
         """
 
-        import random
-        x = random.randint(1, 1000)
-        print("edit message:", message)
         message.edit_text(
-            "The communism was just created. Here a random number: " + str(x),
-            reply_markup=self._inline_keyboard
+            str(self),
+            reply_markup=self._inline_keyboard,
+            parse_mode="Markdown"
         )
 
     @property
