@@ -13,7 +13,8 @@ import telegram.ext
 
 import state
 from err import ParsingError
-from args import PatchedParser, pre_parse
+from args.parser import PatchedParser
+from args.pre_parser import pre_parse
 
 
 class BaseCommand:

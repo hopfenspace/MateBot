@@ -7,7 +7,7 @@ import typing as _typing
 import telegram
 
 import state
-from args import natural
+from args.types import natural as natural_type
 from config import config
 from .base import BaseCommand
 
@@ -33,7 +33,7 @@ class ConsumeCommand(BaseCommand):
         """
 
         super().__init__(name)
-        self.parser.add_argument("number", default = 1, type = natural, nargs = "?")
+        self.parser.add_argument("number", default = 1, type = natural_type, nargs = "?")
 
         self.price = price
         self.messages = messages

@@ -6,7 +6,8 @@ import argparse
 import telegram
 
 import state
-from args import amount as amount_type, JoinAction
+from args.types import amount as amount_type
+from args.actions import JoinAction
 from .base import BaseCommand, BaseQuery
 
 

@@ -4,7 +4,7 @@ import telegram
 import argparse
 
 from .base import BaseCommand
-from args import command as command_type
+from args.types import command as command_type
 
 
 class HelpCommand(BaseCommand):

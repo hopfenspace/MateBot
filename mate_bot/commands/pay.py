@@ -7,8 +7,8 @@ from config import config
 from .common_util import user_list_to_string, get_data_from_query
 from .base import BaseCommand
 from state import get_or_create_user, create_transaction
-from args import amount as amount_type
-from args import JoinAction
+from args.types import amount as amount_type
+from args.actions import JoinAction
 
 pays = {}
 

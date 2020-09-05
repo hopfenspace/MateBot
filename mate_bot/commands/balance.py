@@ -5,7 +5,7 @@ import telegram
 
 import state
 from .base import BaseCommand
-from args import user as user_type
+from args.types import user as user_type
 
 
 class BalanceCommand(BaseCommand):

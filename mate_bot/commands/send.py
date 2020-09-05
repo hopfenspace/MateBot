@@ -5,7 +5,8 @@ import argparse
 import telegram
 
 import state
-from args import amount as amount_type, user as user_type
+from args.types import amount as amount_type
+from args.types import user as user_type
 from .base import BaseCommand
 
 
