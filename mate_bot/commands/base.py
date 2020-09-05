@@ -18,6 +18,8 @@ from err import ParsingError
 from args.parser import PatchedParser
 from args.pre_parser import pre_parse
 
+from typing import Any, Dict
+
 
 class BaseCommand:
     """
@@ -41,19 +43,21 @@ class BaseCommand:
 
     :param name: name of the command (without the "/")
     :type name: str
+    :param **kwargs: keyword arguments being handed to the parser's constructor
+    :type **kwargs: Dict[str, Any]
     """
 
     # Dict to look up a commands class via its name
     COMMAND_DICT = {}
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, **kwargs: Dict[str, Any]):
 
         # Put the command in the command dict
         if name not in BaseCommand.COMMAND_DICT:
             BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
-        self.parser = PatchedParser(prog="/"+name)
+        self.parser = PatchedParser(prog="/"+name, **kwargs)
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
