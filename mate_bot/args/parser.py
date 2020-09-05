@@ -8,6 +8,7 @@ import sys as _sys
 from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError, HelpFormatter
 from typing import Optional, Sequence, Any, Type
 
+from .formatter import ChatHelpFormatter
 from err import ParsingError
 
 
@@ -39,7 +40,7 @@ class PatchedParser(ArgumentParser):
             description: Optional[str] = None,
             epilog: Optional[str] = None,
             parents: Sequence[ArgumentParser] = [],
-            formatter_class: Type[HelpFormatter] = HelpFormatter,
+            #formatter_class: Type[HelpFormatter] = HelpFormatter,
             prefix_chars: str = "-",
             fromfile_prefix_chars: Optional[str] = None,
             argument_default: Optional[str] = None,
@@ -59,7 +60,7 @@ class PatchedParser(ArgumentParser):
             description=description,
             epilog=epilog,
             parents=parents,
-            formatter_class=formatter_class,
+            formatter_class=ChatHelpFormatter,
             prefix_chars=prefix_chars,
             fromfile_prefix_chars=fromfile_prefix_chars,
             argument_default=argument_default,
