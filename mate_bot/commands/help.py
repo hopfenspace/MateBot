@@ -30,7 +30,6 @@ class HelpCommand(BaseCommand):
             msg = args.command().parser.format_help()
         else:
             msg = self.parser.format_usage()
-            msg += "\n\n" \
-                   "List of commands:\n"
-            msg += "\n".join(map("- `{}`".format, BaseCommand.COMMAND_DICT.keys()))
+            msg += "\nList of commands:\n"
+            msg += "\n".join(map("  `{}`".format, BaseCommand.COMMAND_DICT.keys()))
         update.effective_message.reply_markdown_v2(msg)
