@@ -236,6 +236,7 @@ class CommunismQuery(BaseQuery):
         pass
 
 
+"""
 def communism_query(_, update):
     sender, selected_communism, cmd, sender_id, action = get_data_from_query(update, communisms)
 
@@ -290,3 +291,4 @@ def communism_query(_, update):
     elif is_admin and action == "extern+":
         selected_communism.externs += 1
         selected_communism.update_text()
+"""

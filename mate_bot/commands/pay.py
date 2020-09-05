@@ -3,8 +3,7 @@
 import telegram
 import argparse
 
-from config import config
-from .common_util import user_list_to_string, get_data_from_query
+from .common_util import user_list_to_string
 from .base import BaseCommand
 
 from args.types import amount as amount_type
@@ -67,6 +66,7 @@ class PayQuery:
     pass
 
 
+"""
 def pay_query(_, update):
     sender, selected_pay, cmd, sender_id, action = get_data_from_query(update, pays)
 
@@ -116,3 +116,4 @@ def pay_query(_, update):
         selected_pay.message.edit_text(str(selected_pay), reply_markup=selected_pay.message_markup)
     else:
         update.callback_query.answer()
+"""
