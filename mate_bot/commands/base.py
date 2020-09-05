@@ -104,7 +104,7 @@ class BaseCommand:
                 print(traceback)
                 for dev in config["devs"]:
                     try:
-                        context.bot.send_message(dev, "`{}`".format(traceback))
+                        context.bot.send_message(dev, "```{}```".format(traceback))
                     except telegram.TelegramError:
                         print("Error while sending error to devs:")
                         _print_exc()
