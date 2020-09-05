@@ -15,7 +15,7 @@ There are:
 import re
 
 import state
-from commands import BaseCommand
+from commands.base import BaseCommand
 from typing import Type
 from config import config
 
