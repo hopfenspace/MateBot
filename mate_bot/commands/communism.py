@@ -10,7 +10,10 @@ from args import amount as amount_type, JoinAction
 from .base import BaseCommand, BaseQuery
 
 
-COMMUNISM_ARGUMENTS = typing.Union[int, typing.Tuple[state.MateBotUser, int, str]]
+COMMUNISM_ARGUMENTS = typing.Union[
+    int,
+    typing.Tuple[state.MateBotUser, int, str, telegram.Message]
+]
 
 
 class Communism(state.BaseCollective):
@@ -47,16 +50,18 @@ class Communism(state.BaseCollective):
                 raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
-            if len(arguments) != 3:
-                raise ValueError("Expected three arguments for the tuple")
+            if len(arguments) != 4:
+                raise ValueError("Expected four arguments for the tuple")
 
-            user, amount, reason = arguments
+            user, amount, reason, message = arguments
             if not isinstance(user, state.MateBotUser):
                 raise TypeError("Expected MateBotUser object as first element")
             if not isinstance(amount, int):
                 raise TypeError("Expected int object as second element")
             if not isinstance(reason, str):
                 raise TypeError("Expected str object as third element")
+            if not isinstance(message, telegram.Message):
+                raise TypeError("Expected telegram.Message as fourth element")
 
             self._creator = user.uid
             self._amount = amount
@@ -65,6 +70,8 @@ class Communism(state.BaseCollective):
             self._active = True
 
             self._create_new_record()
+
+            message.reply_markdown(str(self))
 
         else:
             raise TypeError("Expected int or tuple of arguments")
@@ -119,17 +126,6 @@ class Communism(state.BaseCollective):
 
         self._externals = new
         self._set_remote_value("externals", new)
-
-    def amount_euro(self):
-        return self.amount / float(100)
-
-    def update_text(self):
-        self.message.edit_text(str(self), reply_markup=self.message_markup)
-
-    def __str__(self):
-        return "Communism by {}\nAmount: {:.2f}€\nReason: {}\nExterns: {}\nCommunists: {}\n" \
-            .format(self.creator['name'], self.amount_euro(), self.reason, self.externs,
-                    user_list_to_string(self.members))
 
 
 class CommunismCommand(BaseCommand):
