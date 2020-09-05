@@ -8,10 +8,12 @@ import sys
 import typing
 import argparse
 from traceback import print_exc as _print_exc
+from traceback import format_exc as _format_exc
 
 import telegram.ext
 
 import state
+from config import config
 from err import ParsingError
 from args.parser import PatchedParser
 from args.pre_parser import pre_parse
@@ -98,7 +100,14 @@ class BaseCommand:
 
         finally:
             if sys.exc_info()[0] is not None:
-                _print_exc()
+                traceback = _format_exc()
+                print(traceback)
+                for dev in config["devs"]:
+                    try:
+                        context.bot.send_message(dev, "`{}`".format(traceback))
+                    except telegram.TelegramError:
+                        print("Error while sending error to devs:")
+                        _print_exc()
 
 
 class BaseQuery:
