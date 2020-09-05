@@ -165,6 +165,6 @@ def command(arg: str) -> Type[BaseCommand]:
     """
 
     if arg in BaseCommand.COMMAND_DICT:
-        return BaseCommand.COMMAND_DICT
+        return BaseCommand.COMMAND_DICT[arg]
     else:
         raise ValueError("Unknown command")
