@@ -11,6 +11,7 @@ from commands.consume import IceCommand
 from commands.history import HistoryCommand
 from commands.zwegat import ZwegatCommand
 from commands.send import SendCommand
+from commands.help import HelpCommand
 from commands.communism import CommunismCommand, communism_query
 from commands.pay import PayCommand, pay_query
 
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     updater.dispatcher.add_handler(CommandHandler("pizza", PizzaCommand(), filters=filter_id))
     updater.dispatcher.add_handler(CommandHandler("ice", IceCommand(), filters=filter_id))
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand(), filters=filter_id))
+    updater.dispatcher.add_handler(CommandHandler("help", HelpCommand(), filters=filter_id))
     updater.dispatcher.add_handler(CommandHandler("communism", CommunismCommand(), filters=filter_id))
     updater.dispatcher.add_handler(CommandHandler("pay", PayCommand(), filters=filter_id))
 

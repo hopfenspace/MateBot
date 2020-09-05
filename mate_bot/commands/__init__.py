@@ -15,6 +15,7 @@ from .history import HistoryCommand
 from .pay import PayCommand, PayQuery, Pay
 from .send import SendCommand
 from .start import StartCommand
+from .help import HelpCommand
 
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "PayQuery",
     "Pay",
     "SendCommand",
-    "StartCommand"
+    "StartCommand",
+    "HelpCommand"
 ]
