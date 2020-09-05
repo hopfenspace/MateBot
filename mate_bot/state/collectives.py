@@ -496,7 +496,7 @@ class BaseCollective:
         Get the creator of the collective operation
         """
 
-        return self._creator
+        return MateBotUser(self._creator)
 
     @property
     def created(self) -> datetime.datetime:
