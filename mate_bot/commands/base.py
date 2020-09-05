@@ -38,21 +38,22 @@ class BaseCommand:
                 update.effective_message.reply_text(
                     " ".join(["Example!"] * max(1, args.number))
                 )
+
+    :param name: name of the command (without the "/")
+    :type name: str
     """
 
+    # Dict to look up a commands class via its name
     COMMAND_DICT = {}
 
     def __init__(self, name: str):
-        """
-        :param name: name of the command
-        :type name: str
-        """
 
+        # Put the command in the command dict
         if name not in BaseCommand.COMMAND_DICT:
             BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
-        self.parser = PatchedParser(prog=name)
+        self.parser = PatchedParser(prog="/"+name)
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
