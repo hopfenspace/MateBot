@@ -431,10 +431,17 @@ class BaseCollective:
 
         :return: whether something has changed
         :rtype: bool
+        :raises IndexError: when the ID did not return a remote record
+        :raises TypeError: when the remote record is of a wrong collective type
         """
 
         rows, values = self._get_remote_record()
         record = values[0]
+
+        if type(self)._communistic != record["communistic"]:
+            raise TypeError("Remote record for {} is not compatible with {}".format(
+                self._id, type(self)
+            ))
 
         result = any([
             self._active != record["active"],
