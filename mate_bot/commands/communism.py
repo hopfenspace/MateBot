@@ -253,7 +253,7 @@ class CommunismQuery(BaseQuery):
         """
 
         com = self.get_communism(update.callback_query)
-        com.toggle_user(state.MateBotUser(update.callback_query.from_user.id))
+        com.toggle_user(state.MateBotUser(update.callback_query.from_user))
         com.edit(update.callback_query.message)
 
     def increase(self, update: telegram.Update) -> None:
