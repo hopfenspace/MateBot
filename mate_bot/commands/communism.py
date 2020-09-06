@@ -5,6 +5,7 @@ import argparse
 
 import telegram
 
+import err
 import state
 from args.types import amount as amount_type
 from args.actions import JoinAction
@@ -195,6 +196,51 @@ class CommunismQuery(BaseQuery):
                 "cancel": self.cancel
             }
         )
+
+    def _get_communism(self) -> Communism:
+        """
+        Retrieve the Communism object based on the callback data
+
+        :return: Communism object that handles the current collective
+        :rtype: Communism
+        :raises err.CallbackError: when something went wrong
+        """
+
+        if self.data is None or self.data == "":
+            raise err.CallbackError("Empty stripped callback data")
+
+        communism_id = self.data.split(" ")[-1]
+        try:
+            communism_id = int(communism_id)
+        except ValueError as exc:
+            raise err.CallbackError("Wrong communism ID format", exc)
+
+        try:
+            return Communism(communism_id)
+        except IndexError as exc:
+            raise err.CallbackError("The collective does not exist in the database", exc)
+        except (TypeError, RuntimeError) as exc:
+            raise err.CallbackError("The collective has the wrong remote type", exc)
+
+    def get_communism(self, query: telegram.CallbackQuery) -> Communism:
+        """
+        Retrieve the Communism object based on the callback data
+
+        By convention, everything after the last space symbol
+        should be interpreted as communism ID. If some error occurs
+        while trying to get the Communism object, an alert message
+        will be shown to the user and an exception will be raised.
+
+        :return: Communism object that handles the current collective
+        :rtype: Communism
+        :raises err.CallbackError: when something went wrong
+        """
+
+        try:
+            return self._get_communism()
+        except err.CallbackError:
+            query.answer(text="Your requested action was not performed! Please try again later.")
+            raise
 
     def toggle(self, update: telegram.Update) -> None:
         """
