@@ -298,6 +298,17 @@ class CommunismQuery(BaseQuery):
             update.callback_query.answer(text="You can't close this communism. You are not the creator.")
             return
 
+    def run(self, update: telegram.Update) -> None:
+        """
+        Do not do anything (this class does not need run() to work)
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
+
 
 """
 def communism_query(_, update):
