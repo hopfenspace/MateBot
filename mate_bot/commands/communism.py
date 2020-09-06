@@ -72,6 +72,7 @@ class Communism(state.BaseCollective):
             self._active = True
 
             self._create_new_record()
+            self.add_user(user)
 
             message.reply_markdown(str(self), reply_markup=self._gen_inline_keyboard())
 
@@ -231,6 +232,8 @@ class CommunismQuery(BaseQuery):
         while trying to get the Communism object, an alert message
         will be shown to the user and an exception will be raised.
 
+        :param query: incoming Telegram callback query with its attached data
+        :type query: telegram.CallbackQuery
         :return: Communism object that handles the current collective
         :rtype: Communism
         :raises err.CallbackError: when something went wrong
@@ -249,7 +252,9 @@ class CommunismQuery(BaseQuery):
         :return: None
         """
 
-        pass
+        com = self.get_communism(update.callback_query)
+        com.toggle_user(state.MateBotUser(update.callback_query.from_user.id))
+        com.edit(update.callback_query.message)
 
     def increase(self, update: telegram.Update) -> None:
         """
