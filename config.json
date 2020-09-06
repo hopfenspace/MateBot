@@ -20,6 +20,9 @@
 		"password": "password",
 		"charset": "utf8mb4"
 	},
-	"devs": [
-	]
+	"development": {
+		"notification": [],
+		"description": [],
+		"debugging": []
+	}
 }
