@@ -32,3 +32,14 @@ class ParsingError(MateBotException):
     additional information about what went wrong. This allows a user
     to correct its command, in case this caused the parser to fail.
     """
+
+
+class CallbackError(MateBotException):
+    """
+    Exception raised when parsing or handling callback data throws an error
+
+    This may occur when the callback data does not hold enough information
+    to fulfill the desired operation, is of a wrong format or points to
+    invalid data (e.g. a payment's callback data points to a communism).
+    This type of exception should not happen as it implies serious problems.
+    """
