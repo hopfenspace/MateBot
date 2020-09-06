@@ -281,7 +281,10 @@ class CommunismQuery(BaseQuery):
         :return: None
         """
 
-        pass
+        com = self.get_communism(update.callback_query)
+        if com.creator != state.MateBotUser(update.callback_query.from_user):
+            update.callback_query.answer(text="You can't accept this communism. You are not the creator.")
+            return
 
     def cancel(self, update: telegram.Update) -> None:
         """
@@ -290,7 +293,10 @@ class CommunismQuery(BaseQuery):
         :return: None
         """
 
-        pass
+        com = self.get_communism(update.callback_query)
+        if com.creator != state.MateBotUser(update.callback_query.from_user):
+            update.callback_query.answer(text="You can't close this communism. You are not the creator.")
+            return
 
 
 """
