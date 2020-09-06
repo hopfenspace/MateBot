@@ -4,6 +4,14 @@
 MateBot project-wide exception classes
 """
 
+import json as _json
+import traceback as _traceback
+
+from telegram import Update as _Update, TelegramError
+from telegram.ext import CallbackContext as _CallbackContext
+
+from config import config as _config
+
 
 class MateBotException(Exception):
     """
@@ -43,3 +51,50 @@ class CallbackError(MateBotException):
     invalid data (e.g. a payment's callback data points to a communism).
     This type of exception should not happen as it implies serious problems.
     """
+
+
+def _format_update(update: _Update) -> str:
+    """
+    Format an Update object for better readability with indentation
+
+    :param update: any Telegram Update object
+    :type update: telegram.Update
+    :return: pretty formatted string for improved readability
+    :rtype: str
+    """
+
+    string = str(update)
+    string = string.replace('"', '\\"')
+    string = string.replace("'", '"')
+    string = string.replace("True", "true")
+    string = string.replace("False", "false")
+    string = string.replace("None", "null")
+    return _json.dumps(_json.loads(string), indent=4, sort_keys=True)
+
+
+def log_error(update: _Update, context: _CallbackContext) -> None:
+    """
+    Log any error and its traceback to sys.stdout and send it to developers
+
+    :param update: Telegram Update where the error probably occurred
+    :type update: telegram.Update
+    :param context: context of the error
+    :type context: telegram.ext.CallbackContext
+    :return: None
+    """
+
+    _traceback.print_exc()
+
+    for dev in _config["devs"]:
+        try:
+            msg = context.bot.send_message(
+                dev,
+                "```\n{}```".format(_traceback.format_exc()),
+                parse_mode = "MarkdownV2"
+            )
+            msg.reply_markdown_v2(
+                "Extended debug information:\n\n```{}```".format(_format_update(update))
+            )
+        except TelegramError:
+            print("Error while sending error logs:")
+            _traceback.print_exc()

@@ -2,6 +2,7 @@
 
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
+import err
 from config import config
 
 from commands.balance import BalanceCommand
@@ -34,6 +35,8 @@ if __name__ == "__main__":
 
     updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
 #    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
+
+    updater.dispatcher.add_error_handler(err.log_error)
 
     updater.start_polling()
     updater.idle()
