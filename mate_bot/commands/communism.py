@@ -242,7 +242,10 @@ class CommunismQuery(BaseQuery):
         try:
             return self._get_communism()
         except err.CallbackError:
-            query.answer(text="Your requested action was not performed! Please try again later.")
+            query.answer(
+                text="Your requested action was not performed! Please try again later.",
+                show_alert=True
+            )
             raise
 
     def toggle(self, update: telegram.Update) -> None:
@@ -283,7 +286,10 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com.creator != state.MateBotUser(update.callback_query.from_user):
-            update.callback_query.answer(text="You can't accept this communism. You are not the creator.")
+            update.callback_query.answer(
+                text="You can't accept this communism. You are not the creator.",
+                show_alert=True
+            )
             return
 
     def cancel(self, update: telegram.Update) -> None:
@@ -295,7 +301,10 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com.creator != state.MateBotUser(update.callback_query.from_user):
-            update.callback_query.answer(text="You can't close this communism. You are not the creator.")
+            update.callback_query.answer(
+                text="You can't close this communism. You are not the creator.",
+                show_alert=True
+            )
             return
 
     def run(self, update: telegram.Update) -> None:
