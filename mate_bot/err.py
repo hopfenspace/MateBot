@@ -4,6 +4,7 @@
 MateBot project-wide exception classes
 """
 
+import sys as _sys
 import json as _json
 import traceback as _traceback
 
@@ -85,16 +86,38 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
 
     _traceback.print_exc()
 
-    for dev in _config["devs"]:
+    def send_to(env, receiver, text, parse_mode, extra_text = None) -> None:
         try:
-            msg = context.bot.send_message(
-                dev,
-                "```\n{}```".format(_traceback.format_exc()),
-                parse_mode = "MarkdownV2"
+            msg = env.bot.send_message(
+                receiver, text, parse_mode = parse_mode
             )
-            msg.reply_markdown_v2(
-                "Extended debug information:\n\n```{}```".format(_format_update(update))
-            )
+            if extra_text is not None:
+                msg.reply_text(extra_text, parse_mode=parse_mode, quote=True)
         except TelegramError:
-            print("Error while sending error logs:")
+            print("Error while sending logs to {}:".format(receiver))
             _traceback.print_exc()
+
+    for dev in _config["development"]["notification"]:
+        send_to(
+            context,
+            dev,
+            "Unhandled exception: {}".format(_sys.exc_info()[1]),
+            None
+        )
+
+    for dev in _config["development"]["description"]:
+        send_to(
+            context,
+            dev,
+            "```\n{}```".format(_traceback.format_exc()),
+            "MarkdownV2"
+        )
+
+    for dev in _config["development"]["debugging"]:
+        send_to(
+            context,
+            dev,
+            "```\n{}```".format(_traceback.format_exc()),
+            "MarkdownV2",
+            "Extended debug information:\n```\n{}```".format(_format_update(update))
+        )
