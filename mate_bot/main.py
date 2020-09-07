@@ -7,7 +7,7 @@ from config import config
 
 from commands.balance import BalanceCommand
 from commands.communism import CommunismCommand, CommunismQuery
-from commands.consume import DrinkCommand, IceCommand, PizzaCommand, WaterCommand, dynamic_consumable
+from commands.consume import dynamic_consumable
 from commands.data import DataCommand
 from commands.help import HelpCommand
 from commands.history import HistoryCommand
@@ -22,23 +22,15 @@ if __name__ == "__main__":
 
     updater.dispatcher.add_handler(CommandHandler("balance", BalanceCommand()))
     updater.dispatcher.add_handler(CommandHandler("communism", CommunismCommand()))
-    updater.dispatcher.add_handler(CommandHandler("drink", DrinkCommand()))
-    updater.dispatcher.add_handler(CommandHandler("ice", IceCommand()))
-    updater.dispatcher.add_handler(CommandHandler("pizza", PizzaCommand()))
-    updater.dispatcher.add_handler(CommandHandler("water", WaterCommand()))
     updater.dispatcher.add_handler(CommandHandler("data", DataCommand()))
     updater.dispatcher.add_handler(CommandHandler("help", HelpCommand()))
     updater.dispatcher.add_handler(CommandHandler("history", HistoryCommand()))
 #    updater.dispatcher.add_handler(CommandHandler("pay", PayCommand()))
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
     updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
-    updater.dispatcher.add_handler(CommandHandler("dynamic", dynamic_consumable({
-        "name": "test",
-        "description": "testing dynamic consumables",
-        "price": 10,
-        "symbol": "~",
-        "messages": ["Enjoy your test!!!"]
-    })()))
+
+    for consumable in config["consumables"]:
+        updater.dispatcher.add_handler(CommandHandler(consumable["name"], dynamic_consumable(consumable)()))
 
     updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
 #    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))

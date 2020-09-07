@@ -24,5 +24,49 @@
 		"notification": [],
 		"description": [],
 		"debugging": []
-	}
+	},
+	"consumables": [
+		{
+            "name": "drink",
+            "description": "",
+            "price": 100,
+            "messages": [
+				"Okay, enjoy your "
+			],
+           "symbol": "🍹"
+		},
+		{
+			"name": "water",
+			"description": "",
+			"price": 50,
+			"messages": [
+                "HYDRATION! ",
+                "Hydrier dich mit ",
+                "Hydrieren sie sich bitte mit ",
+                "Der Bahnbabo sagt: Hydriert euch mit ",
+				"Okay, enjoy your "
+			],
+			"symbol": "🍼"
+		},
+		{
+			"name": "pizza",
+			"description": "",
+			"price": 200,
+			"messages": [
+				"Okay, enjoy your ",
+				"Buon appetito! "
+			],
+			"symbol": "🍕"
+		},
+		{
+			"name": "ice",
+			"description": "",
+			"price": 50,
+			"messages": [
+				"Okay, enjoy your ",
+				"Hmmh, yummy... "
+			],
+			"symbol": "🍨"
+		}
+	]
 }
