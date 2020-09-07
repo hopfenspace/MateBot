@@ -7,7 +7,7 @@ from config import config
 
 from commands.balance import BalanceCommand
 from commands.communism import CommunismCommand, CommunismQuery
-from commands.consume import DrinkCommand, IceCommand, PizzaCommand, WaterCommand
+from commands.consume import DrinkCommand, IceCommand, PizzaCommand, WaterCommand, dynamic_consumable
 from commands.data import DataCommand
 from commands.help import HelpCommand
 from commands.history import HistoryCommand
@@ -32,6 +32,13 @@ if __name__ == "__main__":
 #    updater.dispatcher.add_handler(CommandHandler("pay", PayCommand()))
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
     updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
+    updater.dispatcher.add_handler(CommandHandler("dynamic", dynamic_consumable({
+        "name": "test",
+        "description": "testing dynamic consumables",
+        "price": 10,
+        "symbol": "~",
+        "messages": ["Enjoy your test!!!"]
+    })()))
 
     updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
 #    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
