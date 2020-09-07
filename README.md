@@ -7,7 +7,7 @@ Telegram Bot that sells Mate, ice cream and pizza and allows you to share bills
 ### Requirements
 
 - Python 3.7.3 (That's what our server run and we like features)
-- [python-telegram-api](https://pypi.org/project/python-telegram-bot/)
+- [python-telegram-bot](https://pypi.org/project/python-telegram-bot/)
 - [tzlocal](https://pypi.org/project/tzlocal/)
 - [pymysql](https://pypi.org/project/PyMySQL/)
 
