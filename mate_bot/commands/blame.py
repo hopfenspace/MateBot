@@ -21,3 +21,4 @@ class BlameCommand(BaseCommand):
         else:
             msg = "The users with the highest debts are:\n"
         msg += "\n".join(map(lambda x: x.username if x.username else x.name, debtors))
+        update.effective_message.reply_text(msg)
