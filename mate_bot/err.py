@@ -92,14 +92,14 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
             if extra_text is not None:
                 msg.reply_text(extra_text, parse_mode=parse_mode, quote=True)
         except TelegramError:
-            print("Error while sending logs to {}:".format(receiver))
+            print(f"Error while sending logs to {receiver}:")
             _traceback.print_exc()
 
     for dev in _config["development"]["notification"]:
         send_to(
             context,
             dev,
-            "Unhandled exception: {}".format(_sys.exc_info()[1]),
+            f"Unhandled exception: {_sys.exc_info()[1]}",
             None
         )
 
@@ -107,7 +107,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
         send_to(
             context,
             dev,
-            "```\n{}```".format(_traceback.format_exc()),
+            f"```\n{_traceback.format_exc()}```",
             "MarkdownV2"
         )
 
@@ -115,7 +115,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
         send_to(
             context,
             dev,
-            "```\n{}```".format(_traceback.format_exc()),
+            f"```\n{_traceback.format_exc()}```",
             "MarkdownV2",
-            "Extended debug information:\n```\n{}```".format(_format_update(update))
+            f"Extended debug information:\n```\n{_format_update(update)}```"
         )

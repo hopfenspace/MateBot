@@ -78,16 +78,11 @@ class Communism(state.BaseCollective):
             raise TypeError("Expected int or tuple of arguments")
 
     def __str__(self) -> str:
-        return (
-            "*Communism by {creator}*\n\nReason: {description}\nAmount: {amount:.2f}\n"
-            "Externals: {externals}\nJoined users: {users}".format(
-                creator = self.creator.name,
-                description = self.description,
-                amount = self.amount / 100,
-                externals = self.externals,
-                users = ", ".join(self.get_users_names())
-            )
-        )
+        return f"*Communism by {self.creator.name}*\n\n" \
+               f"Reason: {self.description}\n" \
+               f"Amount: {self.amount / 100 :.2f}\n" \
+               f"Externals: {self.externals}\n" \
+               f"Joined users: {', '.join(self.get_users_names())}"
 
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
@@ -98,7 +93,7 @@ class Communism(state.BaseCollective):
         """
 
         def f(c):
-            return "communism {} {}".format(c, self.get())
+            return f"communism {c} {self.get}"
 
         return telegram.InlineKeyboardMarkup([
             [

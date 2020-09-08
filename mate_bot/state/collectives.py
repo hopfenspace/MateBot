@@ -192,7 +192,7 @@ class BaseCollective:
             raise RuntimeError("Operation not allowed")
 
         _execute(
-            "UPDATE collectives SET {}=%s WHERE id=%s".format(column),
+            f"UPDATE collectives SET {column}=%s WHERE id=%s",
             (value, self._id)
         )
 
@@ -437,9 +437,7 @@ class BaseCollective:
         record = values[0]
 
         if type(self)._communistic != record["communistic"]:
-            raise TypeError("Remote record for {} is not compatible with {}".format(
-                self._id, type(self)
-            ))
+            raise TypeError(f"Remote record for {self._id} is not compatible with {type(self)}")
 
         result = any([
             self._active != record["active"],

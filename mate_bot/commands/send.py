@@ -42,5 +42,5 @@ class SendCommand(BaseCommand):
         trans.commit()
 
         update.effective_message.reply_text(
-            "Okay, you sent {:.2f}€ to {}".format(args.amount / 100, str(args.receiver))
+            f"Okay, you sent {args.amount / 100 :.2f}€ to {str(args.receiver)}"
         )

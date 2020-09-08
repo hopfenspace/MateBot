@@ -59,10 +59,7 @@ class PatchedParser(ArgumentParser):
         # This annoyed CrsiX. So we changed it.
         args, argv = self.parse_known_args(args, namespace)
         if argv:
-            self.error("unrecognized argument{} {}".format(
-                "s" if len(argv) > 1 else "",
-                " ".join(argv)
-            ))
+            self.error(f"unrecognized argument{'s' if len(argv) > 1 else ''} {' '.join(argv)}")
         return args
 
     def _get_value(self, action: Action, arg_string: str) -> Any:
@@ -84,7 +81,7 @@ class PatchedParser(ArgumentParser):
 
         type_func = self._registry_get("type", action.type, action.type)
         if not callable(type_func):
-            raise ArgumentError(action, "{} is not callable".format(repr(type_func)))
+            raise ArgumentError(action, f"{repr(type_func)} is not callable")
 
         # convert the value to the appropriate type
         try:
@@ -114,7 +111,7 @@ class PatchedParser(ArgumentParser):
         :raises RuntimeError: when called
         """
 
-        raise RuntimeError("The parser for \"{}\" tried to exit".format(self.prog))
+        raise RuntimeError(f"The parser for \"{self.prog}\" tried to exit")
 
     def error(self, message: str) -> None:
         """

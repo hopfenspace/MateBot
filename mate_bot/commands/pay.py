@@ -33,9 +33,11 @@ class Pay:
         return self.amount / float(100)
 
     def __str__(self):
-        return "Pay by {}\nAmount: {:.2f}€\nReason: {}\nApprovers: {}\nDisapprovers: {}\n" \
-            .format(self.creator['name'], self.amount_euro(), self.reason,
-                    user_list_to_string(self.approved), user_list_to_string(self.disapproved))
+        return f"Pay by {self.creator['name']}\n" \
+               f"Amount: {self.amount_euro() :.2f}€\n" \
+               f"Reason: {self.reason}\n" \
+               f"Approvers: {user_list_to_string(self.approved)}\n" \
+               f"Disapprovers: {user_list_to_string(self.disapproved)}\n"
 
 
 class PayCommand(BaseCommand):

@@ -53,10 +53,8 @@ class StartCommand(BaseCommand):
         user.external = external
 
         answer = (
-            "**Your user account was created.** You are currently "
-            "marked as {} user without vote permissions.".format(
-               "external" if external else "internal"
-            )
+            "**Your user account was created.** You are currently marked as "
+            f"{'external' if external else 'internal'} user without vote permissions."
         )
 
         if external:

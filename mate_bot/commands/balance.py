@@ -27,4 +27,4 @@ class BalanceCommand(BaseCommand):
             user = args.user
         else:
             user = state.MateBotUser(update.effective_message.from_user)
-        update.effective_message.reply_text("Your balance is: {:.2f}€".format(user.balance / 100))
+        update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")

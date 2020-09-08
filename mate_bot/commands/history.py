@@ -34,6 +34,6 @@ class HistoryCommand(BaseCommand):
         log = logs.split("\n")
         answer = "\n".join(log[-args.length:])
         update.effective_message.reply_markdown_v2(
-            "Transaction history for {}:\n```\n{}```".format(user.name, answer),
+            f"Transaction history for {user.name}:\n```\n{answer}```",
             disable_notification=True
         )

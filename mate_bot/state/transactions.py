@@ -188,7 +188,7 @@ class TransactionLog:
         elif isinstance(uid, user.BaseBotUser):
             self._uid = uid.uid
         else:
-            raise TypeError("UID of bad type {}".format(type(uid)))
+            raise TypeError(f"UID of bad type {type(uid)}")
 
         self._mode = mode
 
@@ -247,13 +247,8 @@ class TransactionLog:
                 ts = ts.astimezone(_local_tz.get_localzone())
 
             logs.append(
-                "{}: {:>+6.2f}: me {} {:<11} :: {}".format(
-                    time.strftime("%d.%m.%Y %H:%M", ts.timetuple()),
-                    amount,
-                    direction,
-                    user.BaseBotUser.get_name_from_uid(partner),
-                    reason
-                )
+                f"{time.strftime('%d.%m.%Y %H:%M', ts.timetuple())}: {amount :>+6.2f}: "
+                f"me {direction} {user.BaseBotUser.get_name_from_uid(partner):<11} :: {reason}"
             )
 
         if len(logs) > 0:

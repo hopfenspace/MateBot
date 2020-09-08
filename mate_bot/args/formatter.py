@@ -44,7 +44,7 @@ def _format_arg(action: argparse.Action) -> str:
     elif isinstance(action.nargs, int) and action.nargs > 0:
         arg = " ".join("<{0}>" for i in range(action.nargs))
     else:
-        raise ValueError("unsupported nargs: {}".format(action.nargs))
+        raise ValueError(f"unsupported nargs: {action.nargs}")
 
     return arg.format(metavar)
 
@@ -60,4 +60,4 @@ def format_usage(parser: argparse.ArgumentParser) -> str:
     """
     token = ["/" + parser.prog] + list(map(_format_arg, parser._actions))
 
-    return "Usage: `{}`".format(" ".join(token))
+    return f"Usage: `{' '.join(token)}`"

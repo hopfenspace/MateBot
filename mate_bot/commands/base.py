@@ -187,10 +187,10 @@ class BaseQuery:
                 available.append(k)
 
         if len(available) == 0:
-            raise IndexError("No target callable found for: '{}'".format(self.data))
+            raise IndexError(f"No target callable found for: '{self.data}'")
 
         if len(available) > 1:
-            raise IndexError("No unambiguous callable found for: '{}'".format(self.data))
+            raise IndexError(f"No unambiguous callable found for: '{self.data}'")
 
         self.targets[available[0]](update)
 

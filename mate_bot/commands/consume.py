@@ -58,7 +58,7 @@ class ConsumeCommand(BaseCommand):
             return
 
         sender = state.MateBotUser(update.effective_message.from_user)
-        reason = "consume: {}x {}".format(args.number, self.name)
+        reason = f"consume: {args.number}x {self.name}"
 
         trans = state.Transaction(
             sender,

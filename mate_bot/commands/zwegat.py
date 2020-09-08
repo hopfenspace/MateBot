@@ -17,6 +17,6 @@ class ZwegatCommand(BaseCommand):
 
         total = float(total) / 100
         if total <= 0:
-            msg.reply_text("Peter errechnet ein massives Vermögen von {:.2f}€".format(-1 * total))
+            msg.reply_text(f"Peter errechnet ein massives Vermögen von {-1 * total :.2f}€")
         else:
-            msg.reply_text("Peter errechnet Gesamtschulden von {:.2f}€".format(total))
+            msg.reply_text(f"Peter errechnet Gesamtschulden von {total :.2f}€")

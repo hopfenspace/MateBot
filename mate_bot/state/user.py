@@ -166,7 +166,7 @@ class BaseBotUser:
             raise RuntimeError("Operation not allowed")
 
         _execute(
-            "UPDATE users SET {}=%s WHERE id=%s".format(column),
+            f"UPDATE users SET {column}=%s WHERE id=%s",
             (value, self._id)
         )
 
@@ -406,7 +406,7 @@ class CommunityUser(BaseBotUser):
             )
 
     def __repr__(self) -> str:
-        return "CommunityUser({})".format(self.name)
+        return "CommunityUser({self.name})"
 
     def __str__(self) -> str:
         return self.name
@@ -450,7 +450,7 @@ class MateBotUser(BaseBotUser):
             self._id = user
 
         else:
-            raise TypeError("Invalid type {} for constructor".format(type(user)))
+            raise TypeError(f"Invalid type {type(user)} for constructor")
 
         rows, values = self._get_remote_record(use_tid)
 
@@ -459,7 +459,7 @@ class MateBotUser(BaseBotUser):
             existing = False
 
             if not use_tid:
-                raise _err.DataError("User ID {} was not found in the database.".format(self._id))
+                raise _err.DataError(f"User ID {self._id} was not found in the database.")
 
             _execute(
                 "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
@@ -475,12 +475,12 @@ class MateBotUser(BaseBotUser):
             self._external = self.check_external()
 
     def __repr__(self) -> str:
-        return "MateBotUser(uid={}, tid={})".format(self.uid, self.tid)
+        return f"MateBotUser(uid={self.uid}, tid={self.tid})"
 
     def __str__(self) -> str:
         result = self.name
         if self.username is not None:
-            result += " ({})".format(self.username)
+            result += f" ({self.username})"
         return result
 
     @property
@@ -510,7 +510,7 @@ class MateBotUser(BaseBotUser):
     def creditor(self, new: typing.Union[None, int, BaseBotUser]):
         if new is not None:
             if not isinstance(new, (int, BaseBotUser)) or isinstance(new, CommunityUser):
-                raise TypeError("Invalid type {} for creditor".format(type(new)))
+                raise TypeError(f"Invalid type {type(new)} for creditor")
 
         if self.creditor != new:
             if new is None:

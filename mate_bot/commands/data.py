@@ -30,25 +30,20 @@ class DataCommand(BaseCommand):
 
         user = state.MateBotUser(update.effective_message.from_user)
         result = (
-            "Overview over currently stored data for {}:\n\n```\n"
-            "User ID: {}\nTelegram ID: {}\nName: {}\nUsername: {}\nBalance: {:.2f}€\n"
-            "Vote permissions: {}\nExternal user: {}\nCreditor user: {}\n"
-            "Account created: {}\nLast transaction: {}\n```"
-            "\nUse the /history command to see your transaction log."
+            f"Overview over currently stored data for {user.name}:\n"
+            f"\n```\n"
+            f"User ID: {user.uid}\n"
+            f"Telegram ID: {user.tid}\n"
+            f"Name: {user.name}\n"
+            f"Username: {user.username}\n"
+            f"Balance: {user.balance / 100 :.2f}€\n"
+            f"Vote permissions: {user.permission}\n"
+            f"External user: {user.external}\n"
+            f"Creditor user: {None if user.creditor is None else state.MateBotUser(user.creditor).name}\n"
+            f"Account created: {user.created}\n"
+            f"Last transaction: {user.accessed}\n"
+            f"```\n"
+            f"Use the /history command to see your transaction log."
         )
 
-        update.effective_message.reply_markdown(
-            result.format(
-                user.name,
-                user.uid,
-                user.tid,
-                user.name,
-                user.username,
-                user.balance / 100,
-                user.permission,
-                user.external,
-                None if user.creditor is None else state.MateBotUser(user.creditor).name,
-                user.created,
-                user.accessed
-            )
-        )
+        update.effective_message.reply_markdown(result)
