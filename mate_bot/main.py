@@ -14,6 +14,7 @@ from commands.history import HistoryCommand
 #from commands.pay import PayCommand, PayQuery
 from commands.send import SendCommand
 from commands.start import StartCommand
+from commands.blame import BlameCommand
 
 
 if __name__ == "__main__":
@@ -28,6 +29,7 @@ if __name__ == "__main__":
 #    updater.dispatcher.add_handler(CommandHandler("pay", PayCommand()))
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
     updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
+    updater.dispatcher.add_handler(CommandHandler("blame", BlameCommand()))
 
     for consumable in config["consumables"]:
         updater.dispatcher.add_handler(CommandHandler(consumable["name"], dynamic_consumable(consumable)()))
