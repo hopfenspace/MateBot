@@ -10,7 +10,7 @@ class BlameCommand(BaseCommand):
     """
 
     def __init__(self):
-        super(BlameCommand, self).__init__("blame", "`/blame`", "")
+        super(BlameCommand, self).__init__("blame", "")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         debtors = MateBotUser.get_worst_debtors()

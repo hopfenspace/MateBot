@@ -58,6 +58,6 @@ def format_usage(parser: argparse.ArgumentParser) -> str:
     :return: the usage string
     :rtype: str
     """
-    token = [parser.prog] + list(map(_format_arg, parser._actions))
+    token = ["/" + parser.prog] + list(map(_format_arg, parser._actions))
 
     return "Usage: `{}`".format(" ".join(token))

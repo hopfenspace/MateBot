@@ -11,6 +11,7 @@ import state
 from err import ParsingError
 from args.parser import PatchedParser
 from args.pre_parser import pre_parse
+from args.formatter import format_usage
 
 
 class BaseCommand:
@@ -35,25 +36,32 @@ class BaseCommand:
 
     :param name: name of the command (without the "/")
     :type name: str
-    :param usage: a single line string showing the basic syntax
-    :type usage: str
     :param description: a multiline string describing what the command does
     :type description: str
+    :param usage: a single line string showing the basic syntax
+    :type usage: Optional[str]
     """
 
     # Dict to look up a commands class via its name
     COMMAND_DICT = {}
 
-    def __init__(self, name: str, usage: str, description: str):
+    def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
 
         # Put the command in the command dict
         if name not in BaseCommand.COMMAND_DICT:
             BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
-        self.usage = usage
+        self._usage = usage
         self.description = description
         self.parser = PatchedParser()
+
+    @property
+    def usage(self):
+        if self._usage is None:
+            return format_usage(self.parser)
+        else:
+            return self._usage
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
@@ -96,7 +104,7 @@ class BaseCommand:
 
         except ParsingError as err:
             update.effective_message.reply_text(
-                str(err) + "\n Usage: " + self.usage
+                str(err) + "\n" + self.usage
             )
 
 

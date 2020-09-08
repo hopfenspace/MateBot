@@ -13,7 +13,6 @@ class HelpCommand(BaseCommand):
     def __init__(self):
         super().__init__(
             "help",
-            "`/help [command]`",
             "The `/help` command prints the help page for any "
             "command. If no argument is passed, it will print its "
             "usage and a list of all available commands."
@@ -31,7 +30,7 @@ class HelpCommand(BaseCommand):
         if args.command:
             msg = args.command().description
         else:
-            msg = self.parser.format_usage()
+            msg = self.usage
             msg += "\nList of commands:\n"
             msg += "\n".join(map("  `{}`".format, BaseCommand.COMMAND_DICT.keys()))
         update.effective_message.reply_markdown_v2(msg)

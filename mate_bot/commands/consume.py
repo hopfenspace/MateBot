@@ -35,7 +35,7 @@ class ConsumeCommand(BaseCommand):
         :type messages: typing.List[str]
         """
 
-        super().__init__(name, "`/{} [number]`".format(name), description)
+        super().__init__(name, description)
         self.parser.add_argument("number", default=1, type=natural_type, nargs="?")
 
         self.price = price

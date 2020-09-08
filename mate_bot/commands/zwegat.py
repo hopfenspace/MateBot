@@ -8,7 +8,7 @@ from .base import BaseCommand
 class ZwegatCommand(BaseCommand):
 
     def __init__(self):
-        super().__init__("zwegat", "`/zwegat`", "")
+        super().__init__("zwegat", "")
 
     def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
         total = 0

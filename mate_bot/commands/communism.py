@@ -158,7 +158,7 @@ class CommunismCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("communism", "`/communism <amount> [reason]`", "")
+        super().__init__("communism", "")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 

@@ -12,7 +12,7 @@ class DataCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("data", "`/data`", "")
+        super().__init__("data", "")
         self.parser.add_argument("trash-bin", nargs="*")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:

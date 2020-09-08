@@ -13,7 +13,7 @@ class HistoryCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("history", "`/history [length]`", "")
+        super().__init__("history", "")
         self.parser.add_argument("length", nargs="?", default=10, type=natural_type)
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
