@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 MateBot project-wide exception classes
 """

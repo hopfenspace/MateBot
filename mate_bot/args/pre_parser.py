@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 A function to prepare a message for parsing with the actual parser
 """

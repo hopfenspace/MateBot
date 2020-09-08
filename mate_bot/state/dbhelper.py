@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 MateBot database management helper library
 """

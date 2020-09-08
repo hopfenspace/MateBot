@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 MateBot helper methods to find users, names or usernames
 """

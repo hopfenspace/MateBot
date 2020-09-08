@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Collection of parser actions
 See `argparse.ArgumentParser.add_argument`'s action parameter

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 MateBot library managing a clean state with a MySQL database backend
 """

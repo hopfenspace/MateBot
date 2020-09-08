@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Collection of parser argument types
 See `argparse.ArgumentParser.add_argument`'s type parameter
