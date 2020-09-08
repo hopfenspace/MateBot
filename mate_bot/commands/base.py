@@ -54,7 +54,7 @@ class BaseCommand:
         self.name = name
         self._usage = usage
         self.description = description
-        self.parser = PatchedParser()
+        self.parser = PatchedParser(name)
 
     @property
     def usage(self):

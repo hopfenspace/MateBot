@@ -28,10 +28,13 @@ class PatchedParser(ArgumentParser):
       while forwarding ArgumentTypeError's error messages. This class treats all equally and forwards them for all
       of these three error types.
     * The help argument will not be added in the constructor.
+
+    :param prog: the commands name (without /)
+    :type prog: str
     """
     
-    def __init__(self):
-        super(PatchedParser, self).__init__(add_help=False)
+    def __init__(self, prog: str):
+        super(PatchedParser, self).__init__(prog=prog, add_help=False)
 
     def parse_args(
             self,
