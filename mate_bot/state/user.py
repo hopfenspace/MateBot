@@ -520,3 +520,14 @@ class MateBotUser(BaseBotUser):
                 new = MateBotUser(new)
             if not new.check_external():
                 _execute("UPDATE externals SET internal=%s WHERE external=%s", (new.uid, self._id))
+
+    @classmethod
+    def get_worst_debtors(cls) -> typing.List[MateBotUser]:
+        """
+        Return a list of users with the highest debts
+
+        :return: users with highest debts
+        :rtype: typing.List[MateBotUser]
+        """
+        _, values = _execute("SELECT * FROM users WHERE tid IS NOT NULL AND balance=(SELECT MIN(balance) FROM users);")
+        return list(MateBotUser(value["uid"]) for value in values)
