@@ -99,7 +99,7 @@ class Communism(state.BaseCollective):
         """
 
         def f(c):
-            return f"communism {c} {self.get}"
+            return f"communism {c} {self.get()}"
 
         return telegram.InlineKeyboardMarkup([
             [

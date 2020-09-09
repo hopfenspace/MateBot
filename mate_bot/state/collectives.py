@@ -466,7 +466,7 @@ class BaseCollective:
         Get the active flag of the collective operation
         """
 
-        return self._active
+        return bool(self._active)
 
     @property
     def amount(self) -> int:
