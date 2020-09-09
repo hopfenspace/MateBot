@@ -5,6 +5,7 @@ import logging
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
 from mate_bot import err
+from mate_bot import log
 from mate_bot.config import config
 from mate_bot.commands.balance import BalanceCommand
 from mate_bot.commands.communism import CommunismCommand, CommunismQuery
@@ -18,12 +19,16 @@ from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
 
 
-logging.basicConfig(filename="mate_bot.log",level=logging.INFO)
-
-
 if __name__ == "__main__":
+    log.setup()
+    logger = logging.getLogger()
+
     updater = Updater(config["bot"]["token"], use_context = True)
     internal_filter = Filters.chat(config["bot"]["chat"])
+
+    updater.dispatcher.add_error_handler(err.log_error)
+
+    logger.info("Adding the CommandHandlers")
 
     updater.dispatcher.add_handler(CommandHandler("balance", BalanceCommand()))
     updater.dispatcher.add_handler(CommandHandler("communism", CommunismCommand()))
@@ -34,14 +39,15 @@ if __name__ == "__main__":
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
     updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
     updater.dispatcher.add_handler(CommandHandler("blame", BlameCommand()))
+    updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
+    #    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
+
+    logger.info("Adding the custom consumables")
 
     for consumable in config["consumables"]:
         updater.dispatcher.add_handler(CommandHandler(consumable["name"], dynamic_consumable(consumable)()))
 
-    updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
-#    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
-
-    updater.dispatcher.add_error_handler(err.log_error)
+    logger.info("Start bot")
 
     updater.start_polling()
     updater.idle()
