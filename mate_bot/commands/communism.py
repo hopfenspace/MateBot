@@ -212,8 +212,8 @@ class Communism(state.BaseCollective):
         text = self._get_basic_representation()
         self.edit(
             message,
-            text + "\n_The communism has been aborted. No transactions were processed._",
-            None
+            text + "\n_The communism has been aborted.\nNo transactions were processed._",
+            telegram.InlineKeyboardMarkup([])
         )
 
         return result
@@ -418,8 +418,8 @@ class CommunismQuery(BaseQuery):
                 )
                 return
 
-        if com.cancel(update.callback_query.message):
-            update.callback_query.answer(text="Okay, the communism was cancelled.")
+            if com.cancel(update.callback_query.message):
+                update.callback_query.answer(text="Okay, the communism was cancelled.")
 
     def run(self, update: telegram.Update) -> None:
         """
