@@ -254,6 +254,16 @@ class BaseCollective:
 
         return list(map(lambda x: MateBotUser(x).name, self.get_users_ids()))
 
+    def get_users(self) -> typing.List[MateBotUser]:
+        """
+        Return a list of participating users as MateBotUser objects
+
+        :return: list of users as MateBotUser objects
+        :rtype: typing.List[MateBotUser]
+        """
+
+        return list(map(MateBotUser, self.get_users_ids()))
+
     def is_participating(
             self,
             user: typing.Union[int, MateBotUser]
