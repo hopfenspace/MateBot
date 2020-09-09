@@ -209,14 +209,15 @@ class Communism(state.BaseCollective):
         :rtype: bool
         """
 
-        result = self.close()
+        if not self.close():
+            return False
 
         self.edit(
             message,
             markup=telegram.InlineKeyboardMarkup([])
         )
 
-        return result
+        return True
 
     def cancel(self, message: telegram.Message) -> bool:
         """
