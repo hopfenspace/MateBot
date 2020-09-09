@@ -528,5 +528,8 @@ class MateBotUser(BaseBotUser):
         :return: users with highest debts
         :rtype: typing.List[MateBotUser]
         """
-        _, values = _execute("SELECT * FROM users WHERE tid IS NOT NULL AND balance=(SELECT MIN(balance) FROM users);")
-        return list(MateBotUser(value["id"]) for value in values)
+
+        return list(MateBotUser(value["id"]) for value in _execute(
+            "SELECT * FROM users WHERE tid IS NOT NULL AND balance="
+            "(SELECT MIN(balance) FROM users WHERE tid IS NOT NULL)"
+        )[1])
