@@ -202,7 +202,6 @@ class BaseCollective:
         )
 
         assert rows == 1
-        return result[0][column]
 
     def _get_remote_record(self) -> _EXECUTE_TYPE:
         """
@@ -483,10 +482,15 @@ class BaseCollective:
     @property
     def active(self) -> bool:
         """
-        Get the active flag of the collective operation
+        Get and set the active flag of the collective operation
         """
 
         return bool(self._active)
+
+    @active.setter
+    def active(self, new: bool) -> None:
+        self._set_remote_value("active", bool(new))
+        self.update()
 
     @property
     def amount(self) -> int:
