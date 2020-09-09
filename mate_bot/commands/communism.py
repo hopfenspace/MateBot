@@ -272,7 +272,7 @@ class CommunismQuery(BaseQuery):
             com = self._get_communism()
             if com.active:
                 return com
-            query.answer("The communism is not active anymore! Do you want to create a new one?")
+            query.answer("The communism is not active anymore!")
 
         except err.CallbackError:
             query.answer(
