@@ -17,6 +17,7 @@ from mate_bot.commands.history import HistoryCommand
 from mate_bot.commands.send import SendCommand
 from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
+from mate_bot.commands.zwegat import ZwegatCommand
 
 
 if __name__ == "__main__":
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     updater.dispatcher.add_handler(CommandHandler("send", SendCommand()))
     updater.dispatcher.add_handler(CommandHandler("start", StartCommand()))
     updater.dispatcher.add_handler(CommandHandler("blame", BlameCommand()))
+    updater.dispatcher.add_handler(CommandHandler("zwegat", ZwegatCommand()))
     updater.dispatcher.add_handler(CallbackQueryHandler(CommunismQuery(), pattern="^communism"))
     #    updater.dispatcher.add_handler(CallbackQueryHandler(PayQuery(), pattern="^pay"))
 
