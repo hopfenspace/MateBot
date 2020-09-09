@@ -156,6 +156,8 @@ class Communism(state.BaseCollective):
                 f"communism: {self.description} ({self.get()})"
             ).commit()
 
+        self.active = False
+
         return True
 
     @property
@@ -331,7 +333,9 @@ class CommunismQuery(BaseQuery):
                 )
                 return
 
-            update.callback_query.answer(show_alert = True)
+            if com.close():
+                update.callback_query.answer(text="The communism has been closed successfully.")
+                com.edit(update.callback_query.message)
 
     def cancel(self, update: telegram.Update) -> None:
         """
