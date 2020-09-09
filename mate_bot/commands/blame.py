@@ -15,6 +15,13 @@ class BlameCommand(BaseCommand):
         super(BlameCommand, self).__init__("blame", "")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
         debtors = MateBotUser.get_worst_debtors()
         if len(debtors) == 1:
             msg = "The user with the highest debt is:\n"
