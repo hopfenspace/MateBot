@@ -56,25 +56,6 @@ class CallbackError(MateBotException):
     """
 
 
-def _format_update(update: _Update) -> str:
-    """
-    Format an Update object for better readability with indentation
-
-    :param update: any Telegram Update object
-    :type update: telegram.Update
-    :return: pretty formatted string for improved readability
-    :rtype: str
-    """
-
-    string = str(update)
-    string = string.replace('"', '\\"')
-    string = string.replace("'", '"')
-    string = string.replace("True", "true")
-    string = string.replace("False", "false")
-    string = string.replace("None", "null")
-    return _json.dumps(_json.loads(string), indent=4, sort_keys=True)
-
-
 def log_error(update: _Update, context: _CallbackContext) -> None:
     """
     Log any error and its traceback to sys.stdout and send it to developers
@@ -121,5 +102,5 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
             dev,
             f"```\n{_traceback.format_exc()}```",
             "MarkdownV2",
-            f"Extended debug information:\n```\n{_format_update(update)}```"
+            f"Extended debug information:\n```\n{_json.dumps(update.to_dict(), indent=2, sort_keys=True)}```"
         )
