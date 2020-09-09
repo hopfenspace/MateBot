@@ -424,7 +424,7 @@ class CommunismQuery(BaseQuery):
                 update.callback_query.answer(text="The communism has been closed successfully.")
             else:
                 update.callback_query.answer(
-                    text="The communism was not accepted. Are there any member?",
+                    text="The communism was not accepted. Are there any members?",
                     show_alert=True
                 )
 
