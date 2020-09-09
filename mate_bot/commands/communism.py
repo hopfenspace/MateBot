@@ -85,7 +85,7 @@ class Communism(state.BaseCollective):
         if self.active:
             message += "\n_The communism is currently active._"
         else:
-            message += "\n_The communism is closed. All transactions have been processed._\n"
+            message += "\n_The communism is closed.\nAll transactions have been processed._\n"
             if self._externals > 0:
                 message += (
                     f"\n{self._price / 100:.2f}€ must be collected "
@@ -194,8 +194,26 @@ class Communism(state.BaseCollective):
             ).commit()
 
         self.active = False
-
         return True
+
+    def accept(self, message: telegram.Message) -> bool:
+        """
+        Accept the collective operation, perform all transactions and update the message
+
+        :param message: Telegram message handling the communism interactions
+        :type message: telegram.Message
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        result = self.close()
+
+        self.edit(
+            message,
+            markup=telegram.InlineKeyboardMarkup([])
+        )
+
+        return result
 
     def cancel(self, message: telegram.Message) -> bool:
         """
@@ -398,9 +416,8 @@ class CommunismQuery(BaseQuery):
                 )
                 return
 
-            if com.close():
+            if com.accept(update.callback_query.message):
                 update.callback_query.answer(text="The communism has been closed successfully.")
-                com.edit(update.callback_query.message)
 
     def cancel(self, update: telegram.Update) -> None:
         """
