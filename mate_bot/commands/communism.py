@@ -183,6 +183,9 @@ class Communism(state.BaseCollective):
             self._price += 1
 
         for member in users:
+            if member == self.creator:
+                continue
+
             state.Transaction(
                 member,
                 self.creator,
@@ -369,6 +372,13 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
+            if com.externals == 0:
+                update.callback_query.answer(
+                    text="The externals counter can't be negative!",
+                    show_alert=True
+                )
+                return
+
             com.externals -= 1
             com.edit(update.callback_query.message)
 
@@ -407,6 +417,9 @@ class CommunismQuery(BaseQuery):
                     show_alert=True
                 )
                 return
+
+        if com.cancel(update.callback_query.message):
+            update.callback_query.answer(text="Okay, the communism was cancelled.")
 
     def run(self, update: telegram.Update) -> None:
         """
