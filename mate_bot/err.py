@@ -69,7 +69,6 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
 
     _logger.exception("Something raised an unhandled exception, "
                       "it will be sent to the developers")
-    _logger.error("sys:exc_info", _sys.exc_info())
 
     def send_to(env, receiver, text, parse_mode, extra_text = None) -> None:
         try:

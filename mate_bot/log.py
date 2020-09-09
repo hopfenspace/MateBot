@@ -11,7 +11,7 @@ class NotFilter(_logging.Filter):
 def setup():
     formatter = logging.Formatter(fmt='matebot %(process)d: %(levelname)s: %(name)s: %(message)s')
 
-    handler = _logging.FileHandler("matebot.log")
+    handler = _logging.FileHandler("/var/log/matebot.log")
     handler.addFilter(NotFilter("telegram"))
     handler.setFormatter(formatter)
 
