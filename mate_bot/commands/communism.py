@@ -80,16 +80,38 @@ class Communism(state.BaseCollective):
             raise TypeError("Expected int or tuple of arguments")
 
     def __str__(self) -> str:
+        message = self._get_basic_representation()
+
+        if self.active:
+            message += "\n_The communism is currently active._"
+        else:
+            message += "\n_The communism is closed. All transactions have been processed._\n"
+            if self._externals > 0:
+                message += (
+                    f"\n{self._price / 100:.2f}€ must be collected "
+                    f"from each external user by {self.creator.name}."
+                )
+
+        return message
+
+    def _get_basic_representation(self) -> str:
+        """
+        Retrieve a basic representation of the communism description message
+
+        :return: communism description message
+        :rtype: str
+        """
+
         usernames = ', '.join(self.get_users_names())
         if usernames == "":
             usernames = "None"
+
         return (
             f"*Communism by {self.creator.name}*\n\n"
             f"Reason: {self.description}\n"
-            f"Amount: {self.amount / 100 :.2f}\n"
+            f"Amount: {self.amount / 100 :.2f}€\n"
             f"Externals: {self.externals}\n"
             f"Joined users: {usernames}\n"
-            f"Currently active: *{self.active}*"
         )
 
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
