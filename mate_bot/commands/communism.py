@@ -370,8 +370,15 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            com.toggle_user(state.MateBotUser(update.callback_query.from_user))
+            user = state.MateBotUser(update.callback_query.from_user)
+            previous_member = com.is_participating(user)[0]
+            com.toggle_user(user)
             com.edit(update.callback_query.message)
+
+            if previous_member:
+                update.callback_query.answer("Okay, you were removed.")
+            else:
+                update.callback_query.answer("Okay, you were added.")
 
     def increase(self, update: telegram.Update) -> None:
         """
@@ -384,6 +391,7 @@ class CommunismQuery(BaseQuery):
         if com is not None:
             com.externals += 1
             com.edit(update.callback_query.message)
+            update.callback_query.answer("Okay, incremented.")
 
     def decrease(self, update: telegram.Update) -> None:
         """
@@ -403,6 +411,7 @@ class CommunismQuery(BaseQuery):
 
             com.externals -= 1
             com.edit(update.callback_query.message)
+            update.callback_query.answer("Okay, decremented.")
 
     def accept(self, update: telegram.Update) -> None:
         """
