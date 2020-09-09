@@ -5,9 +5,9 @@ Wants=network-online.target mariadb.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env python3 /home/matebot/MateBot/mate_bot/main.py 
+ExecStart=/usr/bin/env python3 /home/matebot/MateBot/main.py 
 User=matebot
-WorkingDirectory=/home/matebot/MateBot/mate_bot/
+WorkingDirectory=/home/matebot/MateBot
 Restart=always
 SyslogIdentifier=matebot
 
