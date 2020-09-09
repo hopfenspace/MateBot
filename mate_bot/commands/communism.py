@@ -176,6 +176,9 @@ class Communism(state.BaseCollective):
 
         users = self.get_users()
         participants = self.externals + len(users)
+        if participants == 0:
+            return False
+
         self._price = self.amount // participants
 
         # Avoiding too small amounts by letting everyone pay one Cent more
@@ -418,6 +421,11 @@ class CommunismQuery(BaseQuery):
 
             if com.accept(update.callback_query.message):
                 update.callback_query.answer(text="The communism has been closed successfully.")
+            else:
+                update.callback_query.answer(
+                    text="The communism was not accepted. Are there any member?",
+                    show_alert=True
+                )
 
     def cancel(self, update: telegram.Update) -> None:
         """
