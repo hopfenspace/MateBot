@@ -389,6 +389,13 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
+            if com.creator != state.MateBotUser(update.callback_query.from_user):
+                update.callback_query.answer(
+                    text="You can't increase the external counter. You are not the creator.",
+                    show_alert=True
+                )
+                return
+
             com.externals += 1
             com.edit(update.callback_query.message)
             update.callback_query.answer("Okay, incremented.")
@@ -402,6 +409,13 @@ class CommunismQuery(BaseQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
+            if com.creator != state.MateBotUser(update.callback_query.from_user):
+                update.callback_query.answer(
+                    text="You can't decrease the external counter. You are not the creator.",
+                    show_alert=True
+                )
+                return
+
             if com.externals == 0:
                 update.callback_query.answer(
                     text="The externals counter can't be negative!",
