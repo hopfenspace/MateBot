@@ -2,6 +2,7 @@
 MateBot project-wide exception classes
 """
 
+import logging as _logging
 import sys as _sys
 import json as _json
 import traceback as _traceback
@@ -10,6 +11,9 @@ from telegram import Update as _Update, TelegramError
 from telegram.ext import CallbackContext as _CallbackContext
 
 from mate_bot.config import config as _config
+
+
+_logger = _logging.getLogger(__name__)
 
 
 class MateBotException(Exception):
@@ -82,7 +86,8 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
     :return: None
     """
 
-    _traceback.print_exc()
+    _logger.exception("Something raised an unhandled exception, "
+                      "it will be sent to the developers")
 
     def send_to(env, receiver, text, parse_mode, extra_text = None) -> None:
         try:
@@ -92,8 +97,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
             if extra_text is not None:
                 msg.reply_text(extra_text, parse_mode=parse_mode, quote=True)
         except TelegramError:
-            print(f"Error while sending logs to {receiver}:")
-            _traceback.print_exc()
+            _logger.exception(f"Error while sending logs to {receiver}:")
 
     for dev in _config["development"]["notification"]:
         send_to(

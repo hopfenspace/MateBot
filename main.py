@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
 from mate_bot import err
@@ -14,6 +16,9 @@ from mate_bot.commands.history import HistoryCommand
 from mate_bot.commands.send import SendCommand
 from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
+
+
+logging.basicConfig(filename="mate_bot.log",level=logging.INFO)
 
 
 if __name__ == "__main__":
