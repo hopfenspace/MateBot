@@ -78,11 +78,17 @@ class Communism(state.BaseCollective):
             raise TypeError("Expected int or tuple of arguments")
 
     def __str__(self) -> str:
-        return f"*Communism by {self.creator.name}*\n\n" \
-               f"Reason: {self.description}\n" \
-               f"Amount: {self.amount / 100 :.2f}\n" \
-               f"Externals: {self.externals}\n" \
-               f"Joined users: {', '.join(self.get_users_names())}"
+        usernames = ', '.join(self.get_users_names())
+        if usernames == "":
+            usernames = "None"
+        return (
+            f"*Communism by {self.creator.name}*\n\n"
+            f"Reason: {self.description}\n"
+            f"Amount: {self.amount / 100 :.2f}\n"
+            f"Externals: {self.externals}\n"
+            f"Joined users: {usernames}\n"
+            f"Currently active: *{self.active}*"
+        )
 
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
@@ -216,7 +222,7 @@ class CommunismQuery(BaseQuery):
         except (TypeError, RuntimeError) as exc:
             raise err.CallbackError("The collective has the wrong remote type", exc)
 
-    def get_communism(self, query: telegram.CallbackQuery) -> Communism:
+    def get_communism(self, query: telegram.CallbackQuery) -> typing.Optional[Communism]:
         """
         Retrieve the Communism object based on the callback data
 
@@ -228,12 +234,16 @@ class CommunismQuery(BaseQuery):
         :param query: incoming Telegram callback query with its attached data
         :type query: telegram.CallbackQuery
         :return: Communism object that handles the current collective
-        :rtype: Communism
+        :rtype: typing.Optional[Communism]
         :raises err.CallbackError: when something went wrong
         """
 
         try:
-            return self._get_communism()
+            com = self._get_communism()
+            if com.active:
+                return com
+            query.answer("The communism is not active anymore! Do you want to create a new one?")
+
         except err.CallbackError:
             query.answer(
                 text="Your requested action was not performed! Please try again later.",
@@ -249,8 +259,9 @@ class CommunismQuery(BaseQuery):
         """
 
         com = self.get_communism(update.callback_query)
-        com.toggle_user(state.MateBotUser(update.callback_query.from_user))
-        com.edit(update.callback_query.message)
+        if com is not None:
+            com.toggle_user(state.MateBotUser(update.callback_query.from_user))
+            com.edit(update.callback_query.message)
 
     def increase(self, update: telegram.Update) -> None:
         """
@@ -259,7 +270,10 @@ class CommunismQuery(BaseQuery):
         :return: None
         """
 
-        pass
+        com = self.get_communism(update.callback_query)
+        if com is not None:
+            com.externals += 1
+            com.edit(update.callback_query.message)
 
     def decrease(self, update: telegram.Update) -> None:
         """
@@ -268,7 +282,10 @@ class CommunismQuery(BaseQuery):
         :return: None
         """
 
-        pass
+        com = self.get_communism(update.callback_query)
+        if com is not None:
+            com.externals -= 1
+            com.edit(update.callback_query.message)
 
     def accept(self, update: telegram.Update) -> None:
         """
@@ -278,12 +295,15 @@ class CommunismQuery(BaseQuery):
         """
 
         com = self.get_communism(update.callback_query)
-        if com.creator != state.MateBotUser(update.callback_query.from_user):
-            update.callback_query.answer(
-                text="You can't accept this communism. You are not the creator.",
-                show_alert=True
-            )
-            return
+        if com is not None:
+            if com.creator != state.MateBotUser(update.callback_query.from_user):
+                update.callback_query.answer(
+                    text="You can't accept this communism. You are not the creator.",
+                    show_alert=True
+                )
+                return
+
+            update.callback_query.answer(show_alert = True)
 
     def cancel(self, update: telegram.Update) -> None:
         """
@@ -293,12 +313,13 @@ class CommunismQuery(BaseQuery):
         """
 
         com = self.get_communism(update.callback_query)
-        if com.creator != state.MateBotUser(update.callback_query.from_user):
-            update.callback_query.answer(
-                text="You can't close this communism. You are not the creator.",
-                show_alert=True
-            )
-            return
+        if com is not None:
+            if com.creator != state.MateBotUser(update.callback_query.from_user):
+                update.callback_query.answer(
+                    text="You can't close this communism. You are not the creator.",
+                    show_alert=True
+                )
+                return
 
     def run(self, update: telegram.Update) -> None:
         """
