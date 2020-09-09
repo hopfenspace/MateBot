@@ -2,9 +2,9 @@ import argparse
 
 import telegram
 
-import state
-from args.types import natural as natural_type
-from .base import BaseCommand
+from mate_bot import state
+from mate_bot.args.types import natural as natural_type
+from mate_bot.commands.base import BaseCommand
 
 
 class HistoryCommand(BaseCommand):

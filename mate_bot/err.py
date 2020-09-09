@@ -9,7 +9,7 @@ import traceback as _traceback
 from telegram import Update as _Update, TelegramError
 from telegram.ext import CallbackContext as _CallbackContext
 
-from config import config as _config
+from mate_bot.config import config as _config
 
 
 class MateBotException(Exception):

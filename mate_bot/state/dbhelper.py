@@ -3,9 +3,10 @@ MateBot database management helper library
 """
 
 import typing
+
 import pymysql
 
-from config import config as _config
+from mate_bot.config import config as _config
 
 
 QUERY_RESULT_TYPE = typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]

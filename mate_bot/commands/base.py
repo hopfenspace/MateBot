@@ -7,11 +7,11 @@ import argparse
 
 import telegram.ext
 
-import state
-from err import ParsingError
-from args.parser import PatchedParser
-from args.pre_parser import pre_parse
-from args.formatter import format_usage
+from mate_bot import state
+from mate_bot.err import ParsingError
+from mate_bot.args.parser import PatchedParser
+from mate_bot.args.pre_parser import pre_parse
+from mate_bot.args.formatter import format_usage
 
 
 class BaseCommand:

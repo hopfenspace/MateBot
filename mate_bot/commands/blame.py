@@ -1,7 +1,9 @@
 import argparse
+
 import telegram
-from .base import BaseCommand
-from state import MateBotUser
+
+from mate_bot.commands.base import BaseCommand
+from mate_bot.state import MateBotUser
 
 
 class BlameCommand(BaseCommand):

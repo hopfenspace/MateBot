@@ -1,8 +1,9 @@
-import telegram
 import argparse
 
-from state import users
-from .base import BaseCommand
+import telegram
+
+from mate_bot.state import users
+from mate_bot.commands.base import BaseCommand
 
 
 class ZwegatCommand(BaseCommand):

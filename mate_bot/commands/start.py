@@ -2,9 +2,9 @@ import argparse
 
 import telegram
 
-import state
-from config import config
-from .base import BaseCommand
+from mate_bot import state
+from mate_bot.config import config
+from mate_bot.commands.base import BaseCommand
 
 
 class StartCommand(BaseCommand):

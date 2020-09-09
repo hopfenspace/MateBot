@@ -2,19 +2,18 @@
 
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
 
-import err
-from config import config
-
-from commands.balance import BalanceCommand
-from commands.communism import CommunismCommand, CommunismQuery
-from commands.consume import dynamic_consumable
-from commands.data import DataCommand
-from commands.help import HelpCommand
-from commands.history import HistoryCommand
-#from commands.pay import PayCommand, PayQuery
-from commands.send import SendCommand
-from commands.start import StartCommand
-from commands.blame import BlameCommand
+from mate_bot import err
+from mate_bot.config import config
+from mate_bot.commands.balance import BalanceCommand
+from mate_bot.commands.communism import CommunismCommand, CommunismQuery
+from mate_bot.commands.consume import dynamic_consumable
+from mate_bot.commands.data import DataCommand
+from mate_bot.commands.help import HelpCommand
+from mate_bot.commands.history import HistoryCommand
+#from mate_bot.commands.pay import PayCommand, PayQuery
+from mate_bot.commands.send import SendCommand
+from mate_bot.commands.start import StartCommand
+from mate_bot.commands.blame import BlameCommand
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
-import telegram
 import argparse
 
-from .common_util import user_list_to_string
-from .base import BaseCommand
+import telegram
 
-from args.types import amount as amount_type
-from args.actions import JoinAction
+from mate_bot.commands.common_util import user_list_to_string
+from mate_bot.commands.base import BaseCommand
+from mate_bot.args.types import amount as amount_type
+from mate_bot.args.actions import JoinAction
 
 pays = {}
 

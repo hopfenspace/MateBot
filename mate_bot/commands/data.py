@@ -2,8 +2,8 @@ import argparse
 
 import telegram
 
-import state
-from .base import BaseCommand
+from mate_bot import state
+from mate_bot.commands.base import BaseCommand
 
 
 class DataCommand(BaseCommand):

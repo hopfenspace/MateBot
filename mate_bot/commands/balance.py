@@ -1,9 +1,10 @@
 import argparse
+
 import telegram
 
-import state
-from .base import BaseCommand
-from args.types import user as user_type
+from mate_bot import state
+from mate_bot.commands.base import BaseCommand
+from mate_bot.args.types import user as user_type
 
 
 class BalanceCommand(BaseCommand):

@@ -8,8 +8,8 @@ import typing
 import pytz as _tz
 import tzlocal as _local_tz
 
-from . import user
-from . import dbhelper as _db
+from mate_bot.state import user
+from mate_bot.state import dbhelper as _db
 
 
 class Transaction:

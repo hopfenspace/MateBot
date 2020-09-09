@@ -3,10 +3,10 @@ MateBot's custom `ArgumentParser`
 """
 
 import sys as _sys
-from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError, HelpFormatter
-from typing import Optional, Sequence, Any, Type
+from argparse import Namespace, ArgumentParser, Action, ArgumentTypeError, ArgumentError
+from typing import Optional, Sequence, Any
 
-from err import ParsingError
+from mate_bot.err import ParsingError
 
 
 class PatchedParser(ArgumentParser):

@@ -1,8 +1,9 @@
-import telegram
 import argparse
 
-from .base import BaseCommand
-from args.types import command as command_type
+import telegram
+
+from mate_bot.commands.base import BaseCommand
+from mate_bot.args.types import command as command_type
 
 
 class HelpCommand(BaseCommand):

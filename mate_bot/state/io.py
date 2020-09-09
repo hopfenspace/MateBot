@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-from .user import MateBotUser
+from mate_bot.state.user import MateBotUser
 
 
 def load(fpath: str = "state.json") -> Dict[str, MateBotUser]:

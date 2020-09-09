@@ -1,7 +1,8 @@
 from typing import List, Dict, Any, Tuple
+
 import telegram
 
-from state import BaseBotUser, get_or_create_user
+from mate_bot.state import BaseBotUser, get_or_create_user
 
 
 def user_list_to_string(user_list: List[BaseBotUser]) -> str:

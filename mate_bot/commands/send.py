@@ -2,10 +2,10 @@ import argparse
 
 import telegram
 
-import state
-from args.types import amount as amount_type
-from args.types import user as user_type
-from .base import BaseCommand
+from mate_bot import state
+from mate_bot.args.types import amount as amount_type
+from mate_bot.args.types import user as user_type
+from mate_bot.commands.base import BaseCommand
 
 
 class SendCommand(BaseCommand):

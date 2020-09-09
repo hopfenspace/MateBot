@@ -3,11 +3,11 @@ import argparse
 
 import telegram
 
-import err
-import state
-from args.types import amount as amount_type
-from args.actions import JoinAction
-from .base import BaseCommand, BaseQuery
+from mate_bot import err
+from mate_bot import state
+from mate_bot.args.types import amount as amount_type
+from mate_bot.args.actions import JoinAction
+from mate_bot.commands.base import BaseCommand, BaseQuery
 
 
 COMMUNISM_ARGUMENTS = typing.Union[

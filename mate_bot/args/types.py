@@ -11,11 +11,11 @@ There are:
 """
 
 import re
-
-import state
-from commands.base import BaseCommand
 from typing import Type
-from config import config
+
+from mate_bot import state
+from mate_bot.commands.base import BaseCommand
+from mate_bot.config import config
 
 
 __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")

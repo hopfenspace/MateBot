@@ -5,8 +5,6 @@
 import argparse
 from argparse import OPTIONAL, ZERO_OR_MORE, ONE_OR_MORE, REMAINDER, PARSER, SUPPRESS
 
-from .actions import JoinAction
-
 
 def _format_arg(action: argparse.Action) -> str:
     """
