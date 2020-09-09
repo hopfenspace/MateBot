@@ -43,6 +43,8 @@ class Communism(state.BaseCollective):
         :raises RuntimeError: when the internal collective ID points to a payment operation
         """
 
+        self._price = 0
+
         if isinstance(arguments, int):
             self._id = arguments
             self.update()
@@ -129,6 +131,32 @@ class Communism(state.BaseCollective):
             reply_markup=self._gen_inline_keyboard(),
             parse_mode="Markdown"
         )
+
+    def close(self) -> bool:
+        """
+        Close the collective operation and perform all transactions
+
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        users = self.get_users()
+        participants = self.externals + len(users)
+        self._price = self.amount // participants
+
+        # Avoiding too small amounts by letting everyone pay one Cent more
+        if self.amount % participants:
+            self._price += 1
+
+        for member in users:
+            state.Transaction(
+                member,
+                self.creator,
+                self._price,
+                f"communism: {self.description} ({self.get()})"
+            ).commit()
+
+        return True
 
     @property
     def externals(self) -> int:
