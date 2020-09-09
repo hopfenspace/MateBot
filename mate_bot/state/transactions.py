@@ -36,7 +36,7 @@ class Transaction:
         :type amount: int
         :param reason: optional description of / reason for the transaction
         :type reason: str or None
-        :raises ValueError: when amount is not positive
+        :raises ValueError: when amount is not positive or sender=receiver
         :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
         """
 
@@ -44,6 +44,8 @@ class Transaction:
             raise ValueError("Not a positive amount!")
         if not isinstance(src, user.BaseBotUser) or not isinstance(dst, user.BaseBotUser):
             raise TypeError("Expected BaseBotUser or its subclasses!")
+        if src == dst:
+            raise ValueError("Sender equals receiver of the transaction!")
 
         self._src = src
         self._dst = dst
@@ -111,7 +113,7 @@ class Transaction:
         """
         Fulfill the transaction and store it in the database persistently
 
-        :raises RuntimeError: when amount is negative or zero
+        :raises RuntimeError: when amount is negative or zero or sender=receiver
         :return: None
         """
 
@@ -119,6 +121,8 @@ class Transaction:
             raise RuntimeError("No negative transactions!")
         if self._amount == 0:
             raise RuntimeError("Empty transaction!")
+        if self._src == self._dst:
+            raise RuntimeError("Sender equals receiver!")
 
         if not self._committed and self._id is None:
             connection = None
