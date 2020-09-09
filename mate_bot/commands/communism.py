@@ -139,18 +139,30 @@ class Communism(state.BaseCollective):
             ]
         ])
 
-    def edit(self, message: telegram.Message) -> None:
+    def edit(
+            self,
+            message: telegram.Message,
+            text: str = "",
+            markup: typing.Optional[telegram.InlineKeyboardMarkup] = None
+    ) -> None:
         """
         Edit the content of the "main" message that sends the callback queries
 
         :param message: Telegram message handling the communism interactions
         :type message: telegram.Message
+        :param text: message text that should be used instead of the default
+        :type text: str
+        :param markup: inline keyboard that should be used instead of the default
+        :type markup: typing.Optional[telegram.InlineKeyboardMarkup]
         :return: None
         """
 
+        if markup is None:
+            markup = self._gen_inline_keyboard()
+
         message.edit_text(
-            str(self),
-            reply_markup=self._gen_inline_keyboard(),
+            str(self) if text == "" else text,
+            reply_markup=markup,
             parse_mode="Markdown"
         )
 
@@ -181,6 +193,27 @@ class Communism(state.BaseCollective):
         self.active = False
 
         return True
+
+    def cancel(self, message: telegram.Message) -> bool:
+        """
+        Cancel the current pending communism operation without fulfilling the transactions
+
+        :param message: Telegram message handling the communism interactions
+        :type message: telegram.Message
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        result = self._abort()
+
+        text = self._get_basic_representation()
+        self.edit(
+            message,
+            text + "\n_The communism has been aborted. No transactions were processed._",
+            None
+        )
+
+        return result
 
     @property
     def externals(self) -> int:
