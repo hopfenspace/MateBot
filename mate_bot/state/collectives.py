@@ -228,6 +228,22 @@ class BaseCollective:
             (self._id,)
         )
 
+    def get_users_ids(self) -> typing.List[int]:
+        """
+        Return a list of participating users' internal IDs
+
+        :return: list of users' internal IDs
+        :rtype: typing.List[int]
+        """
+
+        return list(map(
+            lambda r: r["users_id"],
+            filter(
+                lambda r: r["users_id"] is not None,
+                self._get_remote_joined_record()[1]
+            )
+        ))
+
     def get_users_names(self) -> typing.List[str]:
         """
         Return a list of participating users' names
@@ -236,13 +252,7 @@ class BaseCollective:
         :rtype: typing.List[str]
         """
 
-        return list(map(
-            lambda r: MateBotUser(r["users_id"]).name,
-            filter(
-                lambda r: r["users_id"] is not None,
-                self._get_remote_joined_record()[1]
-            )
-        ))
+        return list(map(lambda x: MateBotUser(x).name, self.get_users_ids()))
 
     def is_participating(
             self,
