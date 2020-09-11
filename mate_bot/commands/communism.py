@@ -89,7 +89,7 @@ class Communism(state.BaseCollective):
             if self._externals > 0:
                 message += (
                     f"\n{self._price / 100:.2f}€ must be collected "
-                    f"from each external user by {self.creator.name}."
+                    f"from each\nexternal user by {self.creator.name}."
                 )
 
         return message
