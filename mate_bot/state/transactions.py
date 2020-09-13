@@ -293,6 +293,9 @@ class TransactionLog:
         if len(self._log) == 0:
             self._log = []
 
+        if self._limit is not None:
+            self._log.reverse()
+
         validity_check = self.validate()
         if validity_check is not None:
             self._valid = self._valid and validity_check
