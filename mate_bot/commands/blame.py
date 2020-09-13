@@ -22,7 +22,12 @@ class BlameCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
         debtors = MateBotUser.get_worst_debtors()
+        if len(debtors) == 0:
+            update.effective_message.reply_text("Good news! No one is to blame, all users have positive balances!")
+            return
+
         if len(debtors) == 1:
             msg = "The user with the highest debt is:\n"
         else:
