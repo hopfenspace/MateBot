@@ -175,17 +175,92 @@ class TransactionLog:
     Any negative integer means that only negative operations (the specified
     user is the sender) will be used while any positive integer means that
     only positive operations will be used (the specified user is the receiver).
+
+    :param uid: internal user ID or BaseBotUser instance (or subclass thereof)
+    :type uid: typing.Union[int, user.BaseBotUser]
+    :param limit: restrict the number of fetched entries
+    :type limit: typing.Optional[int]
     """
 
     DEFAULT_NULL_REASON_REPLACE = "<no description>"
 
-    def __init__(self, uid: typing.Union[int, user.BaseBotUser], mode: int = 0):
+    @staticmethod
+    def format_entry(
+            amount: int,
+            direction: str,
+            partner: str,
+            reason: str,
+            timestamp: str
+    ) -> str:
         """
-        :param uid: internal user ID or BaseBotUser instance (or subclass thereof)
-        :type uid: int or user.BaseBotUser
-        :param mode: direction of listed transactions
-        :type mode: int
+        Format a single entry of the transaction history into a string record
+
+        A subclass may override this staticmethod to easily change the formatted output.
+
+        :param amount: amount of money in the current transaction measured in Cent
+        :type amount: int
+        :param direction: direction as returned by .get_direction()
+        :type direction: str
+        :param partner: name of the other part of a transaction as returned by .get_name()
+        :type partner: str
+        :param reason: description / reason of the transaction
+        :type reason: str
+        :param timestamp: timestamp of the record (may be localized to localtime)
+        :type timestamp: datetime.datetime
+        :return: fully formatted string containing exactly one transaction
+        :rtype: str
         """
+
+        return f"{timestamp}: {amount:>+6.2f}: me {direction} {partner:<11} :: {reason}"
+
+    @staticmethod
+    def format_time(time_tuple: time.struct_time) -> str:
+        """
+        Format a timestamp to a string
+
+        :param time_tuple: timestamp as returned by datetime.datetime.timetuple()
+        :type time_tuple: time.struct_time
+        :return: formatted string
+        :rtype: str
+        """
+
+        return time.strftime('%d.%m.%Y %H:%M', time_tuple)
+
+    @staticmethod
+    def get_direction(incoming: bool) -> str:
+        """
+        Return a short descriptive string that shows the direction of a transaction
+
+        A subclass may override this staticmethod to easily change the formatted output.
+
+        :param incoming: switch whether the transaction is incoming (positive) or outgoing (negative)
+        :type incoming: bool
+        :return: short string to describe the direction of a transaction
+        :rtype: str
+        """
+
+        return "<<" if incoming else ">>"
+
+    @staticmethod
+    def get_name(uid: int) -> str:
+        """
+        Convert a user ID of a user in the database to a name (or something else)
+
+        A subclass may override this staticmethod to easily change the formatted output.
+
+        :param uid:
+        :type uid: int
+        :return:
+        :rtype: str
+        """
+
+        return user.BaseBotUser.get_name_from_uid(uid)
+
+    def __init__(
+            self,
+            uid: typing.Union[int, user.BaseBotUser],
+            limit: typing.Optional[int] = None
+    ):
 
         if isinstance(uid, int):
             self._uid = uid
@@ -194,39 +269,41 @@ class TransactionLog:
         else:
             raise TypeError(f"UID of bad type {type(uid)}")
 
-        self._mode = mode
+        if limit is not None:
+            if not isinstance(limit, int):
+                raise TypeError(f"Expected int, not {type(limit)}")
 
-        if self._mode < 0:
-            rows, self._log = _db.execute(
-                "SELECT * FROM transactions WHERE sender=%s",
-                (self._uid,)
-            )
-        elif self._mode > 0:
-            rows, self._log = _db.execute(
-                "SELECT * FROM transactions WHERE receiver=%s",
-                (self._uid,)
-            )
-        else:
-            rows, self._log = _db.execute(
-                "SELECT * FROM transactions WHERE sender=%s OR receiver=%s",
-                (self._uid, self._uid)
-            )
+        self._limit = limit
+
+        extension = ""
+        params = (self._uid, self._uid)
+        if self._limit is not None:
+            extension = " ORDER BY registered DESC LIMIT %s"
+            params = (self._uid, self._uid, self._limit)
+
+        rows, self._log = _db.execute(
+            "SELECT * FROM transactions WHERE sender=%s OR receiver=%s" + extension,
+            params
+        )
 
         self._valid = True
         if rows == 0 and user.BaseBotUser.get_tid_from_uid(self._uid) is None:
             self._valid = False
         if len(self._log) == 0:
             self._log = []
-        self._valid = self._valid and self.validate()
 
-    def to_string(self, localized: bool = True) -> str:
+        validity_check = self.validate()
+        if validity_check is not None:
+            self._valid = self._valid and validity_check
+
+    def to_string(self, localized: bool = True) -> typing.List[str]:
         """
         Return a pretty formatted version of the transaction log
 
         :param localized: switch whether the timestamps should be in localtime or UTC
         :type localized: bool
-        :return: fully formatted string including all transactions of a user
-        :rtype: str
+        :return: list of fully formatted strings including all transactions of a user
+        :rtype: typing.List[str]
         """
 
         logs = []
@@ -237,11 +314,11 @@ class TransactionLog:
                 reason = self.DEFAULT_NULL_REASON_REPLACE
 
             if entry["receiver"] == self._uid:
-                direction = "<<"
-                partner = entry["sender"]
+                direction = self.get_direction(True)
+                partner = self.get_name(entry["sender"])
             elif entry["sender"] == self._uid:
-                direction = ">>"
-                partner = entry["receiver"]
+                direction = self.get_direction(False)
+                partner = self.get_name(entry["receiver"])
                 amount = -amount
             else:
                 raise RuntimeError
@@ -250,14 +327,9 @@ class TransactionLog:
             if localized:
                 ts = ts.astimezone(_local_tz.get_localzone())
 
-            logs.append(
-                f"{time.strftime('%d.%m.%Y %H:%M', ts.timetuple())}: {amount :>+6.2f}: "
-                f"me {direction} {user.BaseBotUser.get_name_from_uid(partner):<11} :: {reason}"
-            )
+            logs.append(self.format_entry(amount, direction, partner, reason, self.format_time(ts.timetuple())))
 
-        if len(logs) > 0:
-            return "\n".join(logs)
-        return ""
+        return logs
 
     def to_json(self) -> typing.List[typing.Dict[str, typing.Union[int, str]]]:
         """
