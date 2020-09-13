@@ -19,6 +19,17 @@ class Transaction:
 
     Note that a transaction will not be committed and stored in
     persistent storage until the .commit() method was called!
+
+    :param src: user that sends money to someone else
+    :type src: user.BaseBotUser
+    :param dst: user that receives money from someone else
+    :type dst: user.BaseBotUser
+    :param amount: money measured in Cent (must always be positive!)
+    :type amount: int
+    :param reason: optional description of / reason for the transaction
+    :type reason: str or None
+    :raises ValueError: when amount is not positive or sender=receiver
+    :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
     """
 
     def __init__(
@@ -28,18 +39,6 @@ class Transaction:
             amount: int,
             reason: typing.Optional[str] = None
     ):
-        """
-        :param src: user that sends money to someone else
-        :type src: user.BaseBotUser
-        :param dst: user that receives money from someone else
-        :type dst: user.BaseBotUser
-        :param amount: money measured in Cent (must always be positive!)
-        :type amount: int
-        :param reason: optional description of / reason for the transaction
-        :type reason: str or None
-        :raises ValueError: when amount is not positive or sender=receiver
-        :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
-        """
 
         if amount <= 0:
             raise ValueError("Not a positive amount!")
