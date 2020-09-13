@@ -483,7 +483,21 @@ class MateBotUser(BaseBotUser):
         return result
 
     @property
-    def creditor(self):
+    def debtors(self) -> typing.Optional[typing.List[int]]:
+        """
+        Get the debtors for a user as list of user IDs
+
+        Note that None will be returned if the user is external.
+        """
+
+        if self.external:
+            return None
+
+        values = _execute("SELECT external FROM externals WHERE internal=%s", (self._id,))[1]
+        return list(map(lambda r: r["external"], values))
+
+    @property
+    def creditor(self) -> typing.Optional[int]:
         """
         Get and set the creditor user for a user
 
