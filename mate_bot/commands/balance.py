@@ -24,8 +24,10 @@ class BalanceCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
         if args.user:
             user = args.user
+            update.effective_message.reply_text(f"Balance of {user.name} is: {user.balance / 100 : .2f}€")
         else:
             user = state.MateBotUser(update.effective_message.from_user)
-        update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")
+            update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")
