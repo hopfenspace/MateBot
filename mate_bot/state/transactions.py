@@ -4,6 +4,7 @@ MateBot money transaction (sending/receiving) helper library
 
 import time
 import typing
+import datetime
 
 import pytz as _tz
 import tzlocal as _local_tz
@@ -351,14 +352,15 @@ class TransactionLog:
         Validate the history and verify integrity (full history since start of the logs)
 
         This method is only useful for full history checks and therefore
-        returns None when the mode was set to a non-zero value.
+        returns None not all data was fetched from the database by setting a limit.
 
         :param start: balance of the user when it was first created (should be zero)
         :type start: int
         :return: history's validity
+        :rtype: typing.Optional[bool]
         """
 
-        if self._mode != 0:
+        if self._limit is not None:
             return None
 
         current = user.MateBotUser(self._uid).balance
