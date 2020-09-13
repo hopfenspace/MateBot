@@ -211,7 +211,7 @@ class TransactionLog:
         :rtype: str
         """
 
-        return f"{timestamp}: {amount:>+6.2f}: me {direction} {partner:<11} :: {reason}"
+        return f"{timestamp}: {amount:>+6.2f}: me {direction} {partner:<16} :: {reason}"
 
     @staticmethod
     def format_time(time_tuple: time.struct_time) -> str:
