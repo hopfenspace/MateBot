@@ -29,6 +29,28 @@ class DataCommand(BaseCommand):
             return
 
         user = state.MateBotUser(update.effective_message.from_user)
+
+        if user.external:
+            if user.creditor:
+                creditor = state.MateBotUser(user.creditor)
+                relations = f"Creditor user: {creditor.name}"
+                if creditor.username:
+                    relations += f" ({creditor.username})"
+            else:
+                relations = "Creditor user: None"
+
+        else:
+            users = ", ".join(map(
+                lambda u: f"{u.name} ({u.username})" if u.username else u.name,
+                map(
+                    lambda i: state.MateBotUser(i),
+                    user.debtors
+                )
+            ))
+            if len(users) == 0:
+                users = "None"
+            relations = f"Debtor user{'s' if len(users) != 1 else ''}: {users}"
+
         result = (
             f"Overview over currently stored data for {user.name}:\n"
             f"\n```\n"
@@ -39,7 +61,7 @@ class DataCommand(BaseCommand):
             f"Balance: {user.balance / 100 :.2f}€\n"
             f"Vote permissions: {user.permission}\n"
             f"External user: {user.external}\n"
-            f"Creditor user: {None if user.creditor is None else state.MateBotUser(user.creditor).name}\n"
+            f"{relations}\n"
             f"Account created: {user.created}\n"
             f"Last transaction: {user.accessed}\n"
             f"```\n"
