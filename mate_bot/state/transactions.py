@@ -9,6 +9,7 @@ import datetime
 import pytz as _tz
 import tzlocal as _local_tz
 
+from mate_bot.config import config
 from mate_bot.state import user
 from mate_bot.state import dbhelper as _db
 
@@ -299,11 +300,11 @@ class TransactionLog:
         if validity_check is not None:
             self._valid = self._valid and validity_check
 
-    def to_string(self, localized: bool = True) -> typing.List[str]:
+    def to_string(self, localized: bool = config["misc"]["db-localtime"]) -> typing.List[str]:
         """
         Return a pretty formatted version of the transaction log
 
-        :param localized: switch whether the timestamps should be in localtime or UTC
+        :param localized: switch whether the database already has localized timestamps
         :type localized: bool
         :return: list of fully formatted strings including all transactions of a user
         :rtype: typing.List[str]
@@ -326,9 +327,11 @@ class TransactionLog:
             else:
                 raise RuntimeError
 
-            ts = _tz.utc.localize(entry["registered"])
+            tz = _local_tz.get_localzone()
             if localized:
-                ts = ts.astimezone(_local_tz.get_localzone())
+                ts = tz.localize(entry["registered"])
+            else:
+                ts = _tz.utc.localize(entry["registered"]).astimezone(tz)
 
             logs.append(self.format_entry(amount, direction, partner, reason, self.format_time(ts.timetuple())))
 
