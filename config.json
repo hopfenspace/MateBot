@@ -3,6 +3,9 @@
 		"max-amount": 10000,
 		"max-consume": 10
 	},
+	"misc": {
+		"db-localtime": false
+	},
 	"bot": {
 		"token": "<Telegram bot token here>",
 		"chat": 0
