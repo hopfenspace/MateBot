@@ -22,8 +22,9 @@ class ZwegatCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
         total = CommunityUser().balance / 100
-        if total <= 0:
-            update.effective_message.reply_text(f"Peter errechnet ein massives Vermögen von {-1 * total :.2f}€")
+        if total >= 0:
+            update.effective_message.reply_text(f"Peter errechnet ein massives Vermögen von {total:.2f}€")
         else:
-            update.effective_message.reply_text(f"Peter errechnet Gesamtschulden von {total :.2f}€")
+            update.effective_message.reply_text(f"Peter errechnet Gesamtschulden von {-total:.2f}€")
