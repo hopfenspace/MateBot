@@ -25,7 +25,9 @@ class BlameCommand(BaseCommand):
 
         debtors = MateBotUser.get_worst_debtors()
         if len(debtors) == 0:
-            update.effective_message.reply_text("Good news! No one is to blame, all users have positive balances!")
+            update.effective_message.reply_text(
+                "Good news! No one has to be blamed, all users have positive balances!"
+            )
             return
 
         if len(debtors) == 1:
