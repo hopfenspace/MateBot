@@ -8,7 +8,7 @@ import telegram
 
 from mate_bot import state
 from mate_bot.commands.base import BaseCommand
-from mate_bot.money_formatter import format_money
+from mate_bot.currency import format_money
 
 
 class DataCommand(BaseCommand):

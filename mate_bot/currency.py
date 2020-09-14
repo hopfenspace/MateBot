@@ -10,4 +10,4 @@ def format_money(amount: int) -> str:
     :return: formatted amount
     :rtype: str
     """
-    return config["general"]["currency_format"].format(amount / config["general"]["currency_conversion"])
+    return config["currency"]["format"].format(amount / config["currency"]["conversion"])

@@ -17,7 +17,7 @@ from mate_bot import state
 from mate_bot.args.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
-from mate_bot.money_formatter import format_money
+from mate_bot.currency import format_money
 
 
 class ConsumeCommand(BaseCommand):

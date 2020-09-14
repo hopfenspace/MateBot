@@ -10,7 +10,7 @@ from mate_bot.commands.common_util import user_list_to_string
 from mate_bot.commands.base import BaseCommand
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
-from mate_bot.money_formatter import format_money
+from mate_bot.currency import format_money
 
 pays = {}
 
