@@ -15,7 +15,7 @@ class HistoryCommand(BaseCommand):
 
     def __init__(self):
         super().__init__("history", "")
-        mut = self.parser.add_argument("length_export", action=MutExAction)
+        mut = self.parser.add_argument("length_export", action=MutExAction, nargs="?")
         mut.add_action(self.parser.add_argument("length", nargs="?", default=10, type=natural_type))
         mut.add_action(self.parser.add_argument("export", nargs="?", type=str, choices=("json", "csv")))
 

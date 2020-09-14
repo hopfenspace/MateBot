@@ -78,6 +78,7 @@ class MutExAction(argparse.Action):
     def __init__(self,
                  option_strings,
                  dest,
+                 nargs=None,
                  metavar=None,
                  **kwargs):
         super(MutExAction, self).__init__(option_strings,
@@ -91,6 +92,7 @@ class MutExAction(argparse.Action):
                                           required=False)
         self._actions = []
         self._metavar = metavar
+        self.formatting_nargs = nargs
 
     def add_action(self, action: argparse.Action):
         """
