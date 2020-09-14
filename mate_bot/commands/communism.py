@@ -269,7 +269,17 @@ class CommunismCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("communism", "")
+        super().__init__("communism", "Use this command to start a communism.\n\n"
+                                      "When you pay for something you and others "
+                                      "consume, you can make a communism for it to get "
+                                      "your money back.\n"
+                                      "You uses this command specifying a reason "
+                                      "and how much it cost you. Then others can "
+                                      "join (you might need to remember them) "
+                                      "and after everyone has joined, "
+                                      "you can close it. "
+                                      "Then the price is evenly distributed "
+                                      "between everyone who has joined.")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 

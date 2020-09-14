@@ -13,7 +13,7 @@ class StartCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("start", "")
+        super().__init__("start", "Use once per user to start interacting with this bot.")
         self.parser.add_argument("trash-bin", nargs="*")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:

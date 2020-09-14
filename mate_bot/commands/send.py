@@ -14,7 +14,7 @@ class SendCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("send", "")
+        super().__init__("send", "Send money to another user.")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("receiver", type=user_type)
         self.parser.add_argument("reason", default="<no description>", nargs="*")
