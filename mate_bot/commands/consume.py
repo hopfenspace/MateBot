@@ -37,7 +37,7 @@ class ConsumeCommand(BaseCommand):
 
         super().__init__(name, description)
         if not self.description:
-            self.description = f"Consume a {name} for {price / 100 :.2f}"
+            self.description = f"Consume {name}s for {price / 100 :.2f}€ each."
 
         self.parser.add_argument("number", default=1, type=natural_type, nargs="?")
 
