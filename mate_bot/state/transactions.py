@@ -12,6 +12,7 @@ import tzlocal as _local_tz
 from mate_bot.config import config
 from mate_bot.state import user
 from mate_bot.state import dbhelper as _db
+from mate_bot.currency import cent_to_euro
 
 
 class Transaction:
@@ -212,6 +213,7 @@ class TransactionLog:
         :rtype: str
         """
 
+        # TODO dynamic precision required
         return f"{timestamp}: {amount:>+6.2f}: me {direction} {partner:<16} :: {reason}"
 
     @staticmethod
@@ -312,7 +314,7 @@ class TransactionLog:
 
         logs = []
         for entry in self._log:
-            amount = entry["amount"] / 100
+            amount = cent_to_euro(entry["amount"])
             reason = entry["reason"]
             if entry["reason"] is None:
                 reason = self.DEFAULT_NULL_REASON_REPLACE

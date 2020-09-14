@@ -114,7 +114,7 @@ class Communism(state.BaseCollective):
         return (
             f"*Communism by {self.creator.name}*\n\n"
             f"Reason: {self.description}\n"
-            f"Amount: {self.amount / 100 :.2f}€\n"
+            f"Amount: {format_money(self.amount)}\n"
             f"Externals: {self.externals}\n"
             f"Joined users: {usernames}\n"
         )
