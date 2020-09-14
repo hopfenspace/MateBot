@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /communism and its callback queries
+"""
+
 import typing
 import argparse
 

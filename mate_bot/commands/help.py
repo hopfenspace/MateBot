@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /help
+"""
+
 import argparse
 
 import telegram

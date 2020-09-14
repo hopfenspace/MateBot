@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /history
+"""
+
 import argparse
 
 import telegram

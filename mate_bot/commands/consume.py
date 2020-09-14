@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for any kind of consuming action
+"""
+
 import argparse
 import random as _random
 import typing as _typing

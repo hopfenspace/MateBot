@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /pay and its callback queries
+"""
+
 import argparse
 
 import telegram

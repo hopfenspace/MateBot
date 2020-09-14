@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /zwegat
+"""
+
 import argparse
 
 import telegram

@@ -1,3 +1,7 @@
+"""
+MateBot command executor classes for /balance
+"""
+
 import argparse
 
 import telegram
