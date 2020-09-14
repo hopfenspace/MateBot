@@ -1,4 +1,4 @@
-from config import config
+from mate_bot.config import config
 
 
 def format_money(amount: int) -> str:
@@ -10,4 +10,4 @@ def format_money(amount: int) -> str:
     :return: formatted amount
     :rtype: str
     """
-    return config["currency_format"].format(amount / config["currency_conversion"])
+    return config["general"]["currency_format"].format(amount / config["general"]["currency_conversion"])
