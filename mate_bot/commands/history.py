@@ -2,7 +2,9 @@
 MateBot command executor classes for /history
 """
 
+import json
 import argparse
+import tempfile
 
 import telegram
 
@@ -29,7 +31,20 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        update.effective_message.reply_text("Exporting is not supported yet.")
+        user = state.MateBotUser(update.effective_message.from_user)
+        logs = state.TransactionLog(user).to_json()
+
+        with tempfile.TemporaryFile(mode = "w+b") as file:
+            file.write(json.dumps(logs, indent = 4).encode("UTF-8"))
+            file.seek(0)
+            update.effective_message.reply_document(
+                document = file,
+                filename = "transactions.json",
+                caption = (
+                    "You requested the export of your transaction log. "
+                    f"This file contains all known transactions of {user.name}."
+                )
+            )
 
     @staticmethod
     def _handle_report(args: argparse.Namespace, update: telegram.Update) -> None:
