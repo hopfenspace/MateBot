@@ -28,10 +28,16 @@ class HelpCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
         if args.command:
             msg = args.command().description
         else:
-            msg = self.usage
-            msg += "\nList of commands:\n"
-            msg += "\n".join(map("  `{}`".format, BaseCommand.COMMAND_DICT.keys()))
-        update.effective_message.reply_markdown_v2(msg)
+            commands = "\n".join(map(lambda c: f" - `{c}`", BaseCommand.COMMAND_DICT.keys()))
+            msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
+
+        if msg == "":
+            update.effective_message.reply_text(
+                "Sadly, no help is available for this command yet."
+            )
+        else:
+            update.effective_message.reply_markdown(msg)
