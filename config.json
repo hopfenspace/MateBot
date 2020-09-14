@@ -4,8 +4,8 @@
 		"max-consume": 10
 	},
 	"currency": {
-		"currency_format": "{:.2f}€",
-		"currency_conversion": 100
+		"format": "{:.2f}€",
+		"conversion": 100
 	},
 	"misc": {
 		"db-localtime": false
