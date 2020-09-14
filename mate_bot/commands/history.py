@@ -24,8 +24,18 @@ class HistoryCommand(BaseCommand):
                                     "You can specify the amount of most recent transactions "
                                     "you want so see or a format in which to export all of them.")
         mut = self.parser.add_argument("length_export", action=MutExAction, nargs="?")
-        mut.add_action(self.parser.add_argument("length", nargs="?", default=10, type=natural_type))
-        mut.add_action(self.parser.add_argument("export", nargs="?", type=str, choices=("json", "csv")))
+        mut.add_action(self.parser.add_argument(
+            "length",
+            nargs="?",
+            default=10,
+            type=natural_type
+        ))
+        mut.add_action(self.parser.add_argument(
+            "export",
+            nargs="?",
+            type=lambda x: str(x).lower(),
+            choices=("json", "csv")
+        ))
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
