@@ -6,6 +6,25 @@ import argparse
 from argparse import OPTIONAL, ZERO_OR_MORE, ONE_OR_MORE, REMAINDER, PARSER, SUPPRESS
 
 
+def _get_metavar(action: argparse.Action) -> str:
+    """
+    Get an action's metavar
+
+    :param action:
+    :type action: argparse.Action
+    :return: metavar
+    :rtype: str
+    """
+    if action.metavar is not None:
+        return action.metavar
+    # elif action.choices is not None
+    else:
+        if action.option_strings:
+            return action.dest.upper()
+        else:
+            return action.dest
+
+
 def _format_arg(action: argparse.Action) -> str:
     """
     Format a single argument
@@ -15,17 +34,11 @@ def _format_arg(action: argparse.Action) -> str:
     :return: action as formatted string
     :rtype: str
     """
+    metavar = _get_metavar(action)
 
-    if action.metavar is not None:
-        metavar = action.metavar
-    # elif action.choices is not None
-    else:
-        if action.option_strings:
-            metavar = action.dest.upper()
-        else:
-            metavar = action.dest
-
-    if action.nargs is None:
+    if action.help == SUPPRESS:
+        return None
+    elif action.nargs is None:
         arg = "<{}>"
     elif action.nargs == OPTIONAL:
         arg = "[{}]"
@@ -56,6 +69,6 @@ def format_usage(parser: argparse.ArgumentParser) -> str:
     :return: the usage string
     :rtype: str
     """
-    token = ["/" + parser.prog] + list(map(_format_arg, parser._actions))
+    token = ["/" + parser.prog] + list(filter(bool, map(_format_arg, parser._actions)))
 
     return f"Usage: `{' '.join(token)}`"
