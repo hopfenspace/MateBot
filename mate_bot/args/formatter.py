@@ -17,7 +17,8 @@ def _get_metavar(action: argparse.Action) -> str:
     """
     if action.metavar is not None:
         return action.metavar
-    # elif action.choices is not None
+    elif action.choices is not None:
+        return " | ".join(map(repr, action.choices))
     else:
         if action.option_strings:
             return action.dest.upper()
@@ -34,28 +35,36 @@ def _format_arg(action: argparse.Action) -> str:
     :return: action as formatted string
     :rtype: str
     """
-    metavar = _get_metavar(action)
-
     if action.help == SUPPRESS:
         return None
-    elif action.nargs is None:
+
+    metavar = _get_metavar(action)
+
+    try:
+        nargs = action.formatting_nargs
+    except AttributeError:
+        nargs = action.nargs
+
+    if action.choices is not None:
+        arg = "({})"
+    elif nargs is None:
         arg = "<{}>"
-    elif action.nargs == OPTIONAL:
+    elif nargs == OPTIONAL:
         arg = "[{}]"
-    elif action.nargs == ZERO_OR_MORE:
+    elif nargs == ZERO_OR_MORE:
         arg = "[{} ...]"
-    elif action.nargs == ONE_OR_MORE:
+    elif nargs == ONE_OR_MORE:
         arg = "<{} ...>"
-    elif action.nargs == REMAINDER:
-        raise NotImplementedError("nargs == REMAINDER is not implemented")
-    elif action.nargs == PARSER:
-        raise NotImplementedError("nargs == PARSER is not implemented")
-    elif action.nargs == SUPPRESS:
-        raise NotImplementedError("nargs == SUPPRESS is not implemented")
-    elif isinstance(action.nargs, int) and action.nargs > 0:
-        arg = " ".join("<{0}>" for i in range(action.nargs))
+    elif nargs == REMAINDER:
+        return "..."
+    elif nargs == PARSER:
+        return "<{}> ..."
+    elif nargs == SUPPRESS:
+        return None
+    elif isinstance(nargs, int) and action.nargs > 0:
+        arg = " ".join("<{0}>" for i in range(nargs))
     else:
-        raise ValueError(f"unsupported nargs: {action.nargs}")
+        raise ValueError(f"unsupported nargs: {nargs}")
 
     return arg.format(metavar)
 
