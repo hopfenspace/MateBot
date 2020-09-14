@@ -12,7 +12,7 @@ class ZwegatCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("zwegat", "")
+        super().__init__("zwegat", "Show the central funds.")
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
