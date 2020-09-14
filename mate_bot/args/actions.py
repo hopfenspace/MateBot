@@ -144,21 +144,54 @@ class MutExAction(argparse.Action):
         for action in self._actions:
             action.default = action.original_default
 
+        # If no arguments where given do nothing, all actions will get their defaults
+        if not value_strings:
+            return
+
+        # Find a applicable action
         for action in self._actions:
+
+            # If the action doesn't want arguments it should be skipped
+            if action.nargs is argparse.SUPPRESS:
+                continue
+
+            # Try to convert the values and see if it works
             try:
-                # Try to convert the values/ See if it works
-                values = parser._get_values(action, value_strings)
+                # The following is a simplified parser._get_values
+                if action.nargs not in [argparse.PARSER, argparse.REMAINDER]:
+                    try:
+                        value_strings.remove('--')
+                    except ValueError:
+                        pass
 
-                if values is not argparse.SUPPRESS:
-                    # Execute the action
-                    action(parser, namespace, values, option_string)
-
-                    # Overwrite the default
-                    # argparse will write it to the namespace
-                    # because it thinks the action hasn't appeared
-                    action.default = getattr(namespace, action.dest)
-                    break
+                values = [parser._get_value(action, v) for v in value_strings]
+                if action.nargs == argparse.REMAINDER:
+                    pass
+                elif action.nargs == argparse.PARSER:
+                    parser._check_value(action, values[0])
+                else:
+                    for v in values:
+                        parser._check_value(action, v)
+            # If it doesn't, this is not the correct action
             except argparse.ArgumentError:
                 continue
+
+            # If the action expects a single argument, not a list
+            if action.nargs in [None, argparse.OPTIONAL]:
+                if len(values) == 1:
+                    values = values[0]
+                elif len(values) > 1:
+                    raise argparse.ArgumentError(action, f"too many arguments: {' '.join(value_strings[1:])}")
+
+            # Execute the action
+            action(parser, namespace, values, option_string)
+
+            # Overwrite the default
+            # argparse will write it to the namespace
+            # because it thinks the action hasn't appeared
+            action.default = getattr(namespace, action.dest)
+            break
+
+        # If no applicable action is found
         else:
             raise argparse.ArgumentError(self, f"Found no applicable action for: {value_strings}")
