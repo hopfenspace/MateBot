@@ -32,7 +32,7 @@ class HelpCommand(BaseCommand):
         if args.command:
             msg = args.command().description
         else:
-            commands = "\n".join(map(lambda c: f" - `{c}`", BaseCommand.COMMAND_DICT.keys()))
+            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(BaseCommand.COMMAND_DICT.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
 
         if msg == "":
