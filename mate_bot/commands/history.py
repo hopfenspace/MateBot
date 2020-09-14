@@ -64,19 +64,24 @@ class HistoryCommand(BaseCommand):
         """
 
         user = state.MateBotUser(update.effective_message.from_user)
-        logs = state.TransactionLog(user).to_json()
 
-        with tempfile.TemporaryFile(mode = "w+b") as file:
-            file.write(json.dumps(logs, indent = 4).encode("UTF-8"))
-            file.seek(0)
-            update.effective_message.reply_document(
-                document = file,
-                filename = "transactions.json",
-                caption = (
-                    "You requested the export of your transaction log. "
-                    f"This file contains all known transactions of {user.name}."
+        if args.export == "json":
+            logs = state.TransactionLog(user).to_json()
+
+            with tempfile.TemporaryFile(mode = "w+b") as file:
+                file.write(json.dumps(logs, indent = 4).encode("UTF-8"))
+                file.seek(0)
+                update.effective_message.reply_document(
+                    document = file,
+                    filename = "transactions.json",
+                    caption = (
+                        "You requested the export of your transaction log. "
+                        f"This file contains all known transactions of {user.name}."
+                    )
                 )
-            )
+
+        elif args.export == "csv":
+            update.effective_message.reply_text("Exporting to CSV is not implemented yet.")
 
     @staticmethod
     def _handle_report(args: argparse.Namespace, update: telegram.Update) -> None:
