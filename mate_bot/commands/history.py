@@ -63,6 +63,10 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
+        if update.effective_chat.type != update.effective_chat.PRIVATE:
+            update.effective_message.reply_text("This command can only be used in private chat.")
+            return
+
         user = state.MateBotUser(update.effective_message.from_user)
 
         if args.export == "json":
@@ -103,7 +107,7 @@ class HistoryCommand(BaseCommand):
             update.effective_message.reply_text("You don't have any registered transactions yet.")
             return
 
-        if update.effective_message.chat.type != "private":
+        if update.effective_message.chat.type != update.effective_chat.PRIVATE:
 
             text = f"{heading}\n{log}```"
             if len(text) > 4096:
