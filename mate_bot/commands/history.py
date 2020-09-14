@@ -44,7 +44,7 @@ class HistoryCommand(BaseCommand):
         """
 
         user = state.MateBotUser(update.effective_message.from_user)
-        logs = state.TransactionLog(user, args.length).to_string()
+        logs = state.TransactionLog(user, args.length).to_list()
         log = "\n".join(logs)
         heading = f"Transaction history for {user.name}:\n```"
         if len(logs) == 0:

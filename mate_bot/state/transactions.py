@@ -2,6 +2,7 @@
 MateBot money transaction (sending/receiving) helper library
 """
 
+import os
 import time
 import typing
 import datetime
@@ -300,9 +301,9 @@ class TransactionLog:
         if validity_check is not None:
             self._valid = self._valid and validity_check
 
-    def to_string(self, localized: bool = config["misc"]["db-localtime"]) -> typing.List[str]:
+    def to_list(self, localized: bool = config["misc"]["db-localtime"]) -> typing.List[str]:
         """
-        Return a pretty formatted version of the transaction log
+        Return a list of pretty formatted transaction log entries
 
         :param localized: switch whether the database already has localized timestamps
         :type localized: bool
@@ -336,6 +337,24 @@ class TransactionLog:
             logs.append(self.format_entry(amount, direction, partner, reason, self.format_time(ts.timetuple())))
 
         return logs
+
+    def to_string(self, localized: bool = config["misc"]["db-localtime"], sep: str = os.sep) -> str:
+        """
+        Return a list of pretty formatted transaction log entries
+
+        :param localized: switch whether the database already has localized timestamps
+        :type localized: bool
+        :param sep: character to use as line separator (defaults to OS-default newline character)
+        :type sep: str
+        :return: list of fully formatted strings including all transactions of a user
+        :rtype: typing.List[str]
+        :raises TypeError: when `sep` is no string
+        """
+
+        if not isinstance(sep, str):
+            raise TypeError(f"Expected str, found {type(sep)}")
+
+        return sep.join(self.to_list(localized))
 
     def to_json(self) -> typing.List[typing.Dict[str, typing.Union[int, str]]]:
         """
