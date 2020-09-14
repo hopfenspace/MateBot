@@ -10,6 +10,7 @@ from mate_bot.commands.common_util import user_list_to_string
 from mate_bot.commands.base import BaseCommand
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
+from mate_bot.money_formatter import format_money
 
 pays = {}
 
@@ -33,12 +34,9 @@ class Pay:
             ],
         ])
 
-    def amount_euro(self):
-        return self.amount / float(100)
-
     def __str__(self):
         return f"Pay by {self.creator['name']}\n" \
-               f"Amount: {self.amount_euro() :.2f}€\n" \
+               f"Amount: {format_money(self.amount)}\n" \
                f"Reason: {self.reason}\n" \
                f"Approvers: {user_list_to_string(self.approved)}\n" \
                f"Disapprovers: {user_list_to_string(self.disapproved)}\n"

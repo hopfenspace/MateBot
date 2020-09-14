@@ -9,7 +9,7 @@ import telegram
 from mate_bot import state
 from mate_bot.commands.base import BaseCommand
 from mate_bot.args.types import user as user_type
-
+from mate_bot.money_formatter import format_money
 
 class BalanceCommand(BaseCommand):
     """
@@ -31,7 +31,7 @@ class BalanceCommand(BaseCommand):
 
         if args.user:
             user = args.user
-            update.effective_message.reply_text(f"Balance of {user.name} is: {user.balance / 100 : .2f}€")
+            update.effective_message.reply_text(f"Balance of {user.name} is: {format_money(user.balance)}")
         else:
             user = state.MateBotUser(update.effective_message.from_user)
-            update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")
+            update.effective_message.reply_text(f"Your balance is: {format_money(user.balance)}")

@@ -8,6 +8,7 @@ import telegram
 
 from mate_bot import state
 from mate_bot.commands.base import BaseCommand
+from mate_bot.money_formatter import format_money
 
 
 class DataCommand(BaseCommand):
@@ -64,7 +65,7 @@ class DataCommand(BaseCommand):
             f"Telegram ID: {user.tid}\n"
             f"Name: {user.name}\n"
             f"Username: {user.username}\n"
-            f"Balance: {user.balance / 100 :.2f}€\n"
+            f"Balance: {format_money(user.balance)}\n"
             f"Vote permissions: {user.permission}\n"
             f"External user: {user.external}\n"
             f"{relations}\n"

@@ -12,6 +12,7 @@ from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
 from mate_bot.commands.base import BaseCommand, BaseQuery
+from mate_bot.money_formatter import format_money
 
 
 COMMUNISM_ARGUMENTS = typing.Union[
@@ -92,7 +93,7 @@ class Communism(state.BaseCollective):
             message += "\n_The communism is closed.\nAll transactions have been processed._\n"
             if self._externals > 0:
                 message += (
-                    f"\n{self._price / 100:.2f}€ must be collected "
+                    f"\n{format_money(self._price)} must be collected "
                     f"from each\nexternal user by {self.creator.name}."
                 )
 

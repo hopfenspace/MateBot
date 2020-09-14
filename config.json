@@ -1,7 +1,9 @@
 {
 	"general": {
 		"max-amount": 10000,
-		"max-consume": 10
+		"max-consume": 10,
+		"currency_format": "{:.2f}€",
+		"currency_conversion": 100
 	},
 	"misc": {
 		"db-localtime": false

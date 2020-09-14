@@ -10,6 +10,7 @@ from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.types import user as user_type
 from mate_bot.commands.base import BaseCommand
+from mate_bot.money_formatter import format_money
 
 
 class SendCommand(BaseCommand):
@@ -46,5 +47,5 @@ class SendCommand(BaseCommand):
         trans.commit()
 
         update.effective_message.reply_text(
-            f"Okay, you sent {args.amount / 100 :.2f}€ to {str(args.receiver)}"
+            f"Okay, you sent {format_money(args.amount)} to {str(args.receiver)}"
         )

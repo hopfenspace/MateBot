@@ -17,6 +17,7 @@ from mate_bot import state
 from mate_bot.args.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
+from mate_bot.money_formatter import format_money
 
 
 class ConsumeCommand(BaseCommand):
@@ -41,7 +42,7 @@ class ConsumeCommand(BaseCommand):
 
         super().__init__(name, description)
         if not self.description:
-            self.description = f"Consume {name}s for {price / 100 :.2f}€ each."
+            self.description = f"Consume {name}s for {format_money(price)} each."
 
         self.parser.add_argument("number", default=1, type=natural_type, nargs="?")
 
