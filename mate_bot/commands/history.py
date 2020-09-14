@@ -19,6 +19,28 @@ class HistoryCommand(BaseCommand):
     Command executor for /history
     """
 
+    def __init__(self):
+        super().__init__("history", "Request your made transactions.\n\n"
+                                    "You can specify the amount of most recent transactions "
+                                    "you want so see or a format in which to export all of them.")
+        mut = self.parser.add_argument("length_export", action=MutExAction, nargs="?")
+        mut.add_action(self.parser.add_argument("length", nargs="?", default=10, type=natural_type))
+        mut.add_action(self.parser.add_argument("export", nargs="?", type=str, choices=("json", "csv")))
+
+    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        if args.export is None:
+            self._handle_report(args, update)
+        else:
+            self._handle_export(args, update)
+
     @staticmethod
     def _handle_export(args: argparse.Namespace, update: telegram.Update) -> None:
         """
@@ -94,25 +116,3 @@ class HistoryCommand(BaseCommand):
 
             if len(results) > 0:
                 update.effective_message.reply_markdown_v2("\n".join(results + ["```"]))
-
-    def __init__(self):
-        super().__init__("history", "Request your made transactions.\n\n"
-                                    "You can specify the amount of most recent transactions "
-                                    "you want so see or a format in which to export all of them.")
-        mut = self.parser.add_argument("length_export", action=MutExAction, nargs="?")
-        mut.add_action(self.parser.add_argument("length", nargs="?", default=10, type=natural_type))
-        mut.add_action(self.parser.add_argument("export", nargs="?", type=str, choices=("json", "csv")))
-
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
-        """
-        :param args: parsed namespace containing the arguments
-        :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
-        :return: None
-        """
-
-        if args.export is None:
-            self._handle_report(args, update)
-        else:
-            self._handle_export(args, update)
