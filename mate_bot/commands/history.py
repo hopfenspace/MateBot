@@ -4,6 +4,7 @@ import telegram
 
 from mate_bot import state
 from mate_bot.args.types import natural as natural_type
+from mate_bot.args.actions import MutExAction
 from mate_bot.commands.base import BaseCommand
 
 
@@ -14,7 +15,10 @@ class HistoryCommand(BaseCommand):
 
     def __init__(self):
         super().__init__("history", "")
-        self.parser.add_argument("length", nargs="?", default=10, type=natural_type)
+        mut = self.parser.add_argument("length_export", action=MutExAction)
+        mut.add_action(self.parser.add_argument("length", nargs="?", default=10, type=natural_type))
+        mut.add_action(self.parser.add_argument("export", nargs="?", type=str, choices=("json", "csv")))
+
 
     def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
         """
