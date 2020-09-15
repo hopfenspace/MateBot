@@ -22,9 +22,9 @@ def main():
     import json
     import datetime
 
-    from state.dbhelper import execute
-    from state.transactions import Transaction
-    from state.user import CommunityUser, MateBotUser
+    from mate_bot.state.dbhelper import execute
+    from mate_bot.state.transactions import Transaction
+    from mate_bot.state.user import CommunityUser, MateBotUser
 
     class MigratedTransaction(Transaction):
         def fix(self, timestamp: datetime.datetime):
@@ -184,21 +184,21 @@ def main():
         return int(b)
 
     def setup_freshly():
-        import state.dbhelper
-        database_name = state.dbhelper._config["database"]["db"]
-        state.dbhelper._config["database"]["db"] = ""
+        from mate_bot.state import dbhelper
+        database_name = dbhelper._config["database"]["db"]
+        dbhelper._config["database"]["db"] = ""
 
-        if check_existing_database(database_name, state.dbhelper):
+        if check_existing_database(database_name, dbhelper):
             print("We found a database '{}'. Attempting to delete it...".format(database_name))
             print("\nTHE EXISTING DATABASE '{}' WILL BE DELETED AND ALL ITS DATA WILL BE ERASED!".format(database_name))
             print("\n\nAre you sure? If not, you can type EXIT to quit.")
             ask_exit()
 
-            state.dbhelper.execute("DROP DATABASE {}".format(database_name))
+            dbhelper.execute("DROP DATABASE {}".format(database_name))
             print("Table '{}' deleted.".format(database_name))
 
-        state.dbhelper.execute("CREATE DATABASE {}".format(database_name))
-        state.dbhelper._config["database"]["db"] = database_name
+        dbhelper.execute("CREATE DATABASE {}".format(database_name))
+        dbhelper._config["database"]["db"] = database_name
         print("Table '{}' created.".format(database_name))
 
         setup_database(get_path("database table setup", "create_tables.sql", "create_tables.sql"))
