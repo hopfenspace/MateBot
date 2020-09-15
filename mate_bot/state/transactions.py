@@ -5,7 +5,6 @@ MateBot money transaction (sending/receiving) helper library
 import os
 import time
 import typing
-import datetime
 
 import pytz as _tz
 import tzlocal as _local_tz
@@ -207,8 +206,8 @@ class TransactionLog:
         :type partner: str
         :param reason: description / reason of the transaction
         :type reason: str
-        :param timestamp: timestamp of the record (may be localized to localtime)
-        :type timestamp: datetime.datetime
+        :param timestamp: timestamp of the record as returned by .format_time()
+        :type timestamp: str
         :return: fully formatted string containing exactly one transaction
         :rtype: str
         """
