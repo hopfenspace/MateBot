@@ -4,7 +4,18 @@ MateBot database management helper library
 
 import typing
 
-import pymysql
+try:
+    import MySQLdb
+    import MySQLdb.connections
+    import MySQLdb.cursors
+
+    pymysql = MySQLdb
+    pymysql.connections = MySQLdb.connections
+    pymysql.cursors = MySQLdb.cursors
+
+except ImportError:
+    import pymysql
+    pymysql.install_as_MySQLdb()
 
 from mate_bot.config import config as _config
 
