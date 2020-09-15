@@ -5,11 +5,10 @@ MateBot database management helper library
 import typing
 
 try:
-    import MySQLdb
+    import MySQLdb as pymysql
     import MySQLdb.connections
     import MySQLdb.cursors
 
-    pymysql = MySQLdb
     pymysql.connections = MySQLdb.connections
     pymysql.cursors = MySQLdb.cursors
 
