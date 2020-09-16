@@ -114,9 +114,6 @@ class BaseCollective:
             return False
         return bool(values[0]["active"])
 
-    def __str__(self) -> str:
-        raise NotImplementedError
-
     def _create_new_record(self) -> bool:
         """
         Create the record for the current collective in the database if it doesn't exist

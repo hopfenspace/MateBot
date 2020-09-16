@@ -78,7 +78,7 @@ class Communism(state.BaseCollective):
             self._create_new_record()
             self.add_user(user)
 
-            message.reply_markdown(str(self), reply_markup=self._gen_inline_keyboard())
+            message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
 
         else:
             raise TypeError("Expected int or tuple of arguments")
@@ -100,9 +100,9 @@ class Communism(state.BaseCollective):
 
     def _get_basic_representation(self) -> str:
         """
-        Retrieve a basic representation of the communism description message
+        Retrieve the core information for the communism description message
 
-        :return: communism description message
+        :return: communism description message as pure text
         :rtype: str
         """
 
@@ -111,11 +111,26 @@ class Communism(state.BaseCollective):
             usernames = "None"
 
         return (
-            f"*Communism by {self.creator.name}*\n\n"
             f"Reason: {self.description}\n"
             f"Amount: {self.amount / 100 :.2f}€\n"
             f"Externals: {self.externals}\n"
             f"Joined users: {usernames}\n"
+        )
+
+    def get_markdown(self, status: str = "") -> str:
+        """
+        Generate the full message text as markdown string
+
+        :param status: additional status information at the bottom of the message
+        :type status: str
+        :return: full message text as markdown string
+        :rtype: str
+        """
+
+        status = status.replace("\n", "_\n_")
+        return (
+            f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}\n"
+            f"_{status}_"
         )
 
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
@@ -125,6 +140,9 @@ class Communism(state.BaseCollective):
         :return: inline keyboard using callback data strings
         :rtype: telegram.InlineKeyboardMarkup
         """
+
+        if not self.active:
+            return telegram.InlineKeyboardMarkup([])
 
         def f(c):
             return f"communism {c} {self.get()}"
