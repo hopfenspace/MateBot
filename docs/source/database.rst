@@ -202,6 +202,29 @@ The following table lists the different meanings of the `vote` value:
 While being ignored by communism operations, the implementation uses
 ``-`` as default value when no explicit vote was given by the user.
 
+Table ``collective_messages`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
++----------------+------------+----------+---------+-------------+----------------+
+| Field          | Type       | Null     | Key     | Default     | Extra          |
++================+============+==========+=========+=============+================+
+| id             | int(11)    | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
++----------------+------------+----------+---------+-------------+----------------+
+| collectives_id | int(11)    | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
+| chat_id        | bigint(20) | ``NO``   |         | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
+| msg_id         | int(11)    | ``NO``   |         | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
+
+This table is used to keep track of messages sent by the bot. However,
+it only stores collective managment messages (identified by the Chat ID
+``chat_id`` in conjunction with the Message ID ``msg_id``) in this table.
+Those messages handle exactly one collective operation by placing the
+inline keyboard for the user below the message. Keeping track of them is
+needed in order to update *all* messages when the data for one collective
+has changed.
+
 Table ``externals``
 ^^^^^^^^^^^^^^^^^^^
 
