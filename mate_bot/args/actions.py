@@ -63,15 +63,17 @@ class MutExAction(argparse.Action):
 
     Example:
     ```
+    >>> from argparse import ArgumentParser
     >>> parser = ArgumentParser()
     >>> mut = parser.add_argument("foo", action=MutExAction)
     >>> mut.add_action(parser.add_argument("int", type=int, nargs="?"))
     >>> mut.add_action(parser.add_argument("str", type=str, nargs="?"))
     >>>
     >>> parser.parse_args(["text"])
-    Namespace(foo=None, int=None, str="text")
+    Namespace(foo=None, int=None, str='text')
     >>> parser.parse_args(["2"])
     Namespace(foo=None, int=2, str=None)
+
     ```
     """
 
