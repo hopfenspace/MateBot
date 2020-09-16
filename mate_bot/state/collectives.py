@@ -263,6 +263,65 @@ class BaseCollective:
 
         return list(map(MateBotUser, self.get_users_ids()))
 
+    def get_messages(self) -> typing.List[typing.Tuple[int, int]]:
+        """
+        Get the list of registered messages that handle the current collective
+
+        :return: list of all registered messages
+        :rtype: typing.List[typing.Tuple[int, int]]
+        """
+
+    def register_message(self, chat: int, msg: int) -> bool:
+        """
+        Register a Telegram message for the current collective
+
+        Note that it is important to verify the return value of this
+        method. It will not raise exceptions in case there's already
+        a message in the specified chat, it will fail silently.
+
+        :param chat: Telegram Chat ID
+        :type chat: int
+        :param msg: Telegram Message ID inside the specified chat
+        :type msg: int
+        :return: success of the operation
+        :rtype: bool
+        :raises TypeError: when the method arguments are no integers
+        """
+
+    def unregister_message(self, chat: int, msg: int) -> bool:
+        """
+        Unregister a Telegram message for the current collective
+
+        Note that it is important to verify the return value of this
+        method. It will not raise exceptions in case the specified
+        message could not be found, it will fail silently.
+
+        :param chat: Telegram Chat ID
+        :type chat: int
+        :param msg: Telegram Message ID inside the specified chat
+        :type msg: int
+        :return: success of the operation
+        :rtype: bool
+        :raises TypeError: when the method arguments are no integers
+        """
+
+    def replace_message(self, chat: int, msg: int) -> bool:
+        """
+        Replace the currently stored message in the chat with the new ID
+
+        Note that it is important to verify the return value of this
+        method. It will not raise exceptions in case the specified chat
+        didn't store any old message, it will silently create the record.
+
+        :param chat: Telegram Chat ID
+        :type chat: int
+        :param msg: old Telegram Message ID inside the specified chat
+        :type msg: int
+        :return: success of the operation
+        :rtype: bool
+        :raises TypeError: when the method arguments are no integers
+        """
+
     def is_participating(
             self,
             user: typing.Union[int, MateBotUser]
