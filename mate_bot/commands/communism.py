@@ -214,12 +214,12 @@ class Communism(state.BaseCollective):
         self.active = False
         return True
 
-    def accept(self, message: telegram.Message) -> bool:
+    def accept(self, bot: telegram.Bot) -> bool:
         """
         Accept the collective operation, perform all transactions and update the message
 
-        :param message: Telegram message handling the communism interactions
-        :type message: telegram.Message
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
         :return: success of the operation
         :rtype: bool
         """
@@ -228,17 +228,17 @@ class Communism(state.BaseCollective):
             return False
 
         self._fulfilled = True
-        self.edit(message.bot)
+        self.edit(bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
 
-    def cancel(self, message: telegram.Message) -> bool:
+    def cancel(self, bot: telegram.Bot) -> bool:
         """
         Cancel the current pending communism operation without fulfilling the transactions
 
-        :param message: Telegram message handling the communism interactions
-        :type message: telegram.Message
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
         :return: success of the operation
         :rtype: bool
         """
@@ -247,7 +247,7 @@ class Communism(state.BaseCollective):
             return False
 
         self._fulfilled = False
-        self.edit(message.bot)
+        self.edit(bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
@@ -395,7 +395,7 @@ class CommunismQuery(BaseQuery):
             user = state.MateBotUser(update.callback_query.from_user)
             previous_member = com.is_participating(user)[0]
             com.toggle_user(user)
-            com.edit(update.callback_query.message)
+            com.edit(update.callback_query.message.bot)
 
             if previous_member:
                 update.callback_query.answer("Okay, you were removed.")
@@ -419,7 +419,7 @@ class CommunismQuery(BaseQuery):
                 return
 
             com.externals += 1
-            com.edit(update.callback_query.message)
+            com.edit(update.callback_query.message.bot)
             update.callback_query.answer("Okay, incremented.")
 
     def decrease(self, update: telegram.Update) -> None:
@@ -446,7 +446,7 @@ class CommunismQuery(BaseQuery):
                 return
 
             com.externals -= 1
-            com.edit(update.callback_query.message)
+            com.edit(update.callback_query.message.bot)
             update.callback_query.answer("Okay, decremented.")
 
     def accept(self, update: telegram.Update) -> None:
@@ -465,7 +465,7 @@ class CommunismQuery(BaseQuery):
                 )
                 return
 
-            if com.accept(update.callback_query.message):
+            if com.accept(update.callback_query.message.bot):
                 update.callback_query.answer(text="The communism has been closed successfully.")
             else:
                 update.callback_query.answer(
@@ -489,7 +489,7 @@ class CommunismQuery(BaseQuery):
                 )
                 return
 
-            if com.cancel(update.callback_query.message):
+            if com.cancel(update.callback_query.message.bot):
                 update.callback_query.answer(text="Okay, the communism was cancelled.")
 
     def run(self, update: telegram.Update) -> None:
