@@ -44,6 +44,14 @@ CREATE TABLE collectives_users (
     FOREIGN KEY (users_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE collective_messages (
+    `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    `collectives_id` INT NOT NULL,
+    `chat_id` BIGINT NOT NULL,
+    `msg_id` INT NOT NULL,
+    FOREIGN KEY (collectives_id) REFERENCES collectives(id) ON DELETE CASCADE
+);
+
 CREATE TABLE externals (
     `id` INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
     `internal` INT,
@@ -52,4 +60,3 @@ CREATE TABLE externals (
     FOREIGN KEY (internal) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (external) REFERENCES users(id) ON DELETE CASCADE
 );
-
