@@ -78,9 +78,9 @@ class Communism(state.BaseCollective):
 
             self._create_new_record()
             self.add_user(user)
-            self.register_message(message.chat_id, message.message_id)
 
-            message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
+            reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
+            self.register_message(reply.chat_id, reply.message_id)
 
         else:
             raise TypeError("Expected int or tuple of arguments")
