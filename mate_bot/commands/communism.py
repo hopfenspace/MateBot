@@ -85,21 +85,6 @@ class Communism(state.BaseCollective):
         else:
             raise TypeError("Expected int or tuple of arguments")
 
-    def __str__(self) -> str:
-        message = self._get_basic_representation()
-
-        if self.active:
-            message += "\n_The communism is currently active._"
-        else:
-            message += "\n_The communism is closed.\nAll transactions have been processed._\n"
-            if self._externals > 0:
-                message += (
-                    f"\n{self._price / 100:.2f}€ must be collected "
-                    f"from each\nexternal user by {self.creator.name}."
-                )
-
-        return message
-
     def _get_basic_representation(self) -> str:
         """
         Retrieve the core information for the communism description message
@@ -119,21 +104,31 @@ class Communism(state.BaseCollective):
             f"Joined users: {usernames}\n"
         )
 
-    def get_markdown(self, status: str = "") -> str:
+    def get_markdown(self) -> str:
         """
         Generate the full message text as markdown string
 
-        :param status: additional status information at the bottom of the message
-        :type status: str
         :return: full message text as markdown string
         :rtype: str
         """
 
-        status = status.replace("\n", "_\n_")
-        return (
-            f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}\n"
-            f"_{status}_"
-        )
+        markdown = f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
+
+        if self.active:
+            markdown += "\n\n_The communism is currently active._"
+        elif self._fulfilled is not None:
+            if self._fulfilled:
+                markdown += "\n\n_The"
+            else:
+                markdown += "\n\n_The"
+
+        if not self.active and self._externals > 0:
+            markdown += (
+                f"\n\n{self._price / 100:.2f}€ must be collected from each\n"
+                f"external user by {self.creator.name}."
+            )
+
+        return markdown
 
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
