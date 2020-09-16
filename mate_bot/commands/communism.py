@@ -48,6 +48,7 @@ class Communism(state.BaseCollective):
         """
 
         self._price = 0
+        self._fulfilled = None
 
         if isinstance(arguments, int):
             self._id = arguments
@@ -77,6 +78,7 @@ class Communism(state.BaseCollective):
 
             self._create_new_record()
             self.add_user(user)
+            self.register_message(message.chat_id, message.message_id)
 
             message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
 
@@ -161,32 +163,23 @@ class Communism(state.BaseCollective):
             ]
         ])
 
-    def edit(
-            self,
-            message: telegram.Message,
-            text: str = "",
-            markup: typing.Optional[telegram.InlineKeyboardMarkup] = None
-    ) -> None:
+    def edit(self, bot: telegram.Bot) -> None:
         """
-        Edit the content of the "main" message that sends the callback queries
+        Edit the content of the communism messages in all chats
 
-        :param message: Telegram message handling the communism interactions
-        :type message: telegram.Message
-        :param text: message text that should be used instead of the default
-        :type text: str
-        :param markup: inline keyboard that should be used instead of the default
-        :type markup: typing.Optional[telegram.InlineKeyboardMarkup]
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
         :return: None
         """
 
-        if markup is None:
-            markup = self._gen_inline_keyboard()
-
-        message.edit_text(
-            str(self) if text == "" else text,
-            reply_markup=markup,
-            parse_mode="Markdown"
-        )
+        for c, m in self.get_messages():
+            bot.edit_message_text(
+                self.get_markdown(),
+                chat_id=c,
+                message_id=m,
+                reply_markup=self._gen_inline_keyboard(),
+                parse_mode="Markdown"
+            )
 
     def close(self) -> bool:
         """
@@ -234,10 +227,9 @@ class Communism(state.BaseCollective):
         if not self.close():
             return False
 
-        self.edit(
-            message,
-            markup=telegram.InlineKeyboardMarkup([])
-        )
+        self._fulfilled = True
+        self.edit(message.bot)
+        [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
 
@@ -251,16 +243,14 @@ class Communism(state.BaseCollective):
         :rtype: bool
         """
 
-        result = self._abort()
+        if not self._abort():
+            return False
 
-        text = self._get_basic_representation()
-        self.edit(
-            message,
-            text + "\n_The communism has been aborted.\nNo transactions were processed._",
-            telegram.InlineKeyboardMarkup([])
-        )
+        self._fulfilled = False
+        self.edit(message.bot)
+        [self.unregister_message(c, m) for c, m in self.get_messages()]
 
-        return result
+        return True
 
     @property
     def externals(self) -> int:
