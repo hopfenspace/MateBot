@@ -29,9 +29,7 @@ class CommandParser(_AttributeHolder):
         for entity in reversed(msg.entities):
             # If there is normal text left after the entity
             if entity.offset + entity.length < len(text):
-                yield text[entity.offset + entity.length:]
-                # Oneliner potentially replacing _split
-                # yield from map(EntityString, filter(bool, text[entity.offset + entity.length:].split()))
+                yield from map(EntityString, filter(bool, reversed(text[entity.offset + entity.length:].split())))
                 text = text[:entity.offset + entity.length]
 
             yield EntityString(text[entity.offset:], entity)
@@ -47,17 +45,4 @@ class CommandParser(_AttributeHolder):
 
         This functions splits by spaces while keeping entities intact.
         """
-        result = []
-
-        for string in self._split_by_entities(msg):
-            # strings which contain entities remain untouched
-            if isinstance(string, EntityString):
-                result.append(string)
-
-            # strings which don't contain entities will be split by spaces
-            else:
-                for piece in string.split():
-                    if piece:
-                        result.append(EntityString(piece, None))
-
-        return reversed(result)
+        return list(reversed(list(self._split_by_entities(msg))))
