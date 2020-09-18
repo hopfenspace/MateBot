@@ -1,13 +1,11 @@
 import typing
-from argparse import Namespace
-from argparse import _AttributeHolder
 
 import telegram
 
-from mate_bot.parsing.string import EntityString
+from mate_bot.parsing.util import EntityString, Namespace, Representable
 
 
-class CommandParser(_AttributeHolder):
+class CommandParser(Representable):
 
     def parse(self, msg: telegram.Message) -> Namespace:
         arg_strings = list(self._split(msg))

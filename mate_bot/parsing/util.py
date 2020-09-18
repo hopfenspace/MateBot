@@ -1,8 +1,13 @@
 """
 Collection of simple utility classes:
 * Representable (comp argparse._AttributeHolder)
+* EntityString
 * Namespace     (comp argparse.Namespace)
 """
+
+from typing import Optional
+
+from telegram import MessageEntity
 
 
 class Representable(object):
@@ -37,7 +42,7 @@ class Representable(object):
         # Add the positional arguments
         arg_strings.extend(map(repr, self._get_args()))
         # Add the identifier arguments
-        arg_strings.extend(map(lambda pair: f"{pair[0]}={repr(pair[1])}", id_args))
+        arg_strings.extend(map(lambda pair: f"{pair[0]}={repr(pair[1])}", id_args.items()))
         # If any present, add non identifier arguments
         if non_id_args:
             arg_strings.append(f"**{repr(non_id_args)}")
@@ -52,6 +57,26 @@ class Representable(object):
 
     def _get_args(self):
         return []
+
+
+class EntityString(Representable, str):
+    """
+    Extends str to add a telegram's MessageEntity in the constructor
+
+    A CommandParser hands these objects as parameters for "type" functions.
+    This object is a string so functions like `int` which expect a single string can still be used,
+    while other function can access the entity if they need it.
+    """
+
+    def __new__(cls, string: str, _: Optional[MessageEntity] = None) -> "EntityString":
+        return str.__new__(cls, string)
+
+    def __init__(self, _: str, entity: Optional[MessageEntity] = None):
+        super(EntityString, self).__init__()
+        self.entity = entity
+
+    def _get_args(self):
+        return [str(self)]
 
 
 class Namespace(Representable):
