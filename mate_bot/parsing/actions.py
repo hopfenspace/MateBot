@@ -48,13 +48,13 @@ class Action(Representable):
                  nargs: typing.Union[None, int, str] = None,
                  default: typing.Any = None,
                  type: typing.Callable = str,
-                 choices: typing.Tuple[str] = None,
+                 # choices: typing.Tuple[str] = None,
                  metavar: str = None):
         self.dest = dest
         self.nargs = nargs
         self.default = default
         self.type = type
-        self.choices = choices
+        # self.choices = choices
         self.metavar = metavar
 
     def _get_kwargs(self):
@@ -63,7 +63,7 @@ class Action(Representable):
             'nargs',
             'default',
             'type',
-            'choices',
+            # 'choices',
             'metavar',
         ]
         return [(name, getattr(self, name)) for name in names]
@@ -87,19 +87,20 @@ class JoinAction(Action):
     """
 
     def __init__(self,
-                 option_strings,
                  dest,
                  nargs=None,
-                 const=None,
                  default=None,
                  type=str,
-                 choices=None,
-                 required=False,
-                 help=None,
+                 # choices=None,
                  metavar=None):
         if type is not str:
             raise ValueError("type has to be str")
-        super().__init__(option_strings, dest, nargs, const, default, type, choices, required, help, metavar)
+        super().__init__(dest,
+                         nargs=nargs,
+                         default=default,
+                         type=type,
+                         # choices=choices,
+                         metavar=metavar)
 
     def __call__(self,
                  parser,
