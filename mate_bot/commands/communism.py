@@ -5,17 +5,19 @@ MateBot command executor classes for /communism and its callback queries
 import typing
 import argparse
 
-import telegram
+import telegram.ext
 
 from mate_bot import err
 from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
 from mate_bot.commands.base import BaseCommand, BaseQuery
+from mate_bot.state import find_user_by_username, MateBotUser
 
 
 COMMUNISM_ARGUMENTS = typing.Union[
     int,
+    typing.Tuple[int, int, telegram.Bot],
     typing.Tuple[state.MateBotUser, int, str, telegram.Message]
 ]
 
@@ -32,6 +34,11 @@ class Communism(state.BaseCollective):
     object, the amount of the communism as integer measured in Cent
     and the description of the communism as string. While being optional
     in the database, you have to specify at least three chars as reason.
+
+    :param arguments: either internal ID or tuple of arguments for creation
+    :raises ValueError: when a supplied argument has an invalid value
+    :raises TypeError: when a supplied argument has the wrong type
+    :raises RuntimeError: when the internal collective ID points to a payment operation
     """
 
     _communistic = True
@@ -39,13 +46,6 @@ class Communism(state.BaseCollective):
     _ALLOWED_COLUMNS = ["externals", "active"]
 
     def __init__(self, arguments: COMMUNISM_ARGUMENTS):
-        """
-        :param arguments: either internal ID or tuple of arguments for creation
-        :type arguments: typing.Union[int, typing.Tuple[state.MateBotUser, int, str]]
-        :raises ValueError: when a supplied argument has an invalid value
-        :raises TypeError: when a supplied argument has the wrong type
-        :raises RuntimeError: when the internal collective ID points to a payment operation
-        """
 
         self._price = 0
         self._fulfilled = None
@@ -57,30 +57,54 @@ class Communism(state.BaseCollective):
                 raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
-            if len(arguments) != 4:
-                raise ValueError("Expected four arguments for the tuple")
+            if len(arguments) == 3:
 
-            user, amount, reason, message = arguments
-            if not isinstance(user, state.MateBotUser):
-                raise TypeError("Expected MateBotUser object as first element")
-            if not isinstance(amount, int):
-                raise TypeError("Expected int object as second element")
-            if not isinstance(reason, str):
-                raise TypeError("Expected str object as third element")
-            if not isinstance(message, telegram.Message):
-                raise TypeError("Expected telegram.Message as fourth element")
+                communism_id, chat, bot = arguments
+                if not isinstance(communism_id, int):
+                    raise TypeError("Expected int as first element")
+                if not isinstance(chat, int):
+                    raise TypeError("Expected int as second element")
+                if not isinstance(bot, telegram.Bot):
+                    raise TypeError("Expected telegram.Bot as third element")
 
-            self._creator = user.uid
-            self._amount = amount
-            self._description = reason
-            self._externals = 0
-            self._active = True
+                self._id = communism_id
+                self.update()
 
-            self._create_new_record()
-            self.add_user(user)
+                forwarded = bot.send_message(
+                    chat_id=chat,
+                    text=self.get_markdown(),
+                    reply_markup=self._gen_inline_keyboard(),
+                    parse_mode="Markdown"
+                )
 
-            reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
-            self.register_message(reply.chat_id, reply.message_id)
+                self.register_message(forwarded.chat_id, forwarded.message_id)
+
+            elif len(arguments) == 4:
+
+                user, amount, reason, message = arguments
+                if not isinstance(user, state.MateBotUser):
+                    raise TypeError("Expected MateBotUser object as first element")
+                if not isinstance(amount, int):
+                    raise TypeError("Expected int object as second element")
+                if not isinstance(reason, str):
+                    raise TypeError("Expected str object as third element")
+                if not isinstance(message, telegram.Message):
+                    raise TypeError("Expected telegram.Message as fourth element")
+
+                self._creator = user.uid
+                self._amount = amount
+                self._description = reason
+                self._externals = 0
+                self._active = True
+
+                self._create_new_record()
+                self.add_user(user)
+
+                reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
+                self.register_message(reply.chat_id, reply.message_id)
+
+            else:
+                raise ValueError("Expected three or four arguments for the tuple")
 
         else:
             raise TypeError("Expected int or tuple of arguments")
