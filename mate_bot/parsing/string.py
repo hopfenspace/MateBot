@@ -1,4 +1,6 @@
-import telegram
+from typing import Optional
+
+from telegram import MessageEntity
 
 
 class EntityString(str):
@@ -10,10 +12,10 @@ class EntityString(str):
     while other function can access the entity if they need it.
     """
 
-    def __new__(cls, string: str, _: telegram.MessageEntity) -> "EntityString":
+    def __new__(cls, string: str, _: Optional[MessageEntity] = None) -> "EntityString":
         return str.__new__(cls, string)
 
-    def __init__(self, _: str, entity: telegram.MessageEntity):
+    def __init__(self, _: str, entity: Optional[MessageEntity] = None):
         super(EntityString, self).__init__()
         self.entity = entity
 
