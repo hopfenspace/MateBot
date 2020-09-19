@@ -94,7 +94,7 @@ The option ``multiple-externals`` specifies whether a user is
 allowed to vouch for more than one external user. External users
 must have an internal user (which is not necessarily a member
 with permissions to vote) that vouches for that external one.
-If noone vouches for an external, it is not allowed to perform
+If no one vouches for an external, it is not allowed to perform
 certain operations like sending money or consuming goods.
 
 Database settings
