@@ -148,7 +148,7 @@ class Communism(state.BaseCollective):
 
         if not self.active and self._externals > 0 and self._fulfilled:
             markdown += (
-                f"\n\n{self._price / 100:.2f}€ must be collected from each\n"
+                f"\n\n{self._price / 100:.2f}€ must be collected from each "
                 f"external user by {self.creator.name}."
             )
 
