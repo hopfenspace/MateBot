@@ -108,7 +108,7 @@ class BaseCommand:
             )
 
 
-class BaseQuery:
+class BaseCallbackQuery:
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
 
@@ -205,3 +205,15 @@ class BaseQuery:
         """
 
         raise NotImplementedError("Overwrite the BaseQuery.run() method in a subclass")
+
+
+class BaseInlineQuery:
+    """
+    Base class for all MateBot inline queries executed by the InlineQueryHandler
+    """
+
+
+class BaseInlineResult:
+    """
+    Base class for all MateBot inline query results executed by the ChosenInlineResultHandler
+    """

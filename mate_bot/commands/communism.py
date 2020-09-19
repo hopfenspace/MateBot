@@ -11,7 +11,7 @@ from mate_bot import err
 from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
-from mate_bot.commands.base import BaseCommand, BaseQuery
+from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.state import find_user_by_username, MateBotUser
 
 
@@ -331,7 +331,7 @@ class CommunismCommand(BaseCommand):
         Communism((user, args.amount, args.reason, update.effective_message))
 
 
-class CommunismQuery(BaseQuery):
+class CommunismQuery(BaseCallbackQuery):
     """
     Callback query executor for /communism
     """
