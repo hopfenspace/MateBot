@@ -83,7 +83,7 @@ class Action(Representable):
         elif self.nargs in ["+", None]:
             return 1
         else:
-            raise RuntimeError(f"invalid nargs value: {repr(action.nargs)}")
+            raise RuntimeError(f"invalid nargs value: {repr(self.nargs)}")
 
     @property
     def max_args(self):

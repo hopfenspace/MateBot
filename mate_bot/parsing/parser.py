@@ -111,7 +111,7 @@ class CommandParser(Representable):
         for action in usage.actions:
             setattr(namespace, action.dest, action.default)
 
-        def consume_action(action: Action, strings: typing.List[str]):
+        def consume_action(local_action: Action, strings: typing.List[str]):
             """
             Use an action to consume as many argument strings as possible
             """
@@ -124,13 +124,13 @@ class CommandParser(Representable):
 
                 try:
                     # Try converting the argument string
-                    value = action.type(string)
+                    value = local_action.type(string)
 
                     # Add converted to list
                     values.append(value)
 
                     # Action can take more -> next string
-                    if len(values) < action.max_args:
+                    if len(values) < local_action.max_args:
                         continue
                     else:
                         break
@@ -145,7 +145,7 @@ class CommandParser(Representable):
                     break
 
             # Action isn't satisfied -> error
-            if action.min_args > len(values):
+            if local_action.min_args > len(values):
                 if error is not None:
                     raise ParsingError(str(error))
                 else:
@@ -154,13 +154,13 @@ class CommandParser(Representable):
             # Action is satisfied -> finish with action
             else:
                 # Process action
-                action(self, namespace, values)
+                local_action(self, namespace, values)
 
         # Copy arg_strings to have a local list to mutate
         left_strings = list(arg_strings)
 
-        for a in usage.actions:
-            consume_action(a, left_strings)
+        for action in usage.actions:
+            consume_action(action, left_strings)
 
         if len(left_strings) > 0:
             raise ParsingError("Unrecognized arguments")
