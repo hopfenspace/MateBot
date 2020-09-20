@@ -204,13 +204,46 @@ class BaseCallbackQuery:
         :raises NotImplementedError: because this method should be overwritten by subclasses
         """
 
-        raise NotImplementedError("Overwrite the BaseQuery.run() method in a subclass")
+        raise NotImplementedError("Overwrite the BaseCallbackQuery.run() method in a subclass")
 
 
 class BaseInlineQuery:
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
+
+    :param origin: feature that forced the user to perform the inline query (if available)
+    :type origin: typing.Callable
     """
+
+    def __init__(self, origin: typing.Optional[typing.Callable] = None):
+        self.origin = origin
+
+    def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :param context: Telegram callback context
+        :type context: telegram.ext.CallbackContext
+        :return: None
+        :raises TypeError: when no inline query is attached to the Update object
+        """
+
+        if not hasattr(update, "inline_query"):
+            raise TypeError('Update object has no attribute "inline_query"')
+
+        self.run(update.inline_query)
+
+    def run(self, query: telegram.InlineQuery) -> None:
+        """
+        Perform command-specific operations
+
+        :param query: incoming Telegram update
+        :type query: telegram.Update
+        :return: None
+        :raises NotImplementedError: because this method should be overwritten by subclasses
+        """
+
+        raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
 
 
 class BaseInlineResult:
