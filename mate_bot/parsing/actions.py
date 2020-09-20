@@ -71,6 +71,34 @@ class Action(Representable):
     def __call__(self, parser, namespace: Namespace, values: typing.List[typing.Any]):
         raise NotImplementedError('.__call__() not defined')
 
+    @property
+    def min_args(self):
+        """
+        Get the minimum amount of arguments this action can take
+        """
+        if isinstance(self.nargs, int):
+            return self.nargs
+        elif self.nargs in ["?", "*"]:
+            return 0
+        elif self.nargs in ["+", None]:
+            return 1
+        else:
+            raise RuntimeError(f"invalid nargs value: {repr(action.nargs)}")
+
+    @property
+    def max_args(self):
+        """
+        Get the maximum amount of arguments this action can take
+        """
+        if isinstance(self.nargs, int):
+            return self.nargs
+        elif self.nargs in ["?", None]:
+            return 1
+        elif self.nargs in ["+", "*"]:
+            return float("inf")
+        else:
+            raise RuntimeError(f"invalid nargs value: {repr(self.nargs)}")
+
 
 class StoreAction(Action):
     """

@@ -34,31 +34,11 @@ class CommandUsage(Representable):
         """
         Return the minimum required amount of arguments.
         """
-        def get_required_arguments(action: Action) -> int:
-            if isinstance(action.nargs, int):
-                return action.nargs
-            elif action.nargs in ["?", "*"]:
-                return 0
-            elif action.nargs in ["+", None]:
-                return 1
-            else:
-                raise RuntimeError(f"invalid nargs value: {repr(action.nargs)}")
-
-        return sum(map(get_required_arguments, self.actions))
+        return sum(map(lambda x: x.min_args, self.actions))
 
     @property
     def max_arguments(self) -> int:
         """
         Return the maximum allowed amount of arguments
         """
-        def get_required_arguments(action: Action) -> int:
-            if isinstance(action.nargs, int):
-                return action.nargs
-            elif action.nargs in ["?", None]:
-                return 1
-            elif action.nargs in ["+", "*"]:
-                return float("inf")
-            else:
-                raise RuntimeError(f"invalid nargs value: {repr(action.nargs)}")
-
-        return sum(map(get_required_arguments, self.actions))
+        return sum(map(lambda x: x.max_args, self.actions))
