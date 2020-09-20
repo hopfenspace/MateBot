@@ -531,11 +531,14 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
 class CommunismInlineQuery(BaseInlineQuery):
     """
-    Communism forwarding mechanism
+    User selection for forwarding communism messages to other users
 
-    This class is used to forward communism messages to other people
-    that do not have the access to the chat the original communism
-    was created in. Using this technology allows them to join anyway.
+    This feature is used to allow users to select a recipient from
+    all known users in the database. This recipient will get the
+    forwarded Communism message in a private chat message. To use
+    this feature, the bot must be able to receive *all* updates
+    for chosen inline query results. You may need to enable this
+    updates via the @BotFather. Set the quota to 100%.
     """
 
     @staticmethod
