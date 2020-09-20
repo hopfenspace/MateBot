@@ -210,13 +210,7 @@ class BaseCallbackQuery:
 class BaseInlineQuery:
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
-
-    :param origin: feature that forced the user to perform the inline query (if available)
-    :type origin: typing.Callable
     """
-
-    def __init__(self, origin: typing.Optional[typing.Callable] = None):
-        self.origin = origin
 
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
         """
