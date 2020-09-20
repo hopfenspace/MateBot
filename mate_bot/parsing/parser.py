@@ -19,6 +19,7 @@ class CommandParser(Representable):
         """
         Return list of usage objects
         """
+
         return self._usages
 
     @property
@@ -26,6 +27,7 @@ class CommandParser(Representable):
         """
         Return the default usage added in constructor
         """
+
         return self._usages[0]
 
     def add_argument(self, *args, **kwargs) -> Action:
@@ -34,12 +36,14 @@ class CommandParser(Representable):
 
         See `CommandUsage.add_argument` for type signature
         """
+
         return self._usages[0].add_argument(*args, **kwargs)
 
     def new_usage(self) -> CommandUsage:
         """
         Initialize, add and return a new usage object
         """
+
         self._usages.append(CommandUsage())
         return self._usages[-1]
 
@@ -54,6 +58,7 @@ class CommandParser(Representable):
         :return: parsed arguments
         :rtype: Namespace
         """
+
         arg_strings = list(self._split(msg))
         return self._parse(arg_strings)
 
@@ -66,6 +71,7 @@ class CommandParser(Representable):
         :return: parsed arguments
         :rtype: Namespace
         """
+
         # Filter out usages by the minimum and maximum amount of required arguments
         def matching_size(u: CommandUsage) -> bool:
             return u.min_arguments <= len(arg_strings) <= u.max_arguments
@@ -88,7 +94,15 @@ class CommandParser(Representable):
     def _parse_usage(usage: CommandUsage, arg_strings: typing.List[str]) -> Namespace:
         """
         Try to parse the arguments with a usage
+
+        :param usage: the usage to parse the arguments with
+        :type usage: CommandUsage
+        :param arg_strings: argument strings to parse
+        :type arg_strings: List[str]
+        :return: parsed arguments
+        :rtype: Namespace
         """
+
         # Initialize namespace and populate it with the defaults
         namespace = Namespace()
         for action in usage.actions:
@@ -99,7 +113,7 @@ class CommandParser(Representable):
         return namespace
 
     @staticmethod
-    def _split(msg: telegram.Message) -> typing.Iterator[typing.Union[str, EntityString]]:
+    def _split(msg: telegram.Message) -> typing.Iterator[EntityString]:
         """
         Split a telegram message into EntityStrings
 
@@ -107,7 +121,13 @@ class CommandParser(Representable):
 
         Danger!!!
         Nested entities would probably break this.
+
+        :param msg: telegram message to tokenize
+        :type msg: telegram.Message
+        :return: list of argument strings
+        :rtype: Iterator[EntityString]
         """
+
         last_entity = 0
 
         for entity in msg.entities:
