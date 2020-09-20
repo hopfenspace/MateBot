@@ -623,7 +623,7 @@ class CommunismInlineQuery(BaseInlineQuery):
         """
         Search for a user in the database and allow the user to forward communisms
 
-        :param query: incoming inline query as part of an incoming Update
+        :param query: inline query as part of an incoming Update
         :type query: telegram.InlineQuery
         :return: None
         """
