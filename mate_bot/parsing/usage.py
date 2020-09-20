@@ -1,5 +1,6 @@
 from mate_bot.parsing.util import Representable
 from mate_bot.parsing.actions import Action, StoreAction
+from mate_bot.parsing.formatting import format_action
 
 
 class CommandUsage(Representable):
@@ -18,6 +19,20 @@ class CommandUsage(Representable):
     def actions(self):
         return self._actions
 
+    @property
+    def min_arguments(self) -> int:
+        """
+        Return the minimum required amount of arguments.
+        """
+        return sum(map(lambda x: x.min_args, self._actions))
+
+    @property
+    def max_arguments(self) -> int:
+        """
+        Return the maximum allowed amount of arguments
+        """
+        return sum(map(lambda x: x.max_args, self._actions))
+
     def add_argument(self, dest: str, **kwargs) -> Action:
         if "action" in kwargs:
             action_type = kwargs["action"]
@@ -29,16 +44,8 @@ class CommandUsage(Representable):
 
         return self._actions[0]
 
-    @property
-    def min_arguments(self) -> int:
+    def __str__(self):
         """
-        Return the minimum required amount of arguments.
+        Return the usage string
         """
-        return sum(map(lambda x: x.min_args, self.actions))
-
-    @property
-    def max_arguments(self) -> int:
-        """
-        Return the maximum allowed amount of arguments
-        """
-        return sum(map(lambda x: x.max_args, self.actions))
+        return " ".join(filter(bool, map(format_action, self._actions)))
