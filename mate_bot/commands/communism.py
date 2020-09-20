@@ -14,7 +14,7 @@ from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery, BaseInlineQuery
-from mate_bot.state import find_user_by_username, MateBotUser
+from mate_bot.state import finders, MateBotUser, CommunityUser
 
 
 COMMUNISM_ARGUMENTS = typing.Union[
@@ -615,3 +615,56 @@ class CommunismInlineQuery(BaseInlineQuery):
             "commands /communism and /pay for this purpose, respectively. Use /help "
             "for a general help and an overview of other available commands."
         )
+
+    def run(self, query: telegram.InlineQuery) -> None:
+        """
+        Search for a user in the database and allow the user to forward communisms
+
+        :param query: incoming inline query as part of an incoming Update
+        :type query: telegram.InlineQuery
+        :return: None
+        """
+
+        if len(query.query) == 0:
+            return
+
+        split = query.query.split(" ")
+
+        try:
+            comm_id = int(split[0])
+            community = CommunityUser()
+
+            users = []
+            for word in split[1:]:
+                if len(word) <= 1:
+                    continue
+                if word.startswith("@"):
+                    word = word[1:]
+
+                for target in finders.find_names_by_pattern(word):
+                    user = finders.find_user_by_name(target)
+                    if user is not None and user not in users:
+                        if user.uid != community.uid:
+                            users.append(user)
+
+                for target in finders.find_usernames_by_pattern(word):
+                    user = finders.find_user_by_username(target)
+                    if user is not None and user not in users:
+                        if user.uid != community.uid:
+                            users.append(user)
+
+            users.sort(key = lambda u: u.name.lower())
+
+            answers = []
+            for choice in users:
+                answers.append(self.get_result(
+                    f"{choice.name} ({choice.username})" if choice.username else choice.name,
+                    f"I am forwarding this communism to {choice.name}...",
+                    communism_id = comm_id,
+                    receiver = choice.tid
+                ))
+
+            query.answer([self.get_help()] + answers)
+
+        except (IndexError, ValueError):
+            query.answer([self.get_help()])
