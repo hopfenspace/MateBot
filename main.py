@@ -2,13 +2,23 @@
 
 import logging
 
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, Filters
+from telegram.ext import (
+    Updater, CommandHandler,
+    CallbackQueryHandler,
+    ChosenInlineResultHandler,
+    Filters, InlineQueryHandler,
+    MessageHandler
+)
+
 
 from mate_bot import err
 from mate_bot import log
 from mate_bot.config import config
 from mate_bot.commands.balance import BalanceCommand
-from mate_bot.commands.communism import CommunismCommand, CommunismQuery
+from mate_bot.commands.communism import (
+    CommunismCommand, CommunismCallbackQuery,
+    CommunismInlineQuery, CommunismInlineResult
+)
 from mate_bot.commands.consume import dynamic_consumable
 from mate_bot.commands.data import DataCommand
 from mate_bot.commands.help import HelpCommand
@@ -39,8 +49,11 @@ COMMANDS = {
 
 HANDLERS = {
     CallbackQueryHandler: {
-        "^communism": CommunismQuery(),
+        "^communism": CommunismCallbackQuery(),
         # "^pay": PayQuery()
+    },
+    InlineQueryHandler: {
+        "": CommunismInlineQuery()
     }
 }
 
@@ -65,6 +78,7 @@ if __name__ == "__main__":
         updater.dispatcher.add_handler(CommandHandler(consumable["name"], dynamic_consumable(consumable)()))
 
     logger.info("Adding other handlers...")
+    updater.dispatcher.add_handler(ChosenInlineResultHandler(CommunismInlineResult()))
     for handler in HANDLERS:
         for pattern in HANDLERS[handler]:
             updater.dispatcher.add_handler(handler(HANDLERS[handler][pattern], pattern=pattern))
