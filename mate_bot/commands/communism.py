@@ -2,8 +2,10 @@
 MateBot command executor classes for /communism and its callback queries
 """
 
+import uuid
 import typing
 import argparse
+import datetime
 
 import telegram.ext
 
@@ -332,7 +334,7 @@ class CommunismCommand(BaseCommand):
         Communism((user, args.amount, args.reason, update.effective_message))
 
 
-class CommunismQuery(BaseCallbackQuery):
+class CommunismCallbackQuery(BaseCallbackQuery):
     """
     Callback query executor for /communism
     """
@@ -522,3 +524,38 @@ class CommunismQuery(BaseCallbackQuery):
         """
 
         pass
+
+
+class CommunismInlineQuery(BaseInlineQuery):
+    """
+    Communism forwarding mechanism
+
+    This class is used to forward communism messages to other people
+    that do not have the access to the chat the original communism
+    was created in. Using this technology allows them to join anyway.
+    """
+
+    @staticmethod
+    def get_uuid(communism_id: typing.Optional[int] = None, receiver: typing.Optional[int] = None) -> str:
+        """
+        Generate a random UUID or a string encoding information about forwarding communisms
+
+        Note that both a communism ID and a receiver are necessary in order
+        to generate the "UUID" that encodes the information to forward a communism.
+        Note that the so-called UUID is not a valid RFC 4122 UUID. If at least one
+        of the optional parameters are not present, a random UUID will be returned.
+        That one, however, will be a valid RFC 4122 UUID created by the module `uuid`.
+
+        :param communism_id: internal ID of the collective operation to be forwarded
+        :type communism_id: typing.Optional[int]
+        :param receiver: Telegram ID (Chat ID) of the recipient of the forwarded message
+        :type receiver: typing.Optional[int]
+        :return: string encoding information to forward communisms or a random UUID
+        :rtype: str
+        """
+
+        if communism_id is None or receiver is None:
+            return str(uuid.uuid4())
+
+        now = int(datetime.datetime.now().timestamp())
+        return f"{now}-{communism_id}-{receiver}"
