@@ -79,12 +79,12 @@ class CommandParser(Representable):
 
         # Some usages should have passed this filter
         if len(properly_sized) == 0:
-            raise ParsingError("Not enough arguments for any usage")
+            raise ParsingError("No usage takes this number of arguments")
 
         # Try the remaining ones
         for usage in properly_sized:
             try:
-                return self._apply_usage(usage, arg_strings)
+                return self._parse_usage(usage, arg_strings)
             except RuntimeError:
                 continue
         else:
