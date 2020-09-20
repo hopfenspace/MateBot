@@ -85,13 +85,12 @@ class CommandParser(Representable):
         for usage in properly_sized:
             try:
                 return self._parse_usage(usage, arg_strings)
-            except RuntimeError:
+            except ParsingError:
                 continue
         else:
             raise ParsingError("No usage applies")
 
-    @staticmethod
-    def _parse_usage(usage: CommandUsage, arg_strings: typing.List[str]) -> Namespace:
+    def _parse_usage(self, usage: CommandUsage, arg_strings: typing.List[str]) -> Namespace:
         """
         Try to parse the arguments with a usage
 
@@ -103,12 +102,68 @@ class CommandParser(Representable):
         :rtype: Namespace
         """
 
+        # Shortcut out if there are no actions
+        if len(usage.actions) == 0:
+            return Namespace()
+
         # Initialize namespace and populate it with the defaults
         namespace = Namespace()
         for action in usage.actions:
             setattr(namespace, action.dest, action.default)
 
-        # TODO
+        def consume_action(action: Action, strings: typing.List[str]):
+            """
+            Use an action to consume as many argument strings as possible
+            """
+
+            values = []
+            error = None
+
+            while len(strings) > 0:
+                string = strings.pop(0)
+
+                try:
+                    # Try converting the argument string
+                    value = action.type(string)
+
+                    # Add converted to list
+                    values.append(value)
+
+                    # Action can take more -> next string
+                    if len(values) < action.max_args:
+                        continue
+                    else:
+                        break
+
+                except ValueError as err:
+                    # Save error for later
+                    error = err
+
+                    # Put back unprocessed string
+                    strings.insert(0, string)
+
+                    break
+
+            # Action isn't satisfied -> error
+            if action.min_args > len(values):
+                if error is not None:
+                    raise ParsingError(str(error))
+                else:
+                    raise ParsingError("Missing arguments")
+
+            # Action is satisfied -> finish with action
+            else:
+                # Process action
+                action(self, namespace, values)
+
+        # Copy arg_strings to have a local list to mutate
+        left_strings = list(arg_strings)
+
+        for a in usage.actions:
+            consume_action(a, left_strings)
+
+        if len(left_strings) > 0:
+            raise ParsingError("Unrecognized arguments")
 
         return namespace
 
