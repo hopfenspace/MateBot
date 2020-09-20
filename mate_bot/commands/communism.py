@@ -19,7 +19,7 @@ from mate_bot.state import finders, MateBotUser, CommunityUser
 
 COMMUNISM_ARGUMENTS = typing.Union[
     int,
-    typing.Tuple[int, int, telegram.Bot],
+    typing.Tuple[int, MateBotUser, telegram.Bot],
     typing.Tuple[state.MateBotUser, int, str, telegram.Message]
 ]
 
@@ -61,19 +61,19 @@ class Communism(state.BaseCollective):
         elif isinstance(arguments, tuple):
             if len(arguments) == 3:
 
-                communism_id, chat, bot = arguments
+                communism_id, user, bot = arguments
                 if not isinstance(communism_id, int):
                     raise TypeError("Expected int as first element")
-                if not isinstance(chat, int):
-                    raise TypeError("Expected int as second element")
+                if not isinstance(user, MateBotUser):
+                    raise TypeError("Expected MateBotUser object as second element")
                 if not isinstance(bot, telegram.Bot):
-                    raise TypeError("Expected telegram.Bot as third element")
+                    raise TypeError("Expected telegram.Bot object as third element")
 
                 self._id = communism_id
                 self.update()
 
                 forwarded = bot.send_message(
-                    chat_id=chat,
+                    chat_id=user.tid,
                     text=self.get_markdown(),
                     reply_markup=self._gen_inline_keyboard(),
                     parse_mode="Markdown"
@@ -174,6 +174,9 @@ class Communism(state.BaseCollective):
         return telegram.InlineKeyboardMarkup([
             [
                 telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
+            ],
+            [
+                telegram.InlineKeyboardButton("FORWARD", switch_inline_query_current_chat = f"{self.get()} ")
             ],
             [
                 telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
