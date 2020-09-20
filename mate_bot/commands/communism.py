@@ -143,14 +143,15 @@ class Communism(state.BaseCollective):
         elif self._fulfilled is not None:
             if self._fulfilled:
                 markdown += "\n_The communism was closed. All transactions have been processed._"
+                if self._externals > 0:
+                    markdown += (
+                        f"\n\n{self._price / 100:.2f}€ must be collected from each "
+                        f"external user by {self.creator.name}."
+                    )
+                else:
+                    markdown += f"\n\nEvery joined user paid {self._price / 100:.2f}€."
             else:
                 markdown += "\n_The communism was aborted. No transactions have been processed._"
-
-        if not self.active and self._externals > 0 and self._fulfilled:
-            markdown += (
-                f"\n\n{self._price / 100:.2f}€ must be collected from each "
-                f"external user by {self.creator.name}."
-            )
 
         return markdown
 
