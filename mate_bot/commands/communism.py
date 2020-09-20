@@ -13,7 +13,7 @@ from mate_bot import err
 from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
-from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
+from mate_bot.commands.base import BaseCommand, BaseCallbackQuery, BaseInlineQuery
 from mate_bot.state import find_user_by_username, MateBotUser
 
 
@@ -559,3 +559,37 @@ class CommunismInlineQuery(BaseInlineQuery):
 
         now = int(datetime.datetime.now().timestamp())
         return f"{now}-{communism_id}-{receiver}"
+
+    @staticmethod
+    def get_result(
+            heading: str,
+            msg_text: str,
+            communism_id: typing.Optional[int] = None,
+            receiver: typing.Optional[int] = None,
+            parse_mode: str = telegram.ParseMode.MARKDOWN
+    ) -> telegram.InlineQueryResultArticle:
+        """
+        Build the InlineQueryResultArticle object that should be sent to the user as one option
+
+        :param heading: heading of the inline result shown to the user
+        :type heading: str
+        :param msg_text:
+        :type msg_text: str
+        :param communism_id: internal ID of the collective operation to be forwarded
+        :type communism_id: typing.Optional[int]
+        :param receiver: Telegram ID (Chat ID) of the recipient of the forwarded message
+        :type receiver: typing.Optional[int]
+        :param parse_mode: parse mode specifier for the resulting message
+        :type parse_mode: str
+        :return:
+        """
+
+        return telegram.InlineQueryResultArticle(
+            id = CommunismInlineQuery.get_uuid(communism_id, receiver),
+            title = heading,
+            input_message_content = telegram.InputTextMessageContent(
+                message_text = msg_text,
+                parse_mode = parse_mode,
+                disable_web_page_preview = True
+            )
+        )
