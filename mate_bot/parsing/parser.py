@@ -47,13 +47,56 @@ class CommandParser(Representable):
         """
         Parse a telegram message into a namespace.
 
+        This just combines the _split and _parse function.
+
         :param msg: message to parse
         :type msg: telegram.Message
         :return: parsed arguments
         :rtype: Namespace
         """
         arg_strings = list(self._split(msg))
-        pass
+        return self._parse(arg_strings)
+
+    def _parse(self, arg_strings: typing.List[str]) -> Namespace:
+        """
+        Internal function for parsing from a list of strings.
+
+        :param arg_strings: a list of strings to parse
+        :type arg_strings: List[str]
+        :return: parsed arguments
+        :rtype: Namespace
+        """
+        # Filter out usages by the minimum and maximum amount of required arguments
+        def matching_size(u: CommandUsage) -> bool:
+            return u.min_arguments <= len(arg_strings) <= u.max_arguments
+        properly_sized = list(filter(matching_size, self._usages))
+
+        # Some usages should have passed this filter
+        if len(properly_sized) == 0:
+            raise ParsingError("Not enough arguments for any usage")
+
+        # Try the remaining ones
+        for usage in properly_sized:
+            try:
+                return self._apply_usage(usage, arg_strings)
+            except RuntimeError:
+                continue
+        else:
+            raise ParsingError("No usage applies")
+
+    @staticmethod
+    def _parse_usage(usage: CommandUsage, arg_strings: typing.List[str]) -> Namespace:
+        """
+        Try to parse the arguments with a usage
+        """
+        # Initialize namespace and populate it with the defaults
+        namespace = Namespace()
+        for action in usage.actions:
+            setattr(namespace, action.dest, action.default)
+
+        # TODO
+
+        return namespace
 
     @staticmethod
     def _split(msg: telegram.Message) -> typing.Iterator[typing.Union[str, EntityString]]:
