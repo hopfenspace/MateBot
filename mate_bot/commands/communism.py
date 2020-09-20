@@ -593,3 +593,25 @@ class CommunismInlineQuery(BaseInlineQuery):
                 disable_web_page_preview = True
             )
         )
+
+    def get_help(self) -> telegram.InlineQueryResultArticle:
+        """
+        Get the help option in the list of choices
+
+        :return: inline query result choice for the help message
+        :rtype: telegram.InlineQueryResultArticle
+        """
+
+        return self.get_result(
+            "Help: What should I do here?",
+            "*Help on using the inline mode of this bot*\n\n"
+            "This bot enables users to forward communism and payment management "
+            "messages to other users via a pretty comfortable inline search. "
+            "Click on the button `FORWARD` of the message and then type the name, "
+            "username or a part of it in the input field. There should already be "
+            "a number besides the name of the bot. This number is required, forwarding "
+            "does not work without this number. _Do not change it._ If you don't have "
+            "a communism or payment message, you may try creating a new one. Use the "
+            "commands /communism and /pay for this purpose, respectively. Use /help "
+            "for a general help and an overview of other available commands."
+        )

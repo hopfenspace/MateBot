@@ -233,6 +233,16 @@ class BaseInlineQuery:
 
         self.run(update.inline_query)
 
+    def get_help(self) -> telegram.InlineQueryResult:
+        """
+        Get some kind of help message as inline result (always as first item!)
+
+        :return: None
+        :raises NotImplementedError: because this method should be overwritten by subclasses
+        """
+
+        raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
+
     def run(self, query: telegram.InlineQuery) -> None:
         """
         Perform command-specific operations
