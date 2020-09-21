@@ -42,9 +42,17 @@ class SendCommand(BaseCommand):
             update.effective_message.reply_text("You can't send money to yourself!")
             return
 
-        trans = state.Transaction(sender, args.receiver, args.amount, reason)
-        trans.commit()
+        def e(variant: str) -> str:
+            return f"send {variant} {args.amount} {sender.uid} {args.receiver.uid}"
 
         update.effective_message.reply_text(
-            f"Okay, you sent {args.amount / 100 :.2f}€ to {str(args.receiver)}"
+            f"Do you want to send {args.amount / 100 :.2f}€ to {str(args.receiver)}?"
+            f"\nDescription: `{reason}`",
+            reply_markup = telegram.InlineKeyboardMarkup([
+                [
+                    telegram.InlineKeyboardButton("CONFIRM", callback_data = e("confirm")),
+                    telegram.InlineKeyboardButton("ABORT", callback_data = e("abort"))
+                ]
+            ]),
+            parse_mode = "Markdown"
         )
