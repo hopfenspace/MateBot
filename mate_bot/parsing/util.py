@@ -83,8 +83,10 @@ class Namespace(Representable):
     """
     Simple object for storing attributes.
 
-    Implements equality by attribute names and values, and provides a simple
-    string representation.
+    Implements:
+    * equality by attribute names and values
+    * a simple string representation (via Representable)
+    * return None on undefined attribute
     """
 
     def __init__(self, **kwargs):
@@ -97,3 +99,6 @@ class Namespace(Representable):
 
     def __contains__(self, key):
         return key in self.__dict__
+
+    def __getattr__(self, key: str) -> None:
+        return None
