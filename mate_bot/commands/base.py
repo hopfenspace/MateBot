@@ -99,7 +99,7 @@ class BaseCommand:
                     update.effective_message.reply_text("You need to /start first.")
                     return
             argv = pre_parse(update.effective_message)
-            args = self.parser.parse_args(argv)
+            args = self.parser.parse_args(list(argv))
             self.run(args, update)
 
         except ParsingError as err:
