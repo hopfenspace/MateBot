@@ -5,6 +5,7 @@ MateBot command executor classes for /help
 import telegram
 
 from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.registry import COMMANDS
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
 
@@ -33,9 +34,9 @@ class HelpCommand(BaseCommand):
         """
 
         if args.command:
-            msg = args.command().description
+            msg = args.command.description
         else:
-            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(BaseCommand.COMMAND_DICT.keys())))
+            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(COMMANDS.commands_as_dict.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
 
         if msg == "":

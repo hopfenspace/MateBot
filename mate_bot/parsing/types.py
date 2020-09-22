@@ -117,19 +117,19 @@ def user(arg: EntityString) -> MateBotUser:
         raise ValueError('No user mentioned. Try with "@".')
 
 
-def command(arg: str) -> Type["BaseCommand"]:
+def command(arg: str) -> "BaseCommand":
     """
-    Convert the string into a command class
+    Convert the string into a command with this name
 
-    :param arg: string to be parsed
+    :param arg: the desired command's name
     :type arg: str
-    :return: the command's class
-    :rtype: Type[BaseCommand]
+    :return: the command
+    :rtype: BaseCommand
     :raises ValueError: when the command is unknown
     """
 
     try:
-        return COMMANDS.get(arg).__class__
+        return COMMANDS.get(arg)
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")
 
