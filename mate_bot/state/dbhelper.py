@@ -102,6 +102,8 @@ class BackendHelper:
         or the connection is closed without calling .commit(), the introduced changes
         are lost! So, be careful and enclose this call in a try-finally-block:
 
+        .. code-block:: python3
+
             try:
                 rows, result, connection = execute_no_commit(...)
                 ...
@@ -109,6 +111,7 @@ class BackendHelper:
             finally:
                 if connection:
                     connection.close()
+
 
         :param query: SQL query string that might contain placeholders
         :type query: str
