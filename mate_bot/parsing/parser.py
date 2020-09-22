@@ -1,3 +1,7 @@
+"""
+MateBot's CommandParser
+"""
+
 import typing
 
 import telegram
@@ -9,6 +13,9 @@ from mate_bot.parsing.actions import Action
 
 
 class CommandParser(Representable):
+    """
+    Class for parsing telegram messages into python objects.
+    """
 
     def __init__(self):
         # Add initial default usage

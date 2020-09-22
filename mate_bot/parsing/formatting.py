@@ -1,5 +1,5 @@
 """
-Helper function for creating usage strings
+MateBot parser's helper functions for creating usage strings
 """
 
 from mate_bot.parsing.actions import Action
@@ -9,8 +9,8 @@ def get_metavar(action: Action) -> str:
     """
     Get an action's metavar
 
-    :param action:
-    :type action: argparse.Action
+    :param action: action to get metavar for
+    :type action: Action
     :return: metavar
     :rtype: str
     """
@@ -27,7 +27,7 @@ def format_action(action: Action) -> str:
     Format a single argument
 
     :param action: the argument to get the formatted string for
-    :type action: argparse.Action
+    :type action: Action
     :return: action as formatted string
     :rtype: str
     """

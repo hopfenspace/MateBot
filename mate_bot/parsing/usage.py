@@ -1,3 +1,7 @@
+"""
+A specific use case of a MateBot command
+"""
+
 from mate_bot.parsing.util import Representable
 from mate_bot.parsing.actions import Action, StoreAction
 from mate_bot.parsing.formatting import format_action

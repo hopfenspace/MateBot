@@ -1,3 +1,7 @@
+"""
+MateBot parser's actions class defining arguments
+"""
+
 import typing
 
 from mate_bot.parsing.util import Namespace, Representable
@@ -7,7 +11,7 @@ class Action(Representable):
     """
     Information about how to convert command line strings to Python objects.
 
-    Action objects are used by an ArgumentParser to represent the information
+    Action objects are used by an CommandParser to represent the information
     needed to parse a single argument from one or more strings from the
     command line. The keyword arguments to the Action constructor are also
     all attributes of Action instances.

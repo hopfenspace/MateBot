@@ -8,7 +8,6 @@ There are:
 * `natural`: a natural number (positive integer)
 * `user`: a MateBotUser
 * `command`: the class of a command the bot provides
-* `_bot_command`: the "bot_command" entity at the start of messages
 """
 
 import re
