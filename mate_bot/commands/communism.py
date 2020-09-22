@@ -9,22 +9,23 @@ import datetime
 import telegram.ext
 
 from mate_bot import err
-from mate_bot import state
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery, BaseInlineQuery, BaseInlineResult
-from mate_bot.state import finders, MateBotUser, CommunityUser
-
+from mate_bot.state.user import MateBotUser, CommunityUser
+from mate_bot.state.transactions import Transaction
+from mate_bot.state.collectives import BaseCollective
+from mate_bot.state import finders
 
 COMMUNISM_ARGUMENTS = typing.Union[
     int,
     typing.Tuple[int, MateBotUser, telegram.Bot],
-    typing.Tuple[state.MateBotUser, int, str, telegram.Message]
+    typing.Tuple[MateBotUser, int, str, telegram.Message]
 ]
 
 
-class Communism(state.BaseCollective):
+class Communism(BaseCollective):
     """
     Communism class to collect money from various other persons
 
@@ -84,7 +85,7 @@ class Communism(state.BaseCollective):
             elif len(arguments) == 4:
 
                 user, amount, reason, message = arguments
-                if not isinstance(user, state.MateBotUser):
+                if not isinstance(user, MateBotUser):
                     raise TypeError("Expected MateBotUser object as first element")
                 if not isinstance(amount, int):
                     raise TypeError("Expected int object as second element")
@@ -229,7 +230,7 @@ class Communism(state.BaseCollective):
             if member == self.creator:
                 continue
 
-            state.Transaction(
+            Transaction(
                 member,
                 self.creator,
                 self._price,
@@ -331,8 +332,8 @@ class CommunismCommand(BaseCommand):
         :return: None
         """
 
-        user = state.MateBotUser(update.effective_message.from_user)
-        if state.BaseCollective.has_user_active_collective(user):
+        user = MateBotUser(update.effective_message.from_user)
+        if BaseCollective.has_user_active_collective(user):
             update.effective_message.reply_text("You already have a collective in progress.")
             return
 
@@ -419,7 +420,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            user = state.MateBotUser(update.callback_query.from_user)
+            user = MateBotUser(update.callback_query.from_user)
             previous_member = com.is_participating(user)[0]
             com.toggle_user(user)
             com.edit(update.callback_query.message.bot)
@@ -438,7 +439,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            if com.creator != state.MateBotUser(update.callback_query.from_user):
+            if com.creator != MateBotUser(update.callback_query.from_user):
                 update.callback_query.answer(
                     text="You can't increase the external counter. You are not the creator.",
                     show_alert=True
@@ -458,7 +459,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            if com.creator != state.MateBotUser(update.callback_query.from_user):
+            if com.creator != MateBotUser(update.callback_query.from_user):
                 update.callback_query.answer(
                     text="You can't decrease the external counter. You are not the creator.",
                     show_alert=True
@@ -485,7 +486,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            if com.creator != state.MateBotUser(update.callback_query.from_user):
+            if com.creator != MateBotUser(update.callback_query.from_user):
                 update.callback_query.answer(
                     text="You can't accept this communism. You are not the creator.",
                     show_alert=True
@@ -509,7 +510,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
 
         com = self.get_communism(update.callback_query)
         if com is not None:
-            if com.creator != state.MateBotUser(update.callback_query.from_user):
+            if com.creator != MateBotUser(update.callback_query.from_user):
                 update.callback_query.answer(
                     text="You can't close this communism. You are not the creator.",
                     show_alert=True

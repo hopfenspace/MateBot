@@ -13,7 +13,8 @@ There are:
 import re
 from typing import Type
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser
+from mate_bot.state.finders import find_user_by_username
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 from mate_bot.parsing.util import EntityString
@@ -124,14 +125,14 @@ def natural(arg: str) -> int:
     return result
 
 
-def user(arg: EntityString) -> state.MateBotUser:
+def user(arg: EntityString) -> MateBotUser:
     """
     Return a MateBot user as defined in the `state` package
 
     :param arg: string to be parsed
     :type arg: str
     :return: fully functional MateBot user
-    :rtype: state.MateBotUser
+    :rtype: MateBotUser
     :raises ValueError: when the argument does not start with @ or @@
     """
 
@@ -139,13 +140,13 @@ def user(arg: EntityString) -> state.MateBotUser:
         raise ValueError('No user mentioned. Try with "@".')
 
     elif arg.entity.type == "mention":
-        usr = state.finders.find_user_by_username(arg)
+        usr = find_user_by_username(arg)
         if usr is None:
             raise ValueError("Ambiguous username. Please send /start to the bot privately.")
         return usr
 
     elif arg.entity.type == "text_mention":
-        return state.MateBotUser(arg.entity.user)
+        return MateBotUser(arg.entity.user)
 
     else:
         raise ValueError('No user mentioned. Try with "@".')
