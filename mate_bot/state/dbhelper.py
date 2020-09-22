@@ -168,6 +168,73 @@ class BackendHelper:
         return rows, result
 
     @staticmethod
+    def _check_identifier(identifier: int) -> bool:
+        """
+        Verify that an identifier (internal user ID) is valid
+
+        :param identifier: integer which is used as internal user ID
+        :type identifier: int
+        :return: True
+        :raises TypeError: when the identifier is no integer
+        :raises ValueError: when the identifier is not positive
+        """
+
+        if not isinstance(identifier, int):
+            raise TypeError(f"Expected integer as identifier, not {type(identifier)}")
+        if identifier <= 0:
+            raise ValueError(f"Expected positive integer as identifier, not {identifier}")
+        return True
+
+    @staticmethod
+    def _check_location(table: str, column: typing.Optional[str] = None) -> bool:
+        """
+        Verify that a location (table and optional column) is valid
+
+        :param table: table name in the database
+        :type table: str
+        :param column: column name in the table
+        :type column: typing.Optional[str]
+        :return: True
+        :raises TypeError: when the table or column is no string
+        :raises ValueError: when the table or column is not found in the database
+        """
+
+        if not isinstance(table, str):
+            raise TypeError(f"Expected string as table name, not {type(table)}")
+        if table not in DATABASE_SCHEMA:
+            raise ValueError(f"Unknown table name '{table}'")
+        if column is None:
+            return True
+
+        if not isinstance(column, str):
+            raise TypeError(f"Expected string as column name, not {type(table)}")
+        if column not in DATABASE_SCHEMA[table]:
+            raise ValueError(f"Unknown column '{column}' in table '{table}'")
+        return True
+
+    @staticmethod
+    def _check_value(value: typing.Union[str, int, bool, None]) -> bool:
+        """
+        Verify that an identifier (internal user ID) is valid
+
+        :param value: value that should be written somewhere to the database
+        :type value: typing.Union[str, int, bool, None]
+        :return: True
+        :raises TypeError: when the identifier is no integer
+        :raises ValueError: when the identifier is not positive
+        """
+
+        if isinstance(value, float):
+            if value.is_integer():
+                value = int(value)
+            else:
+                raise TypeError("No floats allowed as values")
+        if value is not None:
+            if not isinstance(value, (str, int, bool)):
+                raise TypeError(f"Unsupported type {type(value)} for value {value}")
+        return True
+
+    @staticmethod
     def set_value(
             table: str,
             column: str,
@@ -191,30 +258,9 @@ class BackendHelper:
         :raises ValueError: when a value is not valid
         """
 
-        if isinstance(value, float):
-            if value.is_integer():
-                value = int(value)
-            else:
-                raise TypeError("No floats allowed as values")
-
-        if value is not None:
-            if not isinstance(value, (str, int, bool)):
-                raise TypeError(f"Unsupported type {type(value)} for value {value}")
-
-        if not isinstance(identifier, int):
-            raise TypeError(f"Expected integer as identifier, not {type(identifier)}")
-        if identifier <= 0:
-            raise ValueError(f"Expected positive integer as identifier, not {identifier}")
-
-        if not isinstance(table, str):
-            raise TypeError(f"Expected string as table name, not {type(table)}")
-        if table not in DATABASE_SCHEMA:
-            raise ValueError(f"Unknown table name '{table}'")
-
-        if not isinstance(column, str):
-            raise TypeError(f"Expected string as column name, not {type(table)}")
-        if column not in DATABASE_SCHEMA[table]:
-            raise ValueError(f"Unknown column '{column}' in table '{table}'")
+        BackendHelper._check_value(value)
+        BackendHelper._check_identifier(identifier)
+        BackendHelper._check_location(table, column)
 
         return BackendHelper._execute(
             f"UPDATE {table} SET {column}=%s WHERE id=%s",
