@@ -15,7 +15,7 @@ from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
 from mate_bot.commands.vouch import VouchCommand
 from mate_bot.commands.zwegat import ZwegatCommand
-from mate_bot.commands.consume import dynamic_consumable
+from mate_bot.commands.consume import ConsumeCommand
 
 
 # Register all commands
@@ -31,4 +31,4 @@ COMMANDS.add(BlameCommand())
 COMMANDS.add(VouchCommand())
 COMMANDS.add(ZwegatCommand())
 for consumable in config["consumables"]:
-    COMMANDS.add(dynamic_consumable(consumable)())
+    COMMANDS.add(ConsumeCommand(**consumable))
