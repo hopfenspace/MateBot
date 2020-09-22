@@ -140,6 +140,10 @@ class CommandParser(Representable):
                     # Try converting the argument string
                     value = local_action.type(string)
 
+                    # Check choices
+                    if action.choices is not None and value not in action.choices:
+                        raise ValueError(f"{value} is not an available choice")
+
                     # Add converted to list
                     values.append(value)
 

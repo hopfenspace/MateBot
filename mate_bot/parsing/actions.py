@@ -57,7 +57,7 @@ class Action(Representable):
         self.nargs = nargs
         self.default = default
         self.type = type
-        # self.choices = choices
+        self.choices = choices
         self.metavar = metavar
 
     def _get_kwargs(self):
@@ -66,7 +66,7 @@ class Action(Representable):
             'nargs',
             'default',
             'type',
-            # 'choices',
+            'choices',
             'metavar',
         ]
         return [(name, getattr(self, name)) for name in names]

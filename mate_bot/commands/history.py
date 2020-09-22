@@ -33,7 +33,7 @@ class HistoryCommand(BaseCommand):
             "export",
             nargs="?",
             type=lambda x: str(x).lower(),
-            # choices=("json", "csv")
+            choices=("json", "csv")
         )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
