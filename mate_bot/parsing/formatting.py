@@ -7,7 +7,10 @@ from mate_bot.parsing.actions import Action
 
 def get_metavar(action: Action) -> str:
     """
-    Get an action's metavar
+    Get an action's name in a usage string.
+
+    If a the attribute ``metavar`` is set, use it.
+    If not, default to ``dest``
 
     :param action: action to get metavar for
     :type action: Action
@@ -24,7 +27,37 @@ def get_metavar(action: Action) -> str:
 
 def format_action(action: Action) -> str:
     """
-    Format a single argument
+    Format a single argument.
+
+    Get the action's metavar and determine which brackets to put around it depending on ``nargs``:
+
+    * default: surround the name with <>
+
+    .. code-block::
+
+        >>> action = Action("foo")
+        >>> format_action(action)
+        '<foo>'
+
+    * ``'?'``: surround the name with [ ]
+
+    * integer N: surround the name with <> and repeat this N times:
+
+    .. code-block::
+
+        >>> action = Action("foo", nargs=3)
+        >>> format_action(action)
+        '<foo> <foo> <foo>'
+
+    * ``'+'``: add ... after the name and surround it with <>
+
+    .. code-block::
+
+        >>> action = Action("foo", nargs="+")
+        >>> format_action(action)
+        '<foo ...>'
+
+    * ``'*'``: add ... after the name and surround it with [ ]
 
     :param action: the argument to get the formatted string for
     :type action: Action
