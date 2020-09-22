@@ -117,6 +117,13 @@ class BackendHelper:
         """
         Connect to the database, execute a single query and return results and the connection
 
+        .. note::
+
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``. Those
+            functions use this :func:`_execute_no_commit` under the hood.
+
+
         :param query: SQL query string that might contain placeholders
         :type query: str
         :param arguments: optional collection of arguments that should be passed into the query
@@ -253,8 +260,8 @@ class BackendHelper:
 
         .. note::
 
-            Read the class documentation for :py:module::BackendHelper
-            for more information about the functions ending with ``_manually``.
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
 
 
         :param table: name of the table in the database
@@ -364,8 +371,8 @@ class BackendHelper:
 
         .. note::
 
-            Read the class documentation for ``BackendHelper`` for more information
-            about the functions ending with ``_manually``.
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
 
 
         :param table: name of the table in the database
@@ -453,8 +460,8 @@ class BackendHelper:
 
         .. note::
 
-            Read the class documentation for ``BackendHelper`` for more information
-            about the functions ending with ``_manually``.
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
 
 
         :param table: name of the table in the database
