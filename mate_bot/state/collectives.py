@@ -10,10 +10,10 @@ import tzlocal as _local_tz
 
 from mate_bot import err
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.dbhelper import _execute, _execute_no_commit, EXECUTE_TYPE as _EXECUTE_TYPE
+from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-class BaseCollective:
+class BaseCollective(BackendHelper):
     """
     Base class for collective operations
 
@@ -71,7 +71,7 @@ class BaseCollective:
         """
 
         creator = cls._get_uid(creator)
-        rows, values = _execute(
+        rows, values = cls._execute(
             "SELECT id FROM collectives WHERE active=true AND creator=%s",
             (creator,)
         )
@@ -105,7 +105,7 @@ class BaseCollective:
         :rtype: bool
         """
 
-        rows, values = _execute("SELECT active FROM collectives WHERE id=%s", (self._id,))
+        rows, values = self._execute("SELECT active FROM collectives WHERE id=%s", (self._id,))
         if rows == 0 and len(values) == 0:
             return False
         return bool(values[0]["active"])
@@ -137,13 +137,13 @@ class BaseCollective:
 
         connection = None
         try:
-            connection = _execute_no_commit(
+            connection = self._execute_no_commit(
                 "INSERT INTO collectives (amount, externals, description, communistic, creator) "
                 "VALUES (%s, %s, %s, %s, %s)",
                 (self._amount, 0, self._description, self._communistic, self._creator)
             )[2]
 
-            rows, values, connection = _execute_no_commit(
+            rows, values, connection = self._execute_no_commit(
                 "SELECT LAST_INSERT_ID()",
                 connection=connection
             )
@@ -184,12 +184,12 @@ class BaseCollective:
         if column not in self._ALLOWED_COLUMNS:
             raise RuntimeError("Operation not allowed")
 
-        _execute(
+        self._execute(
             f"UPDATE collectives SET {column}=%s WHERE id=%s",
             (value, self._id)
         )
 
-        rows, result = _execute(
+        rows, result = self._execute(
             "SELECT * FROM collectives WHERE id=%s",
             (self._id,)
         )
@@ -203,7 +203,7 @@ class BaseCollective:
         :return: number of affected rows and fetched data record
         """
 
-        return _execute("SELECT * FROM collectives WHERE id=%s", (self._id,))
+        return self._execute("SELECT * FROM collectives WHERE id=%s", (self._id,))
 
     def _get_remote_joined_record(self) -> _EXECUTE_TYPE:
         """
@@ -212,7 +212,7 @@ class BaseCollective:
         :return: number of affected rows and fetched data record
         """
 
-        return _execute(
+        return self._execute(
             "SELECT * FROM collectives "
             "LEFT JOIN collectives_users "
             "ON collectives.id=collectives_users.collectives_id "
@@ -277,11 +277,12 @@ class BaseCollective:
                 raise TypeError("Expected optional integer as argument")
 
         result = []
-        for record in _execute(
+        for record in self._execute(
             "SELECT * FROM collective_messages WHERE collectives_id=%s",
             (self._id,)
         )[1]:
             result.append((record["chat_id"], record["msg_id"]))
+        log.debug(f"get_messages: {result}")
         if chat is not None:
             result = list(filter(lambda r: r[0] == chat, result))
         return result
@@ -310,7 +311,7 @@ class BaseCollective:
             if record[0] == chat:
                 return False
 
-        return _execute(
+        return self._execute(
             "INSERT INTO collective_messages (collectives_id, chat_id, msg_id) VALUES (%s, %s, %s)",
             (self._id, chat, msg)
         )[0] == 1
@@ -335,7 +336,7 @@ class BaseCollective:
         if not isinstance(chat, int) or not isinstance(msg, int):
             raise TypeError("Expected integers as arguments")
 
-        return _execute(
+        return self._execute(
             "DELETE FROM collective_messages WHERE collectives_id=%s AND chat_id=%s AND msg_id=%s",
             (self._id, chat, msg)
         )[0] == 1
@@ -360,7 +361,7 @@ class BaseCollective:
         if not isinstance(chat, int) or not isinstance(msg, int):
             raise TypeError("Expected integers as arguments")
 
-        if not _execute(
+        if not self._execute(
             "UPDATE collective_messages SET msg_id=%s WHERE collectives_id=%s AND chat_id=%s",
             (msg, self._id, chat)
         )[0]:
@@ -382,7 +383,7 @@ class BaseCollective:
         """
 
         user = self._get_uid(user)
-        rows, values = _execute(
+        rows, values = self._execute(
             "SELECT * FROM collectives_users "
             "WHERE collectives_id=%s AND users_id=%s",
             (self._id, user)

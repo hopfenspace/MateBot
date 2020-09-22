@@ -131,25 +131,25 @@ class Transaction:
                 self._src.update()
                 self._dst.update()
 
-                connection = _db._execute_no_commit(
+                connection = _db.BackendHelper._execute_no_commit(
                     "INSERT INTO transactions (sender, receiver, amount, reason) "
                     "VALUES (%s, %s, %s, %s)",
                     (self._src.uid, self._dst.uid, self._amount, self._reason)
                 )[2]
 
-                rows, values, _ = _db._execute_no_commit(
+                rows, values, _ = _db.BackendHelper._execute_no_commit(
                     "SELECT LAST_INSERT_ID()",
                     connection=connection
                 )
                 if rows == 1:
                     self._id = values[0]["LAST_INSERT_ID()"]
 
-                _db._execute_no_commit(
+                _db.BackendHelper._execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._src.balance - self.amount, self._src.uid),
                     connection=connection
                 )
-                _db._execute_no_commit(
+                _db.BackendHelper._execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._dst.balance + self.amount, self._dst.uid),
                     connection=connection
@@ -282,7 +282,7 @@ class TransactionLog:
             extension = " ORDER BY registered DESC LIMIT %s"
             params = (self._uid, self._uid, self._limit)
 
-        rows, self._log = _db._execute(
+        rows, self._log = _db.BackendHelper._execute(
             "SELECT * FROM transactions WHERE sender=%s OR receiver=%s" + extension,
             params
         )
