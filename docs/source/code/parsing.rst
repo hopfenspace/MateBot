@@ -2,9 +2,16 @@
 mate_bot.parsing
 ================
 
-.. toctree::
-
 
 .. automodule:: mate_bot.parsing
-    :members:
+
+
+.. toctree::
+    
+    parsing/actions
+    parsing/formatting
+    parsing/parser
+    parsing/types
+    parsing/usage
+    parsing/util
 
