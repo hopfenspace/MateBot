@@ -12,20 +12,18 @@ from telegram import MessageEntity
 
 class Representable(object):
     """
-    Abstract base class that provides a nice __repr__ method
+    Abstract base class that provides a nice ``__repr__`` method
 
     The __repr__ method returns a string in the format::
-    ```
-    ClassName(
-            pos1, pos2, ...,
-            key1=value1, key2=value2, ...,
-            **{'weird key 3': value3, 'weird key 4': value4}
-        )
-    ```
+        ClassName(
+                pos1, pos2, ...,
+                key1=value1, key2=value2, ...,
+                **{'weird key 3': value3, 'weird key 4': value4}
+            )
     (The whitespace is just for illustration)
 
-    The attributes are determined by the methods `_get_args` and ´_get_kwargs`.
-    Their default implementations uses __slots__ or __dict__
+    The attributes are determined by the methods ``_get_args`` and ´`_get_kwargs``.
+    Their default implementations uses ``__slots__`` or ``__dict__``
     """
 
     def __repr__(self):
@@ -61,10 +59,10 @@ class Representable(object):
 
 class EntityString(Representable, str):
     """
-    Extends str to add a telegram's MessageEntity in the constructor
+    Extends ``str`` to add a telegram's MessageEntity in the constructor
 
-    A CommandParser hands these objects as parameters for "type" functions.
-    This object is a string so functions like `int` which expect a single string can still be used,
+    A CommandParser hands these objects as parameters for "type" functions. \
+    This object is a string so functions like ``int`` which expect a single string can still be used, \
     while other function can access the entity if they need it.
     """
 
