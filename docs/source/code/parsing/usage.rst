@@ -1,3 +1,5 @@
+.. _mate_bot.parsing.usage:
+
 ======================
 mate_bot.parsing.usage
 ======================

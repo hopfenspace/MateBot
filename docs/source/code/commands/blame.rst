@@ -1,3 +1,5 @@
+.. _mate_bot.commands.blame:
+
 =======================
 mate_bot.commands.blame
 =======================

@@ -1,3 +1,5 @@
+.. _mate_bot.state.finders:
+
 ======================
 mate_bot.state.finders
 ======================

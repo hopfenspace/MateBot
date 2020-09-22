@@ -1,3 +1,5 @@
+.. _mate_bot.commands.zwegat:
+
 ========================
 mate_bot.commands.zwegat
 ========================

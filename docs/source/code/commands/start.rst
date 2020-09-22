@@ -1,3 +1,5 @@
+.. _mate_bot.commands.start:
+
 =======================
 mate_bot.commands.start
 =======================

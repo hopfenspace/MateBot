@@ -1,3 +1,5 @@
+.. _database:
+
 ========
 Database
 ========
@@ -5,7 +7,6 @@ Database
 
 .. toctree::
 
-.. _database:
 
 ********************
 Database Information

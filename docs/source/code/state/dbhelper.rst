@@ -1,3 +1,5 @@
+.. _mate_bot.state.dbhelper:
+
 =======================
 mate_bot.state.dbhelper
 =======================

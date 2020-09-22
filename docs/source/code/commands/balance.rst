@@ -1,3 +1,5 @@
+.. _mate_bot.commands.balance:
+
 =========================
 mate_bot.commands.balance
 =========================

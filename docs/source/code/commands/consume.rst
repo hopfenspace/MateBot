@@ -1,3 +1,5 @@
+.. _mate_bot.commands.consume:
+
 =========================
 mate_bot.commands.consume
 =========================

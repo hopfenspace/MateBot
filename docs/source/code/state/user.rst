@@ -1,3 +1,5 @@
+.. _mate_bot.state.user:
+
 ===================
 mate_bot.state.user
 ===================

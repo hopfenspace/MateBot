@@ -1,3 +1,5 @@
+.. _mate_bot.parsing.types:
+
 ======================
 mate_bot.parsing.types
 ======================

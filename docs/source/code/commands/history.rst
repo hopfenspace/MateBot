@@ -1,3 +1,5 @@
+.. _mate_bot.commands.history:
+
 =========================
 mate_bot.commands.history
 =========================

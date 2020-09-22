@@ -1,3 +1,5 @@
+.. _mate_bot.commands.communism:
+
 ===========================
 mate_bot.commands.communism
 ===========================

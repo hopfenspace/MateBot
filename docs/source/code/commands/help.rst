@@ -1,3 +1,5 @@
+.. _mate_bot.commands.help:
+
 ======================
 mate_bot.commands.help
 ======================

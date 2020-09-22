@@ -1,3 +1,5 @@
+.. _mate_bot.commands.data:
+
 ======================
 mate_bot.commands.data
 ======================

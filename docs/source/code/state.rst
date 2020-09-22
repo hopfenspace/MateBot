@@ -1,3 +1,5 @@
+.. _mate_bot.state:
+
 ==============
 mate_bot.state
 ==============

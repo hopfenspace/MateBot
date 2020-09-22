@@ -1,3 +1,5 @@
+.. _mate_bot.commands.send:
+
 ======================
 mate_bot.commands.send
 ======================

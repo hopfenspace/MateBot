@@ -1,3 +1,5 @@
+.. _mate_bot.commands.pay:
+
 =====================
 mate_bot.commands.pay
 =====================

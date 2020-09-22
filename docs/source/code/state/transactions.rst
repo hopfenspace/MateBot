@@ -1,3 +1,5 @@
+.. _mate_bot.state.transactions:
+
 ===========================
 mate_bot.state.transactions
 ===========================

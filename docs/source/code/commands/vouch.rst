@@ -1,3 +1,5 @@
+.. _mate_bot.commands.vouch:
+
 =======================
 mate_bot.commands.vouch
 =======================
