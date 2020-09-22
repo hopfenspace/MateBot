@@ -1,6 +1,6 @@
 """
-Collection of parser argument types
-See actions.Action's type parameter
+Collection of parser argument types.
+See :ref:`mate_bot.parsing.actions` Action's type parameter
 """
 
 import re
@@ -26,14 +26,13 @@ def amount(arg: str) -> int:
     """
     Convert the string into an amount of money.
 
-    If the result is not between ``min_amount`` and ``max_amount``
-    (including them), a ``ValueError`` will be raised.
+    A maximum allowed amount, this function accepts, is set in the config.
 
     :param arg: string to be parsed
     :type arg: str
     :return: Amount of money in cent
     :rtype: int
-    :raises ValueError: when the arg seems to be no valid amount or is out of the allowed range
+    :raises ValueError: when the arg seems to be no valid amount or is too big
     """
 
     min_amount = 0
@@ -62,6 +61,8 @@ def amount(arg: str) -> int:
 def boolean(arg: str) -> bool:
     """
     Convert the string into a boolean using allowed phrases (word lists)
+
+    Which phrases/ terms map to which boolean value can be set in config.
 
     :param arg: string to be parsed
     :type arg: str
@@ -99,10 +100,10 @@ def user(arg: EntityString) -> MateBotUser:
     Convert the string into a MateBot user as defined in the ``state`` package
 
     :param arg: string to be parsed
-    :type arg: str
+    :type arg: EntityString
     :return: fully functional MateBot user
     :rtype: MateBotUser
-    :raises ValueError: when the argument does not start with @ or @@
+    :raises ValueError: when username is ambiguous or the argument wasn't a mention
     """
 
     if arg.entity is None:
