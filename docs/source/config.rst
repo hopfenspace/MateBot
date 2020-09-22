@@ -24,31 +24,8 @@ of the Python source code files. A sample configuration may
 look like the following snippet (see below for a brief explanation
 of the different options the config file provides):
 
-.. code-block:: json
-
-    {
-        "general": {
-            "max-amount": 10000,
-            "max-consume": 10
-        },
-        "bot": {
-            "token": "<Telegram bot token here>",
-            "chat": 0
-        },
-        "community": {
-            "payment-consent": 2,
-            "payment-denial": 2,
-            "multiple-externals": true
-        },
-        "database": {
-            "host": "localhost",
-            "port": 3306,
-            "db": "database_name",
-            "user": "username",
-            "password": "password",
-            "charset": "utf8mb4"
-        }
-    }
+.. literalinclude:: ../../config.json
+    :language: json
 
 General settings
 ~~~~~~~~~~~~~~~~
