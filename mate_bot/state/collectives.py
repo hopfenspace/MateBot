@@ -10,11 +10,7 @@ import tzlocal as _local_tz
 
 from mate_bot import err
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.dbhelper import (
-    execute as _execute,
-    execute_no_commit as _execute_no_commit,
-    EXECUTE_TYPE as _EXECUTE_TYPE
-)
+from mate_bot.state.dbhelper import _execute, _execute_no_commit, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 class BaseCollective:

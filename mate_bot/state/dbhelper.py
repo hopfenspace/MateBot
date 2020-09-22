@@ -75,7 +75,7 @@ DATABASE_SCHEMA = {
 }
 
 
-def execute_no_commit(
+def _execute_no_commit(
         query: str,
         arguments: typing.Union[tuple, list, dict, None] = None,
         connection: typing.Optional[pymysql.connections.Connection] = None
@@ -124,7 +124,7 @@ def execute_no_commit(
     return rows, result, connection
 
 
-def execute(
+def _execute(
         query: str,
         arguments: typing.Union[tuple, list, dict, None] = None
 ) -> EXECUTE_TYPE:
@@ -141,7 +141,7 @@ def execute(
 
     connection = None
     try:
-        rows, result, connection = execute_no_commit(query, arguments)
+        rows, result, connection = _execute_no_commit(query, arguments)
         connection.commit()
     finally:
         if connection:

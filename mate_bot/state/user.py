@@ -11,7 +11,7 @@ import tzlocal as _local_tz
 import pymysql.err as _err
 import telegram as _telegram
 
-from mate_bot.state.dbhelper import execute as _execute, EXECUTE_TYPE as _EXECUTE_TYPE
+from mate_bot.state.dbhelper import _execute, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 class BaseBotUser:
