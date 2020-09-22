@@ -147,3 +147,69 @@ def _execute(
         if connection:
             connection.close()
     return rows, result
+
+
+class BackendHelper:
+    """
+    Helper class providing easy methods to read and write values in the database
+
+    Instead of direct calls to the database using `execute`, this
+    class provides a collection of static methods that make it easy
+    to interact with the database as you don't need to know about the
+    actual database query language. Any high level implementation
+    may subclass this class in order to declare its area of usage.
+    """
+
+    @staticmethod
+    def set_value(
+            table: str,
+            column: str,
+            identifier: int,
+            value: typing.Union[str, int, bool, None]
+    ) -> EXECUTE_TYPE:
+        """
+        Set the remote value in a specific column in a specific table with a specific identifier
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table
+        :type column: str
+        :param: identifier: internal ID of the record in the given table
+        :type identifier: int
+        :param value: value to be set for the current user in the specified column
+        :type value: typing.Union[str, int, bool, None]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        if isinstance(value, float):
+            if value.is_integer():
+                value = int(value)
+            else:
+                raise TypeError("No floats allowed as values")
+
+        if value is not None:
+            if not isinstance(value, (str, int, bool)):
+                raise TypeError(f"Unsupported type {type(value)} for value {value}")
+
+        if not isinstance(identifier, int):
+            raise TypeError(f"Expected integer as identifier, not {type(identifier)}")
+        if identifier <= 0:
+            raise ValueError(f"Expected positive integer as identifier, not {identifier}")
+
+        if not isinstance(table, str):
+            raise TypeError(f"Expected string as table name")
+        if table not in DATABASE_SCHEMA:
+            raise ValueError(f"Unknown table name '{table}'")
+
+        if not isinstance(column, str):
+            raise TypeError("Expected string as column name")
+        if column not in DATABASE_SCHEMA[table]:
+            raise ValueError(f"Unknown column '{column}' in table '{table}'")
+
+        return _execute(
+            f"UPDATE {table} SET {column}=%s WHERE id=%s",
+            (value, identifier)
+        )
