@@ -4,8 +4,8 @@ MateBot command executor classes for /vouch
 
 import telegram
 
-from mate_bot.args import types
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing import types
 from mate_bot.parsing.util import Namespace
 
 
