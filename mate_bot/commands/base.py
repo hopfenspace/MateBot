@@ -6,10 +6,10 @@ import typing
 
 import telegram.ext
 
-from mate_bot import state
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.user import MateBotUser
 
 
 class BaseCommand:
@@ -95,7 +95,7 @@ class BaseCommand:
 
         try:
             if self.name != "start":
-                if state.MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
+                if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
                     update.effective_message.reply_text("You need to /start first.")
                     return
             args = self.parser.parse(update.effective_message)
