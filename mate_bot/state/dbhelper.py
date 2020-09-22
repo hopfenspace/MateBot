@@ -261,7 +261,7 @@ class BackendHelper:
         :type table: str
         :param column: name of the column in the table (optional)
         :type column: typing.Optional[str]
-        :param: identifier: internal ID of the record in the given table (optional)
+        :param identifier: internal ID of the record in the given table (optional)
         :type identifier: typing.Optional[int]
         :param connection: optional connection to the database (opened implicitly if None)
         :type connection: typing.Optional[pymysql.connections.Connection]
@@ -313,7 +313,7 @@ class BackendHelper:
         :type table: str
         :param column: name of the column in the table (optional)
         :type column: typing.Optional[str]
-        :param: identifier: internal ID of the record in the given table (optional)
+        :param identifier: internal ID of the record in the given table (optional)
         :type identifier: typing.Optional[int]
         :return: number of affected rows and the fetched data
         :rtype: tuple
@@ -358,15 +358,21 @@ class BackendHelper:
         connection to the database or use the one that was given to
         finally execute the query to set the value in the specified column
         of the specified table. The updated value will not be committed.
-        The connection is not closed automatically. This is useful to
-        create database transactions. However, you must
-        If this is not your intention, use set_value_manually instead.
+        The connection is not closed automatically. This is useful to create
+        database transactions. However, you must close the connection to the
+        database manually. If this is not your intention, use set_value instead.
+
+        .. note::
+
+            Read the class documentation for ``BackendHelper`` for more information
+            about the functions ending with ``_manually``.
+
 
         :param table: name of the table in the database
         :type table: str
         :param column: name of the column in the table
         :type column: str
-        :param: identifier: internal ID of the record in the given table
+        :param identifier: internal ID of the record in the given table
         :type identifier: int
         :param value: value to be set for the current user in the specified column
         :type value: typing.Union[str, int, bool, None]
@@ -408,7 +414,7 @@ class BackendHelper:
         :type table: str
         :param column: name of the column in the table
         :type column: str
-        :param: identifier: internal ID of the record in the given table
+        :param identifier: internal ID of the record in the given table
         :type identifier: int
         :param value: value to be set for the current user in the specified column
         :type value: typing.Union[str, int, bool, None]
