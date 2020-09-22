@@ -1,8 +1,5 @@
 """
-Collection of simple utility classes:
-* Representable (comp argparse._AttributeHolder)
-* EntityString
-* Namespace     (comp argparse.Namespace)
+Collection of simple utility classes
 """
 
 from typing import Optional
@@ -14,15 +11,19 @@ class Representable(object):
     """
     Abstract base class that provides a nice ``__repr__`` method
 
-    The __repr__ method returns a string in the format::
+    The ``__repr__`` method returns a string in the format:
+
+    .. code-block::
+
         ClassName(
                 pos1, pos2, ...,
                 key1=value1, key2=value2, ...,
                 **{'weird key 3': value3, 'weird key 4': value4}
             )
+
     (The whitespace is just for illustration)
 
-    The attributes are determined by the methods ``_get_args`` and ´`_get_kwargs``.
+    The attributes are determined by the methods ``_get_args`` and ``_get_kwargs``.
     Their default implementations uses ``__slots__`` or ``__dict__``
     """
 
@@ -64,12 +65,17 @@ class EntityString(Representable, str):
     A CommandParser hands these objects as parameters for "type" functions. \
     This object is a string so functions like ``int`` which expect a single string can still be used, \
     while other function can access the entity if they need it.
+
+    :param string: the base string
+    :type string: str
+    :param entity: the telegram MessageEntity (Optional)
+    :type entity: MessageEntity
     """
 
-    def __new__(cls, string: str, _: Optional[MessageEntity] = None) -> "EntityString":
+    def __new__(cls, string: str, entity: Optional[MessageEntity] = None) -> "EntityString":
         return str.__new__(cls, string)
 
-    def __init__(self, _: str, entity: Optional[MessageEntity] = None):
+    def __init__(self, string: str, entity: Optional[MessageEntity] = None):
         super(EntityString, self).__init__()
         self.entity = entity
 
@@ -82,6 +88,7 @@ class Namespace(Representable):
     Simple object for storing attributes.
 
     Implements:
+
     * equality by attribute names and values
     * a simple string representation (via Representable)
     * return None on undefined attribute
