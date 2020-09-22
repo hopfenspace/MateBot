@@ -45,7 +45,7 @@ BOOLEAN_NEGATIVE = [
 ]
 
 
-def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"]["max-amount"]) -> int:
+def amount(arg: str) -> int:
     """
     Convert the string into an amount of money.
 
@@ -54,14 +54,13 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
 
     :param arg: string to be parsed
     :type arg: str
-    :param min_amount: The amount has to be larger than this (given in Cent)
-    :type min_amount: float
-    :param max_amount: The amount has to be smaller than this (given in Cent)
-    :type max_amount: float
     :return: Amount of money in cent
     :rtype: int
     :raises ValueError: when the arg seems to be no valid amount or is out of the allowed range
     """
+
+    min_amount = 0
+    max_amount = config["general"]["max-amount"]
 
     match = __amount_pattern.match(arg)
     if match is None:
