@@ -10,4 +10,4 @@ mate_bot.parsing.usage
 
 .. automodule:: mate_bot.parsing.usage
     :members:
-
+    :special-members:

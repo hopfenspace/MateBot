@@ -1,6 +1,8 @@
 """
-A specific use case of a MateBot command
+Specify the use cases of a MateBot command.
 """
+
+import typing
 
 from mate_bot.parsing.util import Representable
 from mate_bot.parsing.actions import Action, StoreAction
@@ -17,39 +19,81 @@ class CommandUsage(Representable):
     """
 
     def __init__(self):
+        """"""
+
         self._actions = []
 
     @property
-    def actions(self):
+    def actions(self) -> typing.List[Action]:
+        """
+        Get the stored actions.
+
+        :return: the stored actions
+        :rtype: List[Action]
+        """
+
         return self._actions
 
     @property
     def min_arguments(self) -> int:
         """
-        Return the minimum required amount of arguments.
+        Get the minimum required amount of arguments.
+
+        It sums all its actions' ``min_args``.
+
+        :return: minimum required amount of arguments
+        :rtype: int
         """
+
         return sum(map(lambda x: x.min_args, self._actions))
 
     @property
     def max_arguments(self) -> int:
         """
-        Return the maximum allowed amount of arguments
+        Get the maximum allowed amount of arguments
+
+        It sums all its actions' ``max_args``.
+
+        :return: maximum allowed amount of arguments
+        :rtype: int
         """
+
         return sum(map(lambda x: x.max_args, self._actions))
 
-    def add_argument(self, dest: str, **kwargs) -> Action:
-        if "action" in kwargs:
-            action_type = kwargs["action"]
-            del kwargs["action"]
-        else:
-            action_type = StoreAction
+    def add_argument(self, dest: str, action: typing.Type[Action] = StoreAction, **kwargs) -> Action:
+        """
+        Add an argument.
 
-        self._actions.append(action_type(dest, **kwargs))
+        The ``**kwargs`` and ``dest`` will be handed over to the action's constructor.
+        So see :ref:`mate_bot.parsing.actions` for more information.
+
+        :param dest: The name of the attribute to hold the created object(s)
+        :type dest: str
+        :param action: Action class to construct action object with
+        :type action: Type[Action]
+        """
+
+        self._actions.append(action(dest, **kwargs))
 
         return self._actions[0]
 
     def __str__(self):
         """
-        Return the usage string
+        Produce the usage string
+
+        Example:
+
+        .. code-block::
+
+            >>> usage = CommandUsage()
+            >>> usage.add_argument("foo")
+            >>> usage.add_argument("bar", nargs="+", type=int)
+            >>> usage.add_argument("baz", nargs="?")
+            >>> str(usage)
+            '<foo> <bar ...> [baz]'
+
+        See :ref:`mate_bot.parsing.formatting`
+        for further reading on how the arguments are formatted.
         """
+
         return " ".join(filter(bool, map(format_action, self._actions)))
