@@ -23,7 +23,7 @@ from mate_bot.commands.send import SendCallbackQuery
 
 
 COMMANDS = {
-    Filters.all: COMMANDS
+    Filters.all: COMMANDS.commands_as_dict
 }
 
 HANDLERS = {
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     logger.info("Adding command handlers...")
     for cmd_filter, commands in COMMANDS.items():
-        for name, cmd in commands:
+        for name, cmd in commands.items():
             updater.dispatcher.add_handler(
                 CommandHandler(name, cmd, filters=cmd_filter)
             )
