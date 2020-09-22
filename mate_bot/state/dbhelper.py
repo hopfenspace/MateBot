@@ -25,6 +25,40 @@ EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
 
+class ColumnSchema:
+    def __init__(self, name: str, data_type: str, null: bool, extras: str = None):
+        self.name = name
+        self.data_type = data_type
+        self.null = null
+        self.extras = extras
+
+
+class ReferenceSchema:
+    def __init__(self, local_name: str, ref_table: str, ref_name: str, cascade: bool = True):
+        self.local_name = local_name
+        self.ref_table = ref_table
+        self.ref_name = ref_name
+        self.cascade = cascade
+
+
+class TableSchema:
+    def __init__(self, name: str, columns: typing.List[ColumnSchema], refs: list = None):
+        self.name = name
+        self.columns = columns
+        self.refs = refs
+
+
+class DatabaseSchema(dict):
+    """
+    Database schema description based on dictionaries to allow easy design validation
+
+    As this is a subclass of the built-in ``dict``, you have full
+    access to all methods and features of a standard dictionary.
+    The only overwritten method is ``__repr__`` for a better look.
+    """
+
+    def __repr__(self) -> str:
+        return f"DatabaseSchema({super().__repr__()})"
 
 class BackendHelper:
     """
