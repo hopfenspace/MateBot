@@ -71,7 +71,7 @@ class Action(Representable):
         ]
         return [(name, getattr(self, name)) for name in names]
 
-    def __call__(self, parser, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
+    def __call__(self, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
         raise NotImplementedError('.__call__() not defined')
 
     @property
@@ -108,7 +108,7 @@ class StoreAction(Action):
     This action just stores whatever the parser gives it.
     """
 
-    def __call__(self, parser, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
+    def __call__(self, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
         setattr(namespace, self.dest, values)
 
 
@@ -117,5 +117,5 @@ class JoinAction(Action):
     This action takes strings and joins them with spaces.
     """
 
-    def __call__(self, parser, namespace: Namespace, values: typing.List[typing.Any]):
+    def __call__(self, namespace: Namespace, values: typing.List[typing.Any]):
         setattr(namespace, self.dest, " ".join(values))

@@ -173,12 +173,12 @@ class CommandParser(Representable):
             else:
                 # Process action
                 if action.nargs is None:
-                    local_action(self, namespace, values[0])
+                    local_action(namespace, values[0])
                 elif action.nargs == "?":
                     if len(values) > 0:
-                        local_action(self, namespace, values[0])
+                        local_action(namespace, values[0])
                 else:
-                    local_action(self, namespace, values)
+                    local_action(namespace, values)
 
         # Copy arg_strings to have a local list to mutate
         left_strings = list(arg_strings)
