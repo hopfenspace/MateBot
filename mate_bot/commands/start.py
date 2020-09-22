@@ -4,7 +4,7 @@ MateBot command executor classes for /start
 
 import telegram
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
@@ -43,8 +43,8 @@ class StartCommand(BaseCommand):
             update.message.reply_text("This command should be executed in private chat.")
             return
 
-        if state.MateBotUser.get_uid_from_tid(sender.id) is not None:
-            user = state.MateBotUser(sender)
+        if MateBotUser.get_uid_from_tid(sender.id) is not None:
+            user = MateBotUser(sender)
             if not external and user.external:
                 user.external = external
                 update.message.reply_text(
@@ -52,7 +52,7 @@ class StartCommand(BaseCommand):
                 )
             return
 
-        user = state.MateBotUser(sender)
+        user = MateBotUser(sender)
         user.external = external
 
         answer = (

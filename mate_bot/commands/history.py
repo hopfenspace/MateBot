@@ -8,7 +8,8 @@ import tempfile
 
 import telegram
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser
+from mate_bot.state.transactions import TransactionLog
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand
@@ -66,8 +67,8 @@ class HistoryCommand(BaseCommand):
             update.effective_message.reply_text("This command can only be used in private chat.")
             return
 
-        user = state.MateBotUser(update.effective_message.from_user)
-        logs = state.TransactionLog(user).to_json()
+        user = MateBotUser(update.effective_message.from_user)
+        logs = TransactionLog(user).to_json()
         if len(logs) == 0:
             update.effective_message.reply_text("You don't have any registered transactions yet.")
             return
@@ -120,8 +121,8 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        user = state.MateBotUser(update.effective_message.from_user)
-        logs = state.TransactionLog(user, args.length).to_list()
+        user = MateBotUser(update.effective_message.from_user)
+        logs = TransactionLog(user, args.length).to_list()
         log = "\n".join(logs)
         heading = f"Transaction history for {user.name}:\n```"
         if len(logs) == 0:

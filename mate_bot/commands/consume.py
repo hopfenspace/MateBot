@@ -12,11 +12,12 @@ from typing import Type as _Type
 
 import telegram
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser, CommunityUser
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.transactions import Transaction
 
 
 class ConsumeCommand(BaseCommand):
@@ -64,12 +65,12 @@ class ConsumeCommand(BaseCommand):
             )
             return
 
-        sender = state.MateBotUser(update.effective_message.from_user)
+        sender = MateBotUser(update.effective_message.from_user)
         reason = f"consume: {args.number}x {self.name}"
 
-        trans = state.Transaction(
+        trans = Transaction(
             sender,
-            state.CommunityUser(),
+            CommunityUser(),
             self.price * args.number,
             reason
         )

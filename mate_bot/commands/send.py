@@ -4,12 +4,12 @@ MateBot command executor classes for /send
 
 import telegram
 
-from mate_bot import state
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
 from mate_bot.state.user import MateBotUser
+from mate_bot.state.transactions import Transaction
 
 
 class SendCommand(BaseCommand):
@@ -32,7 +32,7 @@ class SendCommand(BaseCommand):
         :return: None
         """
 
-        sender = state.MateBotUser(update.effective_message.from_user)
+        sender = MateBotUser(update.effective_message.from_user)
         if isinstance(args.reason, list):
             reason = "send: " + " ".join(args.reason)
         else:
@@ -105,7 +105,7 @@ class SendCallbackQuery(BaseCallbackQuery):
                 raise RuntimeError("Unknown reason while confirming a Transaction")
 
             if confirmation:
-                trans = state.Transaction(sender, receiver, amount, reason)
+                trans = Transaction(sender, receiver, amount, reason)
                 trans.commit()
 
                 update.callback_query.message.edit_text(

@@ -4,7 +4,7 @@ MateBot command executor classes for /data
 
 import telegram
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 
@@ -33,11 +33,11 @@ class DataCommand(BaseCommand):
             update.effective_message.reply_text("This command can only be used in private chat.")
             return
 
-        user = state.MateBotUser(update.effective_message.from_user)
+        user = MateBotUser(update.effective_message.from_user)
 
         if user.external:
             if user.creditor:
-                creditor = state.MateBotUser(user.creditor)
+                creditor = MateBotUser(user.creditor)
                 relations = f"Creditor user: {creditor.name}"
                 if creditor.username:
                     relations += f" ({creditor.username})"
@@ -48,7 +48,7 @@ class DataCommand(BaseCommand):
             users = ", ".join(map(
                 lambda u: f"{u.name} ({u.username})" if u.username else u.name,
                 map(
-                    lambda i: state.MateBotUser(i),
+                    lambda i: MateBotUser(i),
                     user.debtors
                 )
             ))

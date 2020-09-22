@@ -4,7 +4,7 @@ MateBot command executor classes for /balance
 
 import telegram
 
-from mate_bot import state
+from mate_bot.state.user import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
@@ -32,5 +32,5 @@ class BalanceCommand(BaseCommand):
             user = args.user
             update.effective_message.reply_text(f"Balance of {user.name} is: {user.balance / 100 : .2f}€")
         else:
-            user = state.MateBotUser(update.effective_message.from_user)
+            user = MateBotUser(update.effective_message.from_user)
             update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")
