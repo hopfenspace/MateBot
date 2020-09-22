@@ -11,13 +11,10 @@ Telegram Bot that sells Mate, ice cream and pizza and allows you to share bills
 - [tzlocal](https://pypi.org/project/tzlocal/)
 - [pymysql](https://pypi.org/project/PyMySQL/)
 
-TODO
-
 ## Documentation
 
 See docs folder or [our deployed documentation](https://docs.hopfenspace.org/matebot)
 
 ## License
 
-See LICENSE  
-TL;DR: GPLv3
+See [license](LICENSE)
