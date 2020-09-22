@@ -22,10 +22,10 @@ class Action(Representable):
     :param nargs: The number of command-line arguments that should be \
                   consumed. By default, one argument will be consumed and a single \
                   value will be produced.  Other values include:
-                  - N (an integer) consumes N arguments (and produces a list)
-                  - '?' consumes zero or one arguments
-                  - '*' consumes zero or more arguments (and produces a list)
-                  - '+' consumes one or more arguments (and produces a list)
+                  * N (an integer) consumes N arguments (and produces a list)
+                  * '?' consumes zero or one arguments
+                  * '*' consumes zero or more arguments (and produces a list)
+                  * '+' consumes one or more arguments (and produces a list)
                   Note that the difference between the default and nargs=1 is that \
                   with the default, a single value will be produced, while with \
                   nargs=1, a list containing a single value will be produced.
