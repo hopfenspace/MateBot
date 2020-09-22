@@ -1,8 +1,7 @@
 ================
-Telegram Handler
+Code Conventions
 ================
 
+
 .. toctree::
-
-
 

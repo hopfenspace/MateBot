@@ -3,9 +3,10 @@ Welcome to MateBot's documentation!
 ===================================
 
 .. toctree::
-
+    :maxdepth: 2
+    
     config
-    telegram_handler
-    objects
+    codeconventions
+    code/index
     database
 
