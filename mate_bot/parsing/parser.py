@@ -201,11 +201,11 @@ class CommandParser(Representable):
         for entity in msg.entities:
             # If there is normal text left before the next entity
             if last_entity < entity.offset:
-                yield from map(EntityString, filter(bool, reversed(msg.text[last_entity:entity.offset].split())))
+                yield from map(EntityString, filter(bool, msg.text[last_entity:entity.offset].split()))
 
             yield EntityString(msg.text[entity.offset:entity.offset + entity.length], entity)
             last_entity = entity.offset + entity.length
 
         # Return left over text which might be after the last entity
         if msg.text[last_entity:]:
-            yield from map(EntityString, filter(bool, reversed(msg.text[last_entity:].split())))
+            yield from map(EntityString, filter(bool, msg.text[last_entity:].split()))
