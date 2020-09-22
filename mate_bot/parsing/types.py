@@ -1,13 +1,6 @@
 """
 Collection of parser argument types
-See `mate_bot.parsing.actions.Action`'s type parameter
-
-There are:
-* `amount`: an amount of money
-* `boolean`: a bunch of words or symbols which can be interpreted as truth values
-* `natural`: a natural number (positive integer)
-* `user`: a MateBotUser
-* `command`: the class of a command the bot provides
+See actions.Action's type parameter
 """
 
 import re
@@ -57,7 +50,7 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
     Convert the string into an amount of money.
 
     If the result is not between ``min_amount`` and ``max_amount``
-    (including them), a ValueError will be raised.
+    (including them), a ``ValueError`` will be raised.
 
     :param arg: string to be parsed
     :type arg: str
@@ -65,9 +58,9 @@ def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"
     :type min_amount: float
     :param max_amount: The amount has to be smaller than this (given in Cent)
     :type max_amount: float
-    :raises ValueError: when the arg seems to be no valid amount or is out of the allowed range
     :return: Amount of money in cent
     :rtype: int
+    :raises ValueError: when the arg seems to be no valid amount or is out of the allowed range
     """
 
     match = __amount_pattern.match(arg)
@@ -127,7 +120,7 @@ def natural(arg: str) -> int:
 
 def user(arg: EntityString) -> MateBotUser:
     """
-    Return a MateBot user as defined in the `state` package
+    Convert the string into a MateBot user as defined in the ``state`` package
 
     :param arg: string to be parsed
     :type arg: str
@@ -154,7 +147,7 @@ def user(arg: EntityString) -> MateBotUser:
 
 def command(arg: str) -> Type[BaseCommand]:
     """
-    Get the class corresponding to the given command.
+    Convert the string into a command class
 
     :param arg: string to be parsed
     :type arg: str
