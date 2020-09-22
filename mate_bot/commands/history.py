@@ -4,14 +4,13 @@ MateBot command executor classes for /history
 
 import csv
 import json
-import argparse
 import tempfile
 
 import telegram
 
 from mate_bot import state
-from mate_bot.args.types import natural as natural_type
-from mate_bot.args.actions import MutExAction
+from mate_bot.parsing.types import natural as natural_type
+from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand
 
 
@@ -24,21 +23,20 @@ class HistoryCommand(BaseCommand):
         super().__init__("history", "Request your made transactions.\n\n"
                                     "You can specify the amount of most recent transactions "
                                     "you want so see or a format in which to export all of them.")
-        mut = self.parser.add_argument("length_export", action=MutExAction, nargs="?")
-        mut.add_action(self.parser.add_argument(
+        self.parser.add_argument(
             "length",
             nargs="?",
             default=10,
             type=natural_type
-        ))
-        mut.add_action(self.parser.add_argument(
+        )
+        self.parser.new_usage().add_argument(
             "export",
             nargs="?",
             type=lambda x: str(x).lower(),
-            choices=("json", "csv")
-        ))
+            # choices=("json", "csv")
+        )
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
@@ -53,7 +51,7 @@ class HistoryCommand(BaseCommand):
             self._handle_export(args, update)
 
     @staticmethod
-    def _handle_export(args: argparse.Namespace, update: telegram.Update) -> None:
+    def _handle_export(args: Namespace, update: telegram.Update) -> None:
         """
         Handle the request to export the full transaction log of a user
 
@@ -111,7 +109,7 @@ class HistoryCommand(BaseCommand):
                 )
 
     @staticmethod
-    def _handle_report(args: argparse.Namespace, update: telegram.Update) -> None:
+    def _handle_report(args: Namespace, update: telegram.Update) -> None:
         """
         Handle the request to report the most current transaction entries of a user
 

@@ -2,13 +2,12 @@
 MateBot command executor classes for /start
 """
 
-import argparse
-
 import telegram
 
 from mate_bot import state
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing.util import Namespace
 
 
 class StartCommand(BaseCommand):
@@ -20,7 +19,7 @@ class StartCommand(BaseCommand):
         super().__init__("start", "Use once per user to start interacting with this bot.")
         self.parser.add_argument("trash-bin", nargs="*")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

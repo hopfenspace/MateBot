@@ -2,12 +2,11 @@
 MateBot command executor classes for /zwegat
 """
 
-import argparse
-
 import telegram
 
 from mate_bot.state.user import CommunityUser
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing.util import Namespace
 
 
 class ZwegatCommand(BaseCommand):
@@ -18,7 +17,7 @@ class ZwegatCommand(BaseCommand):
     def __init__(self):
         super().__init__("zwegat", "Show the central funds.")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

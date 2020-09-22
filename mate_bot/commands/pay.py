@@ -2,13 +2,12 @@
 MateBot command executor classes for /pay and its callback queries
 """
 
-import argparse
-
 import telegram
 
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
-from mate_bot.args.types import amount as amount_type
-from mate_bot.args.actions import JoinAction
+from mate_bot.parsing.types import amount as amount_type
+from mate_bot.parsing.actions import JoinAction
+from mate_bot.parsing.util import Namespace
 
 pays = {}
 
@@ -46,7 +45,7 @@ class PayCommand(BaseCommand):
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 
-    def run(self, args: argparse.Namespace, msg: telegram.Message) -> None:
+    def run(self, args: Namespace, msg: telegram.Message) -> None:
         pass
 
 

@@ -4,15 +4,15 @@ MateBot command executor classes for /communism and its callback queries
 
 import uuid
 import typing
-import argparse
 import datetime
 
 import telegram.ext
 
 from mate_bot import err
 from mate_bot import state
-from mate_bot.args.types import amount as amount_type
-from mate_bot.args.actions import JoinAction
+from mate_bot.parsing.types import amount as amount_type
+from mate_bot.parsing.actions import JoinAction
+from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery, BaseInlineQuery, BaseInlineResult
 from mate_bot.state import finders, MateBotUser, CommunityUser
 
@@ -320,7 +320,7 @@ class CommunismCommand(BaseCommand):
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

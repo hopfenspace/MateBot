@@ -2,13 +2,12 @@
 MateBot command executor classes for /balance
 """
 
-import argparse
-
 import telegram
 
 from mate_bot import state
 from mate_bot.commands.base import BaseCommand
-from mate_bot.args.types import user as user_type
+from mate_bot.parsing.types import user as user_type
+from mate_bot.parsing.util import Namespace
 
 
 class BalanceCommand(BaseCommand):
@@ -20,7 +19,7 @@ class BalanceCommand(BaseCommand):
         super().__init__("balance", "Shows a user's balance.")
         self.parser.add_argument("user", type=user_type, nargs="?")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
