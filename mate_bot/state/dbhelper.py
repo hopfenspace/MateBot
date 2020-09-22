@@ -24,55 +24,6 @@ QUERY_RESULT_TYPE = typing.List[typing.Dict[str, typing.Any]]
 EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
-DATABASE_SCHEMA = {
-    "users": (
-        "id",
-        "tid",
-        "username",
-        "name",
-        "balance",
-        "permission",
-        "active",
-        "created",
-        "accessed"
-    ),
-    "transactions": (
-        "id",
-        "sender",
-        "receiver",
-        "amount",
-        "reason",
-        "registered"
-    ),
-    "collectives": (
-        "id",
-        "active",
-        "amount",
-        "externals",
-        "description",
-        "communistic",
-        "creator",
-        "created"
-    ),
-    "collectives_users": (
-        "id",
-        "collectives_id",
-        "users_id",
-        "vote"
-    ),
-    "collective_messages": (
-        "id",
-        "collectives_id",
-        "chat_id",
-        "msg_id"
-    ),
-    "externals": (
-        "id",
-        "internal",
-        "external",
-        "changed"
-    )
-}
 
 
 class BackendHelper:
