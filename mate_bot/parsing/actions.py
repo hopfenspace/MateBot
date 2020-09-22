@@ -117,22 +117,6 @@ class JoinAction(Action):
     This action takes strings and joins them with spaces.
     """
 
-    def __init__(self,
-                 dest,
-                 nargs=None,
-                 default=None,
-                 type=str,
-                 # choices=None,
-                 metavar=None):
-        if type is not str:
-            raise ValueError("type has to be str")
-        super().__init__(dest,
-                         nargs=nargs,
-                         default=default,
-                         type=type,
-                         # choices=choices,
-                         metavar=metavar)
-
     def __call__(self,
                  parser,
                  namespace: Namespace,
