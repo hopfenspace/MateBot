@@ -35,9 +35,6 @@ def amount(arg: str) -> int:
     :raises ValueError: when the arg seems to be no valid amount or is too big
     """
 
-    min_amount = 0
-    max_amount = config["general"]["max-amount"]
-
     match = __amount_pattern.match(arg)
     if match is None:
         raise ValueError("Doesn't match an amount's regex")
@@ -50,10 +47,8 @@ def amount(arg: str) -> int:
 
     if val == 0:
         raise ValueError("An amount can't be zero")
-    elif val > max_amount:
+    elif val > config["general"]["max-amount"]:
         raise ValueError("The amount is too high")
-    elif val < min_amount:
-        raise ValueError("The amount is too low")
 
     return val
 
