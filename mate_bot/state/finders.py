@@ -5,7 +5,7 @@ MateBot helper methods to find users, names or usernames
 import typing
 
 from mate_bot.state import user
-from mate_bot.state.dbhelper import _execute
+from mate_bot.state.dbhelper import BackendHelper
 
 
 def find_user_by_name(name: str, matching: bool = False) -> typing.Optional[user.MateBotUser]:
@@ -29,13 +29,13 @@ def find_user_by_name(name: str, matching: bool = False) -> typing.Optional[user
             name = "%" + name
         if not name.endswith("%"):
             name += "%"
-        rows, values = _execute(
+        rows, values = BackendHelper._execute(
             "SELECT * FROM users WHERE name LIKE %s",
             (name,)
         )
 
     else:
-        rows, values = _execute(
+        rows, values = BackendHelper._execute(
             "SELECT * FROM users WHERE name=%s",
             (name,)
         )
@@ -73,13 +73,13 @@ def find_user_by_username(
             username = "%" + username
         if not username.endswith("%"):
             username += "%"
-        rows, values = _execute(
+        rows, values = BackendHelper._execute(
             "SELECT * FROM users WHERE username LIKE %s",
             (username,)
         )
 
     else:
-        rows, values = _execute(
+        rows, values = BackendHelper._execute(
             "SELECT * FROM users WHERE username=%s",
             (username,)
         )
@@ -105,7 +105,7 @@ def find_names_by_pattern(pattern: str) -> typing.List[str]:
         pattern += "%"
 
     results = []
-    for values in _execute("SELECT name FROM users WHERE name LIKE %s", (pattern,))[1]:
+    for values in BackendHelper._execute("SELECT name FROM users WHERE name LIKE %s", (pattern,))[1]:
         results.append(values["name"])
     return results
 
@@ -125,6 +125,6 @@ def find_usernames_by_pattern(pattern: str) -> typing.List[str]:
         pattern += "%"
 
     results = []
-    for values in _execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
+    for values in BackendHelper._execute("SELECT username FROM users WHERE username LIKE %s", (pattern,))[1]:
         results.append(values["username"])
     return results

@@ -11,10 +11,10 @@ import tzlocal as _local_tz
 import pymysql.err as _err
 import telegram as _telegram
 
-from mate_bot.state.dbhelper import _execute, EXECUTE_TYPE as _EXECUTE_TYPE
+from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-class BaseBotUser:
+class BaseBotUser(BackendHelper):
     """
     Base class for MateBot users
 
@@ -48,7 +48,7 @@ class BaseBotUser:
         :return: int or None
         """
 
-        rows, values = _execute("SELECT id FROM users WHERE tid=%s", (tid,))
+        rows, values = cls._execute("SELECT id FROM users WHERE tid=%s", (tid,))
         if rows == 1 and len(values) == 1:
             return values[0]["id"]
         return None
@@ -63,7 +63,7 @@ class BaseBotUser:
         :return: int or None
         """
 
-        rows, values = _execute("SELECT tid FROM users WHERE id=%s", (uid,))
+        rows, values = cls._execute("SELECT tid FROM users WHERE id=%s", (uid,))
         if rows == 1 and len(values) == 1:
             return values[0]["tid"]
         return None
@@ -78,7 +78,7 @@ class BaseBotUser:
         :return: str or None
         """
 
-        rows, values = _execute("SELECT name FROM users WHERE id=%s", (uid,))
+        rows, values = cls._execute("SELECT name FROM users WHERE id=%s", (uid,))
         if rows == 1 and len(values) == 1:
             return values[0]["name"]
         return None
@@ -92,7 +92,7 @@ class BaseBotUser:
         :return:
         """
 
-        rows, values = _execute("SELECT username FROM users WHERE id=%s", (uid,))
+        rows, values = cls._execute("SELECT username FROM users WHERE id=%s", (uid,))
         if rows == 1 and len(values) == 1:
             return values[0]["username"]
         return None
@@ -112,9 +112,9 @@ class BaseBotUser:
         """
 
         if use_tid:
-            return _execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
+            return self._execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
         else:
-            return _execute("SELECT * FROM users WHERE id=%s", (self._id,))
+            return self._execute("SELECT * FROM users WHERE id=%s", (self._id,))
 
     def _unpack_record(self, record: typing.Dict[str, typing.Any]) -> None:
         """
@@ -164,12 +164,12 @@ class BaseBotUser:
         if column not in self._ALLOWED_UPDATES:
             raise RuntimeError("Operation not allowed")
 
-        _execute(
+        self._execute(
             f"UPDATE users SET {column}=%s WHERE id=%s",
             (value, self._id)
         )
 
-        rows, result = _execute(
+        rows, result = self._execute(
             "SELECT * FROM users WHERE id=%s",
             (self._id,)
         )
@@ -202,7 +202,7 @@ class BaseBotUser:
         :return: bool
         """
 
-        rows, values = _execute("SELECT * FROM externals WHERE external=%s", (self._id,))
+        rows, values = self._execute("SELECT * FROM externals WHERE external=%s", (self._id,))
         return rows != 0 and len(values) != 0
 
     def update(self) -> None:
@@ -358,9 +358,9 @@ class BaseBotUser:
     def external(self, new: bool):
         if bool(new) != self.external and self._ALLOWED_EXTERNAL:
             if new:
-                _execute("INSERT INTO externals (external) VALUES (%s)", (self._id,))
+                self._execute("INSERT INTO externals (external) VALUES (%s)", (self._id,))
             else:
-                _execute("DELETE FROM externals WHERE external=%s", (self._id,))
+                self._execute("DELETE FROM externals WHERE external=%s", (self._id,))
             self._external = self.check_external()
 
 
@@ -385,7 +385,7 @@ class CommunityUser(BaseBotUser):
         :raises pymysql.err.IntegrityError: when the user is marked external
         """
 
-        rows, values = _execute("SELECT * FROM users WHERE tid IS NULL")
+        rows, values = self._execute("SELECT * FROM users WHERE tid IS NULL")
 
         if rows == 0 or len(values) == 0:
             raise _err.DataError(
@@ -460,7 +460,7 @@ class MateBotUser(BaseBotUser):
             if not use_tid:
                 raise _err.DataError(f"User ID {self._id} was not found in the database.")
 
-            _execute(
+            self._execute(
                 "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
                 (self._user.id, self._user.username, self._user.full_name)
             )
@@ -493,7 +493,7 @@ class MateBotUser(BaseBotUser):
         if self.external:
             return None
 
-        values = _execute("SELECT external FROM externals WHERE internal=%s", (self._id,))[1]
+        values = self._execute("SELECT external FROM externals WHERE internal=%s", (self._id,))[1]
         return list(map(lambda r: r["external"], values))
 
     @property
@@ -514,7 +514,7 @@ class MateBotUser(BaseBotUser):
         Therefore, all getter and setter accesses produce SQL queries.
         """
 
-        rows, values = _execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
+        rows, values = self._execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
         if rows == 1 and len(values) == 1:
             return values[0]["internal"]
         return None
@@ -527,12 +527,12 @@ class MateBotUser(BaseBotUser):
 
         if self.creditor != new:
             if new is None:
-                _execute("UPDATE externals SET internal=NULL WHERE external=%s", (self._id,))
+                self._execute("UPDATE externals SET internal=NULL WHERE external=%s", (self._id,))
                 return
             if isinstance(new, int) and new != CommunityUser().uid:
                 new = MateBotUser(new)
             if not new.check_external():
-                _execute("UPDATE externals SET internal=%s WHERE external=%s", (new.uid, self._id))
+                self._execute("UPDATE externals SET internal=%s WHERE external=%s", (new.uid, self._id))
 
     @classmethod
     def get_worst_debtors(cls) -> typing.List[MateBotUser]:
@@ -543,7 +543,7 @@ class MateBotUser(BaseBotUser):
         :rtype: typing.List[MateBotUser]
         """
 
-        return list(MateBotUser(value["id"]) for value in _execute(
+        return list(MateBotUser(value["id"]) for value in cls._execute(
             "SELECT * FROM users WHERE tid IS NOT NULL AND balance="
             "(SELECT MIN(balance) FROM users WHERE tid IS NOT NULL AND balance<0)"
         )[1])
