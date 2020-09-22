@@ -56,7 +56,7 @@
 			"messages": [
 				"Okay, enjoy your "
 			],
-			"symbol": "🧉"
+			"symbol": "\uD83E\uDDC9"
 		},
 		{
 			"name": "water",
@@ -69,7 +69,7 @@
 				"Der Bahnbabo sagt: Hydriert euch mit ",
 				"Okay, enjoy your "
 			],
-			"symbol": "💧"
+			"symbol": "\uD83D\uDCA7"
 		},
 		{
 			"name": "pizza",
@@ -79,7 +79,7 @@
 				"Okay, enjoy your ",
 				"Buon appetito! "
 			],
-			"symbol": "🍕"
+			"symbol": "\uD83C\uDF55"
 		},
 		{
 			"name": "ice",
@@ -89,7 +89,7 @@
 				"Okay, enjoy your ",
 				"Hmmh, yummy... "
 			],
-			"symbol": "🍨"
+			"symbol": "\uD83C\uDF68"
 		}
 	]
 }
