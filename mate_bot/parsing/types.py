@@ -22,29 +22,6 @@ __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")
 # 1st group: leading number, 2nd group: 1st decimal, 3rd group: 2nd decimal
 
 
-BOOLEAN_POSITIVE = [
-    "on",
-    "1",
-    "+",
-    "true",
-    "yes",
-    "good",
-    "allow",
-    "allowed"
-]
-
-BOOLEAN_NEGATIVE = [
-    "off",
-    "0",
-    "-",
-    "false",
-    "no",
-    "bad",
-    "deny",
-    "denied"
-]
-
-
 def amount(arg: str) -> int:
     """
     Convert the string into an amount of money.
@@ -93,9 +70,9 @@ def boolean(arg: str) -> bool:
     :raises ValueError: when the argument could not be converted properly
     """
 
-    if arg.lower() in BOOLEAN_POSITIVE and not arg.lower() in BOOLEAN_NEGATIVE:
+    if arg.lower() in config["general"]["positive-terms"]:
         return True
-    if arg.lower() in BOOLEAN_NEGATIVE and not arg.lower() in BOOLEAN_POSITIVE:
+    elif arg.lower() in config["general"]["negative-terms"]:
         return False
     raise ValueError("Unknown boolean phrase.")
 

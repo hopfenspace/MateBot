@@ -1,7 +1,27 @@
 {
 	"general": {
 		"max-amount": 10000,
-		"max-consume": 10
+		"max-consume": 10,
+		"positive-terms": [
+			"on",
+			"1",
+			"+",
+			"true",
+			"yes",
+			"good",
+			"allow",
+			"allowed"
+		],
+		"negative-terms": [
+			"off",
+			"0",
+			"-",
+			"false",
+			"no",
+			"bad",
+			"deny",
+			"denied"
+		]
 	},
 	"misc": {
 		"db-localtime": false
