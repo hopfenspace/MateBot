@@ -117,5 +117,5 @@ class JoinAction(Action):
     This action takes strings and joins them with spaces.
     """
 
-    def __call__(self, namespace: Namespace, values: typing.List[typing.Any]):
+    def __call__(self, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
         setattr(namespace, self.dest, " ".join(values))
