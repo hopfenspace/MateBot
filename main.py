@@ -13,37 +13,17 @@ from telegram.ext import (
 from mate_bot import err
 from mate_bot import log
 from mate_bot.config import config
-from mate_bot.commands.balance import BalanceCommand
+from mate_bot.commands.registry import COMMANDS
 from mate_bot.commands.communism import (
-    CommunismCommand, CommunismCallbackQuery,
-    CommunismInlineQuery, CommunismInlineResult
+    CommunismCallbackQuery,
+    CommunismInlineQuery,
+    CommunismInlineResult
 )
-from mate_bot.commands.consume import dynamic_consumable
-from mate_bot.commands.data import DataCommand
-from mate_bot.commands.help import HelpCommand
-from mate_bot.commands.history import HistoryCommand
-# from mate_bot.commands.pay import PayCommand, PayQuery
-from mate_bot.commands.send import SendCommand, SendCallbackQuery
-from mate_bot.commands.start import StartCommand
-from mate_bot.commands.blame import BlameCommand
-from mate_bot.commands.vouch import VouchCommand
-from mate_bot.commands.zwegat import ZwegatCommand
+from mate_bot.commands.send import SendCallbackQuery
 
 
 COMMANDS = {
-    Filters.all: {
-        "balance": BalanceCommand(),
-        "communism": CommunismCommand(),
-        "data": DataCommand(),
-        "help": HelpCommand(),
-        "history": HistoryCommand(),
-        # "pay": PayCommand(),
-        "send": SendCommand(),
-        "start": StartCommand(),
-        "blame": BlameCommand(),
-        "vouch": VouchCommand(),
-        "zwegat": ZwegatCommand()
-    }
+    Filters.all: COMMANDS
 }
 
 HANDLERS = {
@@ -69,13 +49,11 @@ if __name__ == "__main__":
     updater.dispatcher.add_error_handler(err.log_error)
 
     logger.info("Adding command handlers...")
-    for filter_ in COMMANDS:
-        for name in COMMANDS[filter_]:
+    for cmd_filter, commands in COMMANDS.items():
+        for name, cmd in commands:
             updater.dispatcher.add_handler(
-                CommandHandler(name, COMMANDS[filter_][name], filters=filter_)
+                CommandHandler(name, cmd, filters=cmd_filter)
             )
-    for consumable in config["consumables"]:
-        updater.dispatcher.add_handler(CommandHandler(consumable["name"], dynamic_consumable(consumable)()))
 
     logger.info("Adding other handlers...")
     updater.dispatcher.add_handler(ChosenInlineResultHandler(CommunismInlineResult()))
