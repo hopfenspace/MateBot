@@ -4,12 +4,23 @@ MateBot database management helper library
 
 import typing
 
-import pymysql
+try:
+    import MySQLdb as pymysql
+    import MySQLdb.connections
+    import MySQLdb.cursors
+
+    pymysql.connections = MySQLdb.connections
+    pymysql.cursors = MySQLdb.cursors
+
+except ImportError:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    MySQLdb = None
 
 from mate_bot.config import config as _config
 
 
-QUERY_RESULT_TYPE = typing.Union[tuple, typing.List[typing.Dict[str, typing.Any]]]
+QUERY_RESULT_TYPE = typing.List[typing.Dict[str, typing.Any]]
 EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
@@ -57,7 +68,7 @@ def execute_no_commit(
     if connection.open:
         with connection.cursor() as cursor:
             rows = cursor.execute(query, arguments)
-            result = cursor.fetchall()
+            result = list(cursor.fetchall())
     else:
         raise pymysql.err.OperationalError("No open connection")
     return rows, result, connection

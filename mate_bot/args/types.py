@@ -52,7 +52,7 @@ BOOLEAN_NEGATIVE = [
 
 def amount(arg: str, min_amount: float = 0, max_amount: float = config["general"]["max-amount"]) -> int:
     """
-    Convert the string into an amount of money.
+    Convert the string into an amount of money
 
     If the result is not between ``min_amount`` and ``max_amount``
     (including them), a ValueError will be raised.
@@ -153,7 +153,7 @@ def user(arg: str) -> state.MateBotUser:
 
 def command(arg: str) -> Type[BaseCommand]:
     """
-    Get the class corisponding to the given command.
+    Get the class corresponding to the given command
 
     :param arg: string to be parsed
     :type arg: str

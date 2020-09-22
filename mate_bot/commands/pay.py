@@ -6,7 +6,7 @@ import argparse
 
 import telegram
 
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.actions import JoinAction
 
@@ -50,7 +50,7 @@ class PayCommand(BaseCommand):
         pass
 
 
-class PayQuery:
+class PayQuery(BaseCallbackQuery):
     pass
 
 

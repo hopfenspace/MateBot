@@ -9,7 +9,8 @@ import telegram
 from mate_bot import state
 from mate_bot.args.types import amount as amount_type
 from mate_bot.args.types import user as user_type
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
+from mate_bot.state import MateBotUser
 
 
 class SendCommand(BaseCommand):
@@ -42,9 +43,90 @@ class SendCommand(BaseCommand):
             update.effective_message.reply_text("You can't send money to yourself!")
             return
 
-        trans = state.Transaction(sender, args.receiver, args.amount, reason)
-        trans.commit()
+        def e(variant: str) -> str:
+            return f"send {variant} {args.amount} {sender.uid} {args.receiver.uid}"
 
         update.effective_message.reply_text(
-            f"Okay, you sent {args.amount / 100 :.2f}€ to {str(args.receiver)}"
+            f"Do you want to send {args.amount / 100 :.2f}€ to {str(args.receiver)}?"
+            f"\nDescription: `{reason}`",
+            reply_markup = telegram.InlineKeyboardMarkup([
+                [
+                    telegram.InlineKeyboardButton("CONFIRM", callback_data = e("confirm")),
+                    telegram.InlineKeyboardButton("ABORT", callback_data = e("abort"))
+                ]
+            ]),
+            parse_mode = "Markdown"
         )
+
+
+class SendCallbackQuery(BaseCallbackQuery):
+    """
+    Callback query executor for /send
+    """
+
+    def __init__(self):
+        super().__init__("send")
+
+    def run(self, update: telegram.Update) -> None:
+        """
+        Process or abort transaction requests based on incoming callback queries
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        try:
+            variant, amount, original_sender, receiver = self.data.split(" ")
+            amount = int(amount)
+            receiver = MateBotUser(int(receiver))
+            original_sender = MateBotUser(int(original_sender))
+
+            if variant == "confirm":
+                confirmation = True
+            elif variant == "abort":
+                confirmation = False
+            else:
+                raise ValueError(f"Invalid confirmation setting: '{variant}'")
+
+            sender = MateBotUser(update.callback_query.from_user)
+            if sender != original_sender:
+                update.callback_query.answer(f"Only the creator of this transaction can {variant} it!")
+                return
+
+            reason = None
+            for entity in update.callback_query.message.parse_entities():
+                if entity.type == "code":
+                    if reason is None:
+                        reason = update.callback_query.message.parse_entity(entity)
+                    else:
+                        raise RuntimeError("Multiple reason definitions")
+
+            if reason is None:
+                raise RuntimeError("Unknown reason while confirming a Transaction")
+
+            if confirmation:
+                trans = state.Transaction(sender, receiver, amount, reason)
+                trans.commit()
+
+                update.callback_query.message.edit_text(
+                    f"Okay, you sent {amount / 100 :.2f}€ to {str(receiver)}",
+                    reply_markup = telegram.InlineKeyboardMarkup([])
+                )
+
+            else:
+                update.callback_query.message.edit_text(
+                    "You aborted the operation. No money has been sent.",
+                    reply_markup = telegram.InlineKeyboardMarkup([])
+                )
+
+        except (IndexError, ValueError, TypeError, RuntimeError):
+            update.callback_query.answer(
+                text="There was an error processing your request!",
+                show_alert=True
+            )
+            update.callback_query.message.edit_text(
+                "There was an error processing this request. No money has been sent.",
+                reply_markup = telegram.InlineKeyboardMarkup([])
+            )
+            raise
