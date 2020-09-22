@@ -22,6 +22,8 @@ class BaseCommand:
 
     A minimal working example class may look like this:
 
+    .. code-block::
+    
         class ExampleCommand(BaseCommand):
             def __init__(self):
                 super().__init__("example")
