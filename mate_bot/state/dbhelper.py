@@ -432,3 +432,85 @@ class BackendHelper:
             f"UPDATE {table} SET {column}=%s WHERE id=%s",
             (value, identifier)
         )
+
+    @staticmethod
+    def set_all_manually(
+            table: str,
+            column: str,
+            value: typing.Union[str, int, bool, None],
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Set the remote value in all columns in the table but without committing
+
+        Calling this command will check the supplied values and create a
+        connection to the database or use the one that was given to
+        finally execute the query to set the value *in all columns*
+        of the specified table. The updated value will not be committed.
+        The connection is not closed automatically. This is useful to create
+        database transactions. However, you must close the connection to the
+        database manually. If this is not your intention, use set_all instead.
+
+        .. note::
+
+            Read the class documentation for ``BackendHelper`` for more information
+            about the functions ending with ``_manually``.
+
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table
+        :type column: str
+        :param value: value to be set for the current user in the specified column
+        :type value: typing.Union[str, int, bool, None]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows, the fetched data and the open database connection
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        BackendHelper._check_value(value)
+        BackendHelper._check_location(table, column)
+
+        return BackendHelper._execute_no_commit(
+            f"UPDATE {table} SET {column}=%s",
+            (value,),
+            connection
+        )
+
+    @staticmethod
+    def set_all(
+            table: str,
+            column: str,
+            value: typing.Union[str, int, bool, None]
+    ) -> EXECUTE_TYPE:
+        """
+        Set the remote value in all columns in the table
+
+        Calling this command will check the supplied values, connect
+        to the database and execute the query to set the value
+        *in all columns* of the specified table. The updated
+        value will be committed and the connection closed automatically.
+        If this is not your intention, use set_all_manually instead.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table
+        :type column: str
+        :param value: value to be set for the current user in the specified column
+        :type value: typing.Union[str, int, bool, None]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        BackendHelper._check_value(value)
+        BackendHelper._check_location(table, column)
+
+        return BackendHelper._execute(
+            f"UPDATE {table} SET {column}=%s",
+            (value,)
+        )
