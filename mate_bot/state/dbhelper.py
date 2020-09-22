@@ -84,6 +84,29 @@ class BackendHelper:
     to interact with the database as you don't need to know about the
     actual database query language. Any high level implementation
     may subclass this class in order to declare its area of usage.
+
+    Use the functions ending with ``_manually`` in case you need more
+    than one call to the functions defined here to fulfill your needs.
+    All your queries will be cached on the server side as long as you
+    don't call the ``.commit()`` method on the returned Connection object
+    to save the changes you introduced during your previous queries.
+
+    .. warning::
+
+        Important! When the program exits or the connection is closed
+        without calling ``.commit()``, the introduced changes are lost!
+        So, be careful and enclose this call in a try-finally-block:
+
+
+    .. code-block:: python3
+
+            try:
+                rows, result, connection = execute_no_commit(...)
+                ...
+                connection.commit()
+            finally:
+                if connection:
+                    connection.close()
     """
 
     @staticmethod
@@ -94,24 +117,6 @@ class BackendHelper:
     ) -> EXECUTE_NO_COMMIT_TYPE:
         """
         Connect to the database, execute a single query and return results and the connection
-
-        Use this function in case you need more than one query to fulfill your needs.
-        All your queries will be cached on the server side as long as you don't call
-        the .commit() method on the returned Connection object to save the changes
-        you introduced during your previous queries. Important: When the program exits
-        or the connection is closed without calling .commit(), the introduced changes
-        are lost! So, be careful and enclose this call in a try-finally-block:
-
-        .. code-block:: python3
-
-            try:
-                rows, result, connection = execute_no_commit(...)
-                ...
-                connection.commit()
-            finally:
-                if connection:
-                    connection.close()
-
 
         :param query: SQL query string that might contain placeholders
         :type query: str
@@ -235,6 +240,51 @@ class BackendHelper:
         return True
 
     @staticmethod
+    def set_value_manually(
+            table: str,
+            column: str,
+            identifier: int,
+            value: typing.Union[str, int, bool, None],
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Set the remote value in the column in the table with the identifier but without committing
+
+        Calling this command will check the supplied values and create a
+        connection to the database or use the one that was given to
+        finally execute the query to set the value in the specified column
+        of the specified table. The updated value will not be committed.
+        The connection is not closed automatically. This is useful to
+        create database transactions. However, you must
+        If this is not your intention, use set_value_manually instead.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table
+        :type column: str
+        :param: identifier: internal ID of the record in the given table
+        :type identifier: int
+        :param value: value to be set for the current user in the specified column
+        :type value: typing.Union[str, int, bool, None]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows, the fetched data and the open database connection
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        BackendHelper._check_value(value)
+        BackendHelper._check_identifier(identifier)
+        BackendHelper._check_location(table, column)
+
+        return BackendHelper._execute_no_commit(
+            f"UPDATE {table} SET {column}=%s WHERE id=%s",
+            (value, identifier),
+            connection
+        )
+
+    @staticmethod
     def set_value(
             table: str,
             column: str,
@@ -242,7 +292,13 @@ class BackendHelper:
             value: typing.Union[str, int, bool, None]
     ) -> EXECUTE_TYPE:
         """
-        Set the remote value in a specific column in a specific table with a specific identifier
+        Set the remote value in the column in the table with the identifier
+
+        Calling this command will check the supplied values, connect
+        to the database and execute the query to set the value
+        in the specified column of the specified table. The updated
+        value will be committed and the connection closed automatically.
+        If this is not your intention, use set_value_manually instead.
 
         :param table: name of the table in the database
         :type table: str
