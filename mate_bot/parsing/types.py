@@ -8,7 +8,7 @@ from typing import Type
 
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.finders import find_user_by_username
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.registry import COMMANDS
 from mate_bot.config import config
 from mate_bot.parsing.util import EntityString
 
@@ -117,7 +117,7 @@ def user(arg: EntityString) -> MateBotUser:
         raise ValueError('No user mentioned. Try with "@".')
 
 
-def command(arg: str) -> Type[BaseCommand]:
+def command(arg: str) -> Type["BaseCommand"]:
     """
     Convert the string into a command class
 
@@ -128,5 +128,8 @@ def command(arg: str) -> Type[BaseCommand]:
     :raises ValueError: when the command is unknown
     """
 
-    raise NotImplementedError("The command registering is being redone")
+    try:
+        return COMMANDS.get(arg).__class__
+    except KeyError:
+        raise ValueError(f"{arg} is an unknown command")
 
