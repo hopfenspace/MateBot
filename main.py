@@ -6,8 +6,7 @@ from telegram.ext import (
     Updater, CommandHandler,
     CallbackQueryHandler,
     ChosenInlineResultHandler,
-    Filters, InlineQueryHandler,
-    MessageHandler
+    Filters, InlineQueryHandler
 )
 
 
@@ -24,7 +23,7 @@ from mate_bot.commands.data import DataCommand
 from mate_bot.commands.help import HelpCommand
 from mate_bot.commands.history import HistoryCommand
 # from mate_bot.commands.pay import PayCommand, PayQuery
-from mate_bot.commands.send import SendCommand
+from mate_bot.commands.send import SendCommand, SendCallbackQuery
 from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
 from mate_bot.commands.vouch import VouchCommand
@@ -50,7 +49,8 @@ COMMANDS = {
 HANDLERS = {
     CallbackQueryHandler: {
         "^communism": CommunismCallbackQuery(),
-        # "^pay": PayQuery()
+        # "^pay": PayQuery(),
+        "^send": SendCallbackQuery()
     },
     InlineQueryHandler: {
         "": CommunismInlineQuery()
