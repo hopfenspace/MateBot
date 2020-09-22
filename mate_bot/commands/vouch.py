@@ -2,12 +2,11 @@
 MateBot command executor classes for /vouch
 """
 
-import argparse
-
 import telegram
 
-from mate_bot.args import types
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing import types
+from mate_bot.parsing.util import Namespace
 
 
 class VouchCommand(BaseCommand):
@@ -24,7 +23,7 @@ class VouchCommand(BaseCommand):
 
         self.parser.add_argument("user", nargs="?", type=types.user)
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

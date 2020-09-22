@@ -2,12 +2,11 @@
 MateBot command executor classes for /help
 """
 
-import argparse
-
 import telegram
 
 from mate_bot.commands.base import BaseCommand
-from mate_bot.args.types import command as command_type
+from mate_bot.parsing.types import command as command_type
+from mate_bot.parsing.util import Namespace
 
 
 class HelpCommand(BaseCommand):
@@ -24,7 +23,7 @@ class HelpCommand(BaseCommand):
         )
         self.parser.add_argument("command", type=command_type, nargs="?")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

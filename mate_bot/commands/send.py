@@ -2,13 +2,12 @@
 MateBot command executor classes for /send
 """
 
-import argparse
-
 import telegram
 
 from mate_bot import state
-from mate_bot.args.types import amount as amount_type
-from mate_bot.args.types import user as user_type
+from mate_bot.parsing.types import amount as amount_type
+from mate_bot.parsing.types import user as user_type
+from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
 from mate_bot.state import MateBotUser
 
@@ -24,7 +23,7 @@ class SendCommand(BaseCommand):
         self.parser.add_argument("receiver", type=user_type)
         self.parser.add_argument("reason", default="<no description>", nargs="*")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

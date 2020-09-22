@@ -2,7 +2,6 @@
 MateBot command executor classes for any kind of consuming action
 """
 
-import argparse
 import random as _random
 import typing as _typing
 
@@ -14,9 +13,10 @@ from typing import Type as _Type
 import telegram
 
 from mate_bot import state
-from mate_bot.args.types import natural as natural_type
+from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing.util import Namespace
 
 
 class ConsumeCommand(BaseCommand):
@@ -49,7 +49,7 @@ class ConsumeCommand(BaseCommand):
         self.messages = messages
         self.symbol = symbol
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

@@ -2,12 +2,11 @@
 MateBot command executor classes for /data
 """
 
-import argparse
-
 import telegram
 
 from mate_bot import state
 from mate_bot.commands.base import BaseCommand
+from mate_bot.parsing.util import Namespace
 
 
 class DataCommand(BaseCommand):
@@ -21,7 +20,7 @@ class DataCommand(BaseCommand):
                                  "To view your transactions use `/history`.")
         self.parser.add_argument("trash-bin", nargs="*")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace

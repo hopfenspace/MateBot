@@ -3,15 +3,13 @@ MateBot command handling base library
 """
 
 import typing
-import argparse
 
 import telegram.ext
 
 from mate_bot import state
 from mate_bot.err import ParsingError
-from mate_bot.args.parser import PatchedParser
-from mate_bot.args.pre_parser import pre_parse
-from mate_bot.args.formatter import format_usage
+from mate_bot.parsing.parser import CommandParser
+from mate_bot.parsing.util import Namespace
 
 
 class BaseCommand:
@@ -54,16 +52,16 @@ class BaseCommand:
         self.name = name
         self._usage = usage
         self.description = description
-        self.parser = PatchedParser(name)
+        self.parser = CommandParser()
 
     @property
     def usage(self):
         if self._usage is None:
-            return format_usage(self.parser)
+            return f"/{self.name} {self.parser.default_usage}"
         else:
             return self._usage
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         Perform command-specific actions
 
@@ -98,8 +96,7 @@ class BaseCommand:
                 if state.MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
                     update.effective_message.reply_text("You need to /start first.")
                     return
-            argv = pre_parse(update.effective_message)
-            args = self.parser.parse_args(list(argv))
+            args = self.parser.parse(update.effective_message)
             self.run(args, update)
 
         except ParsingError as err:

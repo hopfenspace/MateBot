@@ -2,12 +2,11 @@
 MateBot command executor classes for /blame
 """
 
-import argparse
-
 import telegram
 
 from mate_bot.commands.base import BaseCommand
 from mate_bot.state import MateBotUser
+from mate_bot.parsing.util import Namespace
 
 
 class BlameCommand(BaseCommand):
@@ -21,7 +20,7 @@ class BlameCommand(BaseCommand):
                                                     "Put the users with the highest debts to the pillory and "
                                                     "make them buy stuff (new bottle crates) to settle their debts.")
 
-    def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
