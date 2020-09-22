@@ -11,40 +11,39 @@ class Action(Representable):
     """
     Information about how to convert command line strings to Python objects.
 
-    Action objects are used by an CommandParser to represent the information
-    needed to parse a single argument from one or more strings from the
-    command line. The keyword arguments to the Action constructor are also
+    Action objects are used by an CommandParser to represent the information \
+    needed to parse a single argument from one or more strings from the \
+    command line. The keyword arguments to the Action constructor are also \
     all attributes of Action instances.
 
-    Keyword Arguments:
+    :param dest: The name of the attribute to hold the created object(s)
+    :type dest: str
 
-        - dest -- The name of the attribute to hold the created object(s)
+    :param nargs: The number of command-line arguments that should be \
+                  consumed. By default, one argument will be consumed and a single \
+                  value will be produced.  Other values include:
+                  - N (an integer) consumes N arguments (and produces a list)
+                  - '?' consumes zero or one arguments
+                  - '*' consumes zero or more arguments (and produces a list)
+                  - '+' consumes one or more arguments (and produces a list)
+                  Note that the difference between the default and nargs=1 is that \
+                  with the default, a single value will be produced, while with \
+                  nargs=1, a list containing a single value will be produced.
+    :type nargs: Union[None, str, int]
 
-        - nargs -- The number of command-line arguments that should be
-            consumed. By default, one argument will be consumed and a single
-            value will be produced.  Other values include:
-                - N (an integer) consumes N arguments (and produces a list)
-                - '?' consumes zero or one arguments
-                - '*' consumes zero or more arguments (and produces a list)
-                - '+' consumes one or more arguments (and produces a list)
-            Note that the difference between the default and nargs=1 is that
-            with the default, a single value will be produced, while with
-            nargs=1, a list containing a single value will be produced.
+    :param default: The value to be produced if the option is not specified. (Optional)
+    :type default: Any
 
-        - default -- The value to be produced if the option is not specified.
+    :param type: A callable that accepts a single string argument, \
+                 and returns the converted value. (Optional)
+    :type type: Callable
 
-        - type -- A callable that accepts a single string argument, and
-            returns the converted value.  The standard Python types str, int,
-            float, and complex are useful examples of such callables.  If None,
-            str is used.
+    :param choices: A tuple of values that should be allowed. (Optional)
+    :type choices: Tuple[str]
 
-        - choices -- A container of values that should be allowed. If not None,
-            after a command-line argument has been converted to the appropriate
-            type, an exception will be raised if it is not a member of this
-            collection.
-
-        - metavar -- The name to be used for the option's argument with the
-            help string. If None, the 'dest' value will be used as the name.
+    :param metavar: The name to be used in the help string. (Optional) \
+                    If None, the 'dest' value will be used as the name.
+    :type metavar: str
     """
 
     def __init__(self,
@@ -52,7 +51,7 @@ class Action(Representable):
                  nargs: typing.Union[None, int, str] = None,
                  default: typing.Any = None,
                  type: typing.Callable = str,
-                 # choices: typing.Tuple[str] = None,
+                 choices: typing.Tuple[str] = None,
                  metavar: str = None):
         self.dest = dest
         self.nargs = nargs
