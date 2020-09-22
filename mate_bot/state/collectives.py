@@ -418,7 +418,7 @@ class BaseCollective(BackendHelper):
             raise ValueError("Expected '+' or '-'")
 
         if not self.is_participating(user)[0]:
-            rows, values = _execute(
+            rows, values = self._execute(
                 "INSERT INTO collectives_users(collectives_id, users_id, vote) "
                 "VALUES (%s, %s, %s)",
                 (self._id, user, vote)
@@ -439,7 +439,7 @@ class BaseCollective(BackendHelper):
 
         user = self._get_uid(user)
         if self.is_participating(user)[0]:
-            rows, values = _execute(
+            rows, values = self._execute(
                 "DELETE FROM collectives_users "
                 "WHERE collectives_id=%s AND users_id=%s",
                 (self._id, user)
@@ -481,11 +481,11 @@ class BaseCollective(BackendHelper):
             connection = None
 
             try:
-                connection = _execute_no_commit(
+                connection = self._execute_no_commit(
                     "UPDATE collectives SET active=%s WHERE id=%s",
                     (False, self._id)
                 )[2]
-                _execute_no_commit(
+                self._execute_no_commit(
                     "DELETE FROM collectives_users WHERE collectives_id=%s",
                     (self._id,),
                     connection=connection

@@ -63,7 +63,7 @@ class BaseBotUser(BackendHelper):
         :return: int or None
         """
 
-        rows, values = cls._execute("SELECT tid FROM users WHERE id=%s", (uid,))
+        rows, values = cls.get_value("users", "tid", uid)
         if rows == 1 and len(values) == 1:
             return values[0]["tid"]
         return None
@@ -78,7 +78,7 @@ class BaseBotUser(BackendHelper):
         :return: str or None
         """
 
-        rows, values = cls._execute("SELECT name FROM users WHERE id=%s", (uid,))
+        rows, values = cls.get_value("users", "name", uid)
         if rows == 1 and len(values) == 1:
             return values[0]["name"]
         return None
@@ -92,7 +92,7 @@ class BaseBotUser(BackendHelper):
         :return:
         """
 
-        rows, values = cls._execute("SELECT username FROM users WHERE id=%s", (uid,))
+        rows, values = cls.get_value("users", "username", uid)
         if rows == 1 and len(values) == 1:
             return values[0]["username"]
         return None
@@ -114,7 +114,7 @@ class BaseBotUser(BackendHelper):
         if use_tid:
             return self._execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
         else:
-            return self._execute("SELECT * FROM users WHERE id=%s", (self._id,))
+            return self.get_value("users", None, self._id)
 
     def _unpack_record(self, record: typing.Dict[str, typing.Any]) -> None:
         """
@@ -152,29 +152,12 @@ class BaseBotUser(BackendHelper):
         :raises RuntimeError: when the column is not marked writeable by configuration
         """
 
-        if isinstance(value, float):
-            if value.is_integer():
-                value = int(value)
-            else:
-                raise TypeError("No floats allowed")
-        if value is not None:
-            if not isinstance(value, (str, int, bool)):
-                raise TypeError("Unsupported type")
-
         if column not in self._ALLOWED_UPDATES:
             raise RuntimeError("Operation not allowed")
 
-        self._execute(
-            f"UPDATE users SET {column}=%s WHERE id=%s",
-            (value, self._id)
-        )
+        self.set_value("users", column, self._id, value)
+        rows, result = self.get_value("users", None, self._id)
 
-        rows, result = self._execute(
-            "SELECT * FROM users WHERE id=%s",
-            (self._id,)
-        )
-
-        assert rows == 1
         self._accessed = _tz.utc.localize(result[0]["accessed"])
         return result[0][column]
 
