@@ -105,7 +105,7 @@ class BaseCollective(BackendHelper):
         :rtype: bool
         """
 
-        rows, values = self._execute("SELECT active FROM collectives WHERE id=%s", (self._id,))
+        rows, values = self.get_value("collectives", "active", self._id)
         if rows == 0 and len(values) == 0:
             return False
         return bool(values[0]["active"])
@@ -161,7 +161,7 @@ class BaseCollective(BackendHelper):
 
     def _set_remote_value(self, column: str, value: typing.Union[str, int, bool, None]) -> None:
         """
-        Set the remote value in a specific column and trigger .update()
+        Set the remote value in a specific column
 
         :param column: name of the column
         :type column: str
@@ -172,29 +172,10 @@ class BaseCollective(BackendHelper):
         :raises RuntimeError: when the column is not marked writeable by configuration
         """
 
-        if isinstance(value, float):
-            if value.is_integer():
-                value = int(value)
-            else:
-                raise TypeError("No floats allowed")
-        if value is not None:
-            if not isinstance(value, (str, int, bool)):
-                raise TypeError("Unsupported type")
-
         if column not in self._ALLOWED_COLUMNS:
             raise RuntimeError("Operation not allowed")
 
-        self._execute(
-            f"UPDATE collectives SET {column}=%s WHERE id=%s",
-            (value, self._id)
-        )
-
-        rows, result = self._execute(
-            "SELECT * FROM collectives WHERE id=%s",
-            (self._id,)
-        )
-
-        assert rows == 1
+        self.set_value("collectives", column, self._id, value)
 
     def _get_remote_record(self) -> _EXECUTE_TYPE:
         """
@@ -203,7 +184,7 @@ class BaseCollective(BackendHelper):
         :return: number of affected rows and fetched data record
         """
 
-        return self._execute("SELECT * FROM collectives WHERE id=%s", (self._id,))
+        return self.get_value("collectives", None, self._id)
 
     def _get_remote_joined_record(self) -> _EXECUTE_TYPE:
         """
@@ -481,10 +462,7 @@ class BaseCollective(BackendHelper):
             connection = None
 
             try:
-                connection = self._execute_no_commit(
-                    "UPDATE collectives SET active=%s WHERE id=%s",
-                    (False, self._id)
-                )[2]
+                connection = self.set_value_manually("collectives", "active", self._id, False)[2]
                 self._execute_no_commit(
                     "DELETE FROM collectives_users WHERE collectives_id=%s",
                     (self._id,),
