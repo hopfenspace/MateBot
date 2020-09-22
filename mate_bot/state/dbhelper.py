@@ -240,6 +240,111 @@ class BackendHelper:
         return True
 
     @staticmethod
+    def get_value_manually(
+            table: str,
+            column: typing.Optional[str] = None,
+            identifier: typing.Optional[int] = None,
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Get the remote value in the column in the table with the identifier but without committing
+
+        If no column name is given, all columns will be fetched (``*``).
+        If no identifier is given, the number of fetched rows will not be limited.
+
+        .. note::
+
+            Read the class documentation for :py:module::BackendHelper
+            for more information about the functions ending with ``_manually``.
+
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table (optional)
+        :type column: typing.Optional[str]
+        :param: identifier: internal ID of the record in the given table (optional)
+        :type identifier: typing.Optional[int]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        BackendHelper._check_location(table, column)
+        BackendHelper._check_identifier(identifier)
+
+        if column is None:
+            if identifier is None:
+                return BackendHelper._execute_no_commit(
+                    f"SELECT * FROM {table}",
+                    connection=connection
+                )
+            return BackendHelper._execute_no_commit(
+                f"SELECT * FROM {table} WHERE id=%s",
+                (identifier,),
+                connection = connection
+            )
+
+        if identifier is None:
+            return BackendHelper._execute_no_commit(
+                f"SELECT {column} FROM {table}",
+                connection = connection
+            )
+        return BackendHelper._execute_no_commit(
+            f"SELECT {column} FROM {table} WHERE id=%s",
+            (identifier,),
+            connection = connection
+        )
+
+    @staticmethod
+    def get_value(
+        table: str,
+        column: typing.Optional[str] = None,
+        identifier: typing.Optional[int] = None
+    ) -> EXECUTE_TYPE:
+        """
+        Get the remote value in the column in the table with the identifier
+
+        If no column name is given, all columns will be fetched (``*``).
+        If no identifier is given, the number of fetched rows will not be limited.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param column: name of the column in the table (optional)
+        :type column: typing.Optional[str]
+        :param: identifier: internal ID of the record in the given table (optional)
+        :type identifier: typing.Optional[int]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        BackendHelper._check_location(table, column)
+        BackendHelper._check_identifier(identifier)
+
+        if column is None:
+            if identifier is None:
+                return BackendHelper._execute(
+                    f"SELECT * FROM {table}"
+                )
+            return BackendHelper._execute(
+                f"SELECT * FROM {table} WHERE id=%s",
+                (identifier,)
+            )
+
+        if identifier is None:
+            return BackendHelper._execute(
+                f"SELECT {column} FROM {table}"
+            )
+        return BackendHelper._execute(
+            f"SELECT {column} FROM {table} WHERE id=%s",
+            (identifier,)
+        )
+
+    @staticmethod
     def set_value_manually(
             table: str,
             column: str,
