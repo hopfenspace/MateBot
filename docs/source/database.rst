@@ -202,8 +202,8 @@ The following table lists the different meanings of the `vote` value:
 While being ignored by communism operations, the implementation uses
 ``-`` as default value when no explicit vote was given by the user.
 
-Table ``collective_messages`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Table ``collective_messages``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 +----------------+------------+----------+---------+-------------+----------------+
 | Field          | Type       | Null     | Key     | Default     | Extra          |
