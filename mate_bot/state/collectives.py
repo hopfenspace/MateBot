@@ -282,7 +282,7 @@ class BaseCollective(BackendHelper):
             (self._id,)
         )[1]:
             result.append((record["chat_id"], record["msg_id"]))
-        log.debug(f"get_messages: {result}")
+
         if chat is not None:
             result = list(filter(lambda r: r[0] == chat, result))
         return result
