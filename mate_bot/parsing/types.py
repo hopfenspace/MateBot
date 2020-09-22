@@ -4,11 +4,11 @@ See :ref:`mate_bot.parsing.actions` Action's type parameter
 """
 
 import re
-import typing
 
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.finders import find_user_by_username
 from mate_bot.commands.registry import COMMANDS
+from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 from mate_bot.parsing.util import EntityString
 
@@ -115,12 +115,6 @@ def user(arg: EntityString) -> MateBotUser:
 
     else:
         raise ValueError('No user mentioned. Try with "@".')
-
-
-# Create a local type BaseCommand
-BaseCommand = typing.NewType("BaseCommand", object)
-# commands.base requires parsing.parser, so I don't want parsing.types to require commands.base
-# python3 would actually be fine with it as long as I don't import parsing.types in parsing.__init__
 
 
 def command(arg: str) -> BaseCommand:
