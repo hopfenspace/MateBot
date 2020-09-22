@@ -128,7 +128,5 @@ def command(arg: str) -> Type[BaseCommand]:
     :raises ValueError: when the command is unknown
     """
 
-    if arg in BaseCommand.COMMAND_DICT:
-        return BaseCommand.COMMAND_DICT[arg]
-    else:
-        raise ValueError("Unknown command")
+    raise NotImplementedError("The command registering is being redone")
+

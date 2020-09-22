@@ -42,14 +42,7 @@ class BaseCommand:
     :type usage: Optional[str]
     """
 
-    # Dict to look up a commands class via its name
-    COMMAND_DICT = {}
-
     def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
-
-        # Put the command in the command dict
-        if name not in BaseCommand.COMMAND_DICT:
-            BaseCommand.COMMAND_DICT[name] = type(self)
 
         self.name = name
         self._usage = usage
