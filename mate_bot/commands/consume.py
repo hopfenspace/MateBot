@@ -98,18 +98,20 @@ def dynamic_consumable(consumable: _Dict[str, _Union[str, int, _List[str]]]) -> 
     creates them at runtime.
 
     Example of such a dict:
-    ```json
-    {
-        "name": "ice",
-        "messages": [
-             "Ok, enjoy your ice!",
-             "Mhmm, yummy!"
-        ],
-        "symbol": "U+1F368",
-        "description": "Get an ice.",
-        "price": 50
-    }
-    ```
+
+    .. code-block::
+
+        {
+            "name": "ice",
+            "messages": [
+                 "Ok, enjoy your ice!",
+                 "Mhmm, yummy!"
+            ],
+            "symbol": "U+1F368",
+            "description": "Get an ice.",
+            "price": 50
+        }
+
     :param consumable: a dict containing the required information
     :type consumable: Dict[str, Union[str, int, List[str]]]
     :return: a dynamically created consume command
