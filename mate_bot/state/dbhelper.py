@@ -204,12 +204,12 @@ class BackendHelper:
             raise ValueError(f"Expected positive integer as identifier, not {identifier}")
 
         if not isinstance(table, str):
-            raise TypeError(f"Expected string as table name")
+            raise TypeError(f"Expected string as table name, not {type(table)}")
         if table not in DATABASE_SCHEMA:
             raise ValueError(f"Unknown table name '{table}'")
 
         if not isinstance(column, str):
-            raise TypeError("Expected string as column name")
+            raise TypeError(f"Expected string as column name, not {type(table)}")
         if column not in DATABASE_SCHEMA[table]:
             raise ValueError(f"Unknown column '{column}' in table '{table}'")
 
