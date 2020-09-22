@@ -521,3 +521,83 @@ class BackendHelper:
             f"UPDATE {table} SET {column}=%s",
             (value,)
         )
+
+    @staticmethod
+    def insert_manually(
+            table: str,
+            values: typing.Dict[str, typing.Union[str, int, bool, None]],
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Insert the dictionary of column:value pairs into the table but without committing
+
+        Calling this command will check the supplied values and create
+        a connection to the database or use the one that was given to
+        finally execute the query to insert the values for the specified
+        columns of the specified table. The inserted values will not be committed.
+        The connection is not closed automatically. This is useful to create
+        database transactions. However, you must close the connection to the
+        database manually. If this is not your intention, use insert instead.
+
+        .. note::
+
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
+
+
+        :param table: name of the table in the database
+        :type table: str
+        :param values: collection of column:value pairs
+        :type values: typing.Dict[str, typing.Union[str, int, bool, None]]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        for k in values:
+            BackendHelper._check_location(table, k)
+        for v in values.values():
+            BackendHelper._check_value(v)
+
+        return BackendHelper._execute_no_commit(
+            f'INSERT INTO {table} ({", ".join(values.keys())}) VALUES ({", ".join(["%s"] * len(values))})',
+            tuple(values.values()),
+            connection
+        )
+
+    @staticmethod
+    def insert(
+            table: str,
+            values: typing.Dict[str, typing.Union[str, int, bool, None]]
+    ) -> EXECUTE_TYPE:
+        """
+        Insert the dictionary of column:value pairs into the table
+
+        Calling this command will check the supplied values, connect
+        to the database and execute the query to insert the values
+        for the specified columns of the specified table. The new row
+        will be committed and the connection closed automatically.
+        If this is not your intention, use insert_manually instead.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param values: collection of column:value pairs
+        :type values: typing.Dict[str, typing.Union[str, int, bool, None]]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid
+        """
+
+        for k in values:
+            BackendHelper._check_location(table, k)
+        for v in values.values():
+            BackendHelper._check_value(v)
+
+        return BackendHelper._execute(
+            f'INSERT INTO {table} ({", ".join(values.keys())}) VALUES ({", ".join(["%s"] * len(values))})',
+            tuple(values.values())
+        )
