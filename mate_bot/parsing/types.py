@@ -167,20 +167,3 @@ def command(arg: str) -> Type[BaseCommand]:
         return BaseCommand.COMMAND_DICT[arg]
     else:
         raise ValueError("Unknown command")
-
-
-def _bot_command(arg: EntityString) -> str:
-    """
-    This type only accepts the first "/<command>@<bot>" part of a message.
-
-    :param arg: string to be parsed
-    :type arg: EntityString
-    :return: the parameter as str if it is a bot command
-    :rtype: str
-    :raises ValueError: when the it is no bot command
-    """
-
-    if arg.entity and arg.entity.type == "bot_command":
-        return str(arg)
-    else:
-        raise ValueError("This is no bot command")

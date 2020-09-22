@@ -59,7 +59,14 @@ class CommandParser(Representable):
         :rtype: Namespace
         """
 
+        # Split message into argument strings
         arg_strings = list(self._split(msg))
+
+        # Remove possible bot command
+        if arg_strings and arg_strings[0].entity.type == "bot_command":
+            arg_strings = arg_strings[1:]
+
+        # Parse
         return self._parse(arg_strings)
 
     def _parse(self, arg_strings: typing.List[str]) -> Namespace:

@@ -1,7 +1,6 @@
 from mate_bot.parsing.util import Representable
 from mate_bot.parsing.actions import Action, StoreAction
 from mate_bot.parsing.formatting import format_action
-from mate_bot.parsing.types import _bot_command
 
 
 class CommandUsage(Representable):
@@ -15,7 +14,6 @@ class CommandUsage(Representable):
 
     def __init__(self):
         self._actions = []
-        self.add_argument("bot_command", type=_bot_command, nargs="?", metavar="")
 
     @property
     def actions(self):
