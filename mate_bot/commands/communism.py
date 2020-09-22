@@ -320,6 +320,8 @@ class CommunismCommand(BaseCommand):
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
+        self.parser.new_usage().add_argument("subcommand", choices=("stop", "show"))
+
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
