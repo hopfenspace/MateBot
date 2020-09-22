@@ -10,4 +10,4 @@ mate_bot.parsing.actions
 
 .. automodule:: mate_bot.parsing.actions
     :members:
-
+    :special-members:
