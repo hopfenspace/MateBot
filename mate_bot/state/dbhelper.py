@@ -126,8 +126,8 @@ class BackendHelper:
 
     Use the functions ending with ``_manually`` in case you need more
     than one call to the functions defined here to fulfill your needs.
-    All your queries will be cached on the server side as long as you
-    don't call the ``.commit()`` method on the returned Connection object
+    All your queries will be cached on the server side as long as you don't
+    call the ``.commit()`` method on the returned ``Connection`` object
     to save the changes you introduced during your previous queries.
 
     .. warning::
@@ -138,8 +138,9 @@ class BackendHelper:
 
         .. code-block:: python3
 
+                connection = None
                 try:
-                    rows, result, connection = execute_no_commit(...)
+                    rows, result, connection = BackendHelper._execute_no_commit(...)
                     ...
                     connection.commit()
                 finally:
