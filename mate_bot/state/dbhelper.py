@@ -99,6 +99,17 @@ class ColumnSchema:
         self.null = null
         self.extras = extras
 
+    def __repr__(self) -> str:
+        return f"ColumnSchema({self.name} <{self.data_type}>)"
+
+    def __str__(self) -> str:
+        string = f"`{self.name}` {self.data_type}"
+        if not self.null:
+            string = f"{string} NOT NULL"
+        if self.extras is not None:
+            string = f"{string} {self.extras}"
+        return string
+
 
 class ReferenceSchema:
     def __init__(self, local_name: str, ref_table: str, ref_name: str, cascade: bool = True):
@@ -106,6 +117,15 @@ class ReferenceSchema:
         self.ref_table = ref_table
         self.ref_name = ref_name
         self.cascade = cascade
+
+    def __repr__(self) -> str:
+        return f"ReferenceSchema({self.local_name}, {self.ref_table}[{self.ref_name}])"
+
+    def __str__(self) -> str:
+        string = f"FOREIGN KEY ({self.local_name}) REFERENCES {self.ref_table}({self.ref_name})"
+        if self.cascade:
+            string = f"{string} ON DELETE CASCADE"
+        return string
 
 
 class TableSchema(_CollectionSchema):
