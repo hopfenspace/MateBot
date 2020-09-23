@@ -51,14 +51,17 @@ class _CollectionSchema(dict):
             for k in obj:
                 self[k] = obj[k]
         else:
-            raise TypeError
+            raise TypeError("Constructor argument must be dict or None")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({super().__repr__()})"
 
     def __setitem__(self, key: str, value: typing.Any) -> None:
         if not isinstance(key, str):
-            raise TypeError
+            raise TypeError("Key must be str")
+        if hasattr(value, "name"):
+            if value.name != key:
+                raise ValueError(f"Key '{key}' does not match name '{value.name}'")
         super().__setitem__(key, value)
 
 
