@@ -134,6 +134,41 @@ class TableSchema(_CollectionSchema):
         else:
             self.refs = refs.copy()
 
+    def __contains__(self, item: typing.Union[str, ColumnSchema, ReferenceSchema]) -> bool:
+        if isinstance(item, ColumnSchema):
+            return super().__contains__(item)
+        elif isinstance(item, ReferenceSchema):
+            return item in self.refs
+        elif isinstance(item, str):
+            return item in self.keys()
+        return False
+
+    def __setitem__(self, key: str, value: ColumnSchema) -> None:
+        if not isinstance(value, ColumnSchema):
+            raise TypeError(f"Expected ColumnSchema as type, not {type(value)}")
+        super().__setitem__(key, value)
+
+    def __str__(self) -> str:
+        return self._to_string(4)
+
+    def _to_string(self, indent: int) -> str:
+        """
+        Generate a fully formatted SQL query string that can be used to create this table
+
+        :param indent: number of spaces for indentation of the column definitions
+            (use ``0`` to disable line breaks and indents completely)
+        :type indent: int
+        :return: fully formatted string that can be used as SQL query string to create the table
+        :rtype: str
+        """
+
+        sep, conjunction = "\n", ",\n"
+        if indent == 0:
+            sep, conjunction = "", ", "
+        entries = conjunction.join(
+            [f"{' ' * abs(indent)}{str(k)}" for k in list(self.values()) + list(self.refs)]
+        )
+        return f"CREATE TABLE {self.name} ({sep}{entries}{sep});"
 
 
 class DatabaseSchema(_CollectionSchema):
