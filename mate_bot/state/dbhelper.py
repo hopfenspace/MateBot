@@ -196,6 +196,141 @@ class DatabaseSchema(_CollectionSchema):
         super().__setitem__(key, value)
 
 
+DATABASE_SCHEMA = DatabaseSchema({
+    "users": TableSchema(
+        "users",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "tid": ColumnSchema(
+                "tid", "BIGINT", True,
+                "UNIQUE"
+            ),
+            "username": ColumnSchema("username", "VARCHAR(255)", True),
+            "name": ColumnSchema("name", "VARCHAR(255)", False),
+            "balance": ColumnSchema(
+                "balance", "MEDIUMINT", False,
+                "DEFAULT 0"
+            ),
+            "permission": ColumnSchema(
+                "permission", "BOOLEAN", False,
+                "DEFAULT false"
+            ),
+            "active": ColumnSchema(
+                "active", "BOOLEAN", False,
+                "DEFAULT true"
+            ),
+            "created": ColumnSchema(
+                "created", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            ),
+            "accessed": ColumnSchema(
+                "accessed", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+            )
+        }
+    ),
+    "transactions": TableSchema(
+        "transactions",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "sender": ColumnSchema("sender", "INT", False),
+            "receiver": ColumnSchema("receiver", "INT", False),
+            "amount": ColumnSchema("amount", "MEDIUMINT", False),
+            "reason": ColumnSchema("reason", "VARCHAR(255)", True),
+            "registered": ColumnSchema(
+                "registered", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("sender", "users", "id", True),
+            ReferenceSchema("receiver", "users", "id", True)
+        ]
+    ),
+    "collectives": TableSchema(
+        "collectives",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "active": ColumnSchema(
+                "active", "BOOLEAN", False,
+                "DEFAULT true"
+            ),
+            "amount": ColumnSchema("amount", "MEDIUMINT", False),
+            "externals": ColumnSchema("externals", "SMALLINT", True),
+            "description": ColumnSchema("description", "VARCHAR(255)", True),
+            "communistic": ColumnSchema("communistic", "BOOLEAN", False),
+            "creator": ColumnSchema("creator", "INT", False),
+            "created": ColumnSchema(
+                "created", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("creator", "users", "id", True)
+        ]
+    ),
+    "collectives_users": TableSchema(
+        "collectives_users",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "collectives_id": ColumnSchema("collectives_id", "INT", False),
+            "users_id": ColumnSchema("users_id", "INT", False),
+            "vote": ColumnSchema("vote", "BOOLEAN", False)
+        },
+        [
+            ReferenceSchema("collectives_id", "collectives", "id", True),
+            ReferenceSchema("users_id", "users", "id", True)
+        ]
+    ),
+    "collective_messages": TableSchema(
+        "collective_messages",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "collectives_id": ColumnSchema("collectives_id", "INT", False),
+            "chat_id": ColumnSchema("chat_id", "BIGINT", False),
+            "msg_id": ColumnSchema("msg_id", "INT", False)
+        },
+        [
+            ReferenceSchema("collectives_id", "collectives", "id", True)
+        ]
+    ),
+    "externals": TableSchema(
+        "externals",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "internal": ColumnSchema("internal", "INT", True),
+            "external": ColumnSchema("external", "INT", True),
+            "changed": ColumnSchema(
+                "changed", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("internal", "users", "id", True),
+            ReferenceSchema("external", "users", "id", True)
+        ]
+    )
+})
+
+
 class BackendHelper:
     """
     Helper class providing easy methods to read and write values in the database
@@ -229,6 +364,8 @@ class BackendHelper:
                     if connection:
                         connection.close()
     """
+
+    _SCHEMA = DATABASE_SCHEMA
 
     @staticmethod
     def _execute_no_commit(
