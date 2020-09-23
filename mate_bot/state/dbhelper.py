@@ -85,17 +85,31 @@ class TableSchema:
         self.refs = refs
 
 
-class DatabaseSchema(dict):
+
+class DatabaseSchema(_CollectionSchema):
     """
     Database schema description based on dictionaries to allow easy design validation
 
     As this is a subclass of the built-in ``dict``, you have full
     access to all methods and features of a standard dictionary.
-    The only overwritten method is ``__repr__`` for a better look.
+
+    Besides the methods that have been overwritten in :class:`_CollectionSchema`,
+    this class overwrites ``__contains__`` for better checks if a table
+    (:class:`TableSchema`) is in the database. Additionally, this class overwrites
+    ``__setitem__`` to check if the supplied value is an instance of the
+    class :class:`TableSchema`. Other values lead to TypeErrors.
     """
 
-    def __repr__(self) -> str:
-        return f"DatabaseSchema({super().__repr__()})"
+    def __contains__(self, item: typing.Any) -> bool:
+        if isinstance(item, TableSchema):
+            return item in self.values()
+        return super().__contains__(item)
+
+    def __setitem__(self, key: str, value: TableSchema) -> None:
+        if not isinstance(value, TableSchema):
+            raise TypeError
+        super().__setitem__(key, value)
+
 
 class BackendHelper:
     """
