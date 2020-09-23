@@ -378,7 +378,10 @@ DATABASE_SCHEMA = DatabaseSchema({
                 "PRIMARY KEY AUTO_INCREMENT"
             ),
             "internal": ColumnSchema("internal", "INT", True),
-            "external": ColumnSchema("external", "INT", True),
+            "external": ColumnSchema(
+                "external", "INT", False,
+                "UNIQUE"
+            ),
             "changed": ColumnSchema(
                 "changed", "TIMESTAMP", False,
                 "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
