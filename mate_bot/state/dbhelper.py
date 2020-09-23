@@ -25,6 +25,43 @@ EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
 
+class _CollectionSchema(dict):
+    """
+    Abstract collection schema base class
+
+    As this is a subclass of the built-in ``dict``, you have full access to all
+    methods and features of a standard dictionary. However, this class overwrites
+    some of the methods that you would normally expect to work out of the box.
+
+    ``__init__`` will now only accept one dictionary or None as optional parameter.
+    The supplied dictionary will be used to create the internal data structure
+    (see also ``__setitem__``). Other argument types lead to TypeErrors.
+
+    ``__repr__`` will output the dictionary surrounded by the class name.
+
+    ``__setitem__`` will only accept strings as keys. The values may be
+    specified more precisely in a subclass to restrict further usage.
+    """
+
+    def __init__(self, obj: typing.Optional[dict] = None):
+        if obj is None:
+            super().__init__()
+        elif isinstance(obj, dict):
+            super().__init__()
+            for k in obj:
+                self[k] = obj[k]
+        else:
+            raise TypeError
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({super().__repr__()})"
+
+    def __setitem__(self, key: str, value: typing.Any) -> None:
+        if not isinstance(key, str):
+            raise TypeError
+        super().__setitem__(key, value)
+
+
 class ColumnSchema:
     def __init__(self, name: str, data_type: str, null: bool, extras: str = None):
         self.name = name
