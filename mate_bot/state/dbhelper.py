@@ -81,11 +81,58 @@ class ReferenceSchema:
         self.cascade = cascade
 
 
-class TableSchema:
-    def __init__(self, name: str, columns: typing.List[ColumnSchema], refs: list = None):
+class TableSchema(_CollectionSchema):
+    """
+    Table schema description based on dictionaries to allow easy design validation
+
+    As this is a subclass of the built-in ``dict``, you have full
+    access to all methods and features of a standard dictionary.
+
+    Besides the methods that have been overwritten in :class:`_CollectionSchema`,
+    this class overwrites the following other methods:
+
+    * ``__init__`` takes a name (``str``), a dictionary of pairs of ``str`` and
+      :class:`ColumnSchema` and a list of references (type :class:`ReferenceSchema`).
+
+    * ``__contains__`` uses improved checks to validate if a certain column
+      name (type ``str`` and key of the underlying dictionary), a certain
+      :class:`ColumnSchema` object (values in the underlying dictionary) or
+      a certain :class:`ReferenceSchema` object is part of the table.
+
+    * ``__setitem__`` checks if the supplied key is of type ``str``
+      and the supplied value is a :class:`ColumnSchema` object. Other
+      types for the keys or values lead to TypeError exceptions.
+
+    * ``__str__`` calls :meth:`_to_string` with the indentation ``4`` internally.
+
+    :param name: name of the table in the database
+    :type name: str
+    :param columns: predefined set of columns for this table
+    :type columns: typing.Dict[str, ColumnSchema],
+    :param refs: list of references to columns in other tables
+    :type refs: typing.Optional[typing.List[ReferenceSchema]]
+    """
+
+    def __init__(
+            self,
+            name: str,
+            columns: typing.Dict[str, ColumnSchema],
+            refs: typing.Optional[typing.List[ReferenceSchema]] = None
+    ):
+        if not isinstance(name, str):
+            raise TypeError(f"Expected str as name, not {type(name)}")
+        if not isinstance(columns, dict):
+            raise TypeError(f"Expected dictionary, not {type(columns)}")
+        if refs is not None:
+            if not isinstance(refs, list):
+                raise TypeError(f"Expected list for references, not {type(refs)}")
+
+        super().__init__(columns)
         self.name = name
-        self.columns = columns
-        self.refs = refs
+        if refs is None:
+            self.refs = []
+        else:
+            self.refs = refs.copy()
 
 
 
