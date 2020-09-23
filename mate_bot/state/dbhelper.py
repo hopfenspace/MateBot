@@ -66,7 +66,34 @@ class _CollectionSchema(dict):
 
 
 class ColumnSchema:
-    def __init__(self, name: str, data_type: str, null: bool, extras: str = None):
+    """
+    Column schema description based on dictionaries to allow easy design validation
+
+    This class functions as a simple container and formatter of the supplied
+    values during initialization. Therefore, only ``__repr__`` and ``__str__``
+    are defined.
+
+    :param name: name of the column in a certain table
+    :type name: str
+    :param data_type: SQL name of the data type (e.g. ``"BOOLEAN"``)
+    :type data_type: str
+    :param null: switch whether ``NULL`` values are allowed in the column
+    :type null: bool
+    :param extras: string of extra SQL parameters for column creation (e.g. ``"UNIQUE"``)
+    :type extras: typing.Optional[str]
+    """
+
+    def __init__(self, name: str, data_type: str, null: bool, extras: typing.Optional[str] = None):
+        if not isinstance(name, str):
+            raise TypeError(f"Expected str as name, not {type(name)}")
+        if not isinstance(data_type, str):
+            raise TypeError(f"Expected str as data type, not {type(name)}")
+        if not isinstance(null, bool):
+            raise TypeError(f"Expected bool as null switch, not {type(name)}")
+        if extras is not None:
+            if not isinstance(extras, str):
+                raise TypeError(f"Expected str for the extras, not {type(name)}")
+
         self.name = name
         self.data_type = data_type
         self.null = null
