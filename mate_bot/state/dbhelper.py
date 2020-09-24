@@ -608,6 +608,84 @@ class BackendHelper:
         return True
 
     @staticmethod
+    def get_values_by_key_manually(
+            table: str,
+            key: str,
+            identifier: typing.Union[int, bool, str],
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Get all remote values in the table with the identifier used for the key but without committing
+
+        The value for ``key`` must be a valid column name and the column must be marked
+        as unique or primary key for the table. Otherwise, a ValueError will be raised.
+
+        .. note::
+
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
+
+
+        :param table: name of the table in the database
+        :type table: str
+        :param key: name of the column in the table that should be used as unique key
+        :type key: str
+        :param identifier: unique identifier of the record in the table
+        :type identifier: typing.Union[int, bool, str]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid or the key column is not unique
+        """
+
+        if not BackendHelper._check_key_location(table, key):
+            raise ValueError(f"Column {key} is not unique in the table {table}")
+        if not isinstance(identifier, (int, bool, str)):
+            raise TypeError(f"Unexpected type {type(identifier)} as identifier")
+
+        return BackendHelper._execute_no_commit(
+            f"SELECT * FROM {table} WHERE {key}=%s",
+            (identifier,),
+            connection=connection
+        )
+
+    @staticmethod
+    def get_values_by_key(
+            table: str,
+            key: str,
+            identifier: typing.Union[int, bool, str]
+    ) -> EXECUTE_TYPE:
+        """
+        Get all remote values in the table with the identifier used for the key
+
+        The value for ``key`` must be a valid column name and the column must be marked
+        as unique or primary key for the table. Otherwise, a ValueError will be raised.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param key: name of the column in the table that should be used as unique key
+        :type key: str
+        :param identifier: unique identifier of the record in the table
+        :type identifier: typing.Union[int, bool, str]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid or the key column is not unique
+        """
+
+        if not BackendHelper._check_key_location(table, key):
+            raise ValueError(f"Column {key} is not unique in the table {table}")
+        if not isinstance(identifier, (int, bool, str)):
+            raise TypeError(f"Unexpected type {type(identifier)} as identifier")
+
+        return BackendHelper._execute(
+            f"SELECT * FROM {table} WHERE {key}=%s",
+            (identifier,)
+        )
+
+    @staticmethod
     def get_value_manually(
             table: str,
             column: typing.Optional[str] = None,
