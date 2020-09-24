@@ -116,14 +116,16 @@ class ColumnSchema:
 
 class ReferenceSchema:
     """
-    Column schema description based on dictionaries to allow easy design validation
+    Reference schema description based on dictionaries to allow easy design validation
+
+    A reference describes that a key in the current table is a foreign key of another table.
 
     This class functions as a simple container and formatter of the supplied
     values during initialization. Therefore, only ``__repr__`` and ``__str__``
     are defined. While the former is used only for stylistic purposes, the
     later can be used to construct full SQL queries. Look for the method
     :meth:`TableSchema._to_string` on how to use it, because this method calls
-    ``str()`` on all columns (type :class:`ColumnSchema`) attached to the table.
+    ``str()`` on all references (type :class:`ReferenceSchema`) attached to the table.
     """
 
     def __init__(self, local_name: str, ref_table: str, ref_name: str, cascade: bool = True):
