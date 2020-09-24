@@ -555,14 +555,14 @@ class BackendHelper:
 
         if not isinstance(table, str):
             raise TypeError(f"Expected string as table name, not {type(table)}")
-        if table not in DATABASE_SCHEMA:
+        if table not in BackendHelper._SCHEMA:
             raise ValueError(f"Unknown table name '{table}'")
         if column is None:
             return True
 
         if not isinstance(column, str):
             raise TypeError(f"Expected string as column name, not {type(table)}")
-        if column not in DATABASE_SCHEMA[table]:
+        if column not in BackendHelper._SCHEMA[table]:
             raise ValueError(f"Unknown column '{column}' in table '{table}'")
         return True
 
