@@ -3,6 +3,7 @@ MateBot database management helper library
 """
 
 import typing
+import datetime
 
 try:
     import MySQLdb as pymysql
@@ -20,7 +21,8 @@ except ImportError:
 from mate_bot.config import config as _config
 
 
-QUERY_RESULT_TYPE = typing.List[typing.Dict[str, typing.Any]]
+COLUMN_TYPES = typing.Union[int, bool, str, datetime.datetime, None]
+QUERY_RESULT_TYPE = typing.List[typing.Dict[str, COLUMN_TYPES]]
 EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
@@ -547,6 +549,25 @@ class BackendHelper:
         if column not in DATABASE_SCHEMA[table]:
             raise ValueError(f"Unknown column '{column}' in table '{table}'")
         return True
+
+    @staticmethod
+    def _check_key_location(table: str, key: str) -> bool:
+        """
+        Verify that a location (table and column) is valid and the column is a unique key
+
+        :param table: table name in the database
+        :type table: str
+        :param key: column name that should be used as unique key for a query
+        :type key: str
+        :return: whether the column can be used as a unique key in the table
+        :rtype: bool
+        :raises TypeError: when the table or column is no string
+        :raises ValueError: when the table or column is not found in the database
+        """
+
+        BackendHelper._check_location(table, key)
+        extras = BackendHelper._SCHEMA[table][key].extras
+        return "PRIMARY KEY" in extras.upper() or "UNIQUE" in extras.upper()
 
     @staticmethod
     def _check_value(value: typing.Union[str, int, bool, None]) -> bool:
