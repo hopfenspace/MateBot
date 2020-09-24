@@ -3,6 +3,7 @@ MateBot database management helper library
 """
 
 import typing
+import logging
 import datetime
 
 try:
@@ -431,9 +432,18 @@ class BackendHelper:
                 finally:
                     if connection:
                         connection.close()
+
+
+    The class :class:`BackendHelper` provides two further class attributes.
+    ``_SCHEMA`` holds a reference to the module's ``DATABASE_SCHEMA`` object
+    (type :class:`DatabaseSchema`). The ``_query_logger`` class attribute is ``None``
+    by default but expects a :class:`logging.Logger` object. Every attempted SQL
+    query will produce a log message with level *DEBUG* if a logger has been found.
     """
 
-    _SCHEMA = DATABASE_SCHEMA
+    _SCHEMA: DatabaseSchema = DATABASE_SCHEMA
+
+    _query_logger: typing.Optional[logging.Logger] = None
 
     @staticmethod
     def _execute_no_commit(
@@ -462,6 +472,12 @@ class BackendHelper:
         :raises TypeError: when the connection is neither None nor a valid Connection
         :raises pymysql.err.OperationalError: when the database connection is closed
         """
+
+        if isinstance(BackendHelper._query_logger, logging.Logger):
+            try:
+                BackendHelper._query_logger.debug(f"Executing '{query}' using args {arguments}")
+            except AttributeError:
+                pass
 
         if connection is None:
             connection = pymysql.connect(
