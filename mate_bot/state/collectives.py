@@ -258,10 +258,7 @@ class BaseCollective(BackendHelper):
                 raise TypeError("Expected optional integer as argument")
 
         result = []
-        for record in self._execute(
-            "SELECT * FROM collective_messages WHERE collectives_id=%s",
-            (self._id,)
-        )[1]:
+        for record in self.get_values_by_key("collective_messages", "collectives_id", self._id)[1]:
             result.append((record["chat_id"], record["msg_id"]))
 
         if chat is not None:

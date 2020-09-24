@@ -48,7 +48,7 @@ class BaseBotUser(BackendHelper):
         :return: int or None
         """
 
-        rows, values = cls._execute("SELECT id FROM users WHERE tid=%s", (tid,))
+        rows, values = cls.get_values_by_key("users", "tid", tid)
         if rows == 1 and len(values) == 1:
             return values[0]["id"]
         return None
@@ -112,7 +112,7 @@ class BaseBotUser(BackendHelper):
         """
 
         if use_tid:
-            return self._execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
+            return self.get_values_by_key("users", "tid", self._tid)
         else:
             return self.get_value("users", None, self._id)
 
@@ -185,7 +185,7 @@ class BaseBotUser(BackendHelper):
         :return: bool
         """
 
-        rows, values = self._execute("SELECT * FROM externals WHERE external=%s", (self._id,))
+        rows, values = self.get_values_by_key("externals", "external", self._id)
         return rows != 0 and len(values) != 0
 
     def update(self) -> None:
@@ -497,7 +497,7 @@ class MateBotUser(BaseBotUser):
         Therefore, all getter and setter accesses produce SQL queries.
         """
 
-        rows, values = self._execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
+        rows, values = self.get_values_by_key("externals", "external", self._id)
         if rows == 1 and len(values) == 1:
             return values[0]["internal"]
         return None
