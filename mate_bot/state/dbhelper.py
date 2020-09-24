@@ -100,10 +100,10 @@ class ColumnSchema:
             if not isinstance(extras, str):
                 raise TypeError(f"Expected str for the extras, not {type(name)}")
 
-        self.name = name
-        self.data_type = data_type
-        self.null = null
-        self.extras = extras
+        self.name: str = name
+        self.data_type: str = data_type
+        self.null: bool = null
+        self.extras: typing.Optional[str] = extras
 
     def __repr__(self) -> str:
         return f"ColumnSchema({self.name} <{self.data_type}>)"
@@ -132,10 +132,10 @@ class ReferenceSchema:
     """
 
     def __init__(self, local_name: str, ref_table: str, ref_name: str, cascade: bool = True):
-        self.local_name = local_name
-        self.ref_table = ref_table
-        self.ref_name = ref_name
-        self.cascade = cascade
+        self.local_name: str = local_name
+        self.ref_table: str = ref_table
+        self.ref_name: str = ref_name
+        self.cascade: bool = cascade
 
     def __repr__(self) -> str:
         return f"ReferenceSchema({self.local_name}, {self.ref_table}[{self.ref_name}])"
@@ -194,18 +194,18 @@ class TableSchema(_CollectionSchema):
                 raise TypeError(f"Expected list for references, not {type(refs)}")
 
         super().__init__(columns)
-        self.name = name
+        self.name: str = name
         if refs is None:
-            self.refs = []
+            self.refs: typing.Optional[typing.List[ReferenceSchema]] = []
         else:
-            self.refs = refs.copy()
+            self.refs: typing.Optional[typing.List[ReferenceSchema]] = refs.copy()
 
     def __contains__(self, item: typing.Union[str, ColumnSchema, ReferenceSchema]) -> bool:
         if isinstance(item, ColumnSchema):
             return super().__contains__(item)
-        elif isinstance(item, ReferenceSchema):
+        if isinstance(item, ReferenceSchema):
             return item in self.refs
-        elif isinstance(item, str):
+        if isinstance(item, str):
             return item in self.keys()
         return False
 
