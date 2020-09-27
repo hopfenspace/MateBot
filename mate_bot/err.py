@@ -6,6 +6,7 @@ import logging as _logging
 import sys as _sys
 import json as _json
 import traceback as _traceback
+import urllib.request as _request
 
 from telegram import Update as _Update, TelegramError
 from telegram.ext import CallbackContext as _CallbackContext
@@ -72,6 +73,12 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
 
     def send_to(env, receiver, text, parse_mode, extra_text = None) -> None:
         try:
+            token = _config['bot']['token']
+            with _request.urlopen(f"https://api.telegram.org/bot{token}/getme") as response:
+                if response.status != 200:
+                    _logger.critical("Telegram API is unreachable. Original log following.")
+                    _logger.error(text)
+
             msg = env.bot.send_message(
                 receiver, text, parse_mode = parse_mode
             )
