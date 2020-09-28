@@ -22,7 +22,16 @@ class VouchCommand(BaseCommand):
             "Otherwise, the possibilities would be very limited for security purposes."
         )
 
-        self.parser.add_argument("user", nargs="?", type=types.user)
+        p = self.parser.new_usage()
+        p.add_argument(
+            "command",
+            choices=("add", "remove"),
+            type=lambda x: str(x).lower()
+        )
+        p.add_argument(
+            "user",
+            type=types.user
+        )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
@@ -37,6 +46,24 @@ class VouchCommand(BaseCommand):
         if owner.external:
             update.effective_message.reply_text("You can't perform this command.")
             return
+
+        def reply(text: str) -> None:
+            update.effective_message.reply_text(
+                text,
+                parse_mode = "Markdown",
+                reply_markup = telegram.InlineKeyboardMarkup([
+                    [
+                        telegram.InlineKeyboardButton(
+                            "YES",
+                            callback_data=f"vouch {args.command} accept"
+                        ),
+                        telegram.InlineKeyboardButton(
+                            "NO",
+                            callback_data=f"vouch {args.command} deny"
+                        )
+                    ]
+                ])
+            )
 
         if args.user is None:
             debtors = ", ".join(map(
