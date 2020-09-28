@@ -50,8 +50,8 @@ class VouchCommand(BaseCommand):
         def reply(text: str) -> None:
             update.effective_message.reply_text(
                 text,
-                parse_mode = "Markdown",
-                reply_markup = telegram.InlineKeyboardMarkup([
+                parse_mode="Markdown",
+                reply_markup=telegram.InlineKeyboardMarkup([
                     [
                         telegram.InlineKeyboardButton(
                             "YES",
@@ -65,7 +65,7 @@ class VouchCommand(BaseCommand):
                 ])
             )
 
-        if args.user is None:
+        if args.command is None:
             debtors = ", ".join(map(
                 lambda u: f"{u.name} ({u.username})" if u.username else u.name,
                 map(
@@ -77,7 +77,7 @@ class VouchCommand(BaseCommand):
             if len(debtors) == 0:
                 update.effective_message.reply_text(
                     "You don't vouch for any external user at the moment. "
-                    "To change this, use `/vouch <username>`.",
+                    "To change this, use `/vouch add|remove <username>`.",
                     parse_mode = "Markdown"
                 )
 
@@ -88,6 +88,61 @@ class VouchCommand(BaseCommand):
                     parse_mode="Markdown"
                 )
 
-            return
+        elif not args.user.external:
+            update.effective_message.reply_text(
+                f"This user is not external. Therefore, you can't vouch for {args.user}."
+            )
 
-        update.effective_message.reply_text("This feature is not implemented yet.")
+        elif args.command == "add":
+            if args.user.creditor == owner.uid:
+                update.effective_message.reply_text(
+                    f"You already vouch for {args.user.name}. If you want to "
+                    "stop this, use the command `/vouch remove "
+                    f"{args.user.username if args.user.username else '<username>'}`.",
+                    parse_mode="Markdown"
+                )
+
+            elif args.user.creditor is not None:
+                update.effective_message.reply_text(
+                    "Someone else is already vouching for this user. "
+                    f"Therefore, you can't vouch for {args.user.name}."
+                )
+
+            else:
+                reply(
+                    f"**Do you really want to vouch for {args.user}?**\n\n"
+                    "This will have some consequences:\n"
+                    "- The external user will become able to perform operations that change "
+                    "the balance like /send or consumption commands.\n"
+                    f"- You **must pay all debts** to the community when {args.user.name} "
+                    "leaves the community for a longer period or forever or in case you stop "
+                    f"vouching for {args.user.name}. On the other side, you will "
+                    "get all the virtual money the user had when there's some.\n\n"
+                    f"We encourage you to talk to {args.user.name} regularly or use /balance to "
+                    "check the balance (this is currently possible for all registered users)."
+                )
+
+        elif args.command == "remove":
+            if args.user.creditor is None:
+                update.effective_message.reply_text(
+                    "No one is vouching for this user yet. Therefore, you "
+                    f"can't remove {args.user.name} from your list of debtors."
+                )
+
+            elif args.user.creditor != owner.uid:
+                update.effective_message.reply_text(
+                    "You don't vouch for this user, but someone else does. Therefore, you "
+                    f"can't remove {args.user.name} from your list of debtors."
+                )
+
+            else:
+                checkout = args.user.balance
+                reply(
+                    f"**Do you really want to stop vouching for {args.user}?**\n\n"
+                    "This will have some consequences:\n"
+                    f"- {args.user.name} won't be able to perform commands that would change "
+                    "the balance anymore (e.g. /send or consumption commands).\n"
+                    f"- The balance of {args.user.name} will be set to `0`.\n"
+                    f"- You will {'pay' if checkout < 0 else 'get'} {checkout / 100:.2f}€ "
+                    f"{'to' if checkout < 0 else 'from'} the community."
+                )
