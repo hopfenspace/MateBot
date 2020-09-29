@@ -307,21 +307,25 @@ class CommunismCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("communism", "Use this command to start a communism.\n\n"
-                                      "When you pay for something you and others "
-                                      "consume, you can make a communism for it to get "
-                                      "your money back.\n\n"
-                                      "You use this command specifying a reason "
-                                      "and how much it costs you. Then others can "
-                                      "join (you might need to remember them) "
-                                      "and after everyone has joined, "
-                                      "you can close it. "
-                                      "Then the price is evenly distributed "
-                                      "between everyone who has joined.")
+        super().__init__(
+            "communism",
+            "Use this command to start a communism.\n\n"
+            "When you pay for something that is used or otherwise consumed by a bigger "
+            "group of people, you can open a communism for it to get your money back.\n\n"
+            "When you use this command, you specify a reason and the price. The others "
+            "can join afterwards (you might need to remember them). Users without "
+            "Telegram can also join by adding an 'external'. You have to collect the "
+            "money from each external by yourself. After everyone has joined, "
+            "you close the communism to calculate and evenly distribute the price."
+        )
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
-        self.parser.new_usage().add_argument("subcommand", choices=("stop", "show"))
+        self.parser.new_usage().add_argument(
+            "subcommand",
+            choices=("stop", "show"),
+            type=lambda x: str(x).lower()
+        )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
