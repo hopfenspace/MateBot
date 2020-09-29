@@ -8,7 +8,7 @@ from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing import types
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
-from state.transactions import Transaction
+from mate_bot.state.transactions import Transaction
 
 
 class VouchCommand(BaseCommand):
