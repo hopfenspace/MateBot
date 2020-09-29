@@ -190,7 +190,7 @@ class VouchCallbackQuery(BaseCallbackQuery):
                     debtor.creditor = creditor
 
                 elif cmd == "remove":
-                    reason = f"vouch: you stopped vouching for {debtor.name}"
+                    reason = f"vouch: {creditor.name} stopped vouching for {debtor.name}"
                     text = f"_Success. {debtor.name} has no active creditor anymore._"
                     if debtor.balance > 0:
                         text += f"\n_You received {debtor.balance / 100 :.2f}€ from {debtor.name}._"
