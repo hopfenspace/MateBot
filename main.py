@@ -20,6 +20,7 @@ from mate_bot.commands.communism import (
     CommunismInlineResult
 )
 from mate_bot.commands.send import SendCallbackQuery
+from mate_bot.commands.vouch import VouchCallbackQuery
 
 
 COMMANDS = {
@@ -30,7 +31,8 @@ HANDLERS = {
     CallbackQueryHandler: {
         "^communism": CommunismCallbackQuery(),
         # "^pay": PayQuery(),
-        "^send": SendCallbackQuery()
+        "^send": SendCallbackQuery(),
+        "^vouch": VouchCallbackQuery()
     },
     InlineQueryHandler: {
         "": CommunismInlineQuery()

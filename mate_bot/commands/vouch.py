@@ -56,11 +56,11 @@ class VouchCommand(BaseCommand):
                     [
                         telegram.InlineKeyboardButton(
                             "YES",
-                            callback_data=f"vouch {args.command} accept"
+                            callback_data=f"vouch {args.command} {args.user.uid} {owner.uid} accept"
                         ),
                         telegram.InlineKeyboardButton(
                             "NO",
-                            callback_data=f"vouch {args.command} deny"
+                            callback_data=f"vouch {args.command} {args.user.uid} {owner.uid} deny"
                         )
                     ]
                 ])
@@ -111,7 +111,7 @@ class VouchCommand(BaseCommand):
 
             else:
                 reply(
-                    f"**Do you really want to vouch for {args.user}?**\n\n"
+                    f"*Do you really want to vouch for {args.user}?*\n\n"
                     "This will have some consequences:\n"
                     "- The external user will become able to perform operations that change "
                     "the balance like /send or consumption commands.\n"
@@ -139,13 +139,13 @@ class VouchCommand(BaseCommand):
             else:
                 checkout = args.user.balance
                 reply(
-                    f"**Do you really want to stop vouching for {args.user}?**\n\n"
+                    f"*Do you really want to stop vouching for {args.user}?*\n\n"
                     "This will have some consequences:\n"
                     f"- {args.user.name} won't be able to perform commands that would change "
                     "the balance anymore (e.g. /send or consumption commands).\n"
                     f"- The balance of {args.user.name} will be set to `0`.\n"
                     f"- You will {'pay' if checkout < 0 else 'get'} {checkout / 100:.2f}€ "
-                    f"{'to' if checkout < 0 else 'from'} the community."
+                    f"{'to' if checkout < 0 else 'from'} {args.user.name}."
                 )
 
 
