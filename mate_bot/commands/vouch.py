@@ -166,11 +166,6 @@ class VouchCallbackQuery(BaseCallbackQuery):
         :return: None
         """
 
-        update.callback_query.message.edit_text(
-            update.callback_query.message.text_markdown_v2,
-            parse_mode="MarkdownV2"
-        )
-
         try:
             cmd, debtor, creditor, confirmation = self.data.split(" ")
             creditor = MateBotUser(int(creditor))
@@ -210,6 +205,11 @@ class VouchCallbackQuery(BaseCallbackQuery):
                 text,
                 parse_mode="Markdown",
                 reply_to_message=update.callback_query.message
+            )
+
+            update.callback_query.message.edit_text(
+                update.callback_query.message.text_markdown_v2,
+                parse_mode="MarkdownV2"
             )
 
         except (IndexError, ValueError, TypeError, RuntimeError):
