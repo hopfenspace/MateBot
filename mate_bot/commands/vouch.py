@@ -4,10 +4,11 @@ MateBot command executor classes for /vouch
 
 import telegram
 
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing import types
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
+from state.transactions import Transaction
 
 
 class VouchCommand(BaseCommand):
@@ -146,3 +147,74 @@ class VouchCommand(BaseCommand):
                     f"- You will {'pay' if checkout < 0 else 'get'} {checkout / 100:.2f}€ "
                     f"{'to' if checkout < 0 else 'from'} the community."
                 )
+
+
+class VouchCallbackQuery(BaseCallbackQuery):
+    """
+    Callback query executor for /vouch
+    """
+
+    def __init__(self):
+        super().__init__("vouch")
+
+    def run(self, update: telegram.Update) -> None:
+        """
+        Process or abort the query to add or remove the debtor user
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        update.callback_query.message.edit_text(
+            update.callback_query.message.text_markdown_v2,
+            parse_mode="MarkdownV2"
+        )
+
+        try:
+            cmd, debtor, creditor, confirmation = self.data.split(" ")
+            creditor = MateBotUser(int(creditor))
+            debtor = MateBotUser(int(debtor))
+
+            sender = MateBotUser(update.callback_query.from_user)
+            if sender != creditor:
+                update.callback_query.answer(f"Only the creator of this query can {confirmation} it!")
+                return
+
+            if confirmation == "deny":
+                text = "_You aborted this operation._"
+
+            elif confirmation == "accept":
+                if cmd == "add":
+                    text = f"_You now vouch for {debtor.name}._"
+                    debtor.creditor = creditor
+
+                elif cmd == "remove":
+                    reason = f"vouch: you stopped vouching for {debtor.name}"
+                    text = f"_Success. {debtor.name} has no active creditor anymore._"
+                    if debtor.balance > 0:
+                        text += f"\n_You received {debtor.balance / 100 :.2f}€ from {debtor.name}._"
+                        Transaction(debtor, creditor, debtor.balance, reason).commit()
+                    elif debtor.balance < 0:
+                        text += f"\n_You sent {debtor.balance / 100 :.2f}€ to {debtor.name}._"
+                        Transaction(creditor, debtor, debtor.balance, reason).commit()
+                    debtor.creditor = None
+
+                else:
+                    raise ValueError("Invalid query data")
+
+            else:
+                raise ValueError("Invalid query data")
+
+            update.callback_query.message.reply_text(
+                text,
+                parse_mode="Markdown",
+                reply_to_message=update.callback_query.message
+            )
+
+        except (IndexError, ValueError, TypeError, RuntimeError):
+            update.callback_query.answer(
+                text="There was an error processing your request!",
+                show_alert=True
+            )
+            raise
