@@ -318,6 +318,7 @@ class CommunismCommand(BaseCommand):
             "money from each external by yourself. After everyone has joined, "
             "you close the communism to calculate and evenly distribute the price."
         )
+
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
@@ -337,11 +338,44 @@ class CommunismCommand(BaseCommand):
         """
 
         user = MateBotUser(update.effective_message.from_user)
-        if BaseCollective.has_user_active_collective(user):
-            update.effective_message.reply_text("You already have a collective in progress.")
+
+        if args.subcommand is None:
+            if BaseCollective.has_user_active_collective(user):
+                update.effective_message.reply_text("You already have a collective in progress.")
+                return
+
+            Communism((user, args.amount, args.reason, update.effective_message))
             return
 
-        Communism((user, args.amount, args.reason, update.effective_message))
+        cid = BaseCollective.get_cid_from_active_creator(user)
+        if cid is None:
+            update.effective_message.reply_text("You don't have a collective in progress.")
+            return
+
+        com = Communism(cid)
+
+        if args.subcommand == "show":
+            reply = update.effective_message.reply_text("Loading...")
+
+            messages = com.get_messages(update.effective_message.chat.id)
+            for msg in messages:
+                update.effective_message.bot.edit_message_text(
+                    f"*Communism by {com.creator.name}*\n\n{com._get_basic_representation()}"
+                    "\n_This communism management message is not active anymore. "
+                    "A more recent message has been sent to the chat to replace this one._",
+                    chat_id=msg[0],
+                    message_id=msg[1],
+                    parse_mode="Markdown",
+                    reply_to_message_id=reply.message_id,
+                    reply_markup=telegram.InlineKeyboardMarkup([])
+                )
+                com.unregister_message(msg[0], msg[1])
+
+            com.register_message(update.effective_message.chat.id, reply.message_id)
+            com.edit(update.effective_message.bot)
+
+        elif args.subcommand == "stop":
+            com.cancel(update.effective_message.bot)
 
 
 class CommunismCallbackQuery(BaseCallbackQuery):
