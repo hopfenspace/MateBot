@@ -34,7 +34,11 @@ class HelpCommand(BaseCommand):
         """
 
         if args.command:
-            msg = args.command.description
+            msg = "*Usages:*\n"
+            msg += "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
+            msg += "\n\n" \
+                   "*Description:*\n"
+            msg += args.command.description
         else:
             commands = "\n".join(map(lambda c: f" - `{c}`", sorted(COMMANDS.commands_as_dict.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
