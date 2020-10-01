@@ -5,7 +5,6 @@ import logging
 from telegram.ext import (
     Updater, CommandHandler,
     CallbackQueryHandler,
-    ChosenInlineResultHandler,
     Filters, InlineQueryHandler
 )
 
@@ -13,7 +12,8 @@ from telegram.ext import (
 from mate_bot import err
 from mate_bot import log
 from mate_bot.config import config
-from mate_bot.commands.registry import COMMANDS
+from mate_bot.commands.handler import FilteredChosenInlineResultHandler
+from mate_bot.commands.registry import COMMANDS as COMMAND_REGISTRY
 from mate_bot.commands.communism import (
     CommunismCallbackQuery,
     CommunismInlineQuery,
@@ -24,7 +24,7 @@ from mate_bot.commands.vouch import VouchCallbackQuery
 
 
 COMMANDS = {
-    Filters.all: COMMANDS.commands_as_dict
+    Filters.all: COMMAND_REGISTRY.commands_as_dict
 }
 
 HANDLERS = {
@@ -36,6 +36,9 @@ HANDLERS = {
     },
     InlineQueryHandler: {
         "": CommunismInlineQuery()
+    },
+    FilteredChosenInlineResultHandler: {
+        "": CommunismInlineResult()
     }
 }
 
@@ -58,7 +61,6 @@ if __name__ == "__main__":
             )
 
     logger.info("Adding other handlers...")
-    updater.dispatcher.add_handler(ChosenInlineResultHandler(CommunismInlineResult()))
     for handler in HANDLERS:
         for pattern in HANDLERS[handler]:
             updater.dispatcher.add_handler(handler(HANDLERS[handler][pattern], pattern=pattern))
