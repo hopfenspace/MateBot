@@ -2,7 +2,41 @@
 MateBot parser's helper functions for creating usage strings
 """
 
+from typing import Union, Collection
+
 from mate_bot.parsing.actions import Action
+
+
+def plural_s(collection: Union[int, Collection]) -> str:
+    """
+    Return a plural 's' if a collection requires one.
+
+    The argument can be anything supporting `len()` or directly an integer.
+
+    Example of use:
+    
+    .. code-block::
+
+        parser = argparse.ArgumentParser()
+        ...
+        args, argv = parser.parse_known_args()
+        print(f"Unrecognized argument{plural_s(argv)}: {argv}")
+
+    :param collection: a collection
+    :type collection: Collection
+    :return: a plural 's' or an empty string
+    :rtype: str
+    """
+
+    if isinstance(collection, int):
+        n = collection
+    else:
+        n = len(collection)
+
+    if n == 1:
+        return ""
+    else:
+        return "s"
 
 
 def get_metavar(action: Action) -> str:
