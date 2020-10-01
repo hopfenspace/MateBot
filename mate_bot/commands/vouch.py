@@ -17,8 +17,11 @@ class VouchCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("vouch", "Internal users can vouch for externals to allow them to use this bot. "
-                                  "Otherwise, the possibilities would be very limited for security purposes.")
+        super().__init__(
+            "vouch",
+            "Internal users can vouch for externals to allow them to use this bot. "
+            "Otherwise, the possibilities would be very limited for security purposes."
+        )
 
         p = self.parser.new_usage()
         p.add_argument(

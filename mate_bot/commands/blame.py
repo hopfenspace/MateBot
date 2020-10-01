@@ -15,10 +15,13 @@ class BlameCommand(BaseCommand):
     """
 
     def __init__(self):
-        super(BlameCommand, self).__init__("blame", "Show the user with the highest debt, "
-                                                    "or users if evenly matched.\n\n"
-                                                    "Put the users with the highest debts to the pillory and "
-                                                    "make them buy stuff (new bottle crates) to settle their debts.")
+        super(BlameCommand, self).__init__(
+            "blame",
+            "Show the user with the highest debt, "
+            "or users if evenly matched.\n\n"
+            "Put the users with the highest debts to the pillory and "
+            "make them buy stuff (new bottle crates) to settle their debts."
+        )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """

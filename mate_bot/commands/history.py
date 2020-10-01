@@ -21,9 +21,12 @@ class HistoryCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("history", "Request your made transactions.\n\n"
-                                    "You can specify the amount of most recent transactions "
-                                    "you want so see or a format in which to export all of them.")
+        super().__init__(
+            "history",
+            "Request your made transactions.\n\n"
+            "You can specify the amount of most recent transactions "
+            "you want so see or a format in which to export all of them."
+        )
         self.parser.add_argument(
             "length",
             nargs="?",

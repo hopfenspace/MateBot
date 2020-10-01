@@ -41,10 +41,12 @@ class Pay:
 class PayCommand(BaseCommand):
 
     def __init__(self):
-        super().__init__("pay", "The `/pay` command enables users who spend money for the community to get"
-                                " their money back. Using /pay <amount> <reason> you can claim you bought"
-                                " something for the community. Others have to approve before the money goes"
-                                " to your account.")
+        super().__init__(
+            "pay",
+            "The `/pay` command enables users who spend money for the community to get "
+            "their money back. Using `/pay <amount> <reason>` you can claim you bought "
+            "something for the community. Others have to approve before the money goes "
+            "to your account.")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 

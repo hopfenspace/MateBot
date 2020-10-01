@@ -16,9 +16,12 @@ class BalanceCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("balance", "The `/balance` command prints the current account balance of an "
-                                    "account. If no account name is provided the balance of the "
-                                    "sender is given.")
+        super().__init__(
+            "balance",
+            "The `/balance` command prints the current account balance of an "
+            "account. If no account name is provided the balance of the "
+            "sender is given."
+        )
         self.parser.add_argument("user", type=user_type, nargs="?")
 
     def run(self, args: Namespace, update: telegram.Update) -> None:

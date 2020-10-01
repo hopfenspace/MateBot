@@ -15,9 +15,12 @@ class DataCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("data", "Request the data the bot has stored about you.\n\n"
-                                 "This command can only be used in private chat to protect private data.\n"
-                                 "To view your transactions use `/history`.")
+        super().__init__(
+            "data",
+            "Request the data the bot has stored about you.\n\n"
+            "This command can only be used in private chat to protect private data.\n"
+            "To view your transactions use `/history`."
+        )
         self.parser.add_argument("trash-bin", nargs="*")
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
