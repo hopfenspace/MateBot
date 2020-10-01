@@ -739,7 +739,7 @@ class CommunismInlineResult(BaseInlineResult):
         :return: None
         """
 
-        if result.result_id.count("-") == 3:
+        if result.result_id.count("-") == 4:
             return
 
         # No exceptions will be handled because errors here would mean
