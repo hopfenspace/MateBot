@@ -40,7 +40,7 @@ HANDLERS = {
         "": HelpInlineQuery()
     },
     FilteredChosenInlineResultHandler: {
-        "": CommunismInlineResult()
+        r"^communism-\d+-\d+-\d+": CommunismInlineResult()
     }
 }
 
