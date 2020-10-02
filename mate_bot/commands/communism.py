@@ -582,8 +582,11 @@ class CommunismInlineQuery(BaseInlineQuery):
     updates via the @BotFather. Set the quota to 100%.
     """
 
-    @staticmethod
-    def get_uuid(communism_id: typing.Optional[int] = None, receiver: typing.Optional[int] = None) -> str:
+    def get_result_id(
+            self,
+            communism_id: typing.Optional[int] = None,
+            receiver: typing.Optional[int] = None
+    ) -> str:
         """
         Generate a random UUID or a string encoding information about forwarding communisms
 
@@ -606,40 +609,6 @@ class CommunismInlineQuery(BaseInlineQuery):
 
         now = int(datetime.datetime.now().timestamp())
         return f"{now}-{communism_id}-{receiver}"
-
-    @staticmethod
-    def get_result(
-            heading: str,
-            msg_text: str,
-            communism_id: typing.Optional[int] = None,
-            receiver: typing.Optional[int] = None,
-            parse_mode: str = telegram.ParseMode.MARKDOWN
-    ) -> telegram.InlineQueryResultArticle:
-        """
-        Build the InlineQueryResultArticle object that should be sent to the user as one option
-
-        :param heading: heading of the inline result shown to the user
-        :type heading: str
-        :param msg_text:
-        :type msg_text: str
-        :param communism_id: internal ID of the collective operation to be forwarded
-        :type communism_id: typing.Optional[int]
-        :param receiver: Telegram ID (Chat ID) of the recipient of the forwarded message
-        :type receiver: typing.Optional[int]
-        :param parse_mode: parse mode specifier for the resulting message
-        :type parse_mode: str
-        :return:
-        """
-
-        return telegram.InlineQueryResultArticle(
-            id = CommunismInlineQuery.get_uuid(communism_id, receiver),
-            title = heading,
-            input_message_content = telegram.InputTextMessageContent(
-                message_text = msg_text,
-                parse_mode = parse_mode,
-                disable_web_page_preview = True
-            )
-        )
 
     def get_help(self) -> telegram.InlineQueryResultArticle:
         """
@@ -705,10 +674,10 @@ class CommunismInlineQuery(BaseInlineQuery):
             answers = []
             for choice in users:
                 answers.append(self.get_result(
-                    f"{choice.name} ({choice.username})" if choice.username else choice.name,
+                    str(choice),
                     f"I am forwarding this communism to {choice.name}...",
-                    communism_id = comm_id,
-                    receiver = choice.tid
+                    comm_id,
+                    choice.tid
                 ))
 
             query.answer([self.get_help()] + answers)
