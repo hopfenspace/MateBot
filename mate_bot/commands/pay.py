@@ -77,6 +77,28 @@ class Pay(BaseCollective):
         else:
             raise TypeError("Expected int or tuple of arguments")
 
+    def get_votes(self) -> typing.Tuple[typing.List[MateBotUser], typing.List[MateBotUser]]:
+        """
+        Get the approving and disapproving voters as lists of MateBotUsers
+
+        :return: the returned tuple contains a list of approving voters and disapproving voters each
+        :rtype: typing.Tuple[typing.List[MateBotUser], typing.List[MateBotUser]]
+        """
+
+        approved = []
+        disapproved = []
+
+        for entry in self._get_remote_joined_record()[1]:
+            if entry["collectives_users.id"] is None or entry["vote"] is None:
+                continue
+            user = MateBotUser(entry["users_id"])
+            if entry["vote"]:
+                approved.append(user)
+            else:
+                disapproved.append(user)
+
+        return approved, disapproved
+
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
         Generate the inline keyboard to control the payment operation
