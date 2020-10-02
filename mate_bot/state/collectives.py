@@ -349,14 +349,14 @@ class BaseCollective(BackendHelper):
     def is_participating(
             self,
             user: typing.Union[int, MateBotUser]
-    ) -> typing.Tuple[bool, typing.Optional[str]]:
+    ) -> typing.Tuple[bool, typing.Optional[bool]]:
         """
         Determine whether the user is participating in this collective operation
 
         :param user: MateBot user
         :type user: typing.Union[int, MateBotUser]
         :return: tuple whether the user is participating and the (optional) vote
-        :rtype: typing.Tuple[bool, typing.Optional[str]]
+        :rtype: typing.Tuple[bool, typing.Optional[bool]]
         :raises err.DesignViolation: when more than one match was found
         """
 
@@ -376,7 +376,7 @@ class BaseCollective(BackendHelper):
     def add_user(
             self,
             user: typing.Union[int, MateBotUser],
-            vote: typing.Union[str, bool] = False
+            vote: typing.Union[bool] = False
     ) -> bool:
         """
         Add a user to the collective using the given vote
@@ -387,13 +387,12 @@ class BaseCollective(BackendHelper):
         :type vote: typing.Union[str, bool]
         :return: success of the operation
         :rtype: bool
+        :raises TypeError: when the vote is no boolean
         """
 
         user = self._get_uid(user)
-        if isinstance(vote, bool):
-            vote = "+" if vote else "-"
-        if vote not in ("+", "-"):
-            raise ValueError("Expected '+' or '-'")
+        if not isinstance(vote, bool):
+            raise TypeError("Expected boolean value for vote")
 
         if not self.is_participating(user)[0]:
             rows, values = self._execute(
