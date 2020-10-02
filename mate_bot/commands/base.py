@@ -47,7 +47,7 @@ class BaseCommand:
         self.name = name
         self._usage = usage
         self.description = description
-        self.parser = CommandParser()
+        self.parser = CommandParser(self.name)
 
     @property
     def usage(self):
@@ -95,9 +95,7 @@ class BaseCommand:
             self.run(args, update)
 
         except ParsingError as err:
-            update.effective_message.reply_text(
-                str(err) + "\n" + self.usage
-            )
+            update.effective_message.reply_markdown(str(err))
 
 
 class BaseCallbackQuery:

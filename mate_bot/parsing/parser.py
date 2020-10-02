@@ -10,15 +10,21 @@ from mate_bot.err import ParsingError
 from mate_bot.parsing.util import EntityString, Namespace, Representable
 from mate_bot.parsing.usage import CommandUsage
 from mate_bot.parsing.actions import Action
+from mate_bot.parsing.formatting import plural_s
 
 
 class CommandParser(Representable):
     """
     Class for parsing telegram messages into python objects.
+
+    :param name: the command name the parser is for.
+        This is used in error messages.
+    :type name: str
     """
 
-    def __init__(self):
+    def __init__(self, name: str):
         # Add initial default usage
+        self._name = name
         self._usages = [CommandUsage()]
 
     @property
@@ -86,23 +92,37 @@ class CommandParser(Representable):
         :rtype: Namespace
         """
 
-        # Filter out usages by the minimum and maximum amount of required arguments
-        def matching_size(u: CommandUsage) -> bool:
-            return u.min_arguments <= len(arg_strings) <= u.max_arguments
-        properly_sized = list(filter(matching_size, self._usages))
-
-        # Some usages should have passed this filter
-        if len(properly_sized) == 0:
-            raise ParsingError("No usage takes this number of arguments")
-
-        # Try the remaining ones
-        for usage in properly_sized:
-            try:
-                return self._parse_usage(usage, arg_strings)
-            except ParsingError:
+        errors = []
+        for usage in self._usages:
+            if usage.min_arguments > len(arg_strings):
+                errors.append(ParsingError(
+                    f"requires at least {usage.min_arguments} argument{plural_s(usage.min_arguments)}."
+                ))
                 continue
+            elif usage.max_arguments < len(arg_strings):
+                errors.append(ParsingError(
+                    f"allows at most {usage.max_arguments} argument{plural_s(usage.max_arguments)}."
+                ))
+                continue
+            else:
+                # Try the remaining ones
+                try:
+                    return self._parse_usage(usage, arg_strings)
+                except ParsingError as err:
+                    errors.append(err)
+                continue
+
+        # If you enter here, then all usages broke
+        # Combine their error messages into one
         else:
-            raise ParsingError("No usage applies")
+            if len(self._usages):
+                msg = ""
+            else:
+                msg = "No usage applies:"
+
+            for usage, error in zip(self._usages, errors):
+                msg += f"\n`/{self._name} {usage}` {error}"
+            raise ParsingError(msg)
 
     def _parse_usage(self, usage: CommandUsage, arg_strings: typing.List[str]) -> Namespace:
         """
@@ -167,7 +187,7 @@ class CommandParser(Representable):
                 if error is not None:
                     raise ParsingError(str(error))
                 else:
-                    raise ParsingError("Missing arguments")
+                    raise ParsingError(f"Missing argument{plural_s(local_action.min_args-len(values))}")
 
             # Action is satisfied -> finish with action
             else:
@@ -187,7 +207,7 @@ class CommandParser(Representable):
             consume_action(action, left_strings)
 
         if len(left_strings) > 0:
-            raise ParsingError("Unrecognized arguments")
+            raise ParsingError(f"Unrecognized argument{plural_s(left_strings)}: {', '.join(left_strings)}")
 
         return namespace
 
