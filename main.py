@@ -36,7 +36,7 @@ HANDLERS = {
         "^vouch": VouchCallbackQuery()
     },
     InlineQueryHandler: {
-        r"^\d*(\s?\S?)*": CommunismInlineQuery(),
+        r"^\d+(\s?\S?)*": CommunismInlineQuery(),
         "": HelpInlineQuery()
     },
     FilteredChosenInlineResultHandler: {
