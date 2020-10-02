@@ -188,24 +188,6 @@ class Communism(BaseCollective):
             ]
         ])
 
-    def edit(self, bot: telegram.Bot) -> None:
-        """
-        Edit the content of the communism messages in all chats
-
-        :param bot: Telegram Bot object
-        :type bot: telegram.Bot
-        :return: None
-        """
-
-        for c, m in self.get_messages():
-            bot.edit_message_text(
-                self.get_markdown(),
-                chat_id=c,
-                message_id=m,
-                reply_markup=self._gen_inline_keyboard(),
-                parse_mode="Markdown"
-            )
-
     def close(self) -> bool:
         """
         Close the collective operation and perform all transactions

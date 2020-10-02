@@ -7,6 +7,7 @@ import datetime
 
 import pytz as _tz
 import tzlocal as _local_tz
+import telegram
 
 from mate_bot import err
 from mate_bot.state.user import MateBotUser
@@ -557,6 +558,36 @@ class BaseCollective(BackendHelper):
             self._created = _tz.utc.localize(record["created"])
 
         return result and rows == 1
+
+    def edit_all_messages(
+            self,
+            content: str,
+            markup: telegram.InlineKeyboardMarkup,
+            bot: telegram.Bot,
+            parse_mode: str = "Markdown"
+    ) -> None:
+        """
+        Edit the content of the collective messages in all chats
+
+        :param content: message context as text (with support according to ``parse_mode``
+        :type content: str
+        :param markup: inline keyboard that should be used for the messages
+        :type markup: telegram.InlineKeyboardMarkup
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
+        :param parse_mode: parse mode of the message content (default: Markdown)
+        :type parse_mode: str
+        :return: None
+        """
+
+        for c, m in self.get_messages():
+            bot.edit_message_text(
+                content,
+                chat_id=c,
+                message_id=m,
+                reply_markup=markup,
+                parse_mode=parse_mode
+            )
 
     @property
     def active(self) -> bool:
