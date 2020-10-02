@@ -99,6 +99,32 @@ class Pay(BaseCollective):
 
         return approved, disapproved
 
+    def get_markdown(self, status: typing.Optional[str] = None) -> str:
+        """
+        Generate the full message text as markdown string
+
+        :param status: extended status information about the payment request (Markdown supported)
+        :type status: typing.Optional[str]
+        :return: full message text as markdown string
+        :rtype: str
+        """
+
+        approved, disapproved = self.get_votes()
+        approved = ", ".join(map(lambda u: u.name, approved)) or "None"
+        disapproved = ", ".join(map(lambda u: u.name, disapproved)) or "None"
+
+        markdown = f"*Payment request by {self.creator.name}*\n"
+        markdown += f"\nApproved: {approved}\nDisapproved: {disapproved}\n\n"
+
+        if status is not None:
+            markdown += status
+        elif self.active:
+            markdown += "_The payment request is currently active._"
+        else:
+            markdown += "_The payment request has been closed._"
+
+        return markdown
+
     def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
         Generate the inline keyboard to control the payment operation
