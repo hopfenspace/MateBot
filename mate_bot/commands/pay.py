@@ -13,7 +13,6 @@ from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser, CommunityUser
 from mate_bot.state.collectives import BaseCollective
 
-pays = {}
 
 PAYMENT_ARGUMENTS = typing.Union[
     int,
@@ -78,28 +77,29 @@ class Pay(BaseCollective):
         else:
             raise TypeError("Expected int or tuple of arguments")
 
-        self.creator = creator
-        self.amount = amount
-        self.reason = reason
-        self.approved = []
-        self.disapproved = []
-        self.message = None
+    def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+        """
+        Generate the inline keyboard to control the payment operation
 
-        prefix = "pay " + str(creator['id'])
-        self.message_markup = telegram.InlineKeyboardMarkup([
+        :return: inline keyboard using callback data strings
+        :rtype: telegram.InlineKeyboardMarkup
+        """
+
+        if not self.active:
+            return telegram.InlineKeyboardMarkup([])
+
+        def f(c):
+            return f"payment {c} {self.get()}"
+
+        return telegram.InlineKeyboardMarkup([
             [
-                telegram.InlineKeyboardButton("APPROVE", callback_data=prefix + " approve"),
+                telegram.InlineKeyboardButton("APPROVE", callback_data=f("approve")),
+                telegram.InlineKeyboardButton("DISAPPROVE", callback_data=f("disapprove")),
             ],
             [
-                telegram.InlineKeyboardButton("DISAPPROVE", callback_data=prefix + " disapprove"),
-            ],
+                telegram.InlineKeyboardButton("FORWARD", switch_inline_query_current_chat=f"{self.get()} ")
+            ]
         ])
-
-    def amount_euro(self):
-        return self.amount / float(100)
-
-    def __str__(self):
-        raise NotImplementedError
 
 
 class PayCommand(BaseCommand):
