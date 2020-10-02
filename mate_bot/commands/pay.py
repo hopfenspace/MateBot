@@ -2,18 +2,82 @@
 MateBot command executor classes for /pay and its callback queries
 """
 
+import typing
+
 import telegram
 
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.user import MateBotUser, CommunityUser
+from mate_bot.state.collectives import BaseCollective
 
 pays = {}
 
+PAYMENT_ARGUMENTS = typing.Union[
+    int,
+    typing.Tuple[int, MateBotUser, telegram.Bot],
+    typing.Tuple[MateBotUser, int, str, telegram.Message]
+]
 
-class Pay:
-    def __init__(self, creator, amount, reason):
+
+class Pay(BaseCollective):
+    """
+    Payment class to get money from the community
+
+    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :raises ValueError: when a supplied argument has an invalid value
+    :raises TypeError: when a supplied argument has the wrong type
+    :raises RuntimeError: when the internal collective ID points to a payment operation
+    """
+
+    _communistic = False
+
+    _ALLOWED_COLUMNS = ["active"]
+
+    def __init__(self, arguments: PAYMENT_ARGUMENTS):
+
+        if isinstance(arguments, int):
+            self._id = arguments
+            self.update()
+            if self._communistic:
+                raise RuntimeError("Remote record is no payment request")
+
+        elif isinstance(arguments, tuple):
+            if len(arguments) == 3:
+
+                payment_id, user, bot = arguments
+
+            elif len(arguments) == 4:
+
+                user, amount, reason, message = arguments
+                if not isinstance(user, MateBotUser):
+                    raise TypeError("Expected MateBotUser object as first element")
+                if not isinstance(amount, int):
+                    raise TypeError("Expected int object as second element")
+                if not isinstance(reason, str):
+                    raise TypeError("Expected str object as third element")
+                if not isinstance(message, telegram.Message):
+                    raise TypeError("Expected telegram.Message as fourth element")
+
+                self._creator = user.uid
+                self._amount = amount
+                self._description = reason
+                self._externals = None
+                self._active = True
+
+                self._create_new_record()
+
+                reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
+                self.register_message(reply.chat_id, reply.message_id)
+
+            else:
+                raise TypeError("Expected three or four arguments for the tuple")
+
+        else:
+            raise TypeError("Expected int or tuple of arguments")
+
         self.creator = creator
         self.amount = amount
         self.reason = reason

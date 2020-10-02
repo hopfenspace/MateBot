@@ -37,7 +37,7 @@ class Communism(BaseCollective):
     and the description of the communism as string. While being optional
     in the database, you have to specify at least three chars as reason.
 
-    :param arguments: either internal ID or tuple of arguments for creation
+    :param arguments: either internal ID or tuple of arguments for creation or forwarding
     :raises ValueError: when a supplied argument has an invalid value
     :raises TypeError: when a supplied argument has the wrong type
     :raises RuntimeError: when the internal collective ID points to a payment operation
