@@ -2,9 +2,11 @@
 MateBot command executor classes for /help
 """
 
+import datetime
+
 import telegram
 
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, BaseInlineQuery
 from mate_bot.commands.registry import COMMANDS
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
@@ -49,3 +51,44 @@ class HelpCommand(BaseCommand):
             )
         else:
             update.effective_message.reply_markdown(msg)
+
+
+class HelpInlineQuery(BaseInlineQuery):
+    """
+    Get inline help messages like /help does as command
+    """
+
+    def get_result_id(self, *args) -> str:
+        """
+        Generate a result ID based on the current time and the static word ``help``
+
+        :param args: ignored collection of parameters
+        :return: result ID for any inline query seeking for help
+        :rtype: str
+        """
+
+        return f"help-{int(datetime.datetime.now().timestamp())}"
+
+    def get_help(self) -> telegram.InlineQueryResult:
+        """
+        Get the generic help message as only answer of an inline query handled by this class
+
+        :return: help message as inline query result
+        :rtype: telegram.InlineQueryResult
+        """
+
+        return self.get_result(
+            "Help",
+            "#TODO"
+        )
+
+    def run(self, query: telegram.InlineQuery) -> None:
+        """
+        Answer the inline query by providing the result of :meth:`get_help`
+
+        :param query: inline query as part of an incoming Update
+        :type query: telegram.InlineQuery
+        :return: None
+        """
+
+        query.answer([self.get_help()])
