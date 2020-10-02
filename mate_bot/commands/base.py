@@ -23,7 +23,7 @@ class BaseCommand:
     A minimal working example class may look like this:
 
     .. code-block::
-    
+
         class ExampleCommand(BaseCommand):
             def __init__(self):
                 super().__init__("example")
@@ -219,6 +219,50 @@ class BaseInlineQuery:
 
         self.run(update.inline_query)
 
+    def get_result_id(self, *args) -> str:
+        """
+        Get the ID of the inline result based on the given arguments
+
+        :param args: any form of arguments that might be useful to create the result ID
+        :type args: typing.Any
+        :return: unique ID of the returned inline result so that the ChosenInlineResult
+            can be parsed and used accurately (note that it doesn't need to be really unique)
+        :rtype: str
+        """
+
+        raise NotImplementedError("Overwrite the BaseInlineQuery.get_result_id() method in a subclass")
+
+    def get_result(
+            self,
+            heading: str,
+            msg_text: str,
+            *args,
+            parse_mode: str = telegram.ParseMode.MARKDOWN
+    ) -> telegram.InlineQueryResultArticle:
+        """
+        Get an article as possible inline result for an inline query
+
+        :param heading: bold text (head line) the user clicks/taps on to select the inline result
+        :type heading: str
+        :param msg_text: text that will be sent from the client via the bot
+        :type msg_text: str
+        :param args: arguments passed to :meth:`get_result_id`
+        :type args: typing.Any
+        :param parse_mode:
+        :return: inline query result (of type article)
+        :rtype: telegram.InlineQueryResultArticle
+        """
+
+        return telegram.InlineQueryResultArticle(
+            id = self.get_result_id(*args),
+            title = heading,
+            input_message_content = telegram.InputTextMessageContent(
+                message_text = msg_text,
+                parse_mode = parse_mode,
+                disable_web_page_preview = True
+            )
+        )
+
     def get_help(self) -> telegram.InlineQueryResult:
         """
         Get some kind of help message as inline result (always as first item!)
@@ -227,7 +271,7 @@ class BaseInlineQuery:
         :raises NotImplementedError: because this method should be overwritten by subclasses
         """
 
-        raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
+        raise NotImplementedError("Overwrite the BaseInlineQuery.get_help() method in a subclass")
 
     def run(self, query: telegram.InlineQuery) -> None:
         """
