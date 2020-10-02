@@ -114,10 +114,10 @@ class BaseCollective(BackendHelper):
         """
         Create the record for the current collective in the database if it doesn't exist
 
-        Note that the attribute `_communistic` must be
+        Note that the attribute :attr:`_communistic` must be
         present in order for this method to work properly.
-        Remember that one user can only have one collective
-        operation active at the same time.
+        Remember that one user can only have one active
+        collective operation at the same time.
 
         :return: whether the new record was created
         :rtype: bool
@@ -132,7 +132,7 @@ class BaseCollective(BackendHelper):
             raise TypeError("Attribute isn't of type bool")
         if self._id is not None:
             raise ValueError("Internal ID is already set")
-        if self._externals != 0:
+        if self._externals != 0 and self._externals is not None:
             raise ValueError("No externals allowed for creation")
 
         connection = None
