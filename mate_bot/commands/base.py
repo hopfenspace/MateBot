@@ -246,7 +246,8 @@ class BaseInlineQuery:
         :type msg_text: str
         :param args: arguments passed to :meth:`get_result_id`
         :type args: typing.Any
-        :param parse_mode:
+        :param parse_mode: parse mode that should be used to parse this text (default: Markdown v1)
+        :type parse_mode: str
         :return: inline query result (of type article)
         :rtype: telegram.InlineQueryResultArticle
         """

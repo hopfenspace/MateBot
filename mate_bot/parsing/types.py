@@ -132,4 +132,3 @@ def command(arg: str) -> BaseCommand:
         return COMMANDS.get(arg)
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")
-
