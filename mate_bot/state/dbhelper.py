@@ -583,7 +583,9 @@ class BackendHelper:
 
         BackendHelper._check_location(table, key)
         extras = BackendHelper._SCHEMA[table][key].extras
-        return "PRIMARY KEY" in extras.upper() or "UNIQUE" in extras.upper()
+        if extras is not None:
+            return "PRIMARY KEY" in extras.upper() or "UNIQUE" in extras.upper()
+        return True
 
     @staticmethod
     def _check_value(value: typing.Union[str, int, bool, None]) -> bool:
