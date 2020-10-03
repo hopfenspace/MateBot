@@ -148,7 +148,6 @@ class BaseCollective(BackendHelper):
                 "SELECT LAST_INSERT_ID()",
                 connection=connection
             )
-            assert rows == 1
             self._id = values[0]["LAST_INSERT_ID()"]
 
             connection.commit()
