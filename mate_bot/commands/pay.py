@@ -259,34 +259,46 @@ class PayCallbackQuery(BaseCallbackQuery):
             query.answer("The payment does not exist in the database!", show_alert=True)
             raise
 
-    def approve(self, update: telegram.Update) -> None:
-        """
-        :param update: incoming Telegram update
-        :type update: telegram.Update
-        :return: None
-        """
-
-        pass
-
-    def disapprove(self, update: telegram.Update) -> None:
-        """
-        :param update: incoming Telegram update
-        :type update: telegram.Update
-        :return: None
-        """
-
-        pass
-
     def run(self, update: telegram.Update) -> None:
         """
-        Do not do anything (this class does not need run() to work)
+        Check and process the incoming callback query
 
         :param update: incoming Telegram update
         :type update: telegram.Update
         :return: None
         """
 
-        pass
+        payment = self._get_payment(update.callback_query)
+        if payment is not None:
+            user = MateBotUser(update.callback_query.from_user)
+            if payment.creator == user:
+                update.callback_query.answer(
+                    "You can't vote on your own payment request.",
+                    show_alert=True
+                )
+                return
+
+            if self.data.startswith("approve"):
+                vote = True
+            elif self.data.startswith("disapprove"):
+                vote = False
+            else:
+                update.callback_query.answer("Invalid callback query data!", show_alert=True)
+                raise ValueError(f"Invalid callback query data: '{self.data}'")
+
+            success = payment.add_user(user, vote)
+            if not success:
+                update.callback_query.answer("You already voted on this payment request.")
+                return
+
+            update.callback_query.answer("You successfully voted on this payment request.")
+            active = payment.close()
+            if not active:
+                payment.edit_all_messages(
+                    payment.get_markdown(),
+                    payment._gen_inline_keyboard(),
+                    update.callback_query.bot
+                )
 
 
 """
