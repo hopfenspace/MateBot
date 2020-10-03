@@ -187,6 +187,12 @@ class PayCommand(BaseCommand):
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 
+        self.parser.new_usage().add_argument(
+            "subcommand",
+            choices=("stop", "show"),
+            type=lambda x: str(x).lower()
+        )
+
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
@@ -197,6 +203,16 @@ class PayCommand(BaseCommand):
         """
 
         user = MateBotUser(update.effective_message.from_user)
+
+        if args.subcommand is None:
+            if Pay.has_user_active_collective(user):
+                update.effective_message.reply_text("You already have a collective in progress.")
+                return
+
+            Pay((user, args.amount, args.reason, update.effective_message))
+            return
+
+        update.effective_message.reply_text("Subcommands are not yet supported.")
 
 
 class PayCallbackQuery(BaseCallbackQuery):
