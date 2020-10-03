@@ -23,6 +23,7 @@ from mate_bot.commands.help import HelpInlineQuery
 from mate_bot.commands.pay import PayCallbackQuery
 from mate_bot.commands.send import SendCallbackQuery
 from mate_bot.commands.vouch import VouchCallbackQuery
+from mate_bot.state.dbhelper import BackendHelper
 
 
 COMMANDS = {
@@ -49,6 +50,7 @@ HANDLERS = {
 if __name__ == "__main__":
     log.setup()
     logger = logging.getLogger()
+    BackendHelper._query_logger = logging.getLogger("database")
 
     updater = Updater(config["bot"]["token"], use_context = True)
     internal_filter = Filters.chat(config["bot"]["chat"])
