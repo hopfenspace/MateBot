@@ -115,7 +115,7 @@ class Pay(BaseCollective):
         disapproved = ", ".join(map(lambda u: u.name, disapproved)) or "None"
 
         markdown = f"*Payment request by {self.creator.name}*\n"
-        markdown += f"\nAmount: {self.amount:.2f}€\nReason: {self.description}\n"
+        markdown += f"\nAmount: {self.amount / 100:.2f}€\nReason: {self.description}\n"
         markdown += f"\nApproved: {approved}\nDisapproved: {disapproved}\n\n"
 
         if status is not None:
