@@ -9,7 +9,7 @@ from mate_bot.commands.communism import CommunismCommand
 from mate_bot.commands.data import DataCommand
 from mate_bot.commands.help import HelpCommand
 from mate_bot.commands.history import HistoryCommand
-# from mate_bot.commands.pay import PayCommand
+from mate_bot.commands.pay import PayCommand
 from mate_bot.commands.send import SendCommand
 from mate_bot.commands.start import StartCommand
 from mate_bot.commands.blame import BlameCommand
@@ -24,7 +24,7 @@ COMMANDS.add(CommunismCommand())
 COMMANDS.add(DataCommand())
 COMMANDS.add(HelpCommand())
 COMMANDS.add(HistoryCommand())
-# COMMANDS.add(PayCommand())
+COMMANDS.add(PayCommand())
 COMMANDS.add(SendCommand())
 COMMANDS.add(StartCommand())
 COMMANDS.add(BlameCommand())
