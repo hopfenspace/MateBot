@@ -222,13 +222,42 @@ class PayCallbackQuery(BaseCallbackQuery):
     """
 
     def __init__(self):
-        super().__init__(
-            "pay",
-            {
-                "approve": self.approve,
-                "disapprove": self.disapprove
-            }
-        )
+        super().__init__("pay")
+
+    def _get_payment(self, query: telegram.CallbackQuery) -> typing.Optional[Pay]:
+        """
+        Retrieve the Pay object based on the callback data
+
+        :param query: incoming Telegram callback query with its attached data
+        :type query: telegram.CallbackQuery
+        :return: Pay object that handles the current collective
+        :rtype: typing.Optional[Pay]
+        """
+
+        if self.data is None or self.data.strip() == "":
+            query.answer("Empty stripped callback data!", show_alert=True)
+            return
+
+        try:
+            vote, payment_id = self.data.split(" ")
+        except IndexError:
+            query.answer("Invalid callback data format!", show_alert=True)
+            raise
+
+        try:
+            payment_id = int(payment_id)
+        except ValueError:
+            query.answer("Wrong payment ID format!", show_alert=True)
+            raise
+
+        try:
+            pay = Pay(payment_id)
+            if pay.active:
+                return pay
+            query.answer("The pay is not active anymore!")
+        except IndexError:
+            query.answer("The payment does not exist in the database!", show_alert=True)
+            raise
 
     def approve(self, update: telegram.Update) -> None:
         """
