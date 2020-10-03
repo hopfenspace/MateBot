@@ -3,6 +3,7 @@ MateBot command handling base library
 """
 
 import typing
+import logging
 
 import telegram.ext
 
@@ -10,6 +11,9 @@ from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
+
+
+logger = logging.getLogger("command")
 
 
 class BaseCommand:
@@ -87,10 +91,15 @@ class BaseCommand:
         """
 
         try:
+            logger.debug(
+                f"Performing '{self.name}' by {update.effective_message.from_user.name}"
+            )
+
             if self.name != "start":
                 if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
                     update.effective_message.reply_text("You need to /start first.")
                     return
+
             args = self.parser.parse(update.effective_message)
             self.run(args, update)
 
