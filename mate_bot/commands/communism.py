@@ -235,7 +235,7 @@ class Communism(BaseCollective):
             return False
 
         self._fulfilled = True
-        self.edit(bot)
+        self.edit_all_messages(self.get_markdown(), self._gen_inline_keyboard(), bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
@@ -254,7 +254,7 @@ class Communism(BaseCollective):
             return False
 
         self._fulfilled = False
-        self.edit(bot)
+        self.edit_all_messages(self.get_markdown(), self._gen_inline_keyboard(), bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
@@ -353,7 +353,11 @@ class CommunismCommand(BaseCommand):
                 com.unregister_message(msg[0], msg[1])
 
             com.register_message(update.effective_message.chat.id, reply.message_id)
-            com.edit(update.effective_message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._gen_inline_keyboard(),
+                update.effective_message.bot
+            )
 
         elif args.subcommand == "stop":
             com.cancel(update.effective_message.bot)
@@ -442,7 +446,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
             user = MateBotUser(update.callback_query.from_user)
             previous_member = com.is_participating(user)[0]
             com.toggle_user(user)
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._gen_inline_keyboard(),
+                update.effective_message.bot
+            )
 
             if previous_member:
                 update.callback_query.answer("Okay, you were removed.")
@@ -466,7 +474,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
                 return
 
             com.externals += 1
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._gen_inline_keyboard(),
+                update.effective_message.bot
+            )
             update.callback_query.answer("Okay, incremented.")
 
     def decrease(self, update: telegram.Update) -> None:
@@ -493,7 +505,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
                 return
 
             com.externals -= 1
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._gen_inline_keyboard(),
+                update.effective_message.bot
+            )
             update.callback_query.answer("Okay, decremented.")
 
     def accept(self, update: telegram.Update) -> None:
