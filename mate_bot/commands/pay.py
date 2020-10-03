@@ -6,11 +6,12 @@ import typing
 
 import telegram
 
+from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser, CommunityUser
+from mate_bot.state.user import MateBotUser
 from mate_bot.state.collectives import BaseCollective
 
 
@@ -149,20 +150,97 @@ class Pay(BaseCollective):
             ]
         ])
 
+    def close(self) -> bool:
+        """
+        Check if the payment is fulfilled, then close it and perform the transactions
+
+        The returned value determines whether the payment request is still
+        valid and open for further votes (``True``) or closed due to enough
+        approving / disapproving votes (``False``). Use it to easily
+        determine the status for the returned message to the user(s).
+
+        :return: whether the payment request is still open for further votes
+        :rtype: bool
+        """
+
+        approved, disapproved = self.get_votes()
+
+        if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
+            return False
+
+        elif len(disapproved) - len(approved) >= config["community"]["payment-denial"]:
+            return False
+
+        else:
+            return True
+
 
 class PayCommand(BaseCommand):
+    """
+    Command executor for /pay
+
+    Note that the majority of the functionality is located in the query handler.
+    """
 
     def __init__(self):
         super().__init__("pay", "")
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", action=JoinAction, nargs="*")
 
-    def run(self, args: Namespace, msg: telegram.Message) -> None:
+    def run(self, args: Namespace, update: telegram.Update) -> None:
+        """
+        :param args: parsed namespace containing the arguments
+        :type args: argparse.Namespace
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        user = MateBotUser(update.effective_message.from_user)
+
+
+class PayCallbackQuery(BaseCallbackQuery):
+    """
+    Callback query executor for /pay
+    """
+
+    def __init__(self):
+        super().__init__(
+            "pay",
+            {
+                "approve": self.approve,
+                "disapprove": self.disapprove
+            }
+        )
+
+    def approve(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
         pass
 
+    def disapprove(self, update: telegram.Update) -> None:
+        """
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
 
-class PayQuery(BaseCallbackQuery):
-    pass
+        pass
+
+    def run(self, update: telegram.Update) -> None:
+        """
+        Do not do anything (this class does not need run() to work)
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :return: None
+        """
+
+        pass
 
 
 """
