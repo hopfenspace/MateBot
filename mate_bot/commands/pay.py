@@ -49,6 +49,24 @@ class Pay(BaseCollective):
             if len(arguments) == 3:
 
                 payment_id, user, bot = arguments
+                if not isinstance(payment_id, int):
+                    raise TypeError("Expected int as first element")
+                if not isinstance(user, MateBotUser):
+                    raise TypeError("Expected MateBotUser object as second element")
+                if not isinstance(bot, telegram.Bot):
+                    raise TypeError("Expected telegram.Bot object as third element")
+
+                self._id = payment_id
+                self.update()
+
+                forwarded = bot.send_message(
+                    chat_id=user.tid,
+                    text=self.get_markdown(),
+                    reply_markup=self._gen_inline_keyboard(),
+                    parse_mode="Markdown"
+                )
+
+                self.register_message(forwarded.chat_id, forwarded.message_id)
 
             elif len(arguments) == 4:
 
