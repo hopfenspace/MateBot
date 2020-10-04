@@ -11,7 +11,8 @@ from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
+from mate_bot.state.user import MateBotUser, CommunityUser
+from mate_bot.state.transactions import Transaction
 from mate_bot.state.collectives import BaseCollective
 
 
@@ -192,6 +193,7 @@ class Pay(BaseCollective):
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
             self.active = False
+            Transaction(CommunityUser(), self.creator, self.amount, self.description).commit()
             return False, approved, disapproved
 
         elif len(disapproved) - len(approved) >= config["community"]["payment-denial"]:
