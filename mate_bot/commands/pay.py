@@ -111,12 +111,15 @@ class Pay(BaseCollective):
         """
 
         approved, disapproved = self.get_votes()
-        approved = ", ".join(map(lambda u: u.name, approved)) or "None"
-        disapproved = ", ".join(map(lambda u: u.name, disapproved)) or "None"
+        pro = ", ".join(map(lambda u: u.name, approved)) or "None"
+        contra = ", ".join(map(lambda u: u.name, disapproved)) or "None"
 
-        markdown = f"*Payment request by {self.creator.name}*\n"
-        markdown += f"\nAmount: {self.amount / 100:.2f}€\nReason: {self.description}\n"
-        markdown += f"\nApproved: {approved}\nDisapproved: {disapproved}\n\n"
+        markdown = (
+            f"*Payment request by {self.creator.name}*\n"
+            f"\nAmount: {self.amount / 100:.2f}€\nReason: {self.description}\n"
+            f"\nApproved ({len(approved)}): {pro}"
+            f"\nDisapproved ({len(disapproved)}): {contra}\n\n"
+        )
 
         if status is not None:
             markdown += status
@@ -169,9 +172,11 @@ class Pay(BaseCollective):
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
+            self.active = False
             return False, approved, disapproved
 
         elif len(disapproved) - len(approved) >= config["community"]["payment-denial"]:
+            self.active = False
             return False, approved, disapproved
 
         return True, approved, disapproved
