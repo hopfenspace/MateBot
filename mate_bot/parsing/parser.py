@@ -162,7 +162,8 @@ class CommandParser(Representable):
 
                     # Check choices
                     if action.choices is not None and value not in action.choices:
-                        raise ValueError(f"{value} is not an available choice")
+                        raise ValueError(f"{value} is not an available choice, choose from "
+                                         + ", ".join(map(lambda x: f"`{x}`", action.choices)))
 
                     # Add converted to list
                     values.append(value)
