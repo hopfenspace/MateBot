@@ -16,13 +16,13 @@
 	"database": {
 		"host": "localhost",
 		"port": 3306,
-		"db": "database_name",
-		"user": "username",
+		"db": "mate_db",
+		"user": "matebot_user",
 		"password": "password",
 		"charset": "utf8mb4"
 	},
 	"testing":  {
-		"db": "database_name_testing"
+		"db": "mate_db_test"
 	},
 	"development": {
 		"notification": [],
