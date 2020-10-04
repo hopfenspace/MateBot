@@ -33,21 +33,21 @@ class Action(Representable):
                   Note that the difference between the default and ``nargs=1`` is that
                   with the default, a single value will be produced, while with
                   ``nargs=1``, a list containing a single value will be produced.
-    :type nargs: Optional[Union[str, int]]
+    :type nargs: Union[str, int]
 
     :param default: The value to be produced if the option is not specified.
-    :type default: Optional[Any]
+    :type default: Any
 
     :param type: A callable that accepts a single string argument,
                  and returns the converted value. See :ref:`mate_bot.parsing.types` for examples.
-    :type type: Optional[Callable]
+    :type type: Callable
 
     :param choices: A tuple of values that should be allowed.
-    :type choices: Optional[Tuple[str]]
+    :type choices: Tuple[str]
 
     :param metavar: The name to be used in the help string.
                     If ``None``, the ``dest`` value will be used as the name.
-    :type metavar: Optional[str]
+    :type metavar: str
     """
 
     def __init__(self,
