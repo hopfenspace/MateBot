@@ -15,7 +15,7 @@ from mate_bot.config import config
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.commands.registry import COMMANDS as COMMAND_REGISTRY
 from mate_bot.commands.communism import CommunismCallbackQuery
-from mate_bot.commands.forward import CommunismInlineQuery, CommunismInlineResult
+from mate_bot.commands.forward import ForwardInlineQuery, ForwardInlineResult
 from mate_bot.commands.help import HelpInlineQuery
 from mate_bot.commands.pay import PayCallbackQuery
 from mate_bot.commands.send import SendCallbackQuery
@@ -35,11 +35,11 @@ HANDLERS = {
         "^vouch": VouchCallbackQuery()
     },
     InlineQueryHandler: {
-        r"^\d+(\s?\S?)*": CommunismInlineQuery(),
+        r"^\d+(\s?\S?)*": ForwardInlineQuery(),
         "": HelpInlineQuery()
     },
     FilteredChosenInlineResultHandler: {
-        r"^communism-\d+-\d+-\d+": CommunismInlineResult()
+        r"^forward-\d+-\d+-\d+": ForwardInlineResult()
     }
 }
 
