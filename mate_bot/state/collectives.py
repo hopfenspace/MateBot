@@ -401,7 +401,7 @@ class BaseCollective(BackendHelper):
                 (self._id, user, vote)
             )
 
-            return rows == 1 and len(values) == 1
+            return rows == 1
         return False
 
     def remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
