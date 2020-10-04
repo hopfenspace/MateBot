@@ -192,8 +192,14 @@ class Pay(BaseCollective):
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
+            Transaction(
+                CommunityUser(),
+                self.creator,
+                self.amount,
+                f"pay: {self.description}"
+            ).commit()
+
             self.active = False
-            Transaction(CommunityUser(), self.creator, self.amount, self.description).commit()
             return False, approved, disapproved
 
         elif len(disapproved) - len(approved) >= config["community"]["payment-denial"]:
