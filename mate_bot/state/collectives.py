@@ -54,6 +54,23 @@ class BaseCollective(BackendHelper, LoggerBase):
         return user
 
     @classmethod
+    def get_type(cls, collective_id: int) -> int:
+        """
+        Retrieve the type of the collective with the given ID
+
+        :param collective_id: collective ID to search for in the database
+        :type collective_id: int
+        :return: type flag of the remotely stored collective ID
+        :rtype: int
+        :raises IndexError: when the collective ID does not match exactly one record
+        """
+
+        rows, values = super().get_value("collectives", "communistic", collective_id)
+        if rows != 1:
+            raise IndexError(f"Collective ID {collective_id} not found")
+        return values[0]["communistic"]
+
+    @classmethod
     def get_cid_from_active_creator(
             cls,
             creator: typing.Union[int, MateBotUser]
