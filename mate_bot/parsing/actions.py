@@ -5,6 +5,7 @@ MateBot parser's actions class defining arguments.
 from typing import Optional
 import typing
 
+from mate_bot.err import ParsingError
 from mate_bot.parsing.util import Namespace, Representable
 
 
@@ -145,7 +146,25 @@ class StoreAction(Action):
 class JoinAction(Action):
     """
     This action takes strings and joins them with spaces.
+
+    When given a limit as keyword argument,
+    it also checks if the resulting message exceeds given limit.
+
+    :param limit: max number of characters or None to disable check
+    :type limit: int
     """
+
+    def __init__(self,
+                 dest: str,
+                 nargs: Optional[typing.Union[int, str]] = None,
+                 default: Optional[typing.Any] = None,
+                 type: Optional[typing.Callable] = str,
+                 choices: Optional[typing.Tuple[str]] = None,
+                 metavar: Optional[str] = None,
+                 limit: Optional[int] = 255):
+        """"""
+        super(JoinAction, self).__init__(dest, nargs, default, type, choices, metavar)
+        self.limit = limit
 
     def __call__(self, namespace: Namespace, values: typing.Union[typing.Any, typing.List[typing.Any]]):
         """
@@ -159,4 +178,9 @@ class JoinAction(Action):
         :param values: strings to join
         :type values: List[str]
         """
-        setattr(namespace, self.dest, " ".join(values))
+
+        value = " ".join(values)
+        if self.limit is not None and self.limit < len(value):
+            raise ParsingError(f"Message too long (max {self.limit} characters)")
+        else:
+            setattr(namespace, self.dest, value)
