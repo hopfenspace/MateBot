@@ -300,7 +300,7 @@ class TransactionLog(BackendHelper):
         if validity_check is not None:
             self._valid = self._valid and validity_check
 
-    def to_list(self, localized: bool = config["misc"]["db-localtime"]) -> typing.List[str]:
+    def to_list(self, localized: bool = config["general"]["db-localtime"]) -> typing.List[str]:
         """
         Return a list of pretty formatted transaction log entries
 
@@ -337,7 +337,7 @@ class TransactionLog(BackendHelper):
 
         return logs
 
-    def to_string(self, localized: bool = config["misc"]["db-localtime"], sep: str = os.sep) -> str:
+    def to_string(self, localized: bool = config["general"]["db-localtime"], sep: str = os.sep) -> str:
         """
         Return a list of pretty formatted transaction log entries
 

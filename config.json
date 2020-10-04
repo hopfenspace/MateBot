@@ -21,9 +21,7 @@
 			"bad",
 			"deny",
 			"denied"
-		]
-	},
-	"misc": {
+		],
 		"db-localtime": false
 	},
 	"bot": {
@@ -42,6 +40,9 @@
 		"user": "username",
 		"password": "password",
 		"charset": "utf8mb4"
+	},
+	"testing":  {
+		"db": "database_name_testing"
 	},
 	"development": {
 		"notification": [],
