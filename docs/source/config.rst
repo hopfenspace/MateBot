@@ -32,13 +32,16 @@ of the different options the config file provides):
 General settings
 ~~~~~~~~~~~~~~~~
 
-The parameter ``max-amount`` specifies the heighest amount
+The parameter ``max-amount`` specifies the highest amount
 a user can send to someone else, get back by a community payment
 or collect in a communism. It is measured in Cent.
 
 The option ``max-consume`` sets the upper limit of consumed
 goods in one command. This ensures that no one executes
 something like ``/drink 10000`` which in turn avoids trouble.
+
+The flag ``db-localtime`` states whether the database returns already
+localized timestamps. This is used in formatting transactions.
 
 Bot settings
 ~~~~~~~~~~~~
@@ -95,3 +98,68 @@ user that is used by the bot to interact with the database.
     FLUSH PRIVILEGES;
 
 For more information regarding the database, see :ref:`database`.
+
+Testing Settings
+~~~~~~~~~~~~~~~~
+
+This section will be used to update/ overwrite the database section.
+So a second database can be used in tests without influencing the actual
+one.
+
+Development Settings
+~~~~~~~~~~~~~~~~~~~~
+
+In these lists a developer or admin can register chat ids
+to be notified of internal errors.
+
+When an unhandled error occurs in the execution of a command.
+The bot will go through these lists and send a message to each chat id
+contained in them. The lists correspond to the level of detail the message
+contains:
+
+``notification``
+""""""""""""""""
+receives just the error message
+
+``description``
+"""""""""""""""
+receives the whole traceback
+
+``debugging``
+"""""""""""""
+receives the traceback as well as the whole update object
+which triggered the error as json
+
+Consumables Definitions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Here you can define your own consumables.
+
+These are dynamically created commands which pay a static price corresponding
+to a consumable good. For example when someone takes a drink from the fridge
+you pay 1€ by sending a ``/drink``. Commands like this can be defined here.
+
+Each consumable needs these following parameters:
+
+``name``
+""""""""
+The commands name.
+
+``description``
+"""""""""""""""
+A custom description shown by the ``/help`` command.
+It will be created dynamically, if an empty string is given.
+
+``price``
+"""""""""
+The amount to pay in cents.
+
+``messages``
+""""""""""""
+A list of messages. One will be selected randomly an send as a reply.
+
+``symbol``
+""""""""""
+A utf8 symbol to append to the reply message. If more than one
+is consumed (by giving an integer parameter to the command), this
+symbol will be send so many times.
