@@ -9,6 +9,8 @@ import telegram
 
 from mate_bot.commands.base import BaseInlineQuery, BaseInlineResult
 from mate_bot.commands.communism import Communism
+from mate_bot.commands.pay import Pay
+from mate_bot.state.collectives import BaseCollective
 from mate_bot.state.user import MateBotUser, CommunityUser
 from mate_bot.state import finders
 
@@ -162,4 +164,8 @@ class ForwardInlineResult(BaseInlineResult):
         receiver = int(receiver)
         user = MateBotUser(MateBotUser.get_uid_from_tid(receiver))
 
-        Communism((collective_id, user, bot))
+        type_flag = bool(BaseCollective.get_type(collective_id))
+        if type_flag:
+            Communism((collective_id, user, bot))
+        else:
+            Pay((collective_id, user, bot))
