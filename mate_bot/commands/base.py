@@ -13,10 +13,35 @@ from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
 
 
-logger = logging.getLogger("command")
+class _LoggerBase:
+    """
+    Base class for anything that has to write something to the logs
+
+    This class is useful when the logging framework is configured after
+    importing the specific module, because a global ``logger`` would
+    be configured during importing. But using this class allows the
+    logger to be configured upon initialization of the used object.
+
+    Classes that inherit from this class should call ``super().__init__``
+    once, optionally specifying the logger name as ``logger_name``.
+    Afterwards, subclasses and its objects can use ``self.logger`` to
+    send logs to the named logger object of the logging framework. When
+    you specify an empty string as ``logger_name``, the root logger will
+    be used. When you specify ``None``, the class name will be used.
+
+    :param logger_name: name of the logger to use (defaults to class name)
+    :type logger_name: typing.Optional[str]
+    """
+
+    def __init__(self, logger_name: typing.Optional[str] = None):
+        if logger_name is None:
+            logger_name = type(self).__name__
+        if logger_name == "":
+            logger_name = None
+        self.logger = logging.getLogger(logger_name)
 
 
-class BaseCommand:
+class BaseCommand(_LoggerBase):
     """
     Base class for all MateBot commands executed by the CommandHandler
 
@@ -47,7 +72,7 @@ class BaseCommand:
     """
 
     def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
-
+        super().__init__()
         self.name = name
         self._usage = usage
         self.description = description
@@ -91,9 +116,7 @@ class BaseCommand:
         """
 
         try:
-            logger.debug(
-                f"Performing '{self.name}' by {update.effective_message.from_user.name}"
-            )
+            self.logger.debug(f"Called by {update.effective_message.from_user.name}")
 
             if self.name != "start":
                 if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
@@ -107,7 +130,7 @@ class BaseCommand:
             update.effective_message.reply_markdown(str(err))
 
 
-class BaseCallbackQuery:
+class BaseCallbackQuery(_LoggerBase):
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
 
@@ -148,6 +171,7 @@ class BaseCallbackQuery:
         if not isinstance(targets, dict) and targets is not None:
             raise TypeError("Expected dict or None")
 
+        super().__init__()
         self.name = name
         self.data = None
         self.targets = targets
@@ -165,6 +189,8 @@ class BaseCallbackQuery:
         """
 
         data = update.callback_query.data
+        self.logger.debug(f"Called by {update.callback_query.from_user.name} with '{data}'")
+
         if data is None:
             raise RuntimeError("No callback data found")
         if context.match is None:
@@ -206,7 +232,7 @@ class BaseCallbackQuery:
         raise NotImplementedError("Overwrite the BaseCallbackQuery.run() method in a subclass")
 
 
-class BaseInlineQuery:
+class BaseInlineQuery(_LoggerBase):
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
     """
@@ -224,7 +250,9 @@ class BaseInlineQuery:
         if not hasattr(update, "inline_query"):
             raise TypeError('Update object has no attribute "inline_query"')
 
-        self.run(update.inline_query)
+        query = update.inline_query
+        self.logger.debug(f"Called by {query.from_user.name} with '{query.query}'")
+        self.run(query)
 
     def get_result_id(self, *args) -> str:
         """
@@ -294,7 +322,7 @@ class BaseInlineQuery:
         raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
 
 
-class BaseInlineResult:
+class BaseInlineResult(_LoggerBase):
     """
     Base class for all MateBot inline query results executed by the ChosenInlineResultHandler
     """
@@ -312,7 +340,9 @@ class BaseInlineResult:
         if not hasattr(update, "chosen_inline_result"):
             raise TypeError('Update object has no attribute "chosen_inline_result"')
 
-        self.run(update.chosen_inline_result, context.bot)
+        result = update.chosen_inline_result
+        self.logger.debug(f"Called by {result.from_user.name} with '{result.result_id}'")
+        self.run(result, context.bot)
 
     def run(self, result: telegram.ChosenInlineResult, bot: telegram.Bot) -> None:
         """
