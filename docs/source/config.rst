@@ -88,7 +88,7 @@ servers are currently not supported. A user with full
 permission for the particular database is needed. Therefore,
 you could follow the instructions below to create a new
 user that is used by the bot to interact with the database.
-*Do not forget to change the password!*
+**Do not forget to change the password!**
 
 .. code-block:: sql
 
@@ -97,14 +97,18 @@ user that is used by the bot to interact with the database.
     GRANT ALL PRIVILEGES ON matedb.* TO matebot_user;
     FLUSH PRIVILEGES;
 
+If you want to be able to perform unittests as well, you
+should create a second table and configure it in the
+``testing`` section (see below).
+
 For more information regarding the database, see :ref:`database`.
 
 Testing Settings
 ~~~~~~~~~~~~~~~~
 
-This section will be used to update/ overwrite the database section.
-So a second database can be used in tests without influencing the actual
-one.
+This section will be used to update / overwrite the main database
+settings. This allows the use of a second database in tests
+without influencing the actual data in the first one.
 
 Development Settings
 ~~~~~~~~~~~~~~~~~~~~

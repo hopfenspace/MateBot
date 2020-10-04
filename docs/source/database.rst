@@ -66,7 +66,7 @@ be a string and set to a valid value. This is also enforced for virtual users.
 
 The `balance` is measured in Cent. Every new user must start with a balance of ``0``.
 
-The `permission` flag should is ``false`` by default. Any user who was
+The `permission` flag should be ``false`` by default. Any user who was
 white-listed will get the positive flag (``true``). This means that the
 user is permitted to vote on payment operations.
 
