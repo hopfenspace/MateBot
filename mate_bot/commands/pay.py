@@ -293,13 +293,19 @@ class PayCallbackQuery(BaseCallbackQuery):
                 return
 
             update.callback_query.answer("You successfully voted on this payment request.")
-            active = payment.close()
+            active, approved, disapproved = payment.close()
+            status = None
             if not active:
-                payment.edit_all_messages(
-                    payment.get_markdown(),
-                    payment._gen_inline_keyboard(),
-                    update.callback_query.bot
-                )
+                if len(approved) > len(disapproved):
+                    status = "_The payment request has been accepted._"
+                elif len(disapproved) > len(approved):
+                    status = "_The payment request has been denied._"
+
+            payment.edit_all_messages(
+                payment.get_markdown(status),
+                payment._gen_inline_keyboard(),
+                update.callback_query.bot
+            )
 
 
 """
