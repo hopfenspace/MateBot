@@ -11,10 +11,11 @@ import tzlocal as _local_tz
 
 from mate_bot.config import config
 from mate_bot.state import user
+from mate_bot.state.base import LoggerBase
 from mate_bot.state.dbhelper import BackendHelper
 
 
-class Transaction(BackendHelper):
+class Transaction(BackendHelper, LoggerBase):
     """
     Money transactions between two users
 
@@ -40,6 +41,7 @@ class Transaction(BackendHelper):
             amount: int,
             reason: typing.Optional[str] = None
     ):
+        super().__init__()
 
         if amount <= 0:
             raise ValueError("Not a positive amount!")
@@ -126,6 +128,10 @@ class Transaction(BackendHelper):
             raise RuntimeError("Sender equals receiver!")
 
         if not self._committed and self._id is None:
+            self.logger.info(
+                f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
+            )
+
             connection = None
             try:
                 self._src.update()
