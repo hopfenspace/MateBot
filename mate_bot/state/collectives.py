@@ -10,11 +10,12 @@ import tzlocal as _local_tz
 import telegram
 
 from mate_bot import err
+from mate_bot.state.base import LoggerBase
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-class BaseCollective(BackendHelper):
+class BaseCollective(BackendHelper, LoggerBase):
     """
     Base class for collective operations
 

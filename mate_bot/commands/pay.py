@@ -37,6 +37,7 @@ class Pay(BaseCollective):
     _ALLOWED_COLUMNS = ["active"]
 
     def __init__(self, arguments: PAYMENT_ARGUMENTS):
+        super().__init__()
 
         if isinstance(arguments, int):
             self._id = arguments

@@ -3,45 +3,17 @@ MateBot command handling base library
 """
 
 import typing
-import logging
 
 import telegram.ext
 
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.base import LoggerBase
 from mate_bot.state.user import MateBotUser
 
 
-class _LoggerBase:
-    """
-    Base class for anything that has to write something to the logs
-
-    This class is useful when the logging framework is configured after
-    importing the specific module, because a global ``logger`` would
-    be configured during importing. But using this class allows the
-    logger to be configured upon initialization of the used object.
-
-    Classes that inherit from this class should call ``super().__init__``
-    once, optionally specifying the logger name as ``logger_name``.
-    Afterwards, subclasses and its objects can use ``self.logger`` to
-    send logs to the named logger object of the logging framework. When
-    you specify an empty string as ``logger_name``, the root logger will
-    be used. When you specify ``None``, the class name will be used.
-
-    :param logger_name: name of the logger to use (defaults to class name)
-    :type logger_name: typing.Optional[str]
-    """
-
-    def __init__(self, logger_name: typing.Optional[str] = None):
-        if logger_name is None:
-            logger_name = type(self).__name__
-        if logger_name == "":
-            logger_name = None
-        self.logger = logging.getLogger(logger_name)
-
-
-class BaseCommand(_LoggerBase):
+class BaseCommand(LoggerBase):
     """
     Base class for all MateBot commands executed by the CommandHandler
 
@@ -130,7 +102,7 @@ class BaseCommand(_LoggerBase):
             update.effective_message.reply_markdown(str(err))
 
 
-class BaseCallbackQuery(_LoggerBase):
+class BaseCallbackQuery(LoggerBase):
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
 
@@ -232,7 +204,7 @@ class BaseCallbackQuery(_LoggerBase):
         raise NotImplementedError("Overwrite the BaseCallbackQuery.run() method in a subclass")
 
 
-class BaseInlineQuery(_LoggerBase):
+class BaseInlineQuery(LoggerBase):
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
     """
@@ -322,7 +294,7 @@ class BaseInlineQuery(_LoggerBase):
         raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
 
 
-class BaseInlineResult(_LoggerBase):
+class BaseInlineResult(LoggerBase):
     """
     Base class for all MateBot inline query results executed by the ChosenInlineResultHandler
     """
