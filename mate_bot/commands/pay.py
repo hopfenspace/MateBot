@@ -151,29 +151,30 @@ class Pay(BaseCollective):
             ]
         ])
 
-    def close(self) -> bool:
+    def close(self) -> typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]:
         """
         Check if the payment is fulfilled, then close it and perform the transactions
 
-        The returned value determines whether the payment request is still
+        The first returned value determines whether the payment request is still
         valid and open for further votes (``True``) or closed due to enough
         approving / disapproving votes (``False``). Use it to easily
-        determine the status for the returned message to the user(s).
+        determine the status for the returned message to the user(s). The two
+        lists of approving and disapproving users is just added for convenience.
 
-        :return: whether the payment request is still open for further votes
-        :rtype: bool
+        :return: a tuple containing the information whether the payment request is
+            still open for further votes and the approving and disapproving user lists
+        :rtype: typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]
         """
 
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
-            return False
+            return False, approved, disapproved
 
         elif len(disapproved) - len(approved) >= config["community"]["payment-denial"]:
-            return False
+            return False, approved, disapproved
 
-        else:
-            return True
+        return True, approved, disapproved
 
 
 class PayCommand(BaseCommand):
