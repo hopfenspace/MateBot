@@ -3,17 +3,20 @@ MateBot command handling base library
 """
 
 import typing
+import logging
 
 import telegram.ext
 
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.base import LoggerBase
 from mate_bot.state.user import MateBotUser
 
 
-class BaseCommand(LoggerBase):
+logger = logging.getLogger("commands")
+
+
+class BaseCommand:
     """
     Base class for all MateBot commands executed by the CommandHandler
 
@@ -88,7 +91,7 @@ class BaseCommand(LoggerBase):
         """
 
         try:
-            self.logger.debug(f"Called by {update.effective_message.from_user.name}")
+            logger.debug(f"Command by {update.effective_message.from_user.name}")
 
             if self.name != "start":
                 if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
@@ -102,7 +105,7 @@ class BaseCommand(LoggerBase):
             update.effective_message.reply_markdown(str(err))
 
 
-class BaseCallbackQuery(LoggerBase):
+class BaseCallbackQuery:
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
 
@@ -161,7 +164,7 @@ class BaseCallbackQuery(LoggerBase):
         """
 
         data = update.callback_query.data
-        self.logger.debug(f"Called by {update.callback_query.from_user.name} with '{data}'")
+        logger.debug(f"CallbackQuery by {update.callback_query.from_user.name} with '{data}'")
 
         if data is None:
             raise RuntimeError("No callback data found")
@@ -204,7 +207,7 @@ class BaseCallbackQuery(LoggerBase):
         raise NotImplementedError("Overwrite the BaseCallbackQuery.run() method in a subclass")
 
 
-class BaseInlineQuery(LoggerBase):
+class BaseInlineQuery:
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
     """
@@ -223,7 +226,7 @@ class BaseInlineQuery(LoggerBase):
             raise TypeError('Update object has no attribute "inline_query"')
 
         query = update.inline_query
-        self.logger.debug(f"Called by {query.from_user.name} with '{query.query}'")
+        logger.debug(f"InlineQuery by {query.from_user.name} with '{query.query}'")
         self.run(query)
 
     def get_result_id(self, *args) -> str:
@@ -294,7 +297,7 @@ class BaseInlineQuery(LoggerBase):
         raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
 
 
-class BaseInlineResult(LoggerBase):
+class BaseInlineResult:
     """
     Base class for all MateBot inline query results executed by the ChosenInlineResultHandler
     """
@@ -313,7 +316,7 @@ class BaseInlineResult(LoggerBase):
             raise TypeError('Update object has no attribute "chosen_inline_result"')
 
         result = update.chosen_inline_result
-        self.logger.debug(f"Called by {result.from_user.name} with '{result.result_id}'")
+        logger.debug(f"InlineResult by {result.from_user.name} with '{result.result_id}'")
         self.run(result, context.bot)
 
     def run(self, result: telegram.ChosenInlineResult, bot: telegram.Bot) -> None:

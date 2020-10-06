@@ -2,6 +2,7 @@
 MateBot command executor classes for /help
 """
 
+import logging
 import datetime
 
 import telegram
@@ -10,6 +11,9 @@ from mate_bot.commands.base import BaseCommand, BaseInlineQuery
 from mate_bot.commands.registry import COMMANDS
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class HelpCommand(BaseCommand):

@@ -5,17 +5,20 @@ MateBot money transaction (sending/receiving) helper library
 import os
 import time
 import typing
+import logging
 
 import pytz as _tz
 import tzlocal as _local_tz
 
 from mate_bot.config import config
 from mate_bot.state import user
-from mate_bot.state.base import LoggerBase
 from mate_bot.state.dbhelper import BackendHelper
 
 
-class Transaction(BackendHelper, LoggerBase):
+logger = logging.getLogger("state")
+
+
+class Transaction(BackendHelper):
     """
     Money transactions between two users
 
@@ -128,7 +131,7 @@ class Transaction(BackendHelper, LoggerBase):
             raise RuntimeError("Sender equals receiver!")
 
         if not self._committed and self._id is None:
-            self.logger.info(
+            logger.info(
                 f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
             )
 

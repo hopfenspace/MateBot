@@ -4,6 +4,7 @@ MateBot user definitions
 
 from __future__ import annotations
 import typing
+import logging
 import datetime as _datetime
 
 import pytz as _tz
@@ -12,6 +13,9 @@ import pymysql.err as _err
 import telegram as _telegram
 
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
+
+
+logger = logging.getLogger("state")
 
 
 class BaseBotUser(BackendHelper):

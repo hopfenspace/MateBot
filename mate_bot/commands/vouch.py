@@ -2,6 +2,8 @@
 MateBot command executor classes for /vouch
 """
 
+import logging
+
 import telegram
 
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
@@ -9,6 +11,9 @@ from mate_bot.parsing import types
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.transactions import Transaction
+
+
+logger = logging.getLogger("commands")
 
 
 class VouchCommand(BaseCommand):

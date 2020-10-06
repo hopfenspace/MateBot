@@ -2,6 +2,8 @@
 MateBot command executor classes for /send
 """
 
+import logging
+
 import telegram
 
 from mate_bot.parsing.types import amount as amount_type
@@ -10,6 +12,9 @@ from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.transactions import Transaction
+
+
+logger = logging.getLogger("commands")
 
 
 class SendCommand(BaseCommand):

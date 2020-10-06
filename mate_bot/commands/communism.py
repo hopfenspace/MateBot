@@ -3,6 +3,7 @@ MateBot command executor classes for /communism and its callback queries
 """
 
 import typing
+import logging
 
 import telegram.ext
 
@@ -21,6 +22,9 @@ COMMUNISM_ARGUMENTS = typing.Union[
     typing.Tuple[int, MateBotUser, telegram.Bot],
     typing.Tuple[MateBotUser, int, str, telegram.Message]
 ]
+
+
+logger = logging.getLogger("comamnds")
 
 
 class Communism(BaseCollective):

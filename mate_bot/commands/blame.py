@@ -2,11 +2,16 @@
 MateBot command executor classes for /blame
 """
 
+import logging
+
 import telegram
 
 from mate_bot.commands.base import BaseCommand
 from mate_bot.state.user import MateBotUser
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class BlameCommand(BaseCommand):

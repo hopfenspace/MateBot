@@ -4,6 +4,7 @@ MateBot command executor classes for /history
 
 import csv
 import json
+import logging
 import tempfile
 
 import telegram
@@ -13,6 +14,9 @@ from mate_bot.state.transactions import TransactionLog
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand
+
+
+logger = logging.getLogger("commands")
 
 
 class HistoryCommand(BaseCommand):

@@ -2,11 +2,16 @@
 MateBot command executor classes for /zwegat
 """
 
+import logging
+
 import telegram
 
 from mate_bot.state.user import CommunityUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class ZwegatCommand(BaseCommand):

@@ -3,6 +3,7 @@ MateBot group transaction ("collective operation") base library
 """
 
 import typing
+import logging
 import datetime
 
 import pytz as _tz
@@ -10,12 +11,14 @@ import tzlocal as _local_tz
 import telegram
 
 from mate_bot import err
-from mate_bot.state.base import LoggerBase
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-class BaseCollective(BackendHelper, LoggerBase):
+logger = logging.getLogger("state")
+
+
+class BaseCollective(BackendHelper):
     """
     Base class for collective operations
 

@@ -2,6 +2,7 @@
 MateBot command executor classes for any kind of consuming action
 """
 
+import logging
 import random as _random
 import typing as _typing
 
@@ -13,6 +14,9 @@ from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.transactions import Transaction
+
+
+logger = logging.getLogger("commands")
 
 
 class ConsumeCommand(BaseCommand):

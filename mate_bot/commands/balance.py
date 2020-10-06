@@ -2,12 +2,17 @@
 MateBot command executor classes for /balance
 """
 
+import logging
+
 import telegram
 
 from mate_bot.state.user import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class BalanceCommand(BaseCommand):

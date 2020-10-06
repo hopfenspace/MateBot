@@ -3,6 +3,7 @@ MateBot command executor classes for /pay and its callback queries
 """
 
 import typing
+import logging
 
 import telegram
 
@@ -21,6 +22,9 @@ PAYMENT_ARGUMENTS = typing.Union[
     typing.Tuple[int, MateBotUser, telegram.Bot],
     typing.Tuple[MateBotUser, int, str, telegram.Message]
 ]
+
+
+logger = logging.getLogger("commands")
 
 
 class Pay(BaseCollective):

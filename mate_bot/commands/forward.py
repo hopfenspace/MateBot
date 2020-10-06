@@ -3,6 +3,7 @@ MateBot inline query executors to forward collective operations
 """
 
 import typing
+import logging
 import datetime
 
 import telegram
@@ -13,6 +14,9 @@ from mate_bot.commands.pay import Pay
 from mate_bot.state.collectives import BaseCollective
 from mate_bot.state.user import MateBotUser, CommunityUser
 from mate_bot.state import finders
+
+
+logger = logging.getLogger("commands")
 
 
 class ForwardInlineQuery(BaseInlineQuery):
