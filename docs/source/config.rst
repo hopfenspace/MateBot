@@ -99,57 +99,40 @@ without influencing the actual data in the first one.
 Development Settings
 --------------------
 
-In these lists a developer or admin can register chat ids
-to be notified of internal errors.
+The following set of lists stores Telegram chat IDs. The bot
+will send messages to those chats in case an internal error occurs.
+The lists define the level of detail for the sent message:
 
-When an unhandled error occurs in the execution of a command.
-The bot will go through these lists and send a message to each chat id
-contained in them. The lists correspond to the level of detail the message
-contains:
+  - ``notification``
+    receives the error message of error but not the error type.
+  - ``description``
+    receives the whole traceback of the error.
+  - ``debugging``
+    receives the traceback similar to the previous list as well as
+    the whole Update object associated with the error. This Update
+    object will be indented and formatted using like JSON data.
 
-``notification``
-""""""""""""""""
-receives just the error message
+Consumable Definitions
+----------------------
 
-``description``
-"""""""""""""""
-receives the whole traceback
+Here you can define your own "consumables". Every kind
+of food and drink should be treated as such. These are
+dynamically created commands which let you pay a
+static price corresponding to a consumable good.
 
-``debugging``
-"""""""""""""
-receives the traceback as well as the whole update object
-which triggered the error as json
+For example, in the default configuration, you can perform
+a ``/drink`` command when you take a drink out of the fridge.
+This will make you pay the static amount to the community user.
+In our defaults, this are 100 units of money, where the unit
+is Cent by default. You can create your own commands for
+consumption using the following parameters:
 
-Consumables Definitions
------------------------
-
-Here you can define your own consumables.
-
-These are dynamically created commands which pay a static price corresponding
-to a consumable good. For example when someone takes a drink from the fridge
-you pay 1€ by sending a ``/drink``. Commands like this can be defined here.
-
-Each consumable needs these following parameters:
-
-``name``
-""""""""
-The commands name.
-
-``description``
-"""""""""""""""
-A custom description shown by the ``/help`` command.
-It will be created dynamically, if an empty string is given.
-
-``price``
-"""""""""
-The amount to pay in cents.
-
-``messages``
-""""""""""""
-A list of messages. One will be selected randomly an send as a reply.
-
-``symbol``
-""""""""""
-A utf8 symbol to append to the reply message. If more than one
-is consumed (by giving an integer parameter to the command), this
-symbol will be send so many times.
+  - ``name`` refers to the command's name.
+  - ``description`` is a custom description shown by the ``/help``
+    command. It will be created dynamically, if an empty string is given.
+  - ``price`` refers to the static amount of money to pay.
+  - ``messages`` is a list of strings. One of those messages will be chosen
+    randomly as a reply to the user when successfully paying the money.
+  - ``symbol`` is a UTF-8 symbol to append to the reply message.
+    If more than one of the goods is consumed (by giving an integer parameter
+    to the command), this symbol will be send so many times.
