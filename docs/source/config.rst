@@ -41,6 +41,8 @@ a security measure, as all money transactions via the bot
 are publicly visible by all members of the group (because
 it's only useful if the chat ID refers to a Telegram group).
 
+.. _config_community:
+
 Community settings
 ------------------
 
