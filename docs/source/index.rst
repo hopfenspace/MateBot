@@ -4,10 +4,10 @@ Welcome to MateBot's documentation!
 
 .. toctree::
     :maxdepth: 2
-    
+
     installation
     config
-    codeconventions
+    code_conventions
     code/index
     database
 
