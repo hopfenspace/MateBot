@@ -9,7 +9,6 @@ from telegram.ext import (
     Filters, InlineQueryHandler
 )
 
-
 from mate_bot import err
 from mate_bot import log
 from mate_bot import registry
@@ -26,17 +25,27 @@ handler_types = typing.Union[
 ]
 
 
-def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool):
+def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool = True) -> None:
+    """
+    Add the executors from the given pool to the dispatcher using the given handler type
+
+    :param dispatcher: Telegram's dispatcher to add the executor to
+    :type dispatcher: telegram.ext.Dispatcher
+    :param handler: type of the handler (subclass of ``telegram.ext.Handler``)
+    :type handler: handler_types
+    :param pool: collection of all executors for one handler type
+    :type pool: dict
+    :param pattern: switch whether the keys of the pool are patterns or names
+    :type pattern: bool
+    :return: None
+    """
+
     logger.info(f"Adding {handler.__name__} executors...")
     for name in pool:
         if pattern:
-            dispatcher.add_handler(handler(
-                pool[name], pattern=name
-            ))
+            dispatcher.add_handler(handler(pool[name], pattern=name))
         else:
-            dispatcher.add_handler(handler(
-                name, pool[name]
-            ))
+            dispatcher.add_handler(handler(name, pool[name]))
 
 
 if __name__ == "__main__":
