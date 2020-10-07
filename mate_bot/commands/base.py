@@ -7,6 +7,7 @@ import logging
 
 import telegram.ext
 
+from mate_bot import registry
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
@@ -52,6 +53,8 @@ class BaseCommand:
         self._usage = usage
         self.description = description
         self.parser = CommandParser(self.name)
+
+        registry.commands[self.name] = self
 
     @property
     def usage(self):
@@ -134,11 +137,14 @@ class BaseCallbackQuery:
     def __init__(
             self,
             name: str,
+            pattern: str,
             targets: typing.Optional[typing.Dict[str, typing.Callable]] = None
     ):
         """
         :param name: name of the command the callback is for
         :type name: str
+        :param pattern: regular expression to filter callback query executors
+        :type pattern: str
         :param targets: dict to associate data replies with function calls
         :type targets: typing.Optional[typing.Dict[str, typing.Callable]]
         """
@@ -148,8 +154,11 @@ class BaseCallbackQuery:
 
         super().__init__()
         self.name = name
+        self.pattern = pattern
         self.data = None
         self.targets = targets
+
+        registry.callback_queries[self.pattern] = self
 
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
         """
@@ -210,7 +219,15 @@ class BaseCallbackQuery:
 class BaseInlineQuery:
     """
     Base class for all MateBot inline queries executed by the InlineQueryHandler
+
+    :param pattern: regular expression to filter inline query executors
+    :type pattern: str
     """
+
+    def __init__(self, pattern: str):
+        self.pattern = pattern
+
+        registry.inline_queries[self.pattern] = self
 
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
         """
@@ -300,7 +317,15 @@ class BaseInlineQuery:
 class BaseInlineResult:
     """
     Base class for all MateBot inline query results executed by the ChosenInlineResultHandler
+
+    :param pattern: regular expression to filter inline result executors
+    :type pattern: str
     """
+
+    def __init__(self, pattern: str):
+        self.pattern = pattern
+
+        registry.inline_results[self.pattern] = self
 
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
         """
