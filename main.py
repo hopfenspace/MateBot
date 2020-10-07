@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
+import typing
 import logging
 
 from telegram.ext import (
-    Updater, CommandHandler,
+    Updater, Dispatcher, CommandHandler,
     CallbackQueryHandler,
     Filters, InlineQueryHandler
 )
@@ -11,37 +12,31 @@ from telegram.ext import (
 
 from mate_bot import err
 from mate_bot import log
+from mate_bot import registry
 from mate_bot.config import config
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
-from mate_bot.commands.registry import COMMANDS as COMMAND_REGISTRY
-from mate_bot.commands.communism import CommunismCallbackQuery
-from mate_bot.commands.forward import ForwardInlineQuery, ForwardInlineResult
-from mate_bot.commands.help import HelpInlineQuery
-from mate_bot.commands.pay import PayCallbackQuery
-from mate_bot.commands.send import SendCallbackQuery
-from mate_bot.commands.vouch import VouchCallbackQuery
 from mate_bot.state.dbhelper import BackendHelper
 
 
-COMMANDS = {
-    Filters.all: COMMAND_REGISTRY.commands_as_dict
-}
+handler_types = typing.Union[
+    typing.Type[CommandHandler],
+    typing.Type[CallbackQueryHandler],
+    typing.Type[InlineQueryHandler],
+    typing.Type[FilteredChosenInlineResultHandler]
+]
 
-HANDLERS = {
-    CallbackQueryHandler: {
-        "^communism": CommunismCallbackQuery(),
-        "^pay": PayCallbackQuery(),
-        "^send": SendCallbackQuery(),
-        "^vouch": VouchCallbackQuery()
-    },
-    InlineQueryHandler: {
-        r"^\d+(\s?\S?)*": ForwardInlineQuery(),
-        "": HelpInlineQuery()
-    },
-    FilteredChosenInlineResultHandler: {
-        r"^forward-\d+-\d+-\d+": ForwardInlineResult()
-    }
-}
+
+def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool):
+    logger.info(f"Adding {type(handler)} executors...")
+    for name in pool:
+        if pattern:
+            dispatcher.add_handler(handler(
+                pool[name], pattern=pattern
+            ))
+        else:
+            dispatcher.add_handler(handler(
+                name, pool[name]
+            ))
 
 
 if __name__ == "__main__":
@@ -55,17 +50,10 @@ if __name__ == "__main__":
     logger.info("Adding error handler...")
     updater.dispatcher.add_error_handler(err.log_error)
 
-    logger.info("Adding command handlers...")
-    for cmd_filter, commands in COMMANDS.items():
-        for name, cmd in commands.items():
-            updater.dispatcher.add_handler(
-                CommandHandler(name, cmd, filters=cmd_filter)
-            )
-
-    logger.info("Adding other handlers...")
-    for handler in HANDLERS:
-        for pattern in HANDLERS[handler]:
-            updater.dispatcher.add_handler(handler(HANDLERS[handler][pattern], pattern=pattern))
+    _add(updater.dispatcher, CommandHandler, registry.commands, False)
+    _add(updater.dispatcher, CallbackQueryHandler, registry.callback_queries, True)
+    _add(updater.dispatcher, InlineQueryHandler, registry.inline_queries, True)
+    _add(updater.dispatcher, FilteredChosenInlineResultHandler, registry.inline_results, True)
 
     logger.info("Starting bot...")
     updater.start_polling()
