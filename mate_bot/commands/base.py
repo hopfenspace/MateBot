@@ -48,7 +48,6 @@ class BaseCommand:
     """
 
     def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
-        super().__init__()
         self.name = name
         self._usage = usage
         self.description = description
@@ -94,7 +93,7 @@ class BaseCommand:
         """
 
         try:
-            logger.debug(f"Command by {update.effective_message.from_user.name}")
+            logger.debug(f"{type(self).__name__} by {update.effective_message.from_user.name}")
 
             if self.name != "start":
                 if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
@@ -132,6 +131,13 @@ class BaseCallbackQuery:
     data should by convention start with "hello". So, you set
     "hello" as the name of this handler. Furthermore, you set
     "^hello" as pattern to filter callback queries against.
+
+    :param name: name of the command the callback is for
+    :type name: str
+    :param pattern: regular expression to filter callback query executors
+    :type pattern: str
+    :param targets: dict to associate data replies with function calls
+    :type targets: Optional[typing.Dict[str, typing.Callable]]
     """
 
     def __init__(
@@ -140,19 +146,10 @@ class BaseCallbackQuery:
             pattern: str,
             targets: typing.Optional[typing.Dict[str, typing.Callable]] = None
     ):
-        """
-        :param name: name of the command the callback is for
-        :type name: str
-        :param pattern: regular expression to filter callback query executors
-        :type pattern: str
-        :param targets: dict to associate data replies with function calls
-        :type targets: typing.Optional[typing.Dict[str, typing.Callable]]
-        """
 
         if not isinstance(targets, dict) and targets is not None:
             raise TypeError("Expected dict or None")
 
-        super().__init__()
         self.name = name
         self.pattern = pattern
         self.data = None
@@ -173,7 +170,7 @@ class BaseCallbackQuery:
         """
 
         data = update.callback_query.data
-        logger.debug(f"CallbackQuery by {update.callback_query.from_user.name} with '{data}'")
+        logger.debug(f"{type(self).__name__} by {update.callback_query.from_user.name} with '{data}'")
 
         if data is None:
             raise RuntimeError("No callback data found")
@@ -243,7 +240,7 @@ class BaseInlineQuery:
             raise TypeError('Update object has no attribute "inline_query"')
 
         query = update.inline_query
-        logger.debug(f"InlineQuery by {query.from_user.name} with '{query.query}'")
+        logger.debug(f"{type(self).__name__} by {query.from_user.name} with '{query.query}'")
         self.run(query)
 
     def get_result_id(self, *args) -> str:
@@ -341,7 +338,7 @@ class BaseInlineResult:
             raise TypeError('Update object has no attribute "chosen_inline_result"')
 
         result = update.chosen_inline_result
-        logger.debug(f"InlineResult by {result.from_user.name} with '{result.result_id}'")
+        logger.debug(f"{type(self).__name__} by {result.from_user.name} with '{result.result_id}'")
         self.run(result, context.bot)
 
     def run(self, result: telegram.ChosenInlineResult, bot: telegram.Bot) -> None:
