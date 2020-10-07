@@ -27,7 +27,7 @@ handler_types = typing.Union[
 
 
 def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool):
-    logger.info(f"Adding {type(handler)} executors...")
+    logger.info(f"Adding {handler.__name__} executors...")
     for name in pool:
         if pattern:
             dispatcher.add_handler(handler(
