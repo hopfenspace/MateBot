@@ -11,6 +11,7 @@ from mate_bot import registry
 from mate_bot.commands.base import BaseCommand, BaseInlineQuery
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")
@@ -47,7 +48,18 @@ class HelpCommand(BaseCommand):
             msg += args.command.description
         else:
             commands = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
-            msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
+            msg = f"{self.usage}\n\nList of commands:\n\n{commands}"
+            user = MateBotUser(update.effective_message.from_user)
+            if user.external:
+                msg += "\n\nYou are an external user. Some commands may be restricted."
+                if user.creditor is None:
+                    msg += (
+                        "\nYou don't have any creditor. Your possible interactions "
+                        "with the bot are very limited for security purposes. You "
+                        "can ask some internal user to act as your voucher. To "
+                        "do this, the internal user needs to execute `/vouch "
+                        "<your username>`. Afterwards, you may use this bot."
+                    )
 
         if msg == "":
             update.effective_message.reply_text(
