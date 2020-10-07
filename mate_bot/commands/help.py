@@ -7,8 +7,8 @@ import datetime
 
 import telegram
 
+from mate_bot import registry
 from mate_bot.commands.base import BaseCommand, BaseInlineQuery
-from mate_bot.commands.registry import COMMANDS
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
 
@@ -46,7 +46,7 @@ class HelpCommand(BaseCommand):
                    "*Description:*\n"
             msg += args.command.description
         else:
-            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(COMMANDS.commands_as_dict.keys())))
+            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
 
         if msg == "":
