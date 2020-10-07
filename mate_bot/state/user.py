@@ -447,6 +447,7 @@ class MateBotUser(BaseBotUser):
             if not use_tid:
                 raise _err.DataError(f"User ID {self._id} was not found in the database.")
 
+            logger.info(f"Registering new user {self._user.name} (ID {self._user.id})...")
             self._execute(
                 "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
                 (self._user.id, self._user.username, self._user.full_name)

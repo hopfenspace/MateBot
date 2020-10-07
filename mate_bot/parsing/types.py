@@ -109,6 +109,6 @@ def command(arg: str) -> BaseCommand:
     """
 
     try:
-        return registry.commands[arg]
+        return registry.commands[arg.lower()]
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")

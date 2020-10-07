@@ -14,7 +14,7 @@ from telegram.ext import CallbackContext as _CallbackContext
 from mate_bot.config import config as _config
 
 
-_logger = _logging.getLogger(__name__)
+_logger = _logging.getLogger("error")
 
 
 class MateBotException(Exception):
