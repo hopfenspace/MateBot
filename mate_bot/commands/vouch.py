@@ -160,7 +160,7 @@ class VouchCallbackQuery(BaseCallbackQuery):
     """
 
     def __init__(self):
-        super().__init__("vouch")
+        super().__init__("vouch", "^vouch")
 
     def run(self, update: telegram.Update) -> None:
         """

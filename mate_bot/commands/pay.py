@@ -259,7 +259,7 @@ class PayCallbackQuery(BaseCallbackQuery):
     """
 
     def __init__(self):
-        super().__init__("pay")
+        super().__init__("pay", "^pay")
 
     def _get_payment(self, query: telegram.CallbackQuery) -> typing.Optional[Pay]:
         """

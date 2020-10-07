@@ -69,7 +69,7 @@ class SendCallbackQuery(BaseCallbackQuery):
     """
 
     def __init__(self):
-        super().__init__("send")
+        super().__init__("send", "^send")
 
     def run(self, update: telegram.Update) -> None:
         """

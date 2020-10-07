@@ -375,6 +375,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
     def __init__(self):
         super().__init__(
             "communism",
+            "^communism",
             {
                 "toggle": self.toggle,
                 "increase": self.increase,
