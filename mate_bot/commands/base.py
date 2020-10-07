@@ -8,6 +8,7 @@ import logging
 import telegram.ext
 
 from mate_bot import registry
+from mate_bot.config import config
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
@@ -31,7 +32,7 @@ class BaseCommand:
 
         class ExampleCommand(BaseCommand):
             def __init__(self):
-                super().__init__("example")
+                super().__init__("example", "Example command")
                 self.parser.add_argument("number", type=int)
 
             def run(self, args: argparse.Namespace, update: telegram.Update) -> None:
@@ -78,6 +79,45 @@ class BaseCommand:
 
         raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
 
+    def _verify_internal_membership(
+            self,
+            update: telegram.Update,
+            user: MateBotUser,
+            bot: telegram.Bot
+    ) -> None:
+        """
+        Verify that a user who calls a command from the internal chat is marked as internal user
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :param user: existing MateBotUser that executed a command (not ``/start``)
+        :type user: MateBotUser
+        :param bot: Telegram Bot object that can send messages to clients
+        :type bot: telegram.Bot
+        :return: None
+        """
+
+        external = update.effective_message.chat.id != config["bot"]["chat"]
+        if external or not user.external:
+            return
+
+        creditor = user.creditor
+        if creditor is None:
+            user.external = external
+            bot.send_message(
+                user.tid,
+                "Your account was updated. You are now an internal "
+                f"user because you executed /{self.name} in an internal chat."
+            )
+        else:
+            bot.send_message(
+                user.tid,
+                f"You receive this message because you executed /{self.name} in "
+                f"an internal chat. It looks like {MateBotUser(creditor)} vouches "
+                f"for you. You can't have a voucher when you try to become an internal "
+                f"user. Therefore, your account status was not updated."
+            )
+
     def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
         """
         Parse arguments of the incoming update and execute the .run() method
@@ -99,6 +139,9 @@ class BaseCommand:
                 if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
                     update.effective_message.reply_text("You need to /start first.")
                     return
+
+                user = MateBotUser(update.effective_message.from_user)
+                self._verify_internal_membership(update, user, context.bot)
 
             args = self.parser.parse(update.effective_message)
             self.run(args, update)
