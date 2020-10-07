@@ -31,7 +31,7 @@ def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bo
     for name in pool:
         if pattern:
             dispatcher.add_handler(handler(
-                pool[name], pattern=pattern
+                pool[name], pattern=name
             ))
         else:
             dispatcher.add_handler(handler(
