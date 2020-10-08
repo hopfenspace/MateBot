@@ -8,6 +8,7 @@ import logging
 import telegram.ext
 
 from mate_bot import err
+from mate_bot.config import config
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
@@ -109,6 +110,15 @@ class Communism(BaseCollective):
                 reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
                 self.register_message(reply.chat_id, reply.message_id)
 
+                if message.chat_id != config["bot"]["chat"]:
+                    msg = message.bot.send_message(
+                        config["bot"]["chat"],
+                        self.get_markdown(),
+                        reply_markup=self._gen_inline_keyboard(),
+                        parse_mode="Markdown"
+                    )
+                    self.register_message(msg.chat_id, msg.message_id)
+
             else:
                 raise ValueError("Expected three or four arguments for the tuple")
 
@@ -146,6 +156,8 @@ class Communism(BaseCollective):
 
         if self.active:
             markdown += "\n_The communism is currently active._"
+        elif not self.active:
+            markdown += "\n_The communism has been closed._"
         elif self._fulfilled is not None:
             if self._fulfilled:
                 markdown += "\n_The communism was closed. All transactions have been processed._"
