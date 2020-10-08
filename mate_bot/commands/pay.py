@@ -336,7 +336,7 @@ class PayCallbackQuery(BaseCallbackQuery):
                 return
 
             update.callback_query.answer("You successfully voted on this payment request.")
-            active, approved, disapproved = payment.close()
+            active, approved, disapproved = payment.close(update.callback_query.bot)
             status = None
             if not active:
                 if len(approved) > len(disapproved):

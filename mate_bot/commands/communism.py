@@ -237,7 +237,7 @@ class Communism(BaseCollective):
         :rtype: bool
         """
 
-        if not self.close():
+        if not self.close(bot):
             return False
 
         self._fulfilled = True
