@@ -49,8 +49,7 @@ class VouchCommand(BaseCommand):
         """
 
         owner = MateBotUser(update.effective_message.from_user)
-        if owner.external:
-            update.effective_message.reply_text("You can't perform this command.")
+        if not self.ensure_permissions(owner, 2, update.effective_message):
             return
 
         def reply(text: str) -> None:

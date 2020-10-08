@@ -6,7 +6,7 @@ import logging
 
 import telegram
 
-from mate_bot.state.user import CommunityUser
+from mate_bot.state.user import CommunityUser, MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 
@@ -30,6 +30,10 @@ class ZwegatCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
+        user = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(user, 2, update.effective_message):
+            return
 
         total = CommunityUser().balance / 100
         if total >= 0:

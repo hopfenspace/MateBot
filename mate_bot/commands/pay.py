@@ -241,6 +241,8 @@ class PayCommand(BaseCommand):
         """
 
         user = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(user, 1, update.effective_message):
+            return
 
         if args.subcommand is None:
             if Pay.has_user_active_collective(user):

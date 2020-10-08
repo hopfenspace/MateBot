@@ -47,6 +47,9 @@ class SendCommand(BaseCommand):
             update.effective_message.reply_text("You can't send money to yourself!")
             return
 
+        if not self.ensure_permissions(sender, 1, update.effective_message):
+            return
+
         def e(variant: str) -> str:
             return f"send {variant} {args.amount} {sender.uid} {args.receiver.uid}"
 

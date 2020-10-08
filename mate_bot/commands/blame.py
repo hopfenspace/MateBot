@@ -34,6 +34,10 @@ class BlameCommand(BaseCommand):
         :return: None
         """
 
+        user = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(user, 2, update.effective_message):
+            return
+
         debtors = MateBotUser.get_worst_debtors()
         if len(debtors) == 0:
             update.effective_message.reply_text(

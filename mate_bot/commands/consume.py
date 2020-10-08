@@ -58,15 +58,17 @@ class ConsumeCommand(BaseCommand):
         :return: None
         """
 
+        sender = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(sender, 1, update.effective_message):
+            return
+
         if args.number > config["general"]["max-consume"]:
             update.effective_message.reply_text(
                 "You can't consume that many goods at once!"
             )
             return
 
-        sender = MateBotUser(update.effective_message.from_user)
         reason = f"consume: {args.number}x {self.name}"
-
         trans = Transaction(
             sender,
             CommunityUser(),
