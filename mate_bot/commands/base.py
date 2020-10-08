@@ -79,6 +79,70 @@ class BaseCommand:
 
         raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
 
+    def ensure_permissions(self, user: MateBotUser, level: int, msg: telegram.Message) -> bool:
+        """
+        Ensure that a user is allowed to perform an operation that requires specific permissions
+
+        The parameter ``level`` is an integer and determines the required
+        permission level. It's not calculated but rather interpreted:
+
+          * ``0`` means that any user is allowed to perform the task
+          * ``1`` means that any internal user or external user with voucher is allowed
+          * ``2`` means that only internal users are allowed
+          * ``3`` means that only internal users with vote permissions are allowed
+          * any other value will lead to a ValueError
+
+        .. note::
+
+            This method will automatically reply to the incoming message when
+            the necessary permissions are not fulfilled. Use the return value
+            to determine whether you should simply quit further execution of
+            your method (returned ``False``) or not (returned ``True``).
+
+        :param user: MateBotUser that tries to execute a specific command
+        :type user: MateBotUser
+        :param level: minimal required permission level to be allowed to perform some action
+        :type level: int
+        :param msg: incoming message containing the command in question
+        :type msg: telegram.Message
+        :return: whether further access should be allowed (``True``) or not
+        :rtype: bool
+        :raises TypeError: when the level is no integer
+        :raises ValueError: when the level is not one of the accepted integer values
+        """
+
+        if not isinstance(level, int):
+            raise TypeError(f"Expected int as level, got {type(level)} instead")
+        if level not in range(4):
+            raise ValueError(f"Permission level {level} out of range 0-3")
+
+        if level == 0:
+            return True
+
+        if level == 1 and user.external and user.creditor is None:
+            msg.reply_text(
+                f"You can't perform {self.name}. You are an external user "
+                "without creditor. For security purposes, every external user "
+                "needs an internal voucher. Use /help for more information."
+            )
+            return False
+
+        if level == 2 and user.external:
+            msg.reply_text(
+                f"You can't perform {self.name}. You are an external user. "
+                "To perform this command, you must be marked as internal user. "
+                "Send any command to an internal chat to update your privileges."
+            )
+            return False
+
+        if level == 3 and not user.permission:
+            msg.reply_text(
+                f"You can't perform {self.name}. You don't have permissions to vote."
+            )
+            return False
+
+        return True
+
     def _verify_internal_membership(
             self,
             update: telegram.Update,
