@@ -144,10 +144,10 @@ class Transaction(BackendHelper):
                     raise TypeError(f"Expected telegram.Bot, but got {type(bot)}")
                 bot.send_message(
                     config["bot"]["chat"],
-                    "**Incoming transaction**\n\n"
+                    "*Incoming transaction*\n\n"
                     f"Sender: {self.src}\n"
                     f"Receiver: {self.dst}\n"
-                    f"Amount: {self.amount}\n"
+                    f"Amount: {self.amount / 100:.2f}€\n"
                     f"Reason: `{self.reason}`",
                     parse_mode="Markdown"
                 )
