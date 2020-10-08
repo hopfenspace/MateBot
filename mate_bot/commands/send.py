@@ -114,7 +114,7 @@ class SendCallbackQuery(BaseCallbackQuery):
 
             if confirmation:
                 trans = Transaction(sender, receiver, amount, reason)
-                trans.commit()
+                trans.commit(update.callback_query.bot)
 
                 update.callback_query.message.edit_text(
                     f"Okay, you sent {amount / 100 :.2f}€ to {str(receiver)}",

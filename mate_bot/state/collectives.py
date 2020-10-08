@@ -517,12 +517,14 @@ class BaseCollective(BackendHelper):
 
         return self._abort()
 
-    def close(self) -> bool:
+    def close(self, bot: typing.Optional[telegram.Bot] = None) -> bool:
         """
         Close the collective operation and perform all transactions
 
         This method must be overwritten in a subclass!
 
+        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
+        :type bot: typing.Optional[telegram.Bot]
         :return: success of the operation
         :rtype: bool
         """

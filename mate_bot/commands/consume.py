@@ -75,7 +75,7 @@ class ConsumeCommand(BaseCommand):
             self.price * args.number,
             reason
         )
-        trans.commit()
+        trans.commit(update.effective_message.bot)
 
         update.effective_message.reply_text(
             _random.choice(self.messages) + self.symbol * args.number,

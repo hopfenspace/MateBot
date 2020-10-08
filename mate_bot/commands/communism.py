@@ -192,10 +192,12 @@ class Communism(BaseCollective):
             ]
         ])
 
-    def close(self) -> bool:
+    def close(self, bot: typing.Optional[telegram.Bot] = None) -> bool:
         """
         Close the collective operation and perform all transactions
 
+        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
+        :type bot: typing.Optional[telegram.Bot]
         :return: success of the operation
         :rtype: bool
         """
@@ -220,7 +222,7 @@ class Communism(BaseCollective):
                 self.creator,
                 self._price,
                 f"communism: {self.description} ({self.get()})"
-            ).commit()
+            ).commit(bot)
 
         self.active = False
         return True

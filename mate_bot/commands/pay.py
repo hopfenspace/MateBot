@@ -178,7 +178,10 @@ class Pay(BaseCollective):
             ]
         ])
 
-    def close(self) -> typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]:
+    def close(
+            self,
+            bot: typing.Optional[telegram.Bot] = None
+    ) -> typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]:
         """
         Check if the payment is fulfilled, then close it and perform the transactions
 
@@ -188,6 +191,8 @@ class Pay(BaseCollective):
         determine the status for the returned message to the user(s). The two
         lists of approving and disapproving users is just added for convenience.
 
+        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
+        :type bot: typing.Optional[telegram.Bot]
         :return: a tuple containing the information whether the payment request is
             still open for further votes and the approving and disapproving user lists
         :rtype: typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]
@@ -201,7 +206,7 @@ class Pay(BaseCollective):
                 self.creator,
                 self.amount,
                 f"pay: {self.description}"
-            ).commit()
+            ).commit(bot)
 
             self.active = False
             return False, approved, disapproved
