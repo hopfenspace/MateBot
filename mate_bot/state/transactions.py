@@ -9,6 +9,7 @@ import logging
 
 import pytz as _tz
 import tzlocal as _local_tz
+import telegram
 
 from mate_bot.config import config
 from mate_bot.state import user
@@ -115,11 +116,14 @@ class Transaction(BackendHelper):
 
         return self._committed
 
-    def commit(self) -> None:
+    def commit(self, bot: typing.Optional[telegram.Bot] = None) -> None:
         """
         Fulfill the transaction and store it in the database persistently
 
+        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
+        :type bot: typing.Optional[telegram.Bot]
         :raises RuntimeError: when amount is negative or zero or sender=receiver
+        :raises TypeError: when the ``bot`` is not None and no ``telegram.Bot`` object
         :return: None
         """
 
@@ -134,6 +138,19 @@ class Transaction(BackendHelper):
             logger.info(
                 f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
             )
+
+            if bot is not None:
+                if not isinstance(bot, telegram.Bot):
+                    raise TypeError(f"Expected telegram.Bot, but got {type(bot)}")
+                bot.send_message(
+                    config["bot"]["chat"],
+                    "**Incoming transaction**\n\n"
+                    f"Sender: {self.src}\n"
+                    f"Receiver: {self.dst}\n"
+                    f"Amount: {self.amount}\n"
+                    f"Reason: `{self.reason}`",
+                    parse_mode="Markdown"
+                )
 
             connection = None
             try:
