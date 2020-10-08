@@ -322,7 +322,7 @@ class PayCallbackQuery(BaseCallbackQuery):
                 )
                 return
 
-            if not user.permission:
+            if not user.permission or user.external:
                 update.callback_query.answer(
                     "You don't have the permission to vote on this payment request.",
                     show_alert=True
