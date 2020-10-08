@@ -96,6 +96,15 @@ class Pay(BaseCollective):
                 reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
                 self.register_message(reply.chat_id, reply.message_id)
 
+                if message.chat_id != config["bot"]["chat"]:
+                    msg = message.bot.send_message(
+                        config["bot"]["chat"],
+                        self.get_markdown(),
+                        reply_markup=self._gen_inline_keyboard(),
+                        parse_mode="Markdown"
+                    )
+                    self.register_message(msg.chat_id, msg.message_id)
+
             else:
                 raise TypeError("Expected three or four arguments for the tuple")
 
