@@ -25,7 +25,7 @@ COMMUNISM_ARGUMENTS = typing.Union[
 ]
 
 
-logger = logging.getLogger("comamnds")
+logger = logging.getLogger("commands")
 
 
 class Communism(BaseCollective):
