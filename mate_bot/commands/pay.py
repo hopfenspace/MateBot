@@ -322,6 +322,13 @@ class PayCallbackQuery(BaseCallbackQuery):
                 )
                 return
 
+            if not user.permission:
+                update.callback_query.answer(
+                    "You don't have the permission to vote on this payment request.",
+                    show_alert=True
+                )
+                return
+
             if self.data.startswith("approve"):
                 vote = True
             elif self.data.startswith("disapprove"):
