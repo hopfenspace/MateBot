@@ -5,6 +5,8 @@ import logging.handlers
 class NotFilter(_logging.Filter):
 
     def filter(self, record: _logging.LogRecord) -> int:
+        if record.levelno > _logging.DEBUG:
+            return super().filter(record)
         return not super().filter(record)
 
 
