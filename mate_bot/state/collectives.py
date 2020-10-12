@@ -138,7 +138,7 @@ class BaseCollective(BackendHelper):
             return False
         return bool(values[0]["active"])
 
-    def _handle_tuple_arg(self, arguments: _argument_tuple) -> typing.Optional[MateBotUser]:
+    def _handle_tuple_arg(self, arguments: _argument_tuple, ext: typing.Optional[int]) -> typing.Optional[MateBotUser]:
         if len(arguments) == 3:
 
             collective_id, user, bot = arguments
@@ -176,11 +176,10 @@ class BaseCollective(BackendHelper):
             self._creator = user.uid
             self._amount = amount
             self._description = reason
-            self._externals = 0
+            self._externals = ext
             self._active = True
 
             self._create_new_record()
-            self.add_user(user)
 
             reply = message.reply_markdown(self.get_markdown(), reply_markup = self._gen_inline_keyboard())
             self.register_message(reply.chat_id, reply.message_id)

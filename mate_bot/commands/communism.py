@@ -64,7 +64,7 @@ class Communism(BaseCollective):
                 raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
-            user = self._handle_tuple_arg(arguments)
+            user = self._handle_tuple_arg(arguments, 0)
             if user is not None:
                 self.add_user(user)
 

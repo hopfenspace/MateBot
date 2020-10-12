@@ -51,7 +51,7 @@ class Pay(BaseCollective):
                 raise RuntimeError("Remote record is no payment request")
 
         elif isinstance(arguments, tuple):
-            self._handle_tuple_arg(arguments)
+            self._handle_tuple_arg(arguments, None)
 
         else:
             raise TypeError("Expected int or tuple of arguments")
