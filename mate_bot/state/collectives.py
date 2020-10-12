@@ -11,11 +11,17 @@ import tzlocal as _local_tz
 import telegram
 
 from mate_bot import err
+from mate_bot.config import config
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 logger = logging.getLogger("state")
+
+_argument_tuple = typing.Union[
+    typing.Tuple[int, MateBotUser, telegram.Bot],
+    typing.Tuple[MateBotUser, int, str, telegram.Message]
+]
 
 
 class BaseCollective(BackendHelper):
@@ -131,6 +137,73 @@ class BaseCollective(BackendHelper):
         if rows == 0 and len(values) == 0:
             return False
         return bool(values[0]["active"])
+
+    def _handle_tuple_arg(self, arguments: _argument_tuple) -> typing.Optional[MateBotUser]:
+        if len(arguments) == 3:
+
+            collective_id, user, bot = arguments
+            if not isinstance(collective_id, int):
+                raise TypeError("Expected int as first element")
+            if not isinstance(user, MateBotUser):
+                raise TypeError("Expected MateBotUser object as second element")
+            if not isinstance(bot, telegram.Bot):
+                raise TypeError("Expected telegram.Bot object as third element")
+
+            self._id = collective_id
+            self.update()
+
+            forwarded = bot.send_message(
+                chat_id = user.tid,
+                text = self.get_markdown(),
+                reply_markup = self._gen_inline_keyboard(),
+                parse_mode = "Markdown"
+            )
+
+            self.register_message(forwarded.chat_id, forwarded.message_id)
+
+        elif len(arguments) == 4:
+
+            user, amount, reason, message = arguments
+            if not isinstance(user, MateBotUser):
+                raise TypeError("Expected MateBotUser object as first element")
+            if not isinstance(amount, int):
+                raise TypeError("Expected int object as second element")
+            if not isinstance(reason, str):
+                raise TypeError("Expected str object as third element")
+            if not isinstance(message, telegram.Message):
+                raise TypeError("Expected telegram.Message as fourth element")
+
+            self._creator = user.uid
+            self._amount = amount
+            self._description = reason
+            self._externals = 0
+            self._active = True
+
+            self._create_new_record()
+            self.add_user(user)
+
+            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._gen_inline_keyboard())
+            self.register_message(reply.chat_id, reply.message_id)
+
+            if message.chat_id != config["bot"]["chat"]:
+                msg = message.bot.send_message(
+                    config["bot"]["chat"],
+                    self.get_markdown(),
+                    reply_markup = self._gen_inline_keyboard(),
+                    parse_mode = "Markdown"
+                )
+                self.register_message(msg.chat_id, msg.message_id)
+
+            return user
+
+        else:
+            raise ValueError("Expected three or four arguments for the tuple")
+
+    def _gen_inline_keyboard(self):
+        raise NotImplementedError
+
+    def get_markdown(self):
+        raise NotImplementedError
 
     def _create_new_record(self) -> bool:
         """

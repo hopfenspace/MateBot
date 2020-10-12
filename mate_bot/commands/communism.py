@@ -64,63 +64,9 @@ class Communism(BaseCollective):
                 raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
-            if len(arguments) == 3:
-
-                communism_id, user, bot = arguments
-                if not isinstance(communism_id, int):
-                    raise TypeError("Expected int as first element")
-                if not isinstance(user, MateBotUser):
-                    raise TypeError("Expected MateBotUser object as second element")
-                if not isinstance(bot, telegram.Bot):
-                    raise TypeError("Expected telegram.Bot object as third element")
-
-                self._id = communism_id
-                self.update()
-
-                forwarded = bot.send_message(
-                    chat_id=user.tid,
-                    text=self.get_markdown(),
-                    reply_markup=self._gen_inline_keyboard(),
-                    parse_mode="Markdown"
-                )
-
-                self.register_message(forwarded.chat_id, forwarded.message_id)
-
-            elif len(arguments) == 4:
-
-                user, amount, reason, message = arguments
-                if not isinstance(user, MateBotUser):
-                    raise TypeError("Expected MateBotUser object as first element")
-                if not isinstance(amount, int):
-                    raise TypeError("Expected int object as second element")
-                if not isinstance(reason, str):
-                    raise TypeError("Expected str object as third element")
-                if not isinstance(message, telegram.Message):
-                    raise TypeError("Expected telegram.Message as fourth element")
-
-                self._creator = user.uid
-                self._amount = amount
-                self._description = reason
-                self._externals = 0
-                self._active = True
-
-                self._create_new_record()
+            user = self._handle_tuple_arg(arguments)
+            if user is not None:
                 self.add_user(user)
-
-                reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
-                self.register_message(reply.chat_id, reply.message_id)
-
-                if message.chat_id != config["bot"]["chat"]:
-                    msg = message.bot.send_message(
-                        config["bot"]["chat"],
-                        self.get_markdown(),
-                        reply_markup=self._gen_inline_keyboard(),
-                        parse_mode="Markdown"
-                    )
-                    self.register_message(msg.chat_id, msg.message_id)
-
-            else:
-                raise ValueError("Expected three or four arguments for the tuple")
 
         else:
             raise TypeError("Expected int or tuple of arguments")
