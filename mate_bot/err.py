@@ -68,17 +68,25 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
     :return: None
     """
 
+    if update is None:
+        _logger.warning("Error handler called without Update object. Check for network/connection errors!")
+        token = _config['bot']['token']
+        with _request.urlopen(f"https://api.telegram.org/bot{token}/getme") as response:
+            if response.status != 200:
+                _logger.error("Network check failed. Telegram API seems to be unreachable.")
+            else:
+                _logger.debug("Network check succeeded. Telegram API seems to be reachable.")
+
+    if not any(_sys.exc_info()):
+        _logger.error("Error handler called without an exception. Stack trace following as debug message...")
+        _logger.debug("".join(_traceback.format_stack()))
+        return
+
     _logger.exception("Something raised an unhandled exception, "
                       "it will be sent to the developers")
 
     def send_to(env, receiver, text, parse_mode, extra_text = None) -> None:
         try:
-            token = _config['bot']['token']
-            with _request.urlopen(f"https://api.telegram.org/bot{token}/getme") as response:
-                if response.status != 200:
-                    _logger.critical("Telegram API is unreachable. Original log following.")
-                    _logger.error(text)
-
             msg = env.bot.send_message(
                 receiver, text, parse_mode = parse_mode
             )
@@ -104,10 +112,13 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
         )
 
     for dev in _config["development"]["debugging"]:
+        extra = "No Update object found."
+        if update is not None:
+            extra = _json.dumps(update.to_dict(), indent=2, sort_keys=True)
         send_to(
             context,
             dev,
             f"```\n{_traceback.format_exc()}```",
             "MarkdownV2",
-            f"Extended debug information:\n```\n{_json.dumps(update.to_dict(), indent=2, sort_keys=True)}```"
+            f"Extended debug information:\n```\n{extra}```"
         )
