@@ -14,14 +14,7 @@ from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser, CommunityUser
 from mate_bot.state.transactions import Transaction
-from mate_bot.state.collectives import BaseCollective
-
-
-PAYMENT_ARGUMENTS = typing.Union[
-    int,
-    typing.Tuple[int, MateBotUser, telegram.Bot],
-    typing.Tuple[MateBotUser, int, str, telegram.Message]
-]
+from mate_bot.state.collectives import BaseCollective, COLLECTIVE_ARGUMENTS
 
 
 logger = logging.getLogger("commands")
@@ -41,7 +34,7 @@ class Pay(BaseCollective):
 
     _ALLOWED_COLUMNS = ["active"]
 
-    def __init__(self, arguments: PAYMENT_ARGUMENTS):
+    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         super().__init__()
 
         if isinstance(arguments, int):
@@ -51,7 +44,7 @@ class Pay(BaseCollective):
                 raise RuntimeError("Remote record is no payment request")
 
         elif isinstance(arguments, tuple):
-            self._handle_tuple_arg(arguments, None)
+            self._handle_tuple_constructor_argument(arguments, None)
 
         else:
             raise TypeError("Expected int or tuple of arguments")

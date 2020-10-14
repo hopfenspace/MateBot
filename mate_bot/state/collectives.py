@@ -18,10 +18,11 @@ from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 logger = logging.getLogger("state")
 
-_argument_tuple = typing.Union[
-    typing.Tuple[int, MateBotUser, telegram.Bot],
-    typing.Tuple[MateBotUser, int, str, telegram.Message]
-]
+_forwarding_arguments = typing.Tuple[int, MateBotUser, telegram.Bot]
+_creation_arguments = typing.Tuple[MateBotUser, int, str, telegram.Message]
+_constructor_tuple = typing.Union[_forwarding_arguments, _creation_arguments]
+
+COLLECTIVE_ARGUMENTS = typing.Union[int, _forwarding_arguments, _creation_arguments]
 
 
 class BaseCollective(BackendHelper):
@@ -138,7 +139,50 @@ class BaseCollective(BackendHelper):
             return False
         return bool(values[0]["active"])
 
-    def _handle_tuple_arg(self, arguments: _argument_tuple, ext: typing.Optional[int]) -> typing.Optional[MateBotUser]:
+    def _handle_tuple_constructor_argument(
+            self,
+            arguments: _constructor_tuple,
+            ext: typing.Optional[int] = None
+    ) -> typing.Optional[MateBotUser]:
+        """
+        Handle the tuple argument of the derived classes' constructors
+
+        The constructor of the derived classes accepts either a single integer
+        or a tuple of arguments. The handling of the tuple is very similar in
+        the currently implemented subclasses. The tuple contains either three
+        or four elements which defines the action that should be taken.
+
+        If the tuple has three values, the following types are excepted:
+
+        * ``ìnt`` as the internal ID of the collective operation in the database
+        * :class:`mate_bot.state.user.MateBotUser` as receiver of the collective
+        * ``telegram.Bot`` to be able to send messages to the user
+
+        The given MateBot user will receive a forwarded management message of the
+        collective operation, containing all data from it. The message is also
+        registered, so that it can be updated and synced in all chats as well.
+
+        If the tuple has four values, the following types are excepted:
+
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user
+        * ``int`` as amount of the collective operation
+        * ``str`` as reason for the collective operation
+        * ``telegram.Message`` as message that initiated the collective
+
+        Afterwards, a new collective operation will be created. The given MateBot
+        user will be stored as creator for the collective. The amount and reason
+        values are self-explanatory. The last value is the message that contains the
+        command to start the new collective operation and will be used to reply to.
+
+        :param arguments: collection of arguments as described above
+        :param ext: optional number of external users that joined the collective
+        :type ext: typing.Optional[int]
+        :return: optional MateBotUser (only when a new collective has been created)
+        :rtype: typing.Optional[MateBotUser]
+        :raises ValueError: when the tuple does not contain three or four elements
+        :raises TypeError: when the values in the tuple have wrong types
+        """
+
         if len(arguments) == 3:
 
             collective_id, user, bot = arguments

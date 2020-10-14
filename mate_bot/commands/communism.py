@@ -8,21 +8,13 @@ import logging
 import telegram.ext
 
 from mate_bot import err
-from mate_bot.config import config
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.transactions import Transaction
-from mate_bot.state.collectives import BaseCollective
-
-
-COMMUNISM_ARGUMENTS = typing.Union[
-    int,
-    typing.Tuple[int, MateBotUser, telegram.Bot],
-    typing.Tuple[MateBotUser, int, str, telegram.Message]
-]
+from mate_bot.state.collectives import BaseCollective, COLLECTIVE_ARGUMENTS
 
 
 logger = logging.getLogger("commands")
@@ -51,7 +43,7 @@ class Communism(BaseCollective):
 
     _ALLOWED_COLUMNS = ["externals", "active"]
 
-    def __init__(self, arguments: COMMUNISM_ARGUMENTS):
+    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         super().__init__()
 
         self._price = 0
@@ -64,7 +56,7 @@ class Communism(BaseCollective):
                 raise RuntimeError("Remote record is no communism")
 
         elif isinstance(arguments, tuple):
-            user = self._handle_tuple_arg(arguments, 0)
+            user = self._handle_tuple_constructor_argument(arguments, 0)
             if user is not None:
                 self.add_user(user)
 
