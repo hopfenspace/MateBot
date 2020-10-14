@@ -111,7 +111,7 @@ class Communism(BaseCollective):
 
         return markdown
 
-    def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+    def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
         Generate the inline keyboard to control the communism
 
@@ -191,7 +191,7 @@ class Communism(BaseCollective):
             return False
 
         self._fulfilled = True
-        self.edit_all_messages(self.get_markdown(), self._gen_inline_keyboard(), bot)
+        self.edit_all_messages(self.get_markdown(), self._get_inline_keyboard(), bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
@@ -210,7 +210,7 @@ class Communism(BaseCollective):
             return False
 
         self._fulfilled = False
-        self.edit_all_messages(self.get_markdown(), self._gen_inline_keyboard(), bot)
+        self.edit_all_messages(self.get_markdown(), self._get_inline_keyboard(), bot)
         [self.unregister_message(c, m) for c, m in self.get_messages()]
 
         return True
@@ -313,7 +313,7 @@ class CommunismCommand(BaseCommand):
             com.register_message(update.effective_message.chat.id, reply.message_id)
             com.edit_all_messages(
                 com.get_markdown(),
-                com._gen_inline_keyboard(),
+                com._get_inline_keyboard(),
                 update.effective_message.bot
             )
 
@@ -407,7 +407,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
             com.toggle_user(user)
             com.edit_all_messages(
                 com.get_markdown(),
-                com._gen_inline_keyboard(),
+                com._get_inline_keyboard(),
                 update.effective_message.bot
             )
 
@@ -435,7 +435,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
             com.externals += 1
             com.edit_all_messages(
                 com.get_markdown(),
-                com._gen_inline_keyboard(),
+                com._get_inline_keyboard(),
                 update.effective_message.bot
             )
             update.callback_query.answer("Okay, incremented.")
@@ -466,7 +466,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
             com.externals -= 1
             com.edit_all_messages(
                 com.get_markdown(),
-                com._gen_inline_keyboard(),
+                com._get_inline_keyboard(),
                 update.effective_message.bot
             )
             update.callback_query.answer("Okay, decremented.")

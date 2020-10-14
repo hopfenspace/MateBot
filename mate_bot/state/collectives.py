@@ -199,7 +199,7 @@ class BaseCollective(BackendHelper):
             forwarded = bot.send_message(
                 chat_id = user.tid,
                 text = self.get_markdown(),
-                reply_markup = self._gen_inline_keyboard(),
+                reply_markup = self._get_inline_keyboard(),
                 parse_mode = "Markdown"
             )
 
@@ -225,14 +225,14 @@ class BaseCollective(BackendHelper):
 
             self._create_new_record()
 
-            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._gen_inline_keyboard())
+            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._get_inline_keyboard())
             self.register_message(reply.chat_id, reply.message_id)
 
             if message.chat_id != config["bot"]["chat"]:
                 msg = message.bot.send_message(
                     config["bot"]["chat"],
                     self.get_markdown(),
-                    reply_markup = self._gen_inline_keyboard(),
+                    reply_markup = self._get_inline_keyboard(),
                     parse_mode = "Markdown"
                 )
                 self.register_message(msg.chat_id, msg.message_id)
@@ -242,7 +242,7 @@ class BaseCollective(BackendHelper):
         else:
             raise ValueError("Expected three or four arguments for the tuple")
 
-    def _gen_inline_keyboard(self):
+    def _get_inline_keyboard(self):
         raise NotImplementedError
 
     def get_markdown(self):

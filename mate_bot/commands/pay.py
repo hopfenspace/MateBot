@@ -101,7 +101,7 @@ class Pay(BaseCollective):
 
         return markdown
 
-    def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+    def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
         Generate the inline keyboard to control the payment operation
 
@@ -300,6 +300,6 @@ class PayCallbackQuery(BaseCallbackQuery):
 
             payment.edit_all_messages(
                 payment.get_markdown(status),
-                payment._gen_inline_keyboard(),
+                payment._get_inline_keyboard(),
                 update.callback_query.bot
             )
