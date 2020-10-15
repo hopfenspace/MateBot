@@ -242,10 +242,25 @@ class BaseCollective(BackendHelper):
         else:
             raise ValueError("Expected three or four arguments for the tuple")
 
-    def _get_inline_keyboard(self):
+    def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+        """
+        Get the inline keyboard to control the payment operation
+
+        :return: inline keyboard using callback data strings
+        :rtype: telegram.InlineKeyboardMarkup
+        """
         raise NotImplementedError
 
-    def get_markdown(self):
+    def get_markdown(self, status: typing.Optional[str] = None) -> str:
+        """
+        Generate the full message text as markdown string
+
+        :param status: extended status information about the collective operation (Markdown supported)
+        :type status: typing.Optional[str]
+        :return: full message text as markdown string
+        :rtype: str
+        """
+
         raise NotImplementedError
 
     def _create_new_record(self) -> bool:
