@@ -142,15 +142,19 @@ class Transaction(BackendHelper):
             if bot is not None:
                 if not isinstance(bot, telegram.Bot):
                     raise TypeError(f"Expected telegram.Bot, but got {type(bot)}")
-                bot.send_message(
-                    config["chats"]["transactions"],
-                    "*Incoming transaction*\n\n"
-                    f"Sender: {self.src}\n"
-                    f"Receiver: {self.dst}\n"
-                    f"Amount: {self.amount / 100:.2f}€\n"
-                    f"Reason: `{self.reason}`",
-                    parse_mode="Markdown"
-                )
+                transaction_logging = config["chats"]["transactions"]
+                if isinstance(config["chats"]["transactions"], int):
+                    transaction_logging = [config["chats"]["transactions"]]
+                for chat in transaction_logging:
+                    bot.send_message(
+                        chat,
+                        "*Incoming transaction*\n\n"
+                        f"Sender: {self.src}\n"
+                        f"Receiver: {self.dst}\n"
+                        f"Amount: {self.amount / 100:.2f}€\n"
+                        f"Reason: `{self.reason}`",
+                        parse_mode="Markdown"
+                    )
 
             connection = None
             try:
