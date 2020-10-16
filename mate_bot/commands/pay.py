@@ -118,6 +118,25 @@ class Pay(BaseCollective):
             ]
         ])
 
+    def cancel(self, bot: telegram.Bot) -> bool:
+        """
+        Cancel the current pending payment request without fulfilling the transaction
+
+        Note that this method must not be executed by anyone else but the creator!
+
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        if not self.active:
+            return False
+        self.active = False
+        self.edit_all_messages(self.get_markdown(), self._get_inline_keyboard(), bot)
+        [self.unregister_message(c, m) for c, m in self.get_messages()]
+        return True
+
     def close(
             self,
             bot: typing.Optional[telegram.Bot] = None
@@ -197,7 +216,18 @@ class PayCommand(BaseCommand):
             Pay((user, args.amount, args.reason, update.effective_message))
             return
 
-        update.effective_message.reply_text("Subcommands are not yet supported.")
+        pay_id = BaseCollective.get_cid_from_active_creator(user)
+        if pay_id is None:
+            update.effective_message.reply_text("You don't have a collective in progress.")
+            return
+
+        pay = Pay(pay_id)
+
+        if args.subcommand == "show":
+            update.effective_message.reply_text("Showing the last payment is not supported yet.")
+
+        elif args.subcommand == "stop":
+            pay.cancel(update.effective_message.bot)
 
 
 class PayCallbackQuery(BaseCallbackQuery):
