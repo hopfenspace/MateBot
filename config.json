@@ -4,9 +4,13 @@
 		"max-consume": 10,
 		"db-localtime": false
 	},
-	"bot": {
-		"token": "<Telegram bot token here>",
-		"chat": 0
+	"token": "<Telegram bot token here>",
+	"chats": {
+		"internal": 0,
+		"transactions": [],
+		"notification": [],
+		"stacktrace": [],
+		"debugging": []
 	},
 	"community": {
 		"payment-consent": 2,
@@ -23,11 +27,6 @@
 	},
 	"testing":  {
 		"db": "mate_db_test"
-	},
-	"development": {
-		"notification": [],
-		"description": [],
-		"debugging": []
 	},
 	"consumables": [
 		{

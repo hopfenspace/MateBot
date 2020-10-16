@@ -32,14 +32,59 @@ localized timestamps. This is used in formatting transactions.
 Bot settings
 ------------
 
-The option ``token`` holds your Telegram bot token
-as shown in the previous section.
+The config parameter ``token`` holds your Telegram bot token.
+It is needed to identify and authenticate the service against
+the Telegram API. See the official Telegram website about the
+`Telegram bots <https://core.telegram.org/bots>`_ and write
+to `@BotFather <https://t.me/botfather>`_ to gain your token.
 
-The parameter ``chat`` specifies the ID of the chat
-the bot should accept incoming commands from. This is
-a security measure, as all money transactions via the bot
-are publicly visible by all members of the group (because
-it's only useful if the chat ID refers to a Telegram group).
+In order to use all features of the bot (including the
+inline search features), you need to perform the following
+two commands in the chat with ``@BotFather``:
+
+.. code-block::
+
+    /setinline
+    /setinlinefeedback
+
+.. note::
+
+    You need to set the quota for the inline feedback to 100%,
+    otherwise the inline search features will not work properly.
+
+Chat settings
+-------------
+
+The first parameter ``internal`` specifies the ID of the chat
+the bot should treat as privileged or "internal". Members of
+this chat are expected to be members of the core community.
+Some commands are restricted to internal members only. To become
+such an internal member, write any command to the internal group.
+
+The other four options are lists of those chat IDs. They accept
+zero or more chat IDs which have the following meaning:
+
+* All chats mentioned in the ``transactions`` list will receive
+  transaction logs whenever someone performs an action that changes
+  the amount of money of any user (including the community user).
+* All chats mentioned in the ``notification`` list will receive
+  notifications when the bot's error handler caught an unhandled
+  exception. This is seen as the very basic level of debugging.
+* All chats mentioned in the ``stacktrace`` list will receive
+  the full Python stacktrace in case an unhandled exception reaches
+  the bot's error handler. This works similar to the above list
+  but includes a lot more detail to find and fix any errors.
+* All chats mentioned in the ``debugging`` list will receive
+  the same messages as the ``stacktrace`` group does. However,
+  an additional message containing the ``Update`` object that
+  caused the error is also sent to each of the mentioned chats.
+
+.. note::
+
+    You may not specify too many different debugging chats. This
+    might cause the bot to hit certain rate limits, which in
+    turn causes other problems. Create a group of developers
+    and add the bot to this group instead to avoid those limits.
 
 .. _config_community:
 
@@ -97,22 +142,6 @@ Testing Settings
 This section will be used to update / overwrite the main database
 settings. This allows the use of a second database in tests
 without influencing the actual data in the first one.
-
-Development Settings
---------------------
-
-The following set of lists stores Telegram chat IDs. The bot
-will send messages to those chats in case an internal error occurs.
-The lists define the level of detail for the sent message:
-
-  - ``notification``
-    receives the error message of error but not the error type.
-  - ``description``
-    receives the whole traceback of the error.
-  - ``debugging``
-    receives the traceback similar to the previous list as well as
-    the whole Update object associated with the error. This Update
-    object will be indented and formatted using like JSON data.
 
 Consumable Definitions
 ----------------------

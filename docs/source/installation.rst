@@ -83,7 +83,7 @@ and gather a bot token. To do so follow the instructions on the official
 
 The token may look something like this:
 ``1153242342:AA3ofnI2ABvleFEmPq9naIfeY9Y2afeof2v``.
-Store it in the config option ``bot:token`` as shown below.
+Store it in the config option ``token`` as shown below.
 
 In order to use all features of the bot (including the
 inline search features), you need to perform the following
