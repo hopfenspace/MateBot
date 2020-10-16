@@ -53,8 +53,7 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     BackendHelper._query_logger = logging.getLogger("database")
 
-    updater = Updater(config["bot"]["token"], use_context = True)
-    internal_filter = Filters.chat(config["bot"]["chat"])
+    updater = Updater(config["token"], use_context = True)
 
     logger.info("Adding error handler...")
     updater.dispatcher.add_error_handler(err.log_error)
