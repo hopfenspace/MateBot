@@ -59,15 +59,17 @@ class Communism(BaseCollective):
         """
         Retrieve the core information for the communism description message
 
+        The returned string may be formatted using Markdown. The string
+        should be suitable to be re-used inside :meth:`get_markdown`.
+
         :return: communism description message as pure text
         :rtype: str
         """
 
-        usernames = ', '.join(self.get_users_names())
-        if usernames == "":
-            usernames = "None"
+        usernames = ', '.join(self.get_users_names()) or "None"
 
         return (
+            f"*Communism by {self.creator.name}*\n\n"
             f"Reason: {self.description}\n"
             f"Amount: {self.amount / 100 :.2f}€\n"
             f"Externals: {self.externals}\n"
@@ -84,7 +86,7 @@ class Communism(BaseCollective):
         :rtype: str
         """
 
-        markdown = f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
+        markdown = self._get_basic_representation()
 
         if self.active:
             markdown += "\n_The communism is currently active._"

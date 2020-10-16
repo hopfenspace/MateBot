@@ -267,7 +267,7 @@ class BaseCollective(BackendHelper):
         The returned string may be formatted using Markdown. The string
         should be suitable to be re-used inside :meth:`get_markdown`.
 
-        :return: communism description message as pure text
+        :return: description message of the collective operation
         :rtype: str
         """
 

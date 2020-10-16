@@ -64,6 +64,28 @@ class Pay(BaseCollective):
 
         return approved, disapproved
 
+    def _get_basic_representation(self) -> str:
+        """
+        Retrieve the basic information for the payment request's management message
+
+        The returned string may be formatted using Markdown. The string
+        should be suitable to be re-used inside :meth:`get_markdown`.
+
+        :return: communism description message as pure text
+        :rtype: str
+        """
+
+        approved, disapproved = self.get_votes()
+        pro = ", ".join(map(lambda u: u.name, approved)) or "None"
+        contra = ", ".join(map(lambda u: u.name, disapproved)) or "None"
+
+        return (
+            f"*Payment request by {self.creator.name}*\n"
+            f"\nAmount: {self.amount / 100:.2f}€\nReason: {self.description}\n"
+            f"\nApproved ({len(approved)}): {pro}"
+            f"\nDisapproved ({len(disapproved)}): {contra}\n"
+        )
+
     def get_markdown(self, status: typing.Optional[str] = None) -> str:
         """
         Generate the full message text as markdown string
@@ -74,16 +96,7 @@ class Pay(BaseCollective):
         :rtype: str
         """
 
-        approved, disapproved = self.get_votes()
-        pro = ", ".join(map(lambda u: u.name, approved)) or "None"
-        contra = ", ".join(map(lambda u: u.name, disapproved)) or "None"
-
-        markdown = (
-            f"*Payment request by {self.creator.name}*\n"
-            f"\nAmount: {self.amount / 100:.2f}€\nReason: {self.description}\n"
-            f"\nApproved ({len(approved)}): {pro}"
-            f"\nDisapproved ({len(disapproved)}): {contra}\n\n"
-        )
+        markdown = self._get_basic_representation()
 
         if status is not None:
             markdown += status
