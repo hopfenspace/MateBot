@@ -272,21 +272,6 @@ class TransactionLog(BackendHelper):
 
         return "<<" if incoming else ">>"
 
-    @staticmethod
-    def get_name(uid: int) -> str:
-        """
-        Convert a user ID of a user in the database to a name (or something else)
-
-        A subclass may override this staticmethod to easily change the formatted output.
-
-        :param uid:
-        :type uid: int
-        :return:
-        :rtype: str
-        """
-
-        return user.BaseBotUser.get_name_from_uid(uid)
-
     def __init__(
             self,
             uid: typing.Union[int, user.BaseBotUser],
@@ -305,6 +290,7 @@ class TransactionLog(BackendHelper):
                 raise TypeError(f"Expected int, not {type(limit)}")
 
         self._limit = limit
+        self._names = {}
 
         extension = ""
         params = (self._uid, self._uid)
@@ -329,6 +315,30 @@ class TransactionLog(BackendHelper):
         validity_check = self.validate()
         if validity_check is not None:
             self._valid = self._valid and validity_check
+
+    def get_name(self, uid: int) -> typing.Optional[str]:
+        """
+        Convert a user ID of a user in the database to a name (or something else)
+
+        A subclass may override this method to easily change the formatted output.
+        However, this method also performs basic memoization to reduce database calls.
+        Note that this method may return ``None`` for unknown user IDs.
+
+        :param uid: internal user ID of a MateBot user
+        :type uid: int
+        :return: name of the MateBot user (or ``None`` for unknown user IDs)
+        :rtype: typing.Optional[str]
+        """
+
+        if uid in self._names:
+            return self._names[uid]
+
+        name = user.BaseBotUser.get_name_from_uid(uid)
+        if name is None:
+            return
+
+        self._names[uid] = name
+        return name
 
     def to_list(self, localized: bool = config["general"]["db-localtime"]) -> typing.List[str]:
         """
