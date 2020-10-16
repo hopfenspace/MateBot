@@ -173,6 +173,7 @@ class BaseCollective(BackendHelper):
 
         * ``ìnt`` as the internal ID of the collective operation in the database
         * :class:`mate_bot.state.user.MateBotUser` as receiver of the collective
+          management message
         * ``telegram.Bot`` to be able to send messages to the user
 
         The given MateBot user will receive a forwarded management message of the
@@ -258,6 +259,19 @@ class BaseCollective(BackendHelper):
 
         else:
             raise ValueError("Expected three or four arguments for the tuple")
+
+    def _get_basic_representation(self) -> str:
+        """
+        Retrieve the basic information for the collective's management message
+
+        The returned string may be formatted using Markdown. The string
+        should be suitable to be re-used inside :meth:`get_markdown`.
+
+        :return: communism description message as pure text
+        :rtype: str
+        """
+
+        raise NotImplementedError
 
     def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
