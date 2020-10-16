@@ -101,9 +101,9 @@ class Pay(BaseCollective):
         if status is not None:
             markdown += status
         elif self.active:
-            markdown += "_The payment request is currently active._"
+            markdown += "\n_The payment request is currently active._"
         else:
-            markdown += "_The payment request has been closed._"
+            markdown += "\n_The payment request has been closed._"
 
         return markdown
 
@@ -237,7 +237,29 @@ class PayCommand(BaseCommand):
         pay = Pay(pay_id)
 
         if args.subcommand == "show":
-            update.effective_message.reply_text("Showing the last payment is not supported yet.")
+            reply = update.effective_message.reply_text("Loading...")
+
+            messages = pay.get_messages(update.effective_message.chat.id)
+            for msg in messages:
+                update.effective_message.bot.edit_message_text(
+                    pay.get_markdown(
+                        "\n_This payment request management message is not active anymore. "
+                        "A more recent message has been sent to the chat to replace this one._"
+                    ),
+                    chat_id=msg[0],
+                    message_id=msg[1],
+                    parse_mode="Markdown",
+                    reply_to_message_id=reply.message_id,
+                    reply_markup=telegram.InlineKeyboardMarkup([])
+                )
+                pay.unregister_message(msg[0], msg[1])
+
+            pay.register_message(update.effective_message.chat.id, reply.message_id)
+            pay.edit_all_messages(
+                pay.get_markdown(),
+                pay._get_inline_keyboard(),
+                update.effective_message.bot
+            )
 
         elif args.subcommand == "stop":
             pay.cancel(update.effective_message.bot)
