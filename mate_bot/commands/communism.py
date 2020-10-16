@@ -36,7 +36,9 @@ class Communism(BaseCollective):
     :param arguments: either internal ID or tuple of arguments for creation or forwarding
     :raises ValueError: when a supplied argument has an invalid value
     :raises TypeError: when a supplied argument has the wrong type
-    :raises RuntimeError: when the internal collective ID points to a payment operation
+    :raises RuntimeError: when the collective ID doesn't match the class definition
+        or when the class did not properly define its collective type using the class
+        attribute ``_communistic`` (which is ``None`` by default and should be set properly)
     """
 
     _communistic = True
@@ -72,10 +74,12 @@ class Communism(BaseCollective):
             f"Joined users: {usernames}\n"
         )
 
-    def get_markdown(self) -> str:
+    def get_markdown(self, status: typing.Optional[str] = None) -> str:
         """
         Generate the full message text as markdown string
 
+        :param status: extended status information (ignored in this implementation)
+        :type status: typing.Optional[str]
         :return: full message text as markdown string
         :rtype: str
         """
@@ -103,7 +107,7 @@ class Communism(BaseCollective):
 
     def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
-        Generate the inline keyboard to control the communism
+        Get the inline keyboard to control the communism
 
         :return: inline keyboard using callback data strings
         :rtype: telegram.InlineKeyboardMarkup

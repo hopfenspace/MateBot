@@ -23,6 +23,13 @@ logger = logging.getLogger("commands")
 class Pay(BaseCollective):
     """
     Payment class to get money from the community
+
+    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :raises ValueError: when a supplied argument has an invalid value
+    :raises TypeError: when a supplied argument has the wrong type
+    :raises RuntimeError: when the collective ID doesn't match the class definition
+        or when the class did not properly define its collective type using the class
+        attribute ``_communistic`` (which is ``None`` by default and should be set properly)
     """
 
     _communistic = False
@@ -89,7 +96,7 @@ class Pay(BaseCollective):
 
     def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
         """
-        Generate the inline keyboard to control the payment operation
+        Get the inline keyboard to control the payment operation
 
         :return: inline keyboard using callback data strings
         :rtype: telegram.InlineKeyboardMarkup
