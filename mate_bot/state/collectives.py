@@ -245,9 +245,9 @@ class BaseCollective(BackendHelper):
             reply = message.reply_markdown(self.get_markdown(), reply_markup = self._get_inline_keyboard())
             self.register_message(reply.chat_id, reply.message_id)
 
-            if message.chat_id != config["bot"]["chat"]:
+            if message.chat_id != config["chats"]["internal"]:
                 msg = message.bot.send_message(
-                    config["bot"]["chat"],
+                    config["chats"]["internal"],
                     self.get_markdown(),
                     reply_markup = self._get_inline_keyboard(),
                     parse_mode = "Markdown"

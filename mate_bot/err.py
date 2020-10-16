@@ -70,7 +70,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
 
     if update is None:
         _logger.warning("Error handler called without Update object. Check for network/connection errors!")
-        token = _config['bot']['token']
+        token = _config["token"]
         with _request.urlopen(f"https://api.telegram.org/bot{token}/getme") as response:
             if response.status != 200:
                 _logger.error("Network check failed. Telegram API seems to be unreachable.")
@@ -95,7 +95,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
         except TelegramError:
             _logger.exception(f"Error while sending logs to {receiver}:")
 
-    for dev in _config["development"]["notification"]:
+    for dev in _config["chats"]["notification"]:
         send_to(
             context,
             dev,
@@ -103,7 +103,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
             None
         )
 
-    for dev in _config["development"]["description"]:
+    for dev in _config["chats"]["stacktrace"]:
         send_to(
             context,
             dev,
@@ -111,7 +111,7 @@ def log_error(update: _Update, context: _CallbackContext) -> None:
             "MarkdownV2"
         )
 
-    for dev in _config["development"]["debugging"]:
+    for dev in _config["chats"]["debugging"]:
         extra = "No Update object found."
         if update is not None:
             extra = _json.dumps(update.to_dict(), indent=2, sort_keys=True)

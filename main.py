@@ -5,8 +5,7 @@ import logging
 
 from telegram.ext import (
     Updater, Dispatcher, CommandHandler,
-    CallbackQueryHandler,
-    Filters, InlineQueryHandler
+    CallbackQueryHandler, InlineQueryHandler
 )
 
 from mate_bot import err

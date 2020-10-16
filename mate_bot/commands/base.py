@@ -161,7 +161,7 @@ class BaseCommand:
         :return: None
         """
 
-        external = update.effective_message.chat.id != config["bot"]["chat"]
+        external = update.effective_message.chat.id != config["chats"]["internal"]
         if external or not user.external:
             return
 

@@ -143,7 +143,7 @@ class Transaction(BackendHelper):
                 if not isinstance(bot, telegram.Bot):
                     raise TypeError(f"Expected telegram.Bot, but got {type(bot)}")
                 bot.send_message(
-                    config["bot"]["chat"],
+                    config["chats"]["transactions"],
                     "*Incoming transaction*\n\n"
                     f"Sender: {self.src}\n"
                     f"Receiver: {self.dst}\n"
