@@ -23,11 +23,6 @@ logger = logging.getLogger("commands")
 class Pay(BaseCollective):
     """
     Payment class to get money from the community
-
-    :param arguments: either internal ID or tuple of arguments for creation or forwarding
-    :raises ValueError: when a supplied argument has an invalid value
-    :raises TypeError: when a supplied argument has the wrong type
-    :raises RuntimeError: when the internal collective ID points to a payment operation
     """
 
     _communistic = False
@@ -35,19 +30,10 @@ class Pay(BaseCollective):
     _ALLOWED_COLUMNS = ["active"]
 
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
-        super().__init__()
+        super().__init__(arguments)
 
-        if isinstance(arguments, int):
-            self._id = arguments
-            self.update()
-            if self._communistic:
-                raise RuntimeError("Remote record is no payment request")
-
-        elif isinstance(arguments, tuple):
+        if isinstance(arguments, tuple):
             self._handle_tuple_constructor_argument(arguments, None)
-
-        else:
-            raise TypeError("Expected int or tuple of arguments")
 
     def get_votes(self) -> typing.Tuple[typing.List[MateBotUser], typing.List[MateBotUser]]:
         """

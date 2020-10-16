@@ -44,24 +44,14 @@ class Communism(BaseCollective):
     _ALLOWED_COLUMNS = ["externals", "active"]
 
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
-        super().__init__()
-
         self._price = 0
         self._fulfilled = None
+        super().__init__(arguments)
 
-        if isinstance(arguments, int):
-            self._id = arguments
-            self.update()
-            if not self._communistic:
-                raise RuntimeError("Remote record is no communism")
-
-        elif isinstance(arguments, tuple):
+        if isinstance(arguments, tuple):
             user = self._handle_tuple_constructor_argument(arguments, 0)
             if user is not None:
                 self.add_user(user)
-
-        else:
-            raise TypeError("Expected int or tuple of arguments")
 
     def _get_basic_representation(self) -> str:
         """

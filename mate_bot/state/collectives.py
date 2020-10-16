@@ -29,8 +29,12 @@ class BaseCollective(BackendHelper):
     """
     Base class for collective operations
 
-    This class is not usable without being modified (subclassed).
-    For easy usability, at least a constructor is needed.
+    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :raises ValueError: when a supplied argument has an invalid value
+    :raises TypeError: when a supplied argument has the wrong type
+    :raises RuntimeError: when the collective ID doesn't match the class definition
+        or when the class did not properly define its collective type using the class
+        attribute ``_communistic`` (which is ``None`` by default and should be set properly)
     """
 
     _id = None
@@ -44,6 +48,19 @@ class BaseCollective(BackendHelper):
     _communistic = None
 
     _ALLOWED_COLUMNS = []
+
+    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
+        if type(self)._communistic is None:
+            raise RuntimeError("You need to set '_communistic' in a subclass")
+
+        if isinstance(arguments, int):
+            self._id = arguments
+            self.update()
+            if type(self)._communistic != self._communistic:
+                raise RuntimeError("Remote record does not match collective operation type")
+
+        elif not isinstance(arguments, tuple):
+            raise TypeError("Expected int or tuple of arguments")
 
     @staticmethod
     def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
