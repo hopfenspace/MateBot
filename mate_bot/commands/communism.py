@@ -2,301 +2,23 @@
 MateBot command executor classes for /communism and its callback queries
 """
 
-import uuid
 import typing
-import datetime
+import logging
 
 import telegram.ext
 
 from mate_bot import err
+from mate_bot.collectives.base import BaseCollective
+from mate_bot.collectives.communism import Communism
+from mate_bot.collectives.payment import Payment
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
-from mate_bot.commands.base import BaseCommand, BaseCallbackQuery, BaseInlineQuery, BaseInlineResult
-from mate_bot.state.user import MateBotUser, CommunityUser
-from mate_bot.state.transactions import Transaction
-from mate_bot.state.collectives import BaseCollective
-from mate_bot.state import finders
-
-COMMUNISM_ARGUMENTS = typing.Union[
-    int,
-    typing.Tuple[int, MateBotUser, telegram.Bot],
-    typing.Tuple[MateBotUser, int, str, telegram.Message]
-]
+from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
+from mate_bot.state.user import MateBotUser
 
 
-class Communism(BaseCollective):
-    """
-    Communism class to collect money from various other persons
-
-    The constructor of this class accepts two different argument
-    types. You can specify a single integer to get the Communism object
-    that matches a remote record where the integer is the internal
-    collectives ID. Alternatively, you can specify a tuple containing
-    three objects: the creator of the new Communism as a MateBotUser
-    object, the amount of the communism as integer measured in Cent
-    and the description of the communism as string. While being optional
-    in the database, you have to specify at least three chars as reason.
-
-    :param arguments: either internal ID or tuple of arguments for creation
-    :raises ValueError: when a supplied argument has an invalid value
-    :raises TypeError: when a supplied argument has the wrong type
-    :raises RuntimeError: when the internal collective ID points to a payment operation
-    """
-
-    _communistic = True
-
-    _ALLOWED_COLUMNS = ["externals", "active"]
-
-    def __init__(self, arguments: COMMUNISM_ARGUMENTS):
-
-        self._price = 0
-        self._fulfilled = None
-
-        if isinstance(arguments, int):
-            self._id = arguments
-            self.update()
-            if not self._communistic:
-                raise RuntimeError("Remote record is no communism")
-
-        elif isinstance(arguments, tuple):
-            if len(arguments) == 3:
-
-                communism_id, user, bot = arguments
-                if not isinstance(communism_id, int):
-                    raise TypeError("Expected int as first element")
-                if not isinstance(user, MateBotUser):
-                    raise TypeError("Expected MateBotUser object as second element")
-                if not isinstance(bot, telegram.Bot):
-                    raise TypeError("Expected telegram.Bot object as third element")
-
-                self._id = communism_id
-                self.update()
-
-                forwarded = bot.send_message(
-                    chat_id=user.tid,
-                    text=self.get_markdown(),
-                    reply_markup=self._gen_inline_keyboard(),
-                    parse_mode="Markdown"
-                )
-
-                self.register_message(forwarded.chat_id, forwarded.message_id)
-
-            elif len(arguments) == 4:
-
-                user, amount, reason, message = arguments
-                if not isinstance(user, MateBotUser):
-                    raise TypeError("Expected MateBotUser object as first element")
-                if not isinstance(amount, int):
-                    raise TypeError("Expected int object as second element")
-                if not isinstance(reason, str):
-                    raise TypeError("Expected str object as third element")
-                if not isinstance(message, telegram.Message):
-                    raise TypeError("Expected telegram.Message as fourth element")
-
-                self._creator = user.uid
-                self._amount = amount
-                self._description = reason
-                self._externals = 0
-                self._active = True
-
-                self._create_new_record()
-                self.add_user(user)
-
-                reply = message.reply_markdown(self.get_markdown(), reply_markup=self._gen_inline_keyboard())
-                self.register_message(reply.chat_id, reply.message_id)
-
-            else:
-                raise ValueError("Expected three or four arguments for the tuple")
-
-        else:
-            raise TypeError("Expected int or tuple of arguments")
-
-    def _get_basic_representation(self) -> str:
-        """
-        Retrieve the core information for the communism description message
-
-        :return: communism description message as pure text
-        :rtype: str
-        """
-
-        usernames = ', '.join(self.get_users_names())
-        if usernames == "":
-            usernames = "None"
-
-        return (
-            f"Reason: {self.description}\n"
-            f"Amount: {self.amount / 100 :.2f}€\n"
-            f"Externals: {self.externals}\n"
-            f"Joined users: {usernames}\n"
-        )
-
-    def get_markdown(self) -> str:
-        """
-        Generate the full message text as markdown string
-
-        :return: full message text as markdown string
-        :rtype: str
-        """
-
-        markdown = f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
-
-        if self.active:
-            markdown += "\n_The communism is currently active._"
-        elif self._fulfilled is not None:
-            if self._fulfilled:
-                markdown += "\n_The communism was closed. All transactions have been processed._"
-                if self._externals > 0:
-                    markdown += (
-                        f"\n\n{self._price / 100:.2f}€ must be collected from each "
-                        f"external user by {self.creator.name}."
-                    )
-                else:
-                    markdown += f"\n\nEvery joined user paid {self._price / 100:.2f}€."
-            else:
-                markdown += "\n_The communism was aborted. No transactions have been processed._"
-
-        return markdown
-
-    def _gen_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
-        """
-        Generate the inline keyboard to control the communism
-
-        :return: inline keyboard using callback data strings
-        :rtype: telegram.InlineKeyboardMarkup
-        """
-
-        if not self.active:
-            return telegram.InlineKeyboardMarkup([])
-
-        def f(c):
-            return f"communism {c} {self.get()}"
-
-        return telegram.InlineKeyboardMarkup([
-            [
-                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
-            ],
-            [
-                telegram.InlineKeyboardButton("FORWARD", switch_inline_query_current_chat = f"{self.get()} ")
-            ],
-            [
-                telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
-                telegram.InlineKeyboardButton("EXTERNALS -", callback_data = f("decrease")),
-            ],
-            [
-                telegram.InlineKeyboardButton("ACCEPT", callback_data = f("accept")),
-                telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
-            ]
-        ])
-
-    def edit(self, bot: telegram.Bot) -> None:
-        """
-        Edit the content of the communism messages in all chats
-
-        :param bot: Telegram Bot object
-        :type bot: telegram.Bot
-        :return: None
-        """
-
-        for c, m in self.get_messages():
-            bot.edit_message_text(
-                self.get_markdown(),
-                chat_id=c,
-                message_id=m,
-                reply_markup=self._gen_inline_keyboard(),
-                parse_mode="Markdown"
-            )
-
-    def close(self) -> bool:
-        """
-        Close the collective operation and perform all transactions
-
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        users = self.get_users()
-        participants = self.externals + len(users)
-        if participants == 0:
-            return False
-
-        self._price = self.amount // participants
-
-        # Avoiding too small amounts by letting everyone pay one Cent more
-        if self.amount % participants:
-            self._price += 1
-
-        for member in users:
-            if member == self.creator:
-                continue
-
-            Transaction(
-                member,
-                self.creator,
-                self._price,
-                f"communism: {self.description} ({self.get()})"
-            ).commit()
-
-        self.active = False
-        return True
-
-    def accept(self, bot: telegram.Bot) -> bool:
-        """
-        Accept the collective operation, perform all transactions and update the message
-
-        :param bot: Telegram Bot object
-        :type bot: telegram.Bot
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        if not self.close():
-            return False
-
-        self._fulfilled = True
-        self.edit(bot)
-        [self.unregister_message(c, m) for c, m in self.get_messages()]
-
-        return True
-
-    def cancel(self, bot: telegram.Bot) -> bool:
-        """
-        Cancel the current pending communism operation without fulfilling the transactions
-
-        :param bot: Telegram Bot object
-        :type bot: telegram.Bot
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        if not self._abort():
-            return False
-
-        self._fulfilled = False
-        self.edit(bot)
-        [self.unregister_message(c, m) for c, m in self.get_messages()]
-
-        return True
-
-    @property
-    def externals(self) -> int:
-        """
-        Get and set the number of external users for the communism
-        """
-
-        return self._externals
-
-    @externals.setter
-    def externals(self, new: int) -> None:
-        if not isinstance(new, int):
-            raise TypeError("Expected integer")
-        if new < 0:
-            raise ValueError("External user count can't be negative")
-        if abs(self._externals - new) > 1:
-            raise ValueError("External count must be increased or decreased by 1")
-
-        self._externals = new
-        self._set_remote_value("externals", new)
+logger = logging.getLogger("commands")
 
 
 class CommunismCommand(BaseCommand):
@@ -307,21 +29,26 @@ class CommunismCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("communism", "Use this command to start a communism.\n\n"
-                                      "When you pay for something you and others "
-                                      "consume, you can make a communism for it to get "
-                                      "your money back.\n\n"
-                                      "You use this command specifying a reason "
-                                      "and how much it costs you. Then others can "
-                                      "join (you might need to remember them) "
-                                      "and after everyone has joined, "
-                                      "you can close it. "
-                                      "Then the price is evenly distributed "
-                                      "between everyone who has joined.")
+        super().__init__(
+            "communism",
+            "Use this command to start a communism.\n\n"
+            "When you pay for something that is used or otherwise consumed by a bigger "
+            "group of people, you can open a communism for it to get your money back.\n\n"
+            "When you use this command, you specify a reason and the price. The others "
+            "can join afterwards (you might need to remember them). Users without "
+            "Telegram can also join by adding an 'external'. You have to collect the "
+            "money from each external by yourself. After everyone has joined, "
+            "you close the communism to calculate and evenly distribute the price."
+        )
+
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("reason", nargs="+", action=JoinAction)
 
-        self.parser.new_usage().add_argument("subcommand", choices=("stop", "show"))
+        self.parser.new_usage().add_argument(
+            "subcommand",
+            choices=("stop", "show"),
+            type=lambda x: str(x).lower()
+        )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
@@ -333,11 +60,35 @@ class CommunismCommand(BaseCommand):
         """
 
         user = MateBotUser(update.effective_message.from_user)
-        if BaseCollective.has_user_active_collective(user):
-            update.effective_message.reply_text("You already have a collective in progress.")
+        if not self.ensure_permissions(user, 1, update.effective_message):
             return
 
-        Communism((user, args.amount, args.reason, update.effective_message))
+        if args.subcommand is None:
+            if BaseCollective.has_user_active_collective(user):
+                update.effective_message.reply_text("You already have a collective in progress.")
+                return
+
+            Communism((user, args.amount, args.reason, update.effective_message))
+            return
+
+        collective_id = BaseCollective.get_cid_from_active_creator(user)
+        if collective_id is None:
+            update.effective_message.reply_text("You don't have a collective in progress.")
+            return
+
+        if BaseCollective.get_type(collective_id):
+            collective = Communism(collective_id)
+        else:
+            collective = Payment(collective_id)
+            update.effective_message.reply_text(
+                "Note that your currently active collective is no communism, it's a payment request."
+            )
+
+        if args.subcommand == "show":
+            collective.show(update.effective_message)
+
+        elif args.subcommand == "stop":
+            collective.cancel(update.effective_message.bot)
 
 
 class CommunismCallbackQuery(BaseCallbackQuery):
@@ -348,6 +99,7 @@ class CommunismCallbackQuery(BaseCallbackQuery):
     def __init__(self):
         super().__init__(
             "communism",
+            "^communism",
             {
                 "toggle": self.toggle,
                 "increase": self.increase,
@@ -423,7 +175,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
             user = MateBotUser(update.callback_query.from_user)
             previous_member = com.is_participating(user)[0]
             com.toggle_user(user)
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._get_inline_keyboard(),
+                update.effective_message.bot
+            )
 
             if previous_member:
                 update.callback_query.answer("Okay, you were removed.")
@@ -447,7 +203,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
                 return
 
             com.externals += 1
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._get_inline_keyboard(),
+                update.effective_message.bot
+            )
             update.callback_query.answer("Okay, incremented.")
 
     def decrease(self, update: telegram.Update) -> None:
@@ -474,7 +234,11 @@ class CommunismCallbackQuery(BaseCallbackQuery):
                 return
 
             com.externals -= 1
-            com.edit(update.callback_query.message.bot)
+            com.edit_all_messages(
+                com.get_markdown(),
+                com._get_inline_keyboard(),
+                update.effective_message.bot
+            )
             update.callback_query.answer("Okay, decremented.")
 
     def accept(self, update: telegram.Update) -> None:
@@ -530,185 +294,3 @@ class CommunismCallbackQuery(BaseCallbackQuery):
         """
 
         pass
-
-
-class CommunismInlineQuery(BaseInlineQuery):
-    """
-    User selection for forwarding communism messages to other users
-
-    This feature is used to allow users to select a recipient from
-    all known users in the database. This recipient will get the
-    forwarded Communism message in a private chat message. To use
-    this feature, the bot must be able to receive *all* updates
-    for chosen inline query results. You may need to enable this
-    updates via the @BotFather. Set the quota to 100%.
-    """
-
-    @staticmethod
-    def get_uuid(communism_id: typing.Optional[int] = None, receiver: typing.Optional[int] = None) -> str:
-        """
-        Generate a random UUID or a string encoding information about forwarding communisms
-
-        Note that both a communism ID and a receiver are necessary in order
-        to generate the "UUID" that encodes the information to forward a communism.
-        Note that the so-called UUID is not a valid RFC 4122 UUID. If at least one
-        of the optional parameters are not present, a random UUID will be returned.
-        That one, however, will be a valid RFC 4122 UUID created by the module `uuid`.
-
-        :param communism_id: internal ID of the collective operation to be forwarded
-        :type communism_id: typing.Optional[int]
-        :param receiver: Telegram ID (Chat ID) of the recipient of the forwarded message
-        :type receiver: typing.Optional[int]
-        :return: string encoding information to forward communisms or a random UUID
-        :rtype: str
-        """
-
-        if communism_id is None or receiver is None:
-            return str(uuid.uuid4())
-
-        now = int(datetime.datetime.now().timestamp())
-        return f"{now}-{communism_id}-{receiver}"
-
-    @staticmethod
-    def get_result(
-            heading: str,
-            msg_text: str,
-            communism_id: typing.Optional[int] = None,
-            receiver: typing.Optional[int] = None,
-            parse_mode: str = telegram.ParseMode.MARKDOWN
-    ) -> telegram.InlineQueryResultArticle:
-        """
-        Build the InlineQueryResultArticle object that should be sent to the user as one option
-
-        :param heading: heading of the inline result shown to the user
-        :type heading: str
-        :param msg_text:
-        :type msg_text: str
-        :param communism_id: internal ID of the collective operation to be forwarded
-        :type communism_id: typing.Optional[int]
-        :param receiver: Telegram ID (Chat ID) of the recipient of the forwarded message
-        :type receiver: typing.Optional[int]
-        :param parse_mode: parse mode specifier for the resulting message
-        :type parse_mode: str
-        :return:
-        """
-
-        return telegram.InlineQueryResultArticle(
-            id = CommunismInlineQuery.get_uuid(communism_id, receiver),
-            title = heading,
-            input_message_content = telegram.InputTextMessageContent(
-                message_text = msg_text,
-                parse_mode = parse_mode,
-                disable_web_page_preview = True
-            )
-        )
-
-    def get_help(self) -> telegram.InlineQueryResultArticle:
-        """
-        Get the help option in the list of choices
-
-        :return: inline query result choice for the help message
-        :rtype: telegram.InlineQueryResultArticle
-        """
-
-        return self.get_result(
-            "Help: What should I do here?",
-            "*Help on using the inline mode of this bot*\n\n"
-            "This bot enables users to forward communism and payment management "
-            "messages to other users via a pretty comfortable inline search. "
-            "Click on the button `FORWARD` of the message and then type the name, "
-            "username or a part of it in the input field. There should already be "
-            "a number besides the name of the bot. This number is required, forwarding "
-            "does not work without this number. _Do not change it._ If you don't have "
-            "a communism or payment message, you may try creating a new one. Use the "
-            "commands /communism and /pay for this purpose, respectively. Use /help "
-            "for a general help and an overview of other available commands."
-        )
-
-    def run(self, query: telegram.InlineQuery) -> None:
-        """
-        Search for a user in the database and allow the user to forward communisms
-
-        :param query: inline query as part of an incoming Update
-        :type query: telegram.InlineQuery
-        :return: None
-        """
-
-        if len(query.query) == 0:
-            return
-
-        split = query.query.split(" ")
-
-        try:
-            comm_id = int(split[0])
-            community = CommunityUser()
-
-            users = []
-            for word in split[1:]:
-                if len(word) <= 1:
-                    continue
-                if word.startswith("@"):
-                    word = word[1:]
-
-                for target in finders.find_names_by_pattern(word):
-                    user = finders.find_user_by_name(target)
-                    if user is not None and user not in users:
-                        if user.uid != community.uid:
-                            users.append(user)
-
-                for target in finders.find_usernames_by_pattern(word):
-                    user = finders.find_user_by_username(target)
-                    if user is not None and user not in users:
-                        if user.uid != community.uid:
-                            users.append(user)
-
-            users.sort(key = lambda u: u.name.lower())
-
-            answers = []
-            for choice in users:
-                answers.append(self.get_result(
-                    f"{choice.name} ({choice.username})" if choice.username else choice.name,
-                    f"I am forwarding this communism to {choice.name}...",
-                    communism_id = comm_id,
-                    receiver = choice.tid
-                ))
-
-            query.answer([self.get_help()] + answers)
-
-        except (IndexError, ValueError):
-            query.answer([self.get_help()])
-
-
-class CommunismInlineResult(BaseInlineResult):
-    """
-    Communism message forwarding based on the inline query result reports
-
-    This feature is used to forward communism management messages
-    to other users. The receiver of the forwarded message had to be
-    selected by another user using the inline query functionality.
-    The `result ID` should store the encoded timestamp, receiver
-    Telegram ID and internal ID of the collective operation.
-    """
-
-    def run(self, result: telegram.ChosenInlineResult, bot: telegram.Bot) -> None:
-        """
-        Forward a communism management message to other users
-
-        :param result: report of the chosen inline query option as part of an incoming Update
-        :type result: telegram.ChosenInlineResult
-        :param bot: currently used Telegram Bot object
-        :type bot: telegram.Bot
-        :return: None
-        """
-
-        if result.result_id.count("-") == 3:
-            return
-
-        # No exceptions will be handled because errors here would mean
-        # problems with the result ID which is generated by the bot itself
-        ts, comm_id, receiver = result.result_id.split("-")
-        comm_id = int(comm_id)
-        receiver = int(receiver)
-        user = MateBotUser(MateBotUser.get_uid_from_tid(receiver))
-
-        Communism((comm_id, user, bot))

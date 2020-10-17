@@ -3,6 +3,8 @@ MateBot database management helper library
 """
 
 import typing
+import logging
+import datetime
 
 try:
     import MySQLdb as pymysql
@@ -20,59 +22,382 @@ except ImportError:
 from mate_bot.config import config as _config
 
 
-QUERY_RESULT_TYPE = typing.List[typing.Dict[str, typing.Any]]
+COLUMN_TYPES = typing.Union[int, bool, str, datetime.datetime, None]
+QUERY_RESULT_TYPE = typing.List[typing.Dict[str, COLUMN_TYPES]]
 EXECUTE_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE]
 EXECUTE_NO_COMMIT_TYPE = typing.Tuple[int, QUERY_RESULT_TYPE, pymysql.connections.Connection]
 
-DATABASE_SCHEMA = {
-    "users": (
-        "id",
-        "tid",
-        "username",
-        "name",
-        "balance",
-        "permission",
-        "active",
-        "created",
-        "accessed"
+
+class _CollectionSchema(dict):
+    """
+    Abstract collection schema base class
+
+    As this is a subclass of the built-in ``dict``, you have full access to all
+    methods and features of a standard dictionary. However, this class overwrites
+    some of the methods that you would normally expect to work out of the box.
+
+    ``__init__`` will now only accept one dictionary or None as optional parameter.
+    The supplied dictionary will be used to create the internal data structure
+    (see also ``__setitem__``). Other argument types lead to TypeErrors.
+
+    ``__repr__`` will output the dictionary surrounded by the class name.
+
+    ``__setitem__`` will only accept strings as keys. The values may be
+    specified more precisely in a subclass to restrict further usage.
+    """
+
+    def __init__(self, obj: typing.Optional[dict] = None):
+        if obj is None:
+            super().__init__()
+        elif isinstance(obj, dict):
+            super().__init__()
+            for k in obj:
+                self[k] = obj[k]
+        else:
+            raise TypeError("Constructor argument must be dict or None")
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({super().__repr__()})"
+
+    def __setitem__(self, key: str, value: typing.Any) -> None:
+        if not isinstance(key, str):
+            raise TypeError("Key must be str")
+        if hasattr(value, "name"):
+            if value.name != key:
+                raise ValueError(f"Key '{key}' does not match name '{value.name}'")
+        super().__setitem__(key, value)
+
+
+class ColumnSchema:
+    """
+    Column schema description based on dictionaries to allow easy design validation
+
+    This class functions as a simple container and formatter of the supplied
+    values during initialization. Therefore, only ``__repr__`` and ``__str__``
+    are defined. While the former is used only for stylistic purposes, the
+    later can be used to construct full SQL queries. Look for the method
+    :meth:`TableSchema._to_string` on how to use it, because this method calls
+    ``str()`` on all columns (type :class:`ColumnSchema`) attached to the table.
+
+    :param name: name of the column in a certain table
+    :type name: str
+    :param data_type: SQL name of the data type (e.g. ``"BOOLEAN"``)
+    :type data_type: str
+    :param null: switch whether ``NULL`` values are allowed in the column
+    :type null: bool
+    :param extras: string of extra SQL parameters for column creation (e.g. ``"UNIQUE"``)
+    :type extras: typing.Optional[str]
+    """
+
+    def __init__(self, name: str, data_type: str, null: bool, extras: typing.Optional[str] = None):
+        if not isinstance(name, str):
+            raise TypeError(f"Expected str as name, not {type(name)}")
+        if not isinstance(data_type, str):
+            raise TypeError(f"Expected str as data type, not {type(name)}")
+        if not isinstance(null, bool):
+            raise TypeError(f"Expected bool as null switch, not {type(name)}")
+        if extras is not None:
+            if not isinstance(extras, str):
+                raise TypeError(f"Expected str for the extras, not {type(name)}")
+
+        self.name: str = name
+        self.data_type: str = data_type
+        self.null: bool = null
+        self.extras: typing.Optional[str] = extras
+
+    def __repr__(self) -> str:
+        return f"ColumnSchema({self.name} <{self.data_type}>)"
+
+    def __str__(self) -> str:
+        string = f"`{self.name}` {self.data_type}"
+        if not self.null:
+            string = f"{string} NOT NULL"
+        if self.extras is not None:
+            string = f"{string} {self.extras}"
+        return string
+
+
+class ReferenceSchema:
+    """
+    Reference schema description based on dictionaries to allow easy design validation
+
+    A reference describes that a key in the current table is a foreign key of another table.
+
+    This class functions as a simple container and formatter of the supplied
+    values during initialization. Therefore, only ``__repr__`` and ``__str__``
+    are defined. While the former is used only for stylistic purposes, the
+    later can be used to construct full SQL queries. Look for the method
+    :meth:`TableSchema._to_string` on how to use it, because this method calls
+    ``str()`` on all references (type :class:`ReferenceSchema`) attached to the table.
+    """
+
+    def __init__(self, local_name: str, ref_table: str, ref_name: str, cascade: bool = True):
+        self.local_name: str = local_name
+        self.ref_table: str = ref_table
+        self.ref_name: str = ref_name
+        self.cascade: bool = cascade
+
+    def __repr__(self) -> str:
+        return f"ReferenceSchema({self.local_name}, {self.ref_table}[{self.ref_name}])"
+
+    def __str__(self) -> str:
+        string = f"FOREIGN KEY ({self.local_name}) REFERENCES {self.ref_table}({self.ref_name})"
+        if self.cascade:
+            string = f"{string} ON DELETE CASCADE"
+        return string
+
+
+class TableSchema(_CollectionSchema):
+    """
+    Table schema description based on dictionaries to allow easy design validation
+
+    As this is a subclass of the built-in ``dict``, you have full
+    access to all methods and features of a standard dictionary.
+
+    Besides the methods that have been overwritten in :class:`_CollectionSchema`,
+    this class overwrites the following other methods:
+
+    * ``__init__`` takes a name (``str``), a dictionary of pairs of ``str`` and
+      :class:`ColumnSchema` and a list of references (type :class:`ReferenceSchema`).
+
+    * ``__contains__`` uses improved checks to validate if a certain column
+      name (type ``str`` and key of the underlying dictionary), a certain
+      :class:`ColumnSchema` object (values in the underlying dictionary) or
+      a certain :class:`ReferenceSchema` object is part of the table.
+
+    * ``__setitem__`` checks if the supplied key is of type ``str``
+      and the supplied value is a :class:`ColumnSchema` object. Other
+      types for the keys or values lead to TypeError exceptions.
+
+    * ``__str__`` calls :meth:`_to_string` with the indentation ``4`` internally.
+
+    :param name: name of the table in the database
+    :type name: str
+    :param columns: predefined set of columns for this table
+    :type columns: typing.Dict[str, ColumnSchema],
+    :param refs: list of references to columns in other tables
+    :type refs: typing.Optional[typing.List[ReferenceSchema]]
+    """
+
+    def __init__(
+            self,
+            name: str,
+            columns: typing.Dict[str, ColumnSchema],
+            refs: typing.Optional[typing.List[ReferenceSchema]] = None
+    ):
+        if not isinstance(name, str):
+            raise TypeError(f"Expected str as name, not {type(name)}")
+        if not isinstance(columns, dict):
+            raise TypeError(f"Expected dictionary, not {type(columns)}")
+        if refs is not None:
+            if not isinstance(refs, list):
+                raise TypeError(f"Expected list for references, not {type(refs)}")
+
+        super().__init__(columns)
+        self.name: str = name
+        if refs is None:
+            self.refs: typing.Optional[typing.List[ReferenceSchema]] = []
+        else:
+            self.refs: typing.Optional[typing.List[ReferenceSchema]] = refs.copy()
+
+    def __contains__(self, item: typing.Union[str, ColumnSchema, ReferenceSchema]) -> bool:
+        if isinstance(item, ColumnSchema):
+            return super().__contains__(item)
+        if isinstance(item, ReferenceSchema):
+            return item in self.refs
+        if isinstance(item, str):
+            return item in self.keys()
+        return False
+
+    def __setitem__(self, key: str, value: ColumnSchema) -> None:
+        if not isinstance(value, ColumnSchema):
+            raise TypeError(f"Expected ColumnSchema as type, not {type(value)}")
+        super().__setitem__(key, value)
+
+    def __str__(self) -> str:
+        return self._to_string(4)
+
+    def _to_string(self, indent: int) -> str:
+        """
+        Generate a fully formatted SQL query string that can be used to create this table
+
+        :param indent: number of spaces for indentation of the column definitions
+            (use ``0`` to disable line breaks and indents completely)
+        :type indent: int
+        :return: fully formatted string that can be used as SQL query string to create the table
+        :rtype: str
+        """
+
+        sep, conjunction = "\n", ",\n"
+        if indent == 0:
+            sep, conjunction = "", ", "
+        entries = conjunction.join(
+            [f"{' ' * abs(indent)}{str(k)}" for k in list(self.values()) + list(self.refs)]
+        )
+        return f"CREATE TABLE {self.name} ({sep}{entries}{sep});"
+
+
+class DatabaseSchema(_CollectionSchema):
+    """
+    Database schema description based on dictionaries to allow easy design validation
+
+    As this is a subclass of the built-in ``dict``, you have full
+    access to all methods and features of a standard dictionary.
+
+    Besides the methods that have been overwritten in :class:`_CollectionSchema`,
+    this class overwrites ``__contains__`` for better checks if a table
+    (:class:`TableSchema`) is in the database. Additionally, this class overwrites
+    ``__setitem__`` to check if the supplied value is an instance of the
+    class :class:`TableSchema`. Other values lead to TypeErrors.
+    """
+
+    def __contains__(self, item: typing.Any) -> bool:
+        if isinstance(item, TableSchema):
+            return item in self.values()
+        return super().__contains__(item)
+
+    def __setitem__(self, key: str, value: TableSchema) -> None:
+        if not isinstance(value, TableSchema):
+            raise TypeError
+        super().__setitem__(key, value)
+
+
+DATABASE_SCHEMA = DatabaseSchema({
+    "users": TableSchema(
+        "users",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "tid": ColumnSchema(
+                "tid", "BIGINT", True,
+                "UNIQUE"
+            ),
+            "username": ColumnSchema("username", "VARCHAR(255)", True),
+            "name": ColumnSchema("name", "VARCHAR(255)", False),
+            "balance": ColumnSchema(
+                "balance", "MEDIUMINT", False,
+                "DEFAULT 0"
+            ),
+            "permission": ColumnSchema(
+                "permission", "BOOLEAN", False,
+                "DEFAULT false"
+            ),
+            "active": ColumnSchema(
+                "active", "BOOLEAN", False,
+                "DEFAULT true"
+            ),
+            "created": ColumnSchema(
+                "created", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            ),
+            "accessed": ColumnSchema(
+                "accessed", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+            )
+        }
     ),
-    "transactions": (
-        "id",
-        "sender",
-        "receiver",
-        "amount",
-        "reason",
-        "registered"
+    "transactions": TableSchema(
+        "transactions",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "sender": ColumnSchema("sender", "INT", False),
+            "receiver": ColumnSchema("receiver", "INT", False),
+            "amount": ColumnSchema("amount", "MEDIUMINT", False),
+            "reason": ColumnSchema("reason", "VARCHAR(255)", True),
+            "registered": ColumnSchema(
+                "registered", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("sender", "users", "id", True),
+            ReferenceSchema("receiver", "users", "id", True)
+        ]
     ),
-    "collectives": (
-        "id",
-        "active",
-        "amount",
+    "collectives": TableSchema(
+        "collectives",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "active": ColumnSchema(
+                "active", "BOOLEAN", False,
+                "DEFAULT true"
+            ),
+            "amount": ColumnSchema("amount", "MEDIUMINT", False),
+            "externals": ColumnSchema("externals", "SMALLINT", True),
+            "description": ColumnSchema("description", "VARCHAR(255)", True),
+            "communistic": ColumnSchema("communistic", "BOOLEAN", False),
+            "creator": ColumnSchema("creator", "INT", False),
+            "created": ColumnSchema(
+                "created", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("creator", "users", "id", True)
+        ]
+    ),
+    "collectives_users": TableSchema(
+        "collectives_users",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "collectives_id": ColumnSchema("collectives_id", "INT", False),
+            "users_id": ColumnSchema("users_id", "INT", False),
+            "vote": ColumnSchema("vote", "BOOLEAN", False)
+        },
+        [
+            ReferenceSchema("collectives_id", "collectives", "id", True),
+            ReferenceSchema("users_id", "users", "id", True)
+        ]
+    ),
+    "collective_messages": TableSchema(
+        "collective_messages",
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "collectives_id": ColumnSchema("collectives_id", "INT", False),
+            "chat_id": ColumnSchema("chat_id", "BIGINT", False),
+            "msg_id": ColumnSchema("msg_id", "INT", False)
+        },
+        [
+            ReferenceSchema("collectives_id", "collectives", "id", True)
+        ]
+    ),
+    "externals": TableSchema(
         "externals",
-        "description",
-        "communistic",
-        "creator",
-        "created"
-    ),
-    "collectives_users": (
-        "id",
-        "collectives_id",
-        "users_id",
-        "vote"
-    ),
-    "collective_messages": (
-        "id",
-        "collectives_id",
-        "chat_id",
-        "msg_id"
-    ),
-    "externals": (
-        "id",
-        "internal",
-        "external",
-        "changed"
+        {
+            "id": ColumnSchema(
+                "id", "INT", False,
+                "PRIMARY KEY AUTO_INCREMENT"
+            ),
+            "internal": ColumnSchema("internal", "INT", True),
+            "external": ColumnSchema(
+                "external", "INT", False,
+                "UNIQUE"
+            ),
+            "changed": ColumnSchema(
+                "changed", "TIMESTAMP", False,
+                "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+            )
+        },
+        [
+            ReferenceSchema("internal", "users", "id", True),
+            ReferenceSchema("external", "users", "id", True)
+        ]
     )
-}
+})
 
 
 class BackendHelper:
@@ -87,8 +412,8 @@ class BackendHelper:
 
     Use the functions ending with ``_manually`` in case you need more
     than one call to the functions defined here to fulfill your needs.
-    All your queries will be cached on the server side as long as you
-    don't call the ``.commit()`` method on the returned Connection object
+    All your queries will be cached on the server side as long as you don't
+    call the ``.commit()`` method on the returned ``Connection`` object
     to save the changes you introduced during your previous queries.
 
     .. warning::
@@ -99,14 +424,26 @@ class BackendHelper:
 
         .. code-block:: python3
 
+                connection = None
                 try:
-                    rows, result, connection = execute_no_commit(...)
+                    rows, result, connection = BackendHelper._execute_no_commit(...)
                     ...
                     connection.commit()
                 finally:
                     if connection:
                         connection.close()
+
+
+    The class :class:`BackendHelper` provides two further class attributes.
+    ``_SCHEMA`` holds a reference to the module's ``DATABASE_SCHEMA`` object
+    (type :class:`DatabaseSchema`). The ``_query_logger`` class attribute is ``None``
+    by default but expects a :class:`logging.Logger` object. Every attempted SQL
+    query will produce a log message with level *DEBUG* if a logger has been found.
     """
+
+    _SCHEMA: DatabaseSchema = DATABASE_SCHEMA
+
+    _query_logger: typing.Optional[logging.Logger] = None
 
     @staticmethod
     def _execute_no_commit(
@@ -135,6 +472,12 @@ class BackendHelper:
         :raises TypeError: when the connection is neither None nor a valid Connection
         :raises pymysql.err.OperationalError: when the database connection is closed
         """
+
+        if isinstance(BackendHelper._query_logger, logging.Logger):
+            try:
+                BackendHelper._query_logger.debug(f"Executing '{query}' using args {arguments}")
+            except AttributeError:
+                pass
 
         if connection is None:
             connection = pymysql.connect(
@@ -212,15 +555,36 @@ class BackendHelper:
 
         if not isinstance(table, str):
             raise TypeError(f"Expected string as table name, not {type(table)}")
-        if table not in DATABASE_SCHEMA:
+        if table not in BackendHelper._SCHEMA:
             raise ValueError(f"Unknown table name '{table}'")
         if column is None:
             return True
 
         if not isinstance(column, str):
             raise TypeError(f"Expected string as column name, not {type(table)}")
-        if column not in DATABASE_SCHEMA[table]:
+        if column not in BackendHelper._SCHEMA[table]:
             raise ValueError(f"Unknown column '{column}' in table '{table}'")
+        return True
+
+    @staticmethod
+    def _check_key_location(table: str, key: str) -> bool:
+        """
+        Verify that a location (table and column) is valid and the column is a unique key
+
+        :param table: table name in the database
+        :type table: str
+        :param key: column name that should be used as unique key for a query
+        :type key: str
+        :return: whether the column can be used as a unique key in the table
+        :rtype: bool
+        :raises TypeError: when the table or column is no string
+        :raises ValueError: when the table or column is not found in the database
+        """
+
+        BackendHelper._check_location(table, key)
+        extras = BackendHelper._SCHEMA[table][key].extras
+        if extras is not None:
+            return "PRIMARY KEY" in extras.upper() or "UNIQUE" in extras.upper()
         return True
 
     @staticmethod
@@ -244,6 +608,84 @@ class BackendHelper:
             if not isinstance(value, (str, int, bool)):
                 raise TypeError(f"Unsupported type {type(value)} for value {value}")
         return True
+
+    @staticmethod
+    def get_values_by_key_manually(
+            table: str,
+            key: str,
+            identifier: typing.Union[int, bool, str],
+            connection: typing.Optional[pymysql.connections.Connection] = None
+    ) -> EXECUTE_NO_COMMIT_TYPE:
+        """
+        Get all remote values in the table with the identifier used for the key but without committing
+
+        The value for ``key`` must be a valid column name and the column must be marked
+        as unique or primary key for the table. Otherwise, a ValueError will be raised.
+
+        .. note::
+
+            Read the class documentation for :class:`BackendHelper` for more
+            information about the functions ending with ``_manually``.
+
+
+        :param table: name of the table in the database
+        :type table: str
+        :param key: name of the column in the table that should be used as unique key
+        :type key: str
+        :param identifier: unique identifier of the record in the table
+        :type identifier: typing.Union[int, bool, str]
+        :param connection: optional connection to the database (opened implicitly if None)
+        :type connection: typing.Optional[pymysql.connections.Connection]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid or the key column is not unique
+        """
+
+        if not BackendHelper._check_key_location(table, key):
+            raise ValueError(f"Column {key} is not unique in the table {table}")
+        if not isinstance(identifier, (int, bool, str)):
+            raise TypeError(f"Unexpected type {type(identifier)} as identifier")
+
+        return BackendHelper._execute_no_commit(
+            f"SELECT * FROM {table} WHERE {key}=%s",
+            (identifier,),
+            connection=connection
+        )
+
+    @staticmethod
+    def get_values_by_key(
+            table: str,
+            key: str,
+            identifier: typing.Union[int, bool, str]
+    ) -> EXECUTE_TYPE:
+        """
+        Get all remote values in the table with the identifier used for the key
+
+        The value for ``key`` must be a valid column name and the column must be marked
+        as unique or primary key for the table. Otherwise, a ValueError will be raised.
+
+        :param table: name of the table in the database
+        :type table: str
+        :param key: name of the column in the table that should be used as unique key
+        :type key: str
+        :param identifier: unique identifier of the record in the table
+        :type identifier: typing.Union[int, bool, str]
+        :return: number of affected rows and the fetched data
+        :rtype: tuple
+        :raises TypeError: when an invalid type was found
+        :raises ValueError: when a value is not valid or the key column is not unique
+        """
+
+        if not BackendHelper._check_key_location(table, key):
+            raise ValueError(f"Column {key} is not unique in the table {table}")
+        if not isinstance(identifier, (int, bool, str)):
+            raise TypeError(f"Unexpected type {type(identifier)} as identifier")
+
+        return BackendHelper._execute(
+            f"SELECT * FROM {table} WHERE {key}=%s",
+            (identifier,)
+        )
 
     @staticmethod
     def get_value_manually(

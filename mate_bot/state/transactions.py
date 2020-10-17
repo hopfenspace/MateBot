@@ -5,21 +5,26 @@ MateBot money transaction (sending/receiving) helper library
 import os
 import time
 import typing
+import logging
 
 import pytz as _tz
 import tzlocal as _local_tz
+import telegram
 
 from mate_bot.config import config
 from mate_bot.state import user
-from mate_bot.state import dbhelper as _db
+from mate_bot.state.dbhelper import BackendHelper
 
 
-class Transaction:
+logger = logging.getLogger("state")
+
+
+class Transaction(BackendHelper):
     """
     Money transactions between two users
 
     Note that a transaction will not be committed and stored in
-    persistent storage until the .commit() method was called!
+    persistent storage until the :meth:`commit` method was called!
 
     :param src: user that sends money to someone else
     :type src: user.BaseBotUser
@@ -33,6 +38,14 @@ class Transaction:
     :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
     """
 
+    _src: user.BaseBotUser
+    _dst: user.BaseBotUser
+    _amount: int
+    _reason: typing.Optional[str]
+
+    _committed: bool
+    _id: typing.Optional[int]
+
     def __init__(
             self,
             src: user.BaseBotUser,
@@ -40,6 +53,7 @@ class Transaction:
             amount: int,
             reason: typing.Optional[str] = None
     ):
+        super().__init__()
 
         if amount <= 0:
             raise ValueError("Not a positive amount!")
@@ -110,11 +124,38 @@ class Transaction:
 
         return self._committed
 
+    def log_info(self) -> None:
+        """
+        Create a short logging notification about the transaction
+
+        This method is not implemented in this class and provides a
+        hook that might be implemented in a subclass. It will be
+        called when the transaction was completed successfully.
+
+        :return: None
+        """
+
+        pass
+
+    def log_message(self) -> None:
+        """
+        Create a long logging information about the transaction
+
+        This method is not implemented in this class and provides a
+        hook that might be implemented in a subclass. It will be
+        called when the transaction was completed successfully.
+
+        :return: None
+        """
+
+        pass
+
     def commit(self) -> None:
         """
         Fulfill the transaction and store it in the database persistently
 
         :raises RuntimeError: when amount is negative or zero or sender=receiver
+        :raises TypeError: when the ``bot`` is not None and no ``telegram.Bot`` object
         :return: None
         """
 
@@ -126,30 +167,31 @@ class Transaction:
             raise RuntimeError("Sender equals receiver!")
 
         if not self._committed and self._id is None:
+
             connection = None
             try:
                 self._src.update()
                 self._dst.update()
 
-                connection = _db.BackendHelper._execute_no_commit(
+                connection = self._execute_no_commit(
                     "INSERT INTO transactions (sender, receiver, amount, reason) "
                     "VALUES (%s, %s, %s, %s)",
                     (self._src.uid, self._dst.uid, self._amount, self._reason)
                 )[2]
 
-                rows, values, _ = _db.BackendHelper._execute_no_commit(
+                rows, values, _ = self._execute_no_commit(
                     "SELECT LAST_INSERT_ID()",
                     connection=connection
                 )
                 if rows == 1:
                     self._id = values[0]["LAST_INSERT_ID()"]
 
-                _db.BackendHelper._execute_no_commit(
+                self._execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._src.balance - self.amount, self._src.uid),
                     connection=connection
                 )
-                _db.BackendHelper._execute_no_commit(
+                self._execute_no_commit(
                     "UPDATE users SET balance=%s WHERE id=%s",
                     (self._dst.balance + self.amount, self._dst.uid),
                     connection=connection
@@ -165,8 +207,86 @@ class Transaction:
                 if connection:
                     connection.close()
 
+            self.log_info()
+            self.log_message()
 
-class TransactionLog:
+
+class LoggedTransaction(Transaction):
+    """
+    Money transactions between two users with enabled logging hooks
+
+    Note that a transaction will not be committed and stored in
+    persistent storage until the :meth:`commit` method was called!
+
+    :param src: user that sends money to someone else
+    :type src: user.BaseBotUser
+    :param dst: user that receives money from someone else
+    :type dst: user.BaseBotUser
+    :param amount: money measured in Cent (must always be positive!)
+    :type amount: int
+    :param reason: optional description of / reason for the transaction
+    :type reason: typing.Optional[str]
+    :param bot: optional Telegram Bot object that will be used to send log messages
+    :type bot: typing.Optional[telegram.Bot]
+    :raises ValueError: when amount is not positive or sender=receiver
+    :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
+    """
+
+    _bot: typing.Optional[telegram.Bot]
+
+    def __init__(
+            self,
+            src: user.BaseBotUser,
+            dst: user.BaseBotUser,
+            amount: int,
+            reason: typing.Optional[str] = None,
+            bot: typing.Optional[telegram.Bot] = None
+    ):
+        super().__init__(src, dst, amount, reason)
+        self._bot = bot
+
+    def log_info(self) -> None:
+        """
+        Create a short logging notification about the transaction
+
+        A short summary of the transaction will be send to the global ``logger``.
+
+        :return: None
+        """
+
+        logger.info(
+            f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
+        )
+
+    def log_message(self) -> None:
+        """
+        Create a long logging information about the transaction
+
+        A Markdown-formatted message will be send to all chat IDs
+        configured to receive transaction log messages in the config file.
+
+        :return: None
+        """
+
+        if self._bot is not None:
+            if not isinstance(self._bot, telegram.Bot):
+                raise TypeError(f"Expected telegram.Bot, but got {type(self._bot)}")
+            transaction_logging = config["chats"]["transactions"]
+            if isinstance(config["chats"]["transactions"], int):
+                transaction_logging = [config["chats"]["transactions"]]
+            for chat in transaction_logging:
+                self._bot.send_message(
+                    chat,
+                    "*Incoming transaction*\n\n"
+                    f"Sender: {self.src}\n"
+                    f"Receiver: {self.dst}\n"
+                    f"Amount: {self.amount / 100:.2f}€\n"
+                    f"Reason: `{self.reason}`",
+                    parse_mode = "Markdown"
+                )
+
+
+class TransactionLog(BackendHelper):
     """
     Transaction history for a specific user based on the logs in the database
 
@@ -182,6 +302,12 @@ class TransactionLog:
     :param limit: restrict the number of fetched entries
     :type limit: typing.Optional[int]
     """
+
+    _uid: int
+    _limit: typing.Optional[int]
+    _valid: bool
+    _log: list
+    _names: dict
 
     DEFAULT_NULL_REASON_REPLACE = "<no description>"
 
@@ -242,21 +368,6 @@ class TransactionLog:
 
         return "<<" if incoming else ">>"
 
-    @staticmethod
-    def get_name(uid: int) -> str:
-        """
-        Convert a user ID of a user in the database to a name (or something else)
-
-        A subclass may override this staticmethod to easily change the formatted output.
-
-        :param uid:
-        :type uid: int
-        :return:
-        :rtype: str
-        """
-
-        return user.BaseBotUser.get_name_from_uid(uid)
-
     def __init__(
             self,
             uid: typing.Union[int, user.BaseBotUser],
@@ -275,6 +386,7 @@ class TransactionLog:
                 raise TypeError(f"Expected int, not {type(limit)}")
 
         self._limit = limit
+        self._names = {}
 
         extension = ""
         params = (self._uid, self._uid)
@@ -282,7 +394,7 @@ class TransactionLog:
             extension = " ORDER BY registered DESC LIMIT %s"
             params = (self._uid, self._uid, self._limit)
 
-        rows, self._log = _db.BackendHelper._execute(
+        rows, self._log = self._execute(
             "SELECT * FROM transactions WHERE sender=%s OR receiver=%s" + extension,
             params
         )
@@ -300,7 +412,31 @@ class TransactionLog:
         if validity_check is not None:
             self._valid = self._valid and validity_check
 
-    def to_list(self, localized: bool = config["misc"]["db-localtime"]) -> typing.List[str]:
+    def get_name(self, uid: int) -> typing.Optional[str]:
+        """
+        Convert a user ID of a user in the database to a name (or something else)
+
+        A subclass may override this method to easily change the formatted output.
+        However, this method also performs basic memoization to reduce database calls.
+        Note that this method may return ``None`` for unknown user IDs.
+
+        :param uid: internal user ID of a MateBot user
+        :type uid: int
+        :return: name of the MateBot user (or ``None`` for unknown user IDs)
+        :rtype: typing.Optional[str]
+        """
+
+        if uid in self._names:
+            return self._names[uid]
+
+        name = user.BaseBotUser.get_name_from_uid(uid)
+        if name is None:
+            return
+
+        self._names[uid] = name
+        return name
+
+    def to_list(self, localized: bool = config["general"]["db-localtime"]) -> typing.List[str]:
         """
         Return a list of pretty formatted transaction log entries
 
@@ -337,7 +473,7 @@ class TransactionLog:
 
         return logs
 
-    def to_string(self, localized: bool = config["misc"]["db-localtime"], sep: str = os.sep) -> str:
+    def to_string(self, localized: bool = config["general"]["db-localtime"], sep: str = os.sep) -> str:
         """
         Return a list of pretty formatted transaction log entries
 

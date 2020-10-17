@@ -17,6 +17,8 @@ mate_bot.commands
     commands/communism
     commands/consume
     commands/data
+    commands/forward
+    commands/handler
     commands/help
     commands/history
     commands/pay

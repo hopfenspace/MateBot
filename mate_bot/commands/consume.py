@@ -2,6 +2,7 @@
 MateBot command executor classes for any kind of consuming action
 """
 
+import logging
 import random as _random
 import typing as _typing
 
@@ -12,7 +13,10 @@ from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
+
+
+logger = logging.getLogger("commands")
 
 
 class ConsumeCommand(BaseCommand):
@@ -54,22 +58,24 @@ class ConsumeCommand(BaseCommand):
         :return: None
         """
 
+        sender = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(sender, 1, update.effective_message):
+            return
+
         if args.number > config["general"]["max-consume"]:
             update.effective_message.reply_text(
                 "You can't consume that many goods at once!"
             )
             return
 
-        sender = MateBotUser(update.effective_message.from_user)
         reason = f"consume: {args.number}x {self.name}"
-
-        trans = Transaction(
+        LoggedTransaction(
             sender,
             CommunityUser(),
             self.price * args.number,
-            reason
-        )
-        trans.commit()
+            reason,
+            update.effective_message.bot
+        ).commit()
 
         update.effective_message.reply_text(
             _random.choice(self.messages) + self.symbol * args.number,

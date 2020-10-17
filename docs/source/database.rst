@@ -66,7 +66,7 @@ be a string and set to a valid value. This is also enforced for virtual users.
 
 The `balance` is measured in Cent. Every new user must start with a balance of ``0``.
 
-The `permission` flag should is ``false`` by default. Any user who was
+The `permission` flag should be ``false`` by default. Any user who was
 white-listed will get the positive flag (``true``). This means that the
 user is permitted to vote on payment operations.
 
@@ -172,17 +172,17 @@ timestamp when the collective was committed to the database.
 Table ``collectives_users``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-+----------------+--------------------+----------+---------+-------------+----------------+
-| Field          | Type               | Null     | Key     | Default     | Extra          |
-+================+====================+==========+=========+=============+================+
-| id             | int(11)            | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
-+----------------+--------------------+----------+---------+-------------+----------------+
-| collectives_id | int(11)            | ``NO``   | ``MUL`` | ``NULL``    |                |
-+----------------+--------------------+----------+---------+-------------+----------------+
-| users_id       | int(11)            | ``NO``   | ``MUL`` | ``NULL``    |                |
-+----------------+--------------------+----------+---------+-------------+----------------+
-| vote           | enum(``-``, ``+``) | ``NO``   |         | ``NULL``    |                |
-+----------------+--------------------+----------+---------+-------------+----------------+
++----------------+------------+----------+---------+-------------+----------------+
+| Field          | Type       | Null     | Key     | Default     | Extra          |
++================+============+==========+=========+=============+================+
+| id             | int(11)    | ``NO``   | ``PRI`` | ``NULL``    | auto_increment |
++----------------+------------+----------+---------+-------------+----------------+
+| collectives_id | int(11)    | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
+| users_id       | int(11)    | ``NO``   | ``MUL`` | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
+| vote           | tinyint(1) | ``NO``   |         | ``NULL``    |                |
++----------------+------------+----------+---------+-------------+----------------+
 
 This table maps collectives and users together. A single record
 in this table means that the user joined the collective operation.
@@ -190,18 +190,11 @@ in this table means that the user joined the collective operation.
 The `collectives_id` is the key for the ID in the ``collectives`` table.
 The `users_id` is the key for the user ID in the ``users`` table.
 
-The following table lists the different meanings of the `vote` value:
-
-+-------------+-----------------------------+------------------------+
-| Vote symbol | Meaning for payments        | Meaning for communisms |
-+=============+=============================+========================+
-| ``+``       | approved by user (+1)       | ignored                |
-+-------------+-----------------------------+------------------------+
-| ``-``       | disapproved by user (-1)    | ignored                |
-+-------------+-----------------------------+------------------------+
-
-While being ignored by communism operations, the implementation uses
-``-`` as default value when no explicit vote was given by the user.
+The value in the column `vote` should be ignored for communisms. The
+code prefers to set the value to ``0`` in this case. However, the
+value for `vote` defines whether a user approved (``1``) or
+disapproved (``0``) a payment request. See :ref:`config_community`
+about the configuration of the payment approval process.
 
 Table ``collective_messages``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

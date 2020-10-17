@@ -2,33 +2,15 @@
 	"general": {
 		"max-amount": 10000,
 		"max-consume": 10,
-		"positive-terms": [
-			"on",
-			"1",
-			"+",
-			"true",
-			"yes",
-			"good",
-			"allow",
-			"allowed"
-		],
-		"negative-terms": [
-			"off",
-			"0",
-			"-",
-			"false",
-			"no",
-			"bad",
-			"deny",
-			"denied"
-		]
-	},
-	"misc": {
 		"db-localtime": false
 	},
-	"bot": {
-		"token": "<Telegram bot token here>",
-		"chat": 0
+	"token": "<Telegram bot token here>",
+	"chats": {
+		"internal": 0,
+		"transactions": [],
+		"notification": [],
+		"stacktrace": [],
+		"debugging": []
 	},
 	"community": {
 		"payment-consent": 2,
@@ -38,15 +20,13 @@
 	"database": {
 		"host": "localhost",
 		"port": 3306,
-		"db": "database_name",
-		"user": "username",
+		"db": "mate_db",
+		"user": "matebot_user",
 		"password": "password",
 		"charset": "utf8mb4"
 	},
-	"development": {
-		"notification": [],
-		"description": [],
-		"debugging": []
+	"testing":  {
+		"db": "mate_db_test"
 	},
 	"consumables": [
 		{

@@ -3,53 +3,82 @@ MateBot group transaction ("collective operation") base library
 """
 
 import typing
+import logging
 import datetime
 
 import pytz as _tz
 import tzlocal as _local_tz
+import telegram
 
 from mate_bot import err
+from mate_bot.config import config
+from mate_bot.collectives.coordinators import MessageCoordinator, UserCoordinator
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
+from mate_bot.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-class BaseCollective(BackendHelper):
+logger = logging.getLogger("collectives")
+
+_forwarding_arguments = typing.Tuple[int, MateBotUser, telegram.Bot]
+_creation_arguments = typing.Tuple[MateBotUser, int, str, telegram.Message]
+_constructor_tuple = typing.Union[_forwarding_arguments, _creation_arguments]
+
+COLLECTIVE_ARGUMENTS = typing.Union[int, _forwarding_arguments, _creation_arguments]
+
+
+class BaseCollective(MessageCoordinator, UserCoordinator):
     """
     Base class for collective operations
 
-    This class is not usable without being modified (subclassed).
-    For easy usability, at least a constructor is needed.
+    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :raises ValueError: when a supplied argument has an invalid value
+    :raises TypeError: when a supplied argument has the wrong type
+    :raises RuntimeError: when the collective ID doesn't match the class definition
+        or when the class did not properly define its collective type using the class
+        attribute ``_communistic`` (which is ``None`` by default and should be set properly)
     """
 
-    _id = None
-    _active = False
-    _amount = 0
-    _externals = 0
-    _description = ""
-    _creator = None
-    _created = None
+    _id: int = None
+    _active: bool = False
+    _amount: int = 0
+    _externals: int = 0
+    _description: str = ""
+    _creator: int = None
+    _created: datetime.datetime = None
 
-    _communistic = None
+    _communistic: bool = None
 
-    _ALLOWED_COLUMNS = []
+    _ALLOWED_COLUMNS: typing.List[str] = []
 
-    @staticmethod
-    def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
+    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
+        if type(self)._communistic is None:
+            raise RuntimeError("You need to set '_communistic' in a subclass")
+
+        if isinstance(arguments, int):
+            self._id = arguments
+            self.update()
+            if type(self)._communistic != self._communistic:
+                raise RuntimeError("Remote record does not match collective operation type")
+
+        elif not isinstance(arguments, tuple):
+            raise TypeError("Expected int or tuple of arguments")
+
+    @classmethod
+    def get_type(cls, collective_id: int) -> int:
         """
-        Extract the user ID from a given user object
+        Retrieve the type of the collective with the given ID
 
-        :param user: MateBotUser instance or integer
-        :type user: typing.Union[int, MateBotUser]
-        :return: user ID as integer
+        :param collective_id: collective ID to search for in the database
+        :type collective_id: int
+        :return: type flag of the remotely stored collective ID
         :rtype: int
-        :raises TypeError: when the user is neither int nor MateBotUser instance
+        :raises IndexError: when the collective ID does not match exactly one record
         """
 
-        if isinstance(user, MateBotUser):
-            user = user.uid
-        if not isinstance(user, int):
-            raise TypeError("Expected integer or MateBotUser instance")
-        return user
+        rows, values = super().get_value("collectives", "communistic", collective_id)
+        if rows != 1:
+            raise IndexError(f"Collective ID {collective_id} not found")
+        return values[0]["communistic"]
 
     @classmethod
     def get_cid_from_active_creator(
@@ -110,14 +139,152 @@ class BaseCollective(BackendHelper):
             return False
         return bool(values[0]["active"])
 
+    def _handle_tuple_constructor_argument(
+            self,
+            arguments: _constructor_tuple,
+            ext: typing.Optional[int] = None
+    ) -> typing.Optional[MateBotUser]:
+        """
+        Handle the tuple argument of the derived classes' constructors
+
+        The constructor of the derived classes accepts either a single integer
+        or a tuple of arguments. The handling of the tuple is very similar in
+        the currently implemented subclasses. The tuple contains either three
+        or four elements which defines the action that should be taken.
+
+        If the tuple has three values, the following types are excepted:
+
+        * ``ìnt`` as the internal ID of the collective operation in the database
+        * :class:`mate_bot.state.user.MateBotUser` as receiver of the collective
+          management message
+        * ``telegram.Bot`` to be able to send messages to the user
+
+        The given MateBot user will receive a forwarded management message of the
+        collective operation, containing all data from it. The message is also
+        registered, so that it can be updated and synced in all chats as well.
+
+        If the tuple has four values, the following types are excepted:
+
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user
+        * ``int`` as amount of the collective operation
+        * ``str`` as reason for the collective operation
+        * ``telegram.Message`` as message that initiated the collective
+
+        Afterwards, a new collective operation will be created. The given MateBot
+        user will be stored as creator for the collective. The amount and reason
+        values are self-explanatory. The last value is the message that contains the
+        command to start the new collective operation and will be used to reply to.
+
+        :param arguments: collection of arguments as described above
+        :param ext: optional number of external users that joined the collective
+        :type ext: typing.Optional[int]
+        :return: optional MateBotUser (only when a new collective has been created)
+        :rtype: typing.Optional[MateBotUser]
+        :raises ValueError: when the tuple does not contain three or four elements
+        :raises TypeError: when the values in the tuple have wrong types
+        """
+
+        if len(arguments) == 3:
+
+            collective_id, user, bot = arguments
+            if not isinstance(collective_id, int):
+                raise TypeError("Expected int as first element")
+            if not isinstance(user, MateBotUser):
+                raise TypeError("Expected MateBotUser object as second element")
+            if not isinstance(bot, telegram.Bot):
+                raise TypeError("Expected telegram.Bot object as third element")
+
+            self._id = collective_id
+            self.update()
+
+            forwarded = bot.send_message(
+                chat_id = user.tid,
+                text = self.get_markdown(),
+                reply_markup = self._get_inline_keyboard(),
+                parse_mode = "Markdown"
+            )
+
+            self.register_message(forwarded.chat_id, forwarded.message_id)
+
+        elif len(arguments) == 4:
+
+            user, amount, reason, message = arguments
+            if not isinstance(user, MateBotUser):
+                raise TypeError("Expected MateBotUser object as first element")
+            if not isinstance(amount, int):
+                raise TypeError("Expected int object as second element")
+            if not isinstance(reason, str):
+                raise TypeError("Expected str object as third element")
+            if not isinstance(message, telegram.Message):
+                raise TypeError("Expected telegram.Message as fourth element")
+
+            self._creator = user.uid
+            self._amount = amount
+            self._description = reason
+            self._externals = ext
+            self._active = True
+
+            self._create_new_record()
+
+            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._get_inline_keyboard())
+            self.register_message(reply.chat_id, reply.message_id)
+
+            if message.chat_id != config["chats"]["internal"]:
+                msg = message.bot.send_message(
+                    config["chats"]["internal"],
+                    self.get_markdown(),
+                    reply_markup = self._get_inline_keyboard(),
+                    parse_mode = "Markdown"
+                )
+                self.register_message(msg.chat_id, msg.message_id)
+
+            return user
+
+        else:
+            raise ValueError("Expected three or four arguments for the tuple")
+
+    def _get_basic_representation(self) -> str:
+        """
+        Retrieve the basic information for the collective's management message
+
+        The returned string may be formatted using Markdown. The string
+        should be suitable to be re-used inside :meth:`get_markdown`.
+
+        :return: description message of the collective operation
+        :rtype: str
+        """
+
+        raise NotImplementedError
+
+    def _get_inline_keyboard(self) -> telegram.InlineKeyboardMarkup:
+        """
+        Get the inline keyboard to control the payment operation
+
+        :return: inline keyboard using callback data strings
+        :rtype: telegram.InlineKeyboardMarkup
+        """
+        raise NotImplementedError
+
+    def get_markdown(self, status: typing.Optional[str] = None) -> str:
+        """
+        Generate the full message text as markdown string
+
+        :param status: extended status information about the collective operation (Markdown supported)
+        :type status: typing.Optional[str]
+        :return: full message text as markdown string
+        :rtype: str
+        """
+
+        raise NotImplementedError
+
     def _create_new_record(self) -> bool:
         """
         Create the record for the current collective in the database if it doesn't exist
 
-        Note that the attribute `_communistic` must be
+        Note that the attribute :attr:`_communistic` must be
         present in order for this method to work properly.
-        Remember that one user can only have one collective
-        operation active at the same time.
+        Remember that one user can only have one active
+        collective operation at the same time.
 
         :return: whether the new record was created
         :rtype: bool
@@ -132,7 +299,7 @@ class BaseCollective(BackendHelper):
             raise TypeError("Attribute isn't of type bool")
         if self._id is not None:
             raise ValueError("Internal ID is already set")
-        if self._externals != 0:
+        if self._externals != 0 and self._externals is not None:
             raise ValueError("No externals allowed for creation")
 
         connection = None
@@ -147,7 +314,6 @@ class BaseCollective(BackendHelper):
                 "SELECT LAST_INSERT_ID()",
                 connection=connection
             )
-            assert rows == 1
             self._id = values[0]["LAST_INSERT_ID()"]
 
             connection.commit()
@@ -237,219 +403,6 @@ class BaseCollective(BackendHelper):
 
         return list(map(MateBotUser, self.get_users_ids()))
 
-    def get_messages(self, chat: typing.Optional[int] = None) -> typing.List[typing.Tuple[int, int]]:
-        """
-        Get the list of registered messages that handle the current collective
-
-        Every item of the returned list is a tuple whose first integer
-        is the Telegram Chat ID while the second one is the Telegram
-        Message ID inside this chat. Use the combination of both to
-        refer to the specific message that contains the inline keyboard.
-
-        :param chat: when given, only the messages for this chat will be returned
-        :type chat: typing.Optional[int]
-        :return: list of all registered messages
-        :rtype: typing.List[typing.Tuple[int, int]]
-        :raises TypeError: when the chat ID is no integer
-        """
-
-        if chat is not None:
-            if not isinstance(chat, int):
-                raise TypeError("Expected optional integer as argument")
-
-        result = []
-        for record in self._execute(
-            "SELECT * FROM collective_messages WHERE collectives_id=%s",
-            (self._id,)
-        )[1]:
-            result.append((record["chat_id"], record["msg_id"]))
-
-        if chat is not None:
-            result = list(filter(lambda r: r[0] == chat, result))
-        return result
-
-    def register_message(self, chat: int, msg: int) -> bool:
-        """
-        Register a Telegram message for the current collective
-
-        Note that it is important to verify the return value of this
-        method. It will not raise exceptions in case there's already
-        a message in the specified chat, it will fail silently.
-
-        :param chat: Telegram Chat ID
-        :type chat: int
-        :param msg: Telegram Message ID inside the specified chat
-        :type msg: int
-        :return: success of the operation
-        :rtype: bool
-        :raises TypeError: when the method arguments are no integers
-        """
-
-        if not isinstance(chat, int) or not isinstance(msg, int):
-            raise TypeError("Expected integers as arguments")
-
-        for record in self.get_messages():
-            if record[0] == chat:
-                return False
-
-        return self._execute(
-            "INSERT INTO collective_messages (collectives_id, chat_id, msg_id) VALUES (%s, %s, %s)",
-            (self._id, chat, msg)
-        )[0] == 1
-
-    def unregister_message(self, chat: int, msg: int) -> bool:
-        """
-        Unregister a Telegram message for the current collective
-
-        Note that it is important to verify the return value of this
-        method. It will not raise exceptions in case the specified
-        message could not be found, it will fail silently.
-
-        :param chat: Telegram Chat ID
-        :type chat: int
-        :param msg: Telegram Message ID inside the specified chat
-        :type msg: int
-        :return: success of the operation
-        :rtype: bool
-        :raises TypeError: when the method arguments are no integers
-        """
-
-        if not isinstance(chat, int) or not isinstance(msg, int):
-            raise TypeError("Expected integers as arguments")
-
-        return self._execute(
-            "DELETE FROM collective_messages WHERE collectives_id=%s AND chat_id=%s AND msg_id=%s",
-            (self._id, chat, msg)
-        )[0] == 1
-
-    def replace_message(self, chat: int, msg: int) -> bool:
-        """
-        Replace the currently stored message in the chat with the new ID
-
-        Note that it is important to verify the return value of this
-        method. It will not raise exceptions in case the specified chat
-        didn't store any old message, it will silently create the record.
-
-        :param chat: Telegram Chat ID
-        :type chat: int
-        :param msg: old Telegram Message ID inside the specified chat
-        :type msg: int
-        :return: success of the operation
-        :rtype: bool
-        :raises TypeError: when the method arguments are no integers
-        """
-
-        if not isinstance(chat, int) or not isinstance(msg, int):
-            raise TypeError("Expected integers as arguments")
-
-        if not self._execute(
-            "UPDATE collective_messages SET msg_id=%s WHERE collectives_id=%s AND chat_id=%s",
-            (msg, self._id, chat)
-        )[0]:
-            return self.register_message(chat, msg)
-        return True
-
-    def is_participating(
-            self,
-            user: typing.Union[int, MateBotUser]
-    ) -> typing.Tuple[bool, typing.Optional[str]]:
-        """
-        Determine whether the user is participating in this collective operation
-
-        :param user: MateBot user
-        :type user: typing.Union[int, MateBotUser]
-        :return: tuple whether the user is participating and the (optional) vote
-        :rtype: typing.Tuple[bool, typing.Optional[str]]
-        :raises err.DesignViolation: when more than one match was found
-        """
-
-        user = self._get_uid(user)
-        rows, values = self._execute(
-            "SELECT * FROM collectives_users "
-            "WHERE collectives_id=%s AND users_id=%s",
-            (self._id, user)
-        )
-
-        if rows == 0 and len(values) == 0:
-            return False, None
-        if rows > 1 and len(values) > 1:
-            raise err.DesignViolation
-        return True, values[0]["vote"]
-
-    def add_user(
-            self,
-            user: typing.Union[int, MateBotUser],
-            vote: typing.Union[str, bool] = False
-    ) -> bool:
-        """
-        Add a user to the collective using the given vote
-
-        :param user: MateBot user
-        :type user: typing.Union[int, MateBotUser]
-        :param vote: positive or negative vote (ignored for certain operation types)
-        :type vote: typing.Union[str, bool]
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        user = self._get_uid(user)
-        if isinstance(vote, bool):
-            vote = "+" if vote else "-"
-        if vote not in ("+", "-"):
-            raise ValueError("Expected '+' or '-'")
-
-        if not self.is_participating(user)[0]:
-            rows, values = self._execute(
-                "INSERT INTO collectives_users(collectives_id, users_id, vote) "
-                "VALUES (%s, %s, %s)",
-                (self._id, user, vote)
-            )
-
-            return rows == 1 and len(values) == 1
-        return False
-
-    def remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
-        """
-        Remove a user from the collective
-
-        :param user: MateBot user
-        :type user: typing.Union[int, MateBotUser]
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        user = self._get_uid(user)
-        if self.is_participating(user)[0]:
-            rows, values = self._execute(
-                "DELETE FROM collectives_users "
-                "WHERE collectives_id=%s AND users_id=%s",
-                (self._id, user)
-            )
-
-            return rows == 1 and len(values) == 1
-        return False
-
-    def toggle_user(
-            self,
-            user: typing.Union[int, MateBotUser],
-            vote: typing.Union[str, bool] = False
-    ) -> bool:
-        """
-        Add or remove a user to/from the collective using the given vote
-
-        :param user: MateBot user
-        :type user: typing.Union[int, MateBotUser]
-        :param vote: positive or negative vote (ignored for certain operation types)
-        :type vote: typing.Union[str, bool]
-        :return: success of the operation
-        :rtype: bool
-        """
-
-        if self.is_participating(user)[0]:
-            return self.remove_user(user)
-        else:
-            return self.add_user(user, vote)
-
     def _abort(self) -> bool:
         """
         Abort the current pending collective operation without fulfilling the transactions
@@ -500,12 +453,14 @@ class BaseCollective(BackendHelper):
 
         return self._abort()
 
-    def close(self) -> bool:
+    def close(self, bot: typing.Optional[telegram.Bot] = None) -> bool:
         """
         Close the collective operation and perform all transactions
 
         This method must be overwritten in a subclass!
 
+        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
+        :type bot: typing.Optional[telegram.Bot]
         :return: success of the operation
         :rtype: bool
         """
@@ -561,6 +516,36 @@ class BaseCollective(BackendHelper):
             self._created = _tz.utc.localize(record["created"])
 
         return result and rows == 1
+
+    def edit_all_messages(
+            self,
+            content: str,
+            markup: telegram.InlineKeyboardMarkup,
+            bot: telegram.Bot,
+            parse_mode: str = "Markdown"
+    ) -> None:
+        """
+        Edit the content of the collective messages in all chats
+
+        :param content: message context as text (with support according to ``parse_mode``
+        :type content: str
+        :param markup: inline keyboard that should be used for the messages
+        :type markup: telegram.InlineKeyboardMarkup
+        :param bot: Telegram Bot object
+        :type bot: telegram.Bot
+        :param parse_mode: parse mode of the message content (default: Markdown)
+        :type parse_mode: str
+        :return: None
+        """
+
+        for c, m in self.get_messages():
+            bot.edit_message_text(
+                content,
+                chat_id=c,
+                message_id=m,
+                reply_markup=markup,
+                parse_mode=parse_mode
+            )
 
     @property
     def active(self) -> bool:

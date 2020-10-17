@@ -2,6 +2,8 @@
 MateBot command executor classes for /send
 """
 
+import logging
+
 import telegram
 
 from mate_bot.parsing.types import amount as amount_type
@@ -9,7 +11,10 @@ from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
+
+
+logger = logging.getLogger("commands")
 
 
 class SendCommand(BaseCommand):
@@ -42,6 +47,9 @@ class SendCommand(BaseCommand):
             update.effective_message.reply_text("You can't send money to yourself!")
             return
 
+        if not self.ensure_permissions(sender, 1, update.effective_message):
+            return
+
         def e(variant: str) -> str:
             return f"send {variant} {args.amount} {sender.uid} {args.receiver.uid}"
 
@@ -64,7 +72,7 @@ class SendCallbackQuery(BaseCallbackQuery):
     """
 
     def __init__(self):
-        super().__init__("send")
+        super().__init__("send", "^send")
 
     def run(self, update: telegram.Update) -> None:
         """
@@ -105,8 +113,13 @@ class SendCallbackQuery(BaseCallbackQuery):
                 raise RuntimeError("Unknown reason while confirming a Transaction")
 
             if confirmation:
-                trans = Transaction(sender, receiver, amount, reason)
-                trans.commit()
+                LoggedTransaction(
+                    sender,
+                    receiver,
+                    amount,
+                    reason,
+                    update.callback_query.bot
+                ).commit()
 
                 update.callback_query.message.edit_text(
                     f"Okay, you sent {amount / 100 :.2f}€ to {str(receiver)}",

@@ -4,6 +4,7 @@ MateBot user definitions
 
 from __future__ import annotations
 import typing
+import logging
 import datetime as _datetime
 
 import pytz as _tz
@@ -12,6 +13,9 @@ import pymysql.err as _err
 import telegram as _telegram
 
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
+
+
+logger = logging.getLogger("state")
 
 
 class BaseBotUser(BackendHelper):
@@ -23,20 +27,20 @@ class BaseBotUser(BackendHelper):
     the advanced subclasses MateBotUser or CommunityUser instead.
     """
 
-    _user = None
-    _id = 0
-    _tid = None
-    _name = ""
-    _username = ""
-    _balance = 0
-    _permission = 0
-    _active = False
-    _external = False
-    _created = _datetime.datetime.fromtimestamp(0)
-    _accessed = _datetime.datetime.fromtimestamp(0)
+    _user: typing.Optional[_telegram.User]
+    _id: int
+    _tid: typing.Optional[int] = None
+    _name: str
+    _username: typing.Optional[str] = None
+    _balance: int = 0
+    _permission: int = 0
+    _active: bool = False
+    _external: bool = False
+    _created: _datetime.datetime = _datetime.datetime.fromtimestamp(0)
+    _accessed: _datetime.datetime = _datetime.datetime.fromtimestamp(0)
 
-    _ALLOWED_UPDATES = []
-    _ALLOWED_EXTERNAL = False
+    _ALLOWED_UPDATES: typing.List[str] = []
+    _ALLOWED_EXTERNAL: bool = False
 
     @classmethod
     def get_uid_from_tid(cls, tid: int) -> typing.Optional[int]:
@@ -48,7 +52,7 @@ class BaseBotUser(BackendHelper):
         :return: int or None
         """
 
-        rows, values = cls._execute("SELECT id FROM users WHERE tid=%s", (tid,))
+        rows, values = cls.get_values_by_key("users", "tid", tid)
         if rows == 1 and len(values) == 1:
             return values[0]["id"]
         return None
@@ -112,7 +116,7 @@ class BaseBotUser(BackendHelper):
         """
 
         if use_tid:
-            return self._execute("SELECT * FROM users WHERE tid=%s", (self._tid,))
+            return self.get_values_by_key("users", "tid", self._tid)
         else:
             return self.get_value("users", None, self._id)
 
@@ -185,7 +189,7 @@ class BaseBotUser(BackendHelper):
         :return: bool
         """
 
-        rows, values = self._execute("SELECT * FROM externals WHERE external=%s", (self._id,))
+        rows, values = self.get_values_by_key("externals", "external", self._id)
         return rows != 0 and len(values) != 0
 
     def update(self) -> None:
@@ -291,7 +295,7 @@ class BaseBotUser(BackendHelper):
 
     @active.setter
     def active(self, new: bool) -> None:
-        self._active = self._update_record("active", bool(new))
+        self._active = bool(self._update_record("active", bool(new)))
 
     @property
     def created(self) -> _datetime.datetime:
@@ -443,6 +447,7 @@ class MateBotUser(BaseBotUser):
             if not use_tid:
                 raise _err.DataError(f"User ID {self._id} was not found in the database.")
 
+            logger.info(f"Registering new user {self._user.name} (ID {self._user.id})...")
             self._execute(
                 "INSERT INTO users (tid, username, name) VALUES (%s, %s, %s)",
                 (self._user.id, self._user.username, self._user.full_name)
@@ -497,7 +502,7 @@ class MateBotUser(BaseBotUser):
         Therefore, all getter and setter accesses produce SQL queries.
         """
 
-        rows, values = self._execute("SELECT internal FROM externals WHERE external=%s", (self._id,))
+        rows, values = self.get_values_by_key("externals", "external", self._id)
         if rows == 1 and len(values) == 1:
             return values[0]["internal"]
         return None

@@ -1,13 +1,13 @@
 """
 Collection of parser argument types.
-See :ref:`mate_bot.parsing.actions` Action's type parameter
+See :class:`mate_bot.parsing.actions.Action`'s type parameter
 """
 
 import re
 
+from mate_bot import registry
 from mate_bot.state.user import MateBotUser
 from mate_bot.state.finders import find_user_by_username
-from mate_bot.commands.registry import COMMANDS
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 from mate_bot.parsing.util import EntityString
@@ -51,26 +51,6 @@ def amount(arg: str) -> int:
         raise ValueError("The amount is too high")
 
     return val
-
-
-def boolean(arg: str) -> bool:
-    """
-    Convert the string into a boolean using allowed phrases (word lists)
-
-    Which phrases/ terms map to which boolean value can be set in config.
-
-    :param arg: string to be parsed
-    :type arg: str
-    :return: properly converted boolean value
-    :rtype: bool
-    :raises ValueError: when the argument could not be converted properly
-    """
-
-    if arg.lower() in config["general"]["positive-terms"]:
-        return True
-    elif arg.lower() in config["general"]["negative-terms"]:
-        return False
-    raise ValueError("Unknown boolean phrase.")
 
 
 def natural(arg: str) -> int:
@@ -129,7 +109,6 @@ def command(arg: str) -> BaseCommand:
     """
 
     try:
-        return COMMANDS.get(arg)
+        return registry.commands[arg.lower()]
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")
-

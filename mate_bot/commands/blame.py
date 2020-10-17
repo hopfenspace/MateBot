@@ -2,11 +2,16 @@
 MateBot command executor classes for /blame
 """
 
+import logging
+
 import telegram
 
 from mate_bot.commands.base import BaseCommand
 from mate_bot.state.user import MateBotUser
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class BlameCommand(BaseCommand):
@@ -28,6 +33,10 @@ class BlameCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+
+        user = MateBotUser(update.effective_message.from_user)
+        if not self.ensure_permissions(user, 2, update.effective_message):
+            return
 
         debtors = MateBotUser.get_worst_debtors()
         if len(debtors) == 0:

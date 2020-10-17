@@ -2,12 +2,17 @@
 MateBot command executor classes for /start
 """
 
+import logging
+
 import telegram
 
 from mate_bot.state.user import MateBotUser
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
+
+
+logger = logging.getLogger("commands")
 
 
 class StartCommand(BaseCommand):

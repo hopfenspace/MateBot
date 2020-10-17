@@ -2,12 +2,19 @@
 MateBot command executor classes for /help
 """
 
+import logging
+import datetime
+
 import telegram
 
-from mate_bot.commands.base import BaseCommand
-from mate_bot.commands.registry import COMMANDS
+from mate_bot import registry
+from mate_bot.commands.base import BaseCommand, BaseInlineQuery
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
+from mate_bot.state.user import MateBotUser
+
+
+logger = logging.getLogger("commands")
 
 
 class HelpCommand(BaseCommand):
@@ -34,10 +41,25 @@ class HelpCommand(BaseCommand):
         """
 
         if args.command:
-            msg = args.command.description
+            msg = "*Usages:*\n"
+            msg += "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
+            msg += "\n\n" \
+                   "*Description:*\n"
+            msg += args.command.description
         else:
-            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(COMMANDS.commands_as_dict.keys())))
-            msg = f"{self.usage}\n\nList of commands:\n\n{commands}\n"
+            commands = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
+            msg = f"{self.usage}\n\nList of commands:\n\n{commands}"
+            user = MateBotUser(update.effective_message.from_user)
+            if user.external:
+                msg += "\n\nYou are an external user. Some commands may be restricted."
+                if user.creditor is None:
+                    msg += (
+                        "\nYou don't have any creditor. Your possible interactions "
+                        "with the bot are very limited for security purposes. You "
+                        "can ask some internal user to act as your voucher. To "
+                        "do this, the internal user needs to execute `/vouch "
+                        "<your username>`. Afterwards, you may use this bot."
+                    )
 
         if msg == "":
             update.effective_message.reply_text(
@@ -45,3 +67,44 @@ class HelpCommand(BaseCommand):
             )
         else:
             update.effective_message.reply_markdown(msg)
+
+
+class HelpInlineQuery(BaseInlineQuery):
+    """
+    Get inline help messages like /help does as command
+    """
+
+    def get_result_id(self, *args) -> str:
+        """
+        Generate a result ID based on the current time and the static word ``help``
+
+        :param args: ignored collection of parameters
+        :return: result ID for any inline query seeking for help
+        :rtype: str
+        """
+
+        return f"help-{int(datetime.datetime.now().timestamp())}"
+
+    def get_help(self) -> telegram.InlineQueryResult:
+        """
+        Get the generic help message as only answer of an inline query handled by this class
+
+        :return: help message as inline query result
+        :rtype: telegram.InlineQueryResult
+        """
+
+        return self.get_result(
+            "Help",
+            "#TODO"
+        )
+
+    def run(self, query: telegram.InlineQuery) -> None:
+        """
+        Answer the inline query by providing the result of :meth:`get_help`
+
+        :param query: inline query as part of an incoming Update
+        :type query: telegram.InlineQuery
+        :return: None
+        """
+
+        query.answer([self.get_help()])
