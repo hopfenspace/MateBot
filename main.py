@@ -9,15 +9,25 @@ from telegram.ext import (
     CallbackQueryHandler, InlineQueryHandler
 )
 
-from mate_bot import err
-from mate_bot import log
-from mate_bot import registry
+from mate_bot import err, log, registry
 from mate_bot.config import config
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
 
 
 class _SubcommandHelper:
+    """
+    Minimal helper class
+
+    :param args: Namespace of parsed arguments
+    :type args: argparse.Namespace
+    :param logger: logger object that should be used for logging purposes
+    :type logger: logging.Logger
+    """
+
+    args: argparse.Namespace
+    logger: logging.Logger
+
     def __init__(self, args: argparse.Namespace, logger: logging.Logger):
         self.args = args
         self.logger = logger
@@ -27,6 +37,10 @@ class _SubcommandHelper:
 
 
 class _Runner(_SubcommandHelper):
+    """
+    MateBot executor of the ``run`` subcommand
+    """
+
     handler_types = typing.Union[
         typing.Type[CommandHandler],
         typing.Type[CallbackQueryHandler],
@@ -77,11 +91,19 @@ class _Runner(_SubcommandHelper):
 
 
 class _Installer(_SubcommandHelper):
+    """
+    MateBot executor of the ``install`` subcommand
+    """
+
     def __call__(self) -> int:
         pass
 
 
 class _Extractor(_SubcommandHelper):
+    """
+    MateBot executor of the ``extract`` subcommand
+    """
+
     def __call__(self) -> int:
         pass
 
