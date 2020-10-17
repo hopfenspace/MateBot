@@ -27,20 +27,20 @@ class BaseBotUser(BackendHelper):
     the advanced subclasses MateBotUser or CommunityUser instead.
     """
 
-    _user = None
-    _id = 0
-    _tid = None
-    _name = ""
-    _username = ""
-    _balance = 0
-    _permission = 0
-    _active = False
-    _external = False
-    _created = _datetime.datetime.fromtimestamp(0)
-    _accessed = _datetime.datetime.fromtimestamp(0)
+    _user: typing.Optional[_telegram.User]
+    _id: int
+    _tid: typing.Optional[int] = None
+    _name: str
+    _username: typing.Optional[str] = None
+    _balance: int = 0
+    _permission: int = 0
+    _active: bool = False
+    _external: bool = False
+    _created: _datetime.datetime = _datetime.datetime.fromtimestamp(0)
+    _accessed: _datetime.datetime = _datetime.datetime.fromtimestamp(0)
 
-    _ALLOWED_UPDATES = []
-    _ALLOWED_EXTERNAL = False
+    _ALLOWED_UPDATES: typing.List[str] = []
+    _ALLOWED_EXTERNAL: bool = False
 
     @classmethod
     def get_uid_from_tid(cls, tid: int) -> typing.Optional[int]:
@@ -295,7 +295,7 @@ class BaseBotUser(BackendHelper):
 
     @active.setter
     def active(self, new: bool) -> None:
-        self._active = self._update_record("active", bool(new))
+        self._active = bool(self._update_record("active", bool(new)))
 
     @property
     def created(self) -> _datetime.datetime:
