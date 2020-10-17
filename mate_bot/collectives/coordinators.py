@@ -5,7 +5,11 @@ MateBot multi-user and multi-message coordinator classes
 import typing
 
 
+from mate_bot import err
 from mate_bot.state.dbhelper import BackendHelper
+from mate_bot.state.user import MateBotUser
+
+
 class MessageCoordinator(BackendHelper):
     _id: int
 
@@ -117,3 +121,125 @@ class MessageCoordinator(BackendHelper):
         )[0]:
             return self.register_message(chat, msg)
         return True
+
+
+class UserCoordinator(BackendHelper):
+    _id: int
+
+    @staticmethod
+    def _get_uid(user: typing.Union[int, MateBotUser]) -> int:
+        """
+        Extract the user ID from a given user object
+
+        :param user: MateBotUser instance or integer
+        :type user: typing.Union[int, MateBotUser]
+        :return: user ID as integer
+        :rtype: int
+        :raises TypeError: when the user is neither int nor MateBotUser instance
+        """
+
+        if isinstance(user, MateBotUser):
+            user = user.uid
+        if not isinstance(user, int):
+            raise TypeError("Expected integer or MateBotUser instance")
+        return user
+
+    def is_participating(
+            self,
+            user: typing.Union[int, MateBotUser]
+    ) -> typing.Tuple[bool, typing.Optional[bool]]:
+        """
+        Determine whether the user is participating in this collective operation
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :return: tuple whether the user is participating and the (optional) vote
+        :rtype: typing.Tuple[bool, typing.Optional[bool]]
+        :raises err.DesignViolation: when more than one match was found
+        """
+
+        user = self._get_uid(user)
+        rows, values = self._execute(
+            "SELECT * FROM collectives_users "
+            "WHERE collectives_id=%s AND users_id=%s",
+            (self._id, user)
+        )
+
+        if rows == 0 and len(values) == 0:
+            return False, None
+        if rows > 1 and len(values) > 1:
+            raise err.DesignViolation
+        return True, values[0]["vote"]
+
+    def add_user(
+            self,
+            user: typing.Union[int, MateBotUser],
+            vote: typing.Union[bool] = False
+    ) -> bool:
+        """
+        Add a user to the collective using the given vote
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :param vote: positive or negative vote (ignored for certain operation types)
+        :type vote: typing.Union[str, bool]
+        :return: success of the operation
+        :rtype: bool
+        :raises TypeError: when the vote is no boolean
+        """
+
+        user = self._get_uid(user)
+        if not isinstance(vote, bool):
+            raise TypeError("Expected boolean value for vote")
+
+        if not self.is_participating(user)[0]:
+            rows, values = self._execute(
+                "INSERT INTO collectives_users(collectives_id, users_id, vote) "
+                "VALUES (%s, %s, %s)",
+                (self._id, user, vote)
+            )
+
+            return rows == 1
+        return False
+
+    def remove_user(self, user: typing.Union[int, MateBotUser]) -> bool:
+        """
+        Remove a user from the collective
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        user = self._get_uid(user)
+        if self.is_participating(user)[0]:
+            rows, values = self._execute(
+                "DELETE FROM collectives_users "
+                "WHERE collectives_id=%s AND users_id=%s",
+                (self._id, user)
+            )
+
+            return rows == 1 and len(values) == 1
+        return False
+
+    def toggle_user(
+            self,
+            user: typing.Union[int, MateBotUser],
+            vote: typing.Union[str, bool] = False
+    ) -> bool:
+        """
+        Add or remove a user to/from the collective using the given vote
+
+        :param user: MateBot user
+        :type user: typing.Union[int, MateBotUser]
+        :param vote: positive or negative vote (ignored for certain operation types)
+        :type vote: typing.Union[str, bool]
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        if self.is_participating(user)[0]:
+            return self.remove_user(user)
+        else:
+            return self.add_user(user, vote)
