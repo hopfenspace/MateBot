@@ -10,7 +10,6 @@ mate_bot.state
 
 .. toctree::
 
-    state/collectives
     state/dbhelper
     state/finders
     state/transactions

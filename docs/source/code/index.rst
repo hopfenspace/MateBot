@@ -10,6 +10,7 @@ This is the complete documentation of the source code.
     :maxdepth: 2
 
     state
+    collectives
     commands
     parsing
     registry
