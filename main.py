@@ -17,21 +17,84 @@ from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
 
 
-handler_types = typing.Union[
-    typing.Type[CommandHandler],
-    typing.Type[CallbackQueryHandler],
-    typing.Type[InlineQueryHandler],
-    typing.Type[FilteredChosenInlineResultHandler]
-]
+class _SubcommandHelper:
+    def __init__(self, args: argparse.Namespace, logger: logging.Logger):
+        self.args = args
+        self.logger = logger
+
+    def __call__(self) -> int:
+        raise NotImplementedError
 
 
-class MateBotRunner:
+class _Runner(_SubcommandHelper):
+    handler_types = typing.Union[
+        typing.Type[CommandHandler],
+        typing.Type[CallbackQueryHandler],
+        typing.Type[InlineQueryHandler],
+        typing.Type[FilteredChosenInlineResultHandler]
+    ]
+
+    def __call__(self) -> int:
+        BackendHelper._query_logger = logging.getLogger("database")
+
+        updater = Updater(config["token"], use_context = True)
+
+        self.logger.info("Adding error handler...")
+        updater.dispatcher.add_error_handler(err.log_error)
+
+        self.add_handler(updater.dispatcher, CommandHandler, registry.commands, False)
+        self.add_handler(updater.dispatcher, CallbackQueryHandler, registry.callback_queries, True)
+        self.add_handler(updater.dispatcher, InlineQueryHandler, registry.inline_queries, True)
+        self.add_handler(updater.dispatcher, FilteredChosenInlineResultHandler, registry.inline_results, True)
+
+        self.logger.info("Starting bot...")
+        updater.start_polling()
+        updater.idle()
+
+        return 0
+
+    def add_handler(self, dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool = True) -> None:
+        """
+        Add the executors from the given pool to the dispatcher using the given handler type
+
+        :param dispatcher: Telegram's dispatcher to add the executor to
+        :type dispatcher: telegram.ext.Dispatcher
+        :param handler: type of the handler (subclass of ``telegram.ext.Handler``)
+        :type handler: handler_types
+        :param pool: collection of all executors for one handler type
+        :type pool: dict
+        :param pattern: switch whether the keys of the pool are patterns or names
+        :type pattern: bool
+        :return: None
+        """
+
+        self.logger.info(f"Adding {handler.__name__} executors...")
+        for name in pool:
+            if pattern:
+                dispatcher.add_handler(handler(pool[name], pattern = name))
+            else:
+                dispatcher.add_handler(handler(name, pool[name]))
+
+class MateBot:
     """
     MateBot application executor
+
+    :param args: parsed program arguments as returned by ``parse_args``
+    :type args: argparse.Namespace
     """
 
-    def __init__(self, args: argparse.Namespace) -> None:
-        pass
+    _args: argparse.Namespace
+
+    def __init__(self, args: argparse.Namespace):
+        self._args = args
+        log.setup()
+        self.logger = logging.getLogger("runner")
+
+        self.run = _Runner(args, self.logger)
+        self.install = _Installer(args, self.logger)
+        self.extract = _Extractor(args, self.logger)
+
+        self.logger.debug(f"Created MateBotRunner object {self}")
 
     @staticmethod
     def setup() -> argparse.ArgumentParser:
@@ -84,47 +147,6 @@ class MateBotRunner:
         return parser
 
 
-def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool = True) -> None:
-    """
-    Add the executors from the given pool to the dispatcher using the given handler type
-
-    :param dispatcher: Telegram's dispatcher to add the executor to
-    :type dispatcher: telegram.ext.Dispatcher
-    :param handler: type of the handler (subclass of ``telegram.ext.Handler``)
-    :type handler: handler_types
-    :param pool: collection of all executors for one handler type
-    :type pool: dict
-    :param pattern: switch whether the keys of the pool are patterns or names
-    :type pattern: bool
-    :return: None
-    """
-
-    logger.info(f"Adding {handler.__name__} executors...")
-    for name in pool:
-        if pattern:
-            dispatcher.add_handler(handler(pool[name], pattern=name))
-        else:
-            dispatcher.add_handler(handler(name, pool[name]))
-
-
 if __name__ == "__main__":
-    arguments = MateBotRunner.setup().parse_args()
-    exit(MateBotRunner(arguments).start())
-
-    log.setup()
-    logger = logging.getLogger()
-    BackendHelper._query_logger = logging.getLogger("database")
-
-    updater = Updater(config["token"], use_context = True)
-
-    logger.info("Adding error handler...")
-    updater.dispatcher.add_error_handler(err.log_error)
-
-    _add(updater.dispatcher, CommandHandler, registry.commands, False)
-    _add(updater.dispatcher, CallbackQueryHandler, registry.callback_queries, True)
-    _add(updater.dispatcher, InlineQueryHandler, registry.inline_queries, True)
-    _add(updater.dispatcher, FilteredChosenInlineResultHandler, registry.inline_results, True)
-
-    logger.info("Starting bot...")
-    updater.start_polling()
-    updater.idle()
+    arguments = MateBot.setup().parse_args()
+    exit(MateBot(arguments).start())
