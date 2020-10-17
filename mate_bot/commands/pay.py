@@ -8,6 +8,7 @@ import logging
 import telegram
 
 from mate_bot.collectives.base import BaseCollective
+from mate_bot.collectives.communism import Communism
 from mate_bot.collectives.payment import Payment
 from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
 from mate_bot.parsing.types import amount as amount_type
@@ -51,47 +52,28 @@ class PayCommand(BaseCommand):
             return
 
         if args.subcommand is None:
-            if Pay.has_user_active_collective(user):
+            if Payment.has_user_active_collective(user):
                 update.effective_message.reply_text("You already have a collective in progress.")
                 return
 
-            Pay((user, args.amount, args.reason, update.effective_message))
+            Payment((user, args.amount, args.reason, update.effective_message))
             return
 
-        pay_id = BaseCollective.get_cid_from_active_creator(user)
-        if pay_id is None:
+        collective_id = BaseCollective.get_cid_from_active_creator(user)
+        if collective_id is None:
             update.effective_message.reply_text("You don't have a collective in progress.")
             return
 
-        pay = Pay(pay_id)
+        if BaseCollective.get_type(collective_id):
+            collective = Communism(collective_id)
+        else:
+            collective = Payment(collective_id)
 
         if args.subcommand == "show":
-            reply = update.effective_message.reply_text("Loading...")
-
-            messages = pay.get_messages(update.effective_message.chat.id)
-            for msg in messages:
-                update.effective_message.bot.edit_message_text(
-                    pay.get_markdown(
-                        "\n_This payment request management message is not active anymore. "
-                        "A more recent message has been sent to the chat to replace this one._"
-                    ),
-                    chat_id=msg[0],
-                    message_id=msg[1],
-                    parse_mode="Markdown",
-                    reply_to_message_id=reply.message_id,
-                    reply_markup=telegram.InlineKeyboardMarkup([])
-                )
-                pay.unregister_message(msg[0], msg[1])
-
-            pay.register_message(update.effective_message.chat.id, reply.message_id)
-            pay.edit_all_messages(
-                pay.get_markdown(),
-                pay._get_inline_keyboard(),
-                update.effective_message.bot
-            )
+            collective.show(update.effective_message)
 
         elif args.subcommand == "stop":
-            pay.cancel(update.effective_message.bot)
+            collective.cancel(update.effective_message.bot)
 
 
 class PayCallbackQuery(BaseCallbackQuery):
@@ -102,13 +84,13 @@ class PayCallbackQuery(BaseCallbackQuery):
     def __init__(self):
         super().__init__("pay", "^pay")
 
-    def _get_payment(self, query: telegram.CallbackQuery) -> typing.Optional[Pay]:
+    def _get_payment(self, query: telegram.CallbackQuery) -> typing.Optional[Payment]:
         """
-        Retrieve the Pay object based on the callback data
+        Retrieve the Payment object based on the callback data
 
         :param query: incoming Telegram callback query with its attached data
         :type query: telegram.CallbackQuery
-        :return: Pay object that handles the current collective
+        :return: Payment object that handles the current collective
         :rtype: typing.Optional[Pay]
         """
 
@@ -129,7 +111,7 @@ class PayCallbackQuery(BaseCallbackQuery):
             raise
 
         try:
-            pay = Pay(payment_id)
+            pay = Payment(payment_id)
             if pay.active:
                 return pay
             query.answer("The pay is not active anymore!")
