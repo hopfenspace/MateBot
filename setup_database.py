@@ -22,9 +22,11 @@ def main():
     import json
     import datetime
 
-    from mate_bot.state.dbhelper import execute
+    from mate_bot.state.dbhelper import BackendHelper
     from mate_bot.state.transactions import Transaction
     from mate_bot.state.user import CommunityUser, MateBotUser
+
+    execute = BackendHelper._execute
 
     class MigratedTransaction(Transaction):
         def fix(self, timestamp: datetime.datetime):
@@ -103,7 +105,7 @@ def main():
             print("User {} was created: {}".format(u["name"], r == 1))
 
     def check_existing_database(db_name, mod):
-        r, v = mod.execute("SHOW DATABASES")
+        r, v = mod.BackendHelper._execute("SHOW DATABASES")
         if r == 0:
             return False
         return any(db_name in v[c].values() for c in range(len(v)))
@@ -194,10 +196,10 @@ def main():
             print("\n\nAre you sure? If not, you can type EXIT to quit.")
             ask_exit()
 
-            dbhelper.execute("DROP DATABASE {}".format(database_name))
+            dbhelper.BackendHelper._execute("DROP DATABASE {}".format(database_name))
             print("Table '{}' deleted.".format(database_name))
 
-        dbhelper.execute("CREATE DATABASE {}".format(database_name))
+        dbhelper.BackendHelper._execute("CREATE DATABASE {}".format(database_name))
         dbhelper._config["database"]["db"] = database_name
         print("Table '{}' created.".format(database_name))
 
@@ -286,8 +288,8 @@ def main():
         failed = []
         communisms = []
         with open(transaction_log) as fd:
-            for l in fd.readlines():
-                tr = json.loads(l)
+            for line in fd.readlines():
+                tr = json.loads(line)
 
                 t = None
                 if tr["reason"] in ["drink", "ice", "water", "pizza"]:
