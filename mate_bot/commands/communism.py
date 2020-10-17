@@ -10,6 +10,7 @@ import telegram.ext
 from mate_bot import err
 from mate_bot.collectives.base import BaseCollective
 from mate_bot.collectives.communism import Communism
+from mate_bot.collectives.payment import Payment
 from mate_bot.parsing.types import amount as amount_type
 from mate_bot.parsing.actions import JoinAction
 from mate_bot.parsing.util import Namespace
@@ -70,39 +71,21 @@ class CommunismCommand(BaseCommand):
             Communism((user, args.amount, args.reason, update.effective_message))
             return
 
-        cid = BaseCollective.get_cid_from_active_creator(user)
-        if cid is None:
+        collective_id = BaseCollective.get_cid_from_active_creator(user)
+        if collective_id is None:
             update.effective_message.reply_text("You don't have a collective in progress.")
             return
 
-        com = Communism(cid)
+        if BaseCollective.get_type(collective_id):
+            collective = Communism(collective_id)
+        else:
+            collective = Payment(collective_id)
 
         if args.subcommand == "show":
-            reply = update.effective_message.reply_text("Loading...")
-
-            messages = com.get_messages(update.effective_message.chat.id)
-            for msg in messages:
-                update.effective_message.bot.edit_message_text(
-                    f"*Communism by {com.creator.name}*\n\n{com._get_basic_representation()}"
-                    "\n_This communism management message is not active anymore. "
-                    "A more recent message has been sent to the chat to replace this one._",
-                    chat_id=msg[0],
-                    message_id=msg[1],
-                    parse_mode="Markdown",
-                    reply_to_message_id=reply.message_id,
-                    reply_markup=telegram.InlineKeyboardMarkup([])
-                )
-                com.unregister_message(msg[0], msg[1])
-
-            com.register_message(update.effective_message.chat.id, reply.message_id)
-            com.edit_all_messages(
-                com.get_markdown(),
-                com._get_inline_keyboard(),
-                update.effective_message.bot
-            )
+            collective.show(update.effective_message)
 
         elif args.subcommand == "stop":
-            com.cancel(update.effective_message.bot)
+            collective.cancel(update.effective_message.bot)
 
 
 class CommunismCallbackQuery(BaseCallbackQuery):
