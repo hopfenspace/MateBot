@@ -75,6 +75,17 @@ class _Runner(_SubcommandHelper):
             else:
                 dispatcher.add_handler(handler(name, pool[name]))
 
+
+class _Installer(_SubcommandHelper):
+    def __call__(self) -> int:
+        pass
+
+
+class _Extractor(_SubcommandHelper):
+    def __call__(self) -> int:
+        pass
+
+
 class MateBot:
     """
     MateBot application executor
@@ -95,6 +106,20 @@ class MateBot:
         self.extract = _Extractor(args, self.logger)
 
         self.logger.debug(f"Created MateBotRunner object {self}")
+
+    def start(self) -> int:
+        """
+        Start the runner to execute the programs to handle the specified arguments
+
+        :return: program exit code
+        :rtype: int
+        """
+
+        command = getattr(self, self._args.command)
+        self.logger.debug(f"Calling {command}...")
+        code = command()
+        self.logger.info(f"Finished with exit code {code}.")
+        return code
 
     @staticmethod
     def setup() -> argparse.ArgumentParser:
