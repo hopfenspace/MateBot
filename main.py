@@ -170,7 +170,7 @@ class MateBot:
         self.install = _Installer(args, self.logger)
         self.extract = _Extractor(args, self.logger)
 
-        self.logger.debug(f"Created MateBotRunner object {self}")
+        self.logger.debug(f"Created  {self}.")
 
     def start(self) -> int:
         """
