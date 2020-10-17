@@ -66,6 +66,9 @@ class PayCommand(BaseCommand):
 
         if BaseCollective.get_type(collective_id):
             collective = Communism(collective_id)
+            update.effective_message.reply_text(
+                "Note that your currently active collective is no payment request, it's a communism."
+            )
         else:
             collective = Payment(collective_id)
 

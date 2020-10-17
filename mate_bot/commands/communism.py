@@ -80,6 +80,9 @@ class CommunismCommand(BaseCommand):
             collective = Communism(collective_id)
         else:
             collective = Payment(collective_id)
+            update.effective_message.reply_text(
+                "Note that your currently active collective is no communism, it's a payment request."
+            )
 
         if args.subcommand == "show":
             collective.show(update.effective_message)
