@@ -8,7 +8,7 @@ import logging
 import telegram
 
 from mate_bot.collectives.base import BaseCollective, COLLECTIVE_ARGUMENTS
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("collectives")
@@ -157,12 +157,13 @@ class Communism(BaseCollective):
             if member == self.creator:
                 continue
 
-            Transaction(
+            LoggedTransaction(
                 member,
                 self.creator,
                 self._price,
-                f"communism: {self.description} ({self.get()})"
-            ).commit(bot)
+                f"communism: {self.description} ({self.get()})",
+                bot
+            ).commit()
 
         self.active = False
         return True

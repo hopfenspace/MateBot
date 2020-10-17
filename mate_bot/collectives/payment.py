@@ -9,7 +9,7 @@ import telegram
 
 from mate_bot.config import config
 from mate_bot.collectives.base import BaseCollective, COLLECTIVE_ARGUMENTS
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
 from mate_bot.state.user import CommunityUser, MateBotUser
 
 
@@ -202,12 +202,13 @@ class Payment(BaseCollective):
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
-            Transaction(
+            LoggedTransaction(
                 CommunityUser(),
                 self.creator,
                 self.amount,
-                f"pay: {self.description}"
-            ).commit(bot)
+                f"pay: {self.description}",
+                bot
+            ).commit()
 
             self.active = False
             return False, approved, disapproved

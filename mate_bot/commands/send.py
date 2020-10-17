@@ -11,7 +11,7 @@ from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("commands")
@@ -113,8 +113,13 @@ class SendCallbackQuery(BaseCallbackQuery):
                 raise RuntimeError("Unknown reason while confirming a Transaction")
 
             if confirmation:
-                trans = Transaction(sender, receiver, amount, reason)
-                trans.commit(update.callback_query.bot)
+                LoggedTransaction(
+                    sender,
+                    receiver,
+                    amount,
+                    reason,
+                    update.callback_query.bot
+                ).commit()
 
                 update.callback_query.message.edit_text(
                     f"Okay, you sent {amount / 100 :.2f}€ to {str(receiver)}",

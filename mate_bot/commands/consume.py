@@ -13,7 +13,7 @@ from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.transactions import Transaction
+from mate_bot.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("commands")
@@ -69,13 +69,13 @@ class ConsumeCommand(BaseCommand):
             return
 
         reason = f"consume: {args.number}x {self.name}"
-        trans = Transaction(
+        LoggedTransaction(
             sender,
             CommunityUser(),
             self.price * args.number,
-            reason
-        )
-        trans.commit(update.effective_message.bot)
+            reason,
+            update.effective_message.bot
+        ).commit()
 
         update.effective_message.reply_text(
             _random.choice(self.messages) + self.symbol * args.number,
