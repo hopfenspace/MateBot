@@ -132,6 +132,38 @@ class Communism(BaseCollective):
             ]
         ])
 
+    def show(self, message: telegram.Message) -> None:
+        """
+        Show the currently active payment request in the current chat
+
+        :param message: command message that contains the request to show the payment message
+        :type message: telegram.Message
+        :return: None
+        """
+
+        reply = message.reply_text("Loading...")
+
+        messages = self.get_messages(message.chat.id)
+        for msg in messages:
+            message.bot.edit_message_text(
+                f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
+                "\n_This communism management message is not active anymore. "
+                "A more recent message has been sent to the chat to replace this one._",
+                chat_id = msg[0],
+                message_id = msg[1],
+                parse_mode = "Markdown",
+                reply_to_message_id = reply.message_id,
+                reply_markup = telegram.InlineKeyboardMarkup([])
+            )
+            self.unregister_message(msg[0], msg[1])
+
+        self.register_message(message.chat.id, reply.message_id)
+        self.edit_all_messages(
+            self.get_markdown(),
+            self._get_inline_keyboard(),
+            message.bot
+        )
+
     def close(self, bot: typing.Optional[telegram.Bot] = None) -> bool:
         """
         Close the collective operation and perform all transactions
