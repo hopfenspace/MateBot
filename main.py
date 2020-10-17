@@ -33,6 +33,16 @@ class _SubcommandHelper:
         self.logger = logger
 
     def __call__(self) -> int:
+        """
+        Execute the main part of the command
+
+        This method is not implemented in this class.
+        A subclass should implement this method instead.
+
+        :return: exit code of the feature
+        :rtype: int
+        """
+
         raise NotImplementedError
 
 
@@ -49,7 +59,15 @@ class _Runner(_SubcommandHelper):
     ]
 
     def __call__(self) -> int:
-        BackendHelper._query_logger = logging.getLogger("database")
+        """
+        Execute the main part of the ``run`` command
+
+        :return: exit code of the feature
+        :rtype: int
+        """
+
+        if not self.args.silent:
+            BackendHelper._query_logger = logging.getLogger("database")
 
         updater = Updater(config["token"], use_context = True)
 
@@ -67,7 +85,13 @@ class _Runner(_SubcommandHelper):
 
         return 0
 
-    def add_handler(self, dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bool = True) -> None:
+    def add_handler(
+            self,
+            dispatcher: Dispatcher,
+            handler: handler_types,
+            pool: dict,
+            pattern: bool = True
+    ) -> None:
         """
         Add the executors from the given pool to the dispatcher using the given handler type
 
@@ -96,6 +120,13 @@ class _Installer(_SubcommandHelper):
     """
 
     def __call__(self) -> int:
+        """
+        Execute the main part of the ``install`` command
+
+        :return: exit code of the feature
+        :rtype: int
+        """
+
         pass
 
 
@@ -105,6 +136,13 @@ class _Extractor(_SubcommandHelper):
     """
 
     def __call__(self) -> int:
+        """
+        Execute the main part of the ``extract`` command
+
+        :return: exit code of the feature
+        :rtype: int
+        """
+
         pass
 
 
@@ -120,8 +158,13 @@ class MateBot:
 
     def __init__(self, args: argparse.Namespace):
         self._args = args
-        log.setup()
-        self.logger = logging.getLogger("runner")
+
+        if self._args.silent:
+            self.logger = logging.getLogger()
+            self.logger.addHandler(logging.NullHandler())
+        else:
+            log.setup()
+            self.logger = logging.getLogger("runner")
 
         self.run = _Runner(args, self.logger)
         self.install = _Installer(args, self.logger)
@@ -157,6 +200,13 @@ class MateBot:
         )
 
         parser.add_argument(
+            "-s", "--silent",
+            help = "disable logging to log files",
+            dest = "silent",
+            action = "store_true"
+        )
+
+        parser.add_argument(
             "-v", "--verbose",
             help = "print out verbose information",
             dest = "verbose",
@@ -177,13 +227,6 @@ class MateBot:
         install = subcommands.add_parser(
             "install",
             help = "install the MateBot database and systemd service files"
-        )
-
-        database.add_argument(
-            "-s", "--show",
-            help = "show all data stored in the specified table",
-            dest = "data",
-            metavar = "table"
         )
 
         extract = subcommands.add_parser(
