@@ -12,8 +12,9 @@ import telegram
 
 from mate_bot import err
 from mate_bot.config import config
+from mate_bot.collectives.coordinators import MessageCoordinator, UserCoordinator
 from mate_bot.state.user import MateBotUser
-from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
+from mate_bot.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 logger = logging.getLogger("collectives")
@@ -25,7 +26,7 @@ _constructor_tuple = typing.Union[_forwarding_arguments, _creation_arguments]
 COLLECTIVE_ARGUMENTS = typing.Union[int, _forwarding_arguments, _creation_arguments]
 
 
-class BaseCollective(BackendHelper):
+class BaseCollective(MessageCoordinator, UserCoordinator):
     """
     Base class for collective operations
 
@@ -37,17 +38,17 @@ class BaseCollective(BackendHelper):
         attribute ``_communistic`` (which is ``None`` by default and should be set properly)
     """
 
-    _id = None
-    _active = False
-    _amount = 0
-    _externals = 0
-    _description = ""
-    _creator = None
-    _created = None
+    _id: int = None
+    _active: bool = False
+    _amount: int = 0
+    _externals: int = 0
+    _description: str = ""
+    _creator: int = None
+    _created: datetime.datetime = None
 
-    _communistic = None
+    _communistic: bool = None
 
-    _ALLOWED_COLUMNS = []
+    _ALLOWED_COLUMNS: typing.List[str] = []
 
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         if type(self)._communistic is None:
