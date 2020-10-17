@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import typing
 import logging
 import argparse
@@ -66,6 +67,10 @@ class _Runner(_SubcommandHelper):
         :rtype: int
         """
 
+        if self.args.pid:
+            print(f"MateBot process ID: {os.getpid()}")
+            self.logger.debug(f"Running in process ID {os.getpid()}")
+
         if not self.args.silent:
             BackendHelper._query_logger = logging.getLogger("database")
 
@@ -127,7 +132,47 @@ class _Installer(_SubcommandHelper):
         :rtype: int
         """
 
-        pass
+        if not self.args.no_config_check:
+            self.check_config()
+        if not self.args.no_testing:
+            self.check_unittests()
+        if not self.args.no_database:
+            self.install_database()
+
+        return 0
+
+    def check_config(self) -> None:
+        """
+        Check the configuration file for syntax errors and valid values
+
+        :return: None
+        """
+
+        raise NotImplementedError
+
+    def check_unittests(self) -> None:
+        """
+        Check the code base by performing the unittest framework
+
+        :return: None
+        """
+
+        raise NotImplementedError
+
+    def install_database(self) -> None:
+        """
+        Install the database and setup the necessary tables
+
+        .. note::
+
+            The user and permissions to interact with the database
+            must be configured before this feature can work. The
+            database users' credentials must be stored in the config file.
+
+        :return: None
+        """
+
+        raise NotImplementedError
 
 
 class _Extractor(_SubcommandHelper):
@@ -224,9 +269,37 @@ class MateBot:
             help = "run the MateBot program"
         )
 
+        run.add_argument(
+            "-p", "--pid",
+            help = "print the process ID after startup",
+            dest = "pid",
+            action = "store_true"
+        )
+
         install = subcommands.add_parser(
             "install",
             help = "install the MateBot database and systemd service files"
+        )
+
+        install.add_argument(
+            "-c", "--no-config-check",
+            help = "do not check the config file",
+            dest = "no_config_check",
+            action = "store_true"
+        )
+
+        install.add_argument(
+            "-d", "--no-database",
+            help = "do not touch the database",
+            dest = "no_database",
+            action = "store_true"
+        )
+
+        install.add_argument(
+            "-t", "--no-test",
+            help = "do not run unittests before installing",
+            dest = "no_testing",
+            action = "store_true"
         )
 
         extract = subcommands.add_parser(
