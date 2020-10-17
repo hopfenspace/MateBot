@@ -7,6 +7,7 @@ Welcome to MateBot's documentation!
 
     installation
     config
+    main
     code_conventions
     code/index
     database
