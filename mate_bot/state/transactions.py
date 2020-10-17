@@ -24,7 +24,7 @@ class Transaction(BackendHelper):
     Money transactions between two users
 
     Note that a transaction will not be committed and stored in
-    persistent storage until the .commit() method was called!
+    persistent storage until the :meth:`commit` method was called!
 
     :param src: user that sends money to someone else
     :type src: user.BaseBotUser
@@ -116,12 +116,36 @@ class Transaction(BackendHelper):
 
         return self._committed
 
-    def commit(self, bot: typing.Optional[telegram.Bot] = None) -> None:
+    def log_info(self) -> None:
+        """
+        Create a short logging notification about the transaction
+
+        This method is not implemented in this class and provides a
+        hook that might be implemented in a subclass. It will be
+        called when the transaction was completed successfully.
+
+        :return: None
+        """
+
+        pass
+
+    def log_message(self) -> None:
+        """
+        Create a long logging information about the transaction
+
+        This method is not implemented in this class and provides a
+        hook that might be implemented in a subclass. It will be
+        called when the transaction was completed successfully.
+
+        :return: None
+        """
+
+        pass
+
+    def commit(self) -> None:
         """
         Fulfill the transaction and store it in the database persistently
 
-        :param bot: optional Telegram Bot object that sends transaction logs to some chat(s)
-        :type bot: typing.Optional[telegram.Bot]
         :raises RuntimeError: when amount is negative or zero or sender=receiver
         :raises TypeError: when the ``bot`` is not None and no ``telegram.Bot`` object
         :return: None
@@ -135,26 +159,6 @@ class Transaction(BackendHelper):
             raise RuntimeError("Sender equals receiver!")
 
         if not self._committed and self._id is None:
-            logger.info(
-                f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
-            )
-
-            if bot is not None:
-                if not isinstance(bot, telegram.Bot):
-                    raise TypeError(f"Expected telegram.Bot, but got {type(bot)}")
-                transaction_logging = config["chats"]["transactions"]
-                if isinstance(config["chats"]["transactions"], int):
-                    transaction_logging = [config["chats"]["transactions"]]
-                for chat in transaction_logging:
-                    bot.send_message(
-                        chat,
-                        "*Incoming transaction*\n\n"
-                        f"Sender: {self.src}\n"
-                        f"Receiver: {self.dst}\n"
-                        f"Amount: {self.amount / 100:.2f}€\n"
-                        f"Reason: `{self.reason}`",
-                        parse_mode="Markdown"
-                    )
 
             connection = None
             try:
@@ -194,6 +198,82 @@ class Transaction(BackendHelper):
             finally:
                 if connection:
                     connection.close()
+
+            self.log_info()
+            self.log_message()
+
+
+class LoggedTransaction(Transaction):
+    """
+    Money transactions between two users with enabled logging hooks
+
+    Note that a transaction will not be committed and stored in
+    persistent storage until the :meth:`commit` method was called!
+
+    :param src: user that sends money to someone else
+    :type src: user.BaseBotUser
+    :param dst: user that receives money from someone else
+    :type dst: user.BaseBotUser
+    :param amount: money measured in Cent (must always be positive!)
+    :type amount: int
+    :param reason: optional description of / reason for the transaction
+    :type reason: typing.Optional[str]
+    :param bot: optional Telegram Bot object that will be used to send log messages
+    :type bot: typing.Optional[telegram.Bot]
+    :raises ValueError: when amount is not positive or sender=receiver
+    :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
+    """
+
+    def __init__(
+            self,
+            src: user.BaseBotUser,
+            dst: user.BaseBotUser,
+            amount: int,
+            reason: typing.Optional[str] = None,
+            bot: typing.Optional[telegram.Bot] = None
+    ):
+        super().__init__(src, dst, amount, reason)
+        self._bot = bot
+
+    def log_info(self) -> None:
+        """
+        Create a short logging notification about the transaction
+
+        A short summary of the transaction will be send to the global ``logger``.
+
+        :return: None
+        """
+
+        logger.info(
+            f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
+        )
+
+    def log_message(self) -> None:
+        """
+        Create a long logging information about the transaction
+
+        A Markdown-formatted message will be send to all chat IDs
+        configured to receive transaction log messages in the config file.
+
+        :return: None
+        """
+
+        if self._bot is not None:
+            if not isinstance(self._bot, telegram.Bot):
+                raise TypeError(f"Expected telegram.Bot, but got {type(self._bot)}")
+            transaction_logging = config["chats"]["transactions"]
+            if isinstance(config["chats"]["transactions"], int):
+                transaction_logging = [config["chats"]["transactions"]]
+            for chat in transaction_logging:
+                self._bot.send_message(
+                    chat,
+                    "*Incoming transaction*\n\n"
+                    f"Sender: {self.src}\n"
+                    f"Receiver: {self.dst}\n"
+                    f"Amount: {self.amount / 100:.2f}€\n"
+                    f"Reason: `{self.reason}`",
+                    parse_mode = "Markdown"
+                )
 
 
 class TransactionLog(BackendHelper):
