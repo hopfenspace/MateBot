@@ -16,7 +16,7 @@ from mate_bot.state.user import MateBotUser
 from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
-logger = logging.getLogger("state")
+logger = logging.getLogger("collectives")
 
 _forwarding_arguments = typing.Tuple[int, MateBotUser, telegram.Bot]
 _creation_arguments = typing.Tuple[MateBotUser, int, str, telegram.Message]
