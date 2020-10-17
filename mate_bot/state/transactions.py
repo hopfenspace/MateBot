@@ -38,6 +38,14 @@ class Transaction(BackendHelper):
     :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
     """
 
+    _src: user.BaseBotUser
+    _dst: user.BaseBotUser
+    _amount: int
+    _reason: typing.Optional[str]
+
+    _committed: bool
+    _id: typing.Optional[int]
+
     def __init__(
             self,
             src: user.BaseBotUser,
@@ -224,6 +232,8 @@ class LoggedTransaction(Transaction):
     :raises TypeError: when src or dst are no BaseBotUser objects or subclassed thereof
     """
 
+    _bot: typing.Optional[telegram.Bot]
+
     def __init__(
             self,
             src: user.BaseBotUser,
@@ -292,6 +302,12 @@ class TransactionLog(BackendHelper):
     :param limit: restrict the number of fetched entries
     :type limit: typing.Optional[int]
     """
+
+    _uid: int
+    _limit: typing.Optional[int]
+    _valid: bool
+    _log: list
+    _names: dict
 
     DEFAULT_NULL_REASON_REPLACE = "<no description>"
 
