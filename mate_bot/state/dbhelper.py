@@ -19,8 +19,6 @@ except ImportError:
     pymysql.install_as_MySQLdb()
     MySQLdb = None
 
-from mate_bot.config import config as _config
-
 
 COLUMN_TYPES = typing.Union[int, bool, str, datetime.datetime, None]
 QUERY_RESULT_TYPE = typing.List[typing.Dict[str, COLUMN_TYPES]]
@@ -404,7 +402,7 @@ class BackendHelper:
     """
     Helper class providing easy methods to read and write values in the database
 
-    Instead of direct calls to the database using `execute`, this
+    Instead of direct calls to the database using :func:`_execute`, this
     class provides a collection of static methods that make it easy
     to interact with the database as you don't need to know about the
     actual database query language. Any high level implementation
@@ -433,17 +431,39 @@ class BackendHelper:
                     if connection:
                         connection.close()
 
+    .. note::
+
+        In order to use the :class:`BackendHelper` class properly, you need
+        to set the class attribute :attr:`db_config`. It expects a dictionary
+        that can be extracted to valid keyword arguments for the ``connect``
+        function of the used database module as long as this module fulfills
+        `the Database API Specification v2 <https://www.python.org/dev/peps/pep-0249/>`_.
 
     The class :class:`BackendHelper` provides two further class attributes.
-    ``_SCHEMA`` holds a reference to the module's ``DATABASE_SCHEMA`` object
-    (type :class:`DatabaseSchema`). The ``_query_logger`` class attribute is ``None``
+    :attr:`schema` holds a reference to the module's ``DATABASE_SCHEMA`` object
+    (type :class:`DatabaseSchema`). The :attr:`query_logger` class attribute is ``None``
     by default but expects a :class:`logging.Logger` object. Every attempted SQL
     query will produce a log message with level *DEBUG* if a logger has been found.
     """
 
-    _SCHEMA: DatabaseSchema = DATABASE_SCHEMA
+    db_config: dict = {}
+    """
+    Database configuration that must be valid for extraction in the ``connect``
+    function of the used database module as long as this module fulfills the
+    `Database API Specification v2 <https://www.python.org/dev/peps/pep-0249/>`_.
+    If it doesn't, the program would not be able to operate properly, anyway.
+    """
 
-    _query_logger: typing.Optional[logging.Logger] = None
+    query_logger: typing.Optional[logging.Logger] = None
+    """Logger that creates a ``DEBUG`` record for every query sent to the database."""
+
+    schema: DatabaseSchema = DATABASE_SCHEMA
+    """
+    Database schema that is used to validate incoming queries before actually
+    performing them. This is a security measure to circumvent SQL injections.
+    Note that the database may be created completely from scratch, only based
+    on this specified schema. Use :func:`_rebuild_database` for this purpose.
+    """
 
     @staticmethod
     def _execute_no_commit(
@@ -473,15 +493,15 @@ class BackendHelper:
         :raises pymysql.err.OperationalError: when the database connection is closed
         """
 
-        if isinstance(BackendHelper._query_logger, logging.Logger):
+        if isinstance(BackendHelper.query_logger, logging.Logger):
             try:
-                BackendHelper._query_logger.debug(f"Executing '{query}' using args {arguments}")
+                BackendHelper.query_logger.debug(f"Executing '{query}' using args {arguments}")
             except AttributeError:
                 pass
 
         if connection is None:
             connection = pymysql.connect(
-                **_config["database"],
+                **BackendHelper.db_config,
                 cursorclass=pymysql.cursors.DictCursor
             )
 
@@ -555,14 +575,14 @@ class BackendHelper:
 
         if not isinstance(table, str):
             raise TypeError(f"Expected string as table name, not {type(table)}")
-        if table not in BackendHelper._SCHEMA:
+        if table not in BackendHelper.schema:
             raise ValueError(f"Unknown table name '{table}'")
         if column is None:
             return True
 
         if not isinstance(column, str):
             raise TypeError(f"Expected string as column name, not {type(table)}")
-        if column not in BackendHelper._SCHEMA[table]:
+        if column not in BackendHelper.schema[table]:
             raise ValueError(f"Unknown column '{column}' in table '{table}'")
         return True
 
@@ -582,7 +602,7 @@ class BackendHelper:
         """
 
         BackendHelper._check_location(table, key)
-        extras = BackendHelper._SCHEMA[table][key].extras
+        extras = BackendHelper.schema[table][key].extras
         if extras is not None:
             return "PRIMARY KEY" in extras.upper() or "UNIQUE" in extras.upper()
         return True

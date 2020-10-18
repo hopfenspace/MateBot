@@ -9,4 +9,4 @@ mate_bot.state.dbhelper
 
 .. automodule:: mate_bot.state.dbhelper
     :members:
-
+    :private-members:
