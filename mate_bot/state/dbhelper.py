@@ -630,6 +630,52 @@ class BackendHelper:
         return True
 
     @staticmethod
+    def _rebuild_database() -> bool:
+        """
+        Rebuild the database from scratch, deleting all stored data **without recovery**
+
+        .. warning::
+
+            Using this command will delete all data currently stored in the configured
+            database without further asking. It will then install the new database
+            layout based on the supplied :attr:`schema` class attribute. Note that
+            there is no way to recover the previously stored data afterwards.
+
+        If the :class:`BackendHelper` has a class attribute :attr:`query_logger`, it
+        will be used to create some more log messages, some of them with higher
+        logging levels than just `DEBUG`. It's recommended to set the logger before
+        calling this command because it might help tracking down problems and errors.
+
+        :return: success of the operation
+        :rtype: bool
+        """
+
+        def _log(level, msg, **kwargs):
+            if isinstance(BackendHelper.query_logger, logging.Logger):
+                try:
+                    BackendHelper.query_logger.log(level, msg, **kwargs)
+                except AttributeError:
+                    pass
+
+        _log(logging.WARNING, "Attention: Rebuilding the database...")
+
+        connection = None
+        try:
+            rows, result, connection = BackendHelper._execute_no_commit("SHOW DATABASES")
+
+            _log(logging.WARNING, "Committing changes to database (overwriting any existing data)...")
+            connection.commit()
+
+        except pymysql.err.MySQLError as err:
+            _log(logging.ERROR, f"Error while rebuilding database: {err}", exc_info=True)
+
+        finally:
+            if connection:
+                connection.close()
+
+        return connection is not None
+
+    @staticmethod
     def get_values_by_key_manually(
             table: str,
             key: str,
