@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import typing
 import logging
 import argparse
+import unittest
 
 from telegram.ext import (
     Updater, Dispatcher, CommandHandler,
@@ -157,7 +159,11 @@ class _Installer(_SubcommandHelper):
         :return: None
         """
 
-        raise NotImplementedError
+        verbosity = 1
+        if self.args.verbose:
+            verbosity = 2
+
+        unittest.main("test", argv=[sys.argv[0]], exit=False, verbosity=verbosity)
 
     def install_database(self) -> None:
         """
