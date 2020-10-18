@@ -659,21 +659,30 @@ class BackendHelper:
 
         _log(logging.WARNING, "Attention: Rebuilding the database...")
 
-        connection = None
+        error = False
         try:
-            rows, result, connection = BackendHelper._execute_no_commit("SHOW DATABASES")
+            db_name = BackendHelper.db_config["db"]
+            del BackendHelper.db_config["db"]
 
-            _log(logging.WARNING, "Committing changes to database (overwriting any existing data)...")
-            connection.commit()
+            rows, result = BackendHelper._execute("SHOW DATABASES")
+            _log(logging.DEBUG, f"Found {rows} databases on the server.")
+
+            if any([db_name in r.values() for r in result]):
+                _log(logging.INFO, f"Deleting old table '{db_name}'...")
+                BackendHelper._execute(f"DROP DATABASE {db_name}")
+            BackendHelper._execute(f"CREATE DATABASE {db_name}")
+
+            BackendHelper.db_config["db"] = db_name
+
+            _log(logging.DEBUG, "Creating tables...")
+            for k in BackendHelper.schema:
+                BackendHelper._execute(BackendHelper.schema[k]._to_string(0))
 
         except pymysql.err.MySQLError as err:
+            error = True
             _log(logging.ERROR, f"Error while rebuilding database: {err}", exc_info=True)
 
-        finally:
-            if connection:
-                connection.close()
-
-        return connection is not None
+        return not error
 
     @staticmethod
     def get_values_by_key_manually(
