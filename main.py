@@ -50,7 +50,8 @@ def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bo
 if __name__ == "__main__":
     log.setup()
     logger = logging.getLogger()
-    BackendHelper._query_logger = logging.getLogger("database")
+    BackendHelper.db_config = config["database"]
+    BackendHelper.query_logger = logging.getLogger("database")
 
     updater = Updater(config["token"], use_context = True)
 
