@@ -196,15 +196,7 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
             self._id = collective_id
             self.update()
-
-            forwarded = bot.send_message(
-                chat_id = user.tid,
-                text = self.get_markdown(),
-                reply_markup = self._get_inline_keyboard(),
-                parse_mode = "Markdown"
-            )
-
-            self.register_message(forwarded.chat_id, forwarded.message_id)
+            self.forward(user, bot)
 
         elif len(arguments) == 4:
 
@@ -545,6 +537,47 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
                 message_id=m,
                 reply_markup=markup,
                 parse_mode=parse_mode
+            )
+
+    def forward(
+            self,
+            receiver: MateBotUser,
+            bot: telegram.Bot,
+            sender: typing.Optional[MateBotUser] = None
+    ) -> None:
+        """
+        Forward the collective management message to another user
+
+        In case the argument ``sender`` is given, a second message will be added as a
+        reply to the actual management message to inform the receiver about the sender.
+        This allows the receiver to contact the sender and e.g. ask questions about it.
+
+        :param receiver: user that should receive a copy of the collective in private chat
+        :type receiver: MateBotUser
+        :param bot: the Telegram Bot that's used to send messages
+        :type bot: telegram.Bot
+        :param sender: optional user that forwarded the collective operation
+        :type sender: typing.Optional[MateBotUser]
+        :return: None
+        """
+
+        if not isinstance(receiver, MateBotUser):
+            raise TypeError(f"Expected MateBotUser object as receiver, but got {type(receiver)}")
+        if not isinstance(bot, telegram.Bot):
+            raise TypeError(f"Expected telegram.Bot object as bot, but got {type(bot)}")
+
+        forwarded = bot.send_message(
+            chat_id=receiver.tid,
+            text=self.get_markdown(),
+            reply_markup=self._get_inline_keyboard(),
+            parse_mode="Markdown"
+        )
+
+        self.register_message(forwarded.chat_id, forwarded.message_id)
+
+        if forwarded.chat_id != config["chats"]["internal"] and sender is not None:
+            forwarded.reply_text(
+                f"Note that you receive this message because {sender} forwarded it to you."
             )
 
     @property
