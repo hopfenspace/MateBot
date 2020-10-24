@@ -165,11 +165,11 @@ class ForwardInlineResult(BaseInlineResult):
             return
 
         collective_id = int(collective_id)
-        receiver = int(receiver)
-        user = MateBotUser(MateBotUser.get_uid_from_tid(receiver))
+        receiver = MateBotUser(MateBotUser.get_uid_from_tid(int(receiver)))
+        sender = MateBotUser(result.from_user)
 
         type_flag = bool(BaseCollective.get_type(collective_id))
         if type_flag:
-            Communism((collective_id, user, bot))
+            Communism(collective_id).forward(receiver, bot, sender)
         else:
-            Payment((collective_id, user, bot))
+            Payment(collective_id).forward(receiver, bot, sender)
