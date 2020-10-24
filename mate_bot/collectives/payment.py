@@ -35,9 +35,6 @@ class Payment(BaseCollective):
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         super().__init__(arguments, None)
 
-        if isinstance(arguments, tuple):
-            self._handle_tuple_constructor_argument(arguments, None)
-
     def get_votes(self) -> typing.Tuple[typing.List[MateBotUser], typing.List[MateBotUser]]:
         """
         Get the approving and disapproving voters as lists of MateBotUsers

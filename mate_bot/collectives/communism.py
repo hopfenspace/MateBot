@@ -43,11 +43,7 @@ class Communism(BaseCollective):
         self._price = 0
         self._fulfilled = None
         super().__init__(arguments, 0)
-
-        if isinstance(arguments, tuple):
-            user = self._handle_tuple_constructor_argument(arguments, 0)
-            if user is not None:
-                self.add_user(user)
+        self.add_user(arguments[0])
 
     def _get_basic_representation(self) -> str:
         """

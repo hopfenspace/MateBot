@@ -30,7 +30,7 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
     :param arguments: either an internal ID of an existing collective operation or a tuple
         of arguments to create a new collective operation based on those supplied values
     :param default_externals: default value to use for collective operations
-        (note that ``None`` is not a placeholder but a valid default value instead!)
+        (note that ``None`` is not just a placeholder but a valid default value instead!)
     :raises ValueError: when a supplied argument has an invalid value
     :raises TypeError: when a supplied argument has the wrong type
     :raises RuntimeError: when the collective ID doesn't match the class definition
@@ -64,7 +64,10 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             if type(self)._communistic != self._communistic:
                 raise RuntimeError("Remote record does not match collective operation type")
 
-        elif not isinstance(arguments, tuple):
+        elif isinstance(arguments, tuple):
+            self._handle_tuple_constructor_argument(arguments, default_externals)
+
+        else:
             raise TypeError("Expected int or tuple of arguments")
 
     @classmethod
@@ -145,9 +148,9 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
     def _handle_tuple_constructor_argument(
             self,
-            arguments: _constructor_tuple,
-            ext: typing.Optional[int] = None
-    ) -> typing.Optional[MateBotUser]:
+            arguments: _CREATION_ARGUMENTS,
+            externals: typing.Union[int, None]
+    ) -> None:
         """
         Handle the tuple argument of the derived classes' constructors
 
@@ -180,8 +183,9 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         command to start the new collective operation and will be used to reply to.
 
         :param arguments: collection of arguments as described above
-        :param ext: optional number of external users that joined the collective
-        :type ext: typing.Optional[int]
+        :param externals: optional number of external users that joined the collective
+            (note that ``None`` is not just a placeholder but a valid default value instead!)
+        :type externals: typing.Union[int, None]
         :return: optional MateBotUser (only when a new collective has been created)
         :rtype: typing.Optional[MateBotUser]
         :raises ValueError: when the tuple does not contain three or four elements
@@ -189,55 +193,51 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         """
 
         if len(arguments) == 3:
-
-            collective_id, user, bot = arguments
-            if not isinstance(collective_id, int):
-                raise TypeError("Expected int as first element")
-            if not isinstance(user, MateBotUser):
-                raise TypeError("Expected MateBotUser object as second element")
-            if not isinstance(bot, telegram.Bot):
-                raise TypeError("Expected telegram.Bot object as third element")
-
-            self._id = collective_id
-            self.update()
-            self.forward(user, bot)
+            user, amount, reason = arguments
+            message = None
 
         elif len(arguments) == 4:
-
             user, amount, reason, message = arguments
-            if not isinstance(user, MateBotUser):
-                raise TypeError("Expected MateBotUser object as first element")
-            if not isinstance(amount, int):
-                raise TypeError("Expected int object as second element")
-            if not isinstance(reason, str):
-                raise TypeError("Expected str object as third element")
+
+        else:
+            raise ValueError("Expected three or four arguments for the tuple")
+
+        if not isinstance(user, MateBotUser):
+            raise TypeError("Expected MateBotUser object as first element")
+        if not isinstance(amount, int):
+            raise TypeError("Expected int object as second element")
+        if not isinstance(reason, str):
+            raise TypeError("Expected str object as third element")
+
+        self._creator = user.uid
+        self._amount = amount
+        self._description = reason
+        self._externals = externals
+        self._active = True
+
+        self._create_new_record()
+        logger.info(f"New collective by {user.name} of {amount} for '{reason}' (ID {self._id})")
+
+        if message is not None:
             if not isinstance(message, telegram.Message):
-                raise TypeError("Expected telegram.Message as fourth element")
+                raise TypeError("Expected optional telegram.Message as fourth element")
 
-            self._creator = user.uid
-            self._amount = amount
-            self._description = reason
-            self._externals = ext
-            self._active = True
-
-            self._create_new_record()
-
-            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._get_inline_keyboard())
+            reply = message.reply_markdown(
+                self.get_markdown(),
+                reply_markup=self._get_inline_keyboard()
+            )
             self.register_message(reply.chat_id, reply.message_id)
+            logger.debug(f"Sent reply message {reply.message_id} to chat {reply.chat_id}")
 
             if message.chat_id != config["chats"]["internal"]:
                 msg = message.bot.send_message(
                     config["chats"]["internal"],
                     self.get_markdown(),
-                    reply_markup = self._get_inline_keyboard(),
-                    parse_mode = "Markdown"
+                    reply_markup=self._get_inline_keyboard(),
+                    parse_mode="Markdown"
                 )
                 self.register_message(msg.chat_id, msg.message_id)
-
-            return user
-
-        else:
-            raise ValueError("Expected three or four arguments for the tuple")
+                logger.debug(f"Sent reply message {reply.message_id} to internal chat")
 
     def _get_basic_representation(self) -> str:
         """
