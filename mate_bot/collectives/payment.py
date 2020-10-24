@@ -196,6 +196,7 @@ class Payment(BaseCollective):
         :rtype: typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]
         """
 
+        logger.debug(f"Attempting to close payment request {self.get()}...")
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:

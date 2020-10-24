@@ -170,6 +170,7 @@ class Communism(BaseCollective):
         :rtype: bool
         """
 
+        logger.debug(f"Attempting to close communism {self.get()}...")
         users = self.get_users()
         participants = self.externals + len(users)
         if participants == 0:

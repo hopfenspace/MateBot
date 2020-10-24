@@ -406,6 +406,8 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         :rtype: bool
         """
 
+        logger.debug(f"Aborting collective {self._id}...")
+
         if self._active:
             connection = None
 
@@ -582,6 +584,8 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             forwarded.reply_text(
                 f"Note that you receive this message because {sender} forwarded it to you."
             )
+
+        logger.debug(f"Forwarded collective {self._id} to {receiver} by {sender or 'someone'}")
 
     @property
     def active(self) -> bool:
