@@ -152,27 +152,22 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             externals: typing.Union[int, None]
     ) -> None:
         """
-        Handle the tuple argument of the derived classes' constructors
+        Handle the tuple argument of the classes' constructors
 
-        The constructor of the derived classes accepts either a single integer
+        The constructor of the :class:`BaseCollective` accepts either a single integer
         or a tuple of arguments. The handling of the tuple is very similar in
         the currently implemented subclasses. The tuple contains either three
-        or four elements which defines the action that should be taken.
+        or four elements (because the fourth element is considered optional).
 
         If the tuple has three values, the following types are excepted:
 
-        * ``ìnt`` as the internal ID of the collective operation in the database
-        * :class:`mate_bot.state.user.MateBotUser` as receiver of the collective
-          management message
-        * ``telegram.Bot`` to be able to send messages to the user
-
-        The given MateBot user will receive a forwarded management message of the
-        collective operation, containing all data from it. The message is also
-        registered, so that it can be updated and synced in all chats as well.
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
+        * ``int`` as amount of the collective operation
+        * ``str`` as reason for the collective operation
 
         If the tuple has four values, the following types are excepted:
 
-        * :class:`mate_bot.state.user.MateBotUser` as initiating user
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
         * ``str`` as reason for the collective operation
         * ``telegram.Message`` as message that initiated the collective
@@ -181,13 +176,14 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         user will be stored as creator for the collective. The amount and reason
         values are self-explanatory. The last value is the message that contains the
         command to start the new collective operation and will be used to reply to.
+        As it is considered optional, no reply will be sent if the fourth value
+        is absent or set to ``None`` to make the collective independent of Telegram.
 
         :param arguments: collection of arguments as described above
         :param externals: optional number of external users that joined the collective
             (note that ``None`` is not just a placeholder but a valid default value instead!)
         :type externals: typing.Union[int, None]
-        :return: optional MateBotUser (only when a new collective has been created)
-        :rtype: typing.Optional[MateBotUser]
+        :return: None
         :raises ValueError: when the tuple does not contain three or four elements
         :raises TypeError: when the values in the tuple have wrong types
         """
@@ -238,6 +234,9 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
                 )
                 self.register_message(msg.chat_id, msg.message_id)
                 logger.debug(f"Sent reply message {reply.message_id} to internal chat")
+
+        else:
+            logger.debug("No reply message has been sent")
 
     def _get_basic_representation(self) -> str:
         """
