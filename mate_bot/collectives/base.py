@@ -19,18 +19,18 @@ from mate_bot.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
 
 logger = logging.getLogger("collectives")
 
-_forwarding_arguments = typing.Tuple[int, MateBotUser, telegram.Bot]
-_creation_arguments = typing.Tuple[MateBotUser, int, str, telegram.Message]
-_constructor_tuple = typing.Union[_forwarding_arguments, _creation_arguments]
-
-COLLECTIVE_ARGUMENTS = typing.Union[int, _forwarding_arguments, _creation_arguments]
+_CREATION_ARGUMENTS = typing.Tuple[MateBotUser, int, str, typing.Optional[telegram.Message]]
+COLLECTIVE_ARGUMENTS = typing.Union[int, _CREATION_ARGUMENTS]
 
 
 class BaseCollective(MessageCoordinator, UserCoordinator):
     """
     Base class for collective operations
 
-    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :param arguments: either an internal ID of an existing collective operation or a tuple
+        of arguments to create a new collective operation based on those supplied values
+    :param default_externals: default value to use for collective operations
+        (note that ``None`` is not a placeholder but a valid default value instead!)
     :raises ValueError: when a supplied argument has an invalid value
     :raises TypeError: when a supplied argument has the wrong type
     :raises RuntimeError: when the collective ID doesn't match the class definition
@@ -50,7 +50,11 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
     _ALLOWED_COLUMNS: typing.List[str] = []
 
-    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
+    def __init__(
+            self,
+            arguments: COLLECTIVE_ARGUMENTS,
+            default_externals: typing.Union[int, None]
+    ):
         if type(self)._communistic is None:
             raise RuntimeError("You need to set '_communistic' in a subclass")
 

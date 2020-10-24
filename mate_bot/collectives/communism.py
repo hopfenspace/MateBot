@@ -42,7 +42,7 @@ class Communism(BaseCollective):
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         self._price = 0
         self._fulfilled = None
-        super().__init__(arguments)
+        super().__init__(arguments, 0)
 
         if isinstance(arguments, tuple):
             user = self._handle_tuple_constructor_argument(arguments, 0)

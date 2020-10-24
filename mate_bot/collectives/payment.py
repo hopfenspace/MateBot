@@ -33,7 +33,7 @@ class Payment(BaseCollective):
     _ALLOWED_COLUMNS = ["active"]
 
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
-        super().__init__(arguments)
+        super().__init__(arguments, None)
 
         if isinstance(arguments, tuple):
             self._handle_tuple_constructor_argument(arguments, None)
