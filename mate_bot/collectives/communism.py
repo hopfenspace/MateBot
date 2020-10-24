@@ -45,7 +45,7 @@ class Communism(BaseCollective):
         super().__init__(arguments, 0)
         self.add_user(arguments[0])
 
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the core information for the communism description message
 
@@ -76,7 +76,7 @@ class Communism(BaseCollective):
         :rtype: str
         """
 
-        markdown = self._get_basic_representation()
+        markdown = self.get_core_info()
 
         if self.active:
             markdown += "\n_The communism is currently active._"
@@ -142,7 +142,7 @@ class Communism(BaseCollective):
         messages = self.get_messages(message.chat.id)
         for msg in messages:
             message.bot.edit_message_text(
-                f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
+                f"*Communism by {self.creator.name}*\n\n{self.get_core_info()}"
                 "\n_This communism management message is not active anymore. "
                 "A more recent message has been sent to the chat to replace this one._",
                 chat_id = msg[0],

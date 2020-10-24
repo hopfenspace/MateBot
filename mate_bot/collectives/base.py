@@ -238,7 +238,7 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         else:
             logger.debug("No reply message has been sent")
 
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the basic information for the collective's management message
 

@@ -57,7 +57,7 @@ class Payment(BaseCollective):
 
         return approved, disapproved
 
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the basic information for the payment request's management message
 
@@ -89,7 +89,7 @@ class Payment(BaseCollective):
         :rtype: str
         """
 
-        markdown = self._get_basic_representation()
+        markdown = self.get_core_info()
 
         if status is not None:
             markdown += status
