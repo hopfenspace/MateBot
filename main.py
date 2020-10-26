@@ -178,7 +178,8 @@ class _Installer(_SubcommandHelper):
         :return: None
         """
 
-        raise NotImplementedError
+        self.logger.warning("Installing database... This may overwrite existing data!")
+        BackendHelper.rebuild_database()
 
 
 class _Extractor(_SubcommandHelper):

@@ -462,7 +462,7 @@ class BackendHelper:
     Database schema that is used to validate incoming queries before actually
     performing them. This is a security measure to circumvent SQL injections.
     Note that the database may be created completely from scratch, only based
-    on this specified schema. Use :func:`_rebuild_database` for this purpose.
+    on this specified schema. Use :func:`rebuild_database` for this purpose.
     """
 
     @staticmethod
@@ -630,7 +630,7 @@ class BackendHelper:
         return True
 
     @staticmethod
-    def _rebuild_database() -> bool:
+    def rebuild_database() -> bool:
         """
         Rebuild the database from scratch, deleting all stored data **without recovery**
 
