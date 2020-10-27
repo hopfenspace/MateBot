@@ -190,7 +190,23 @@ class StateTests(unittest.TestCase):
     Testing suite for the package :mod:`mate_bot.state`
     """
 
-    pass
+    def setUp(self):
+        from mate_bot.config import config
+        from mate_bot.state.dbhelper import BackendHelper
+
+        if "testing" not in config:
+            raise unittest.SkipTest("no testing database settings")
+
+        self.helper = BackendHelper
+        settings = config["database"].copy()
+        settings.update(config["testing"].copy())
+        self.helper.db_config = settings
+        self.helper.query_logger = logging.getLogger("database")
+
+    def tearDown(self):
+        from mate_bot.config import config
+        self.helper.db_config = config["database"].copy()
+
 
     def test_db_schema_conversion(self):
         from mate_bot.state.dbhelper import DATABASE_SCHEMA as SCHEMA
