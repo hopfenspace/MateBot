@@ -3,7 +3,50 @@ MateBot testing suite
 """
 
 import sys
+import typing
 import unittest
+import functools
+
+
+DEFAULT_WEIGHT = 0
+
+
+def significance(
+        weight_or_fn: typing.Union[typing.Callable, int],
+        optional_weight: typing.Optional[int] = None
+) -> typing.Callable:
+    """
+    Wrap around a callable to add a property ``significance`` to it
+
+    This property can be used to sort and compare different functions or methods
+    based on their "weight". A higher weight should be executed earlier, a lower
+    weight later. This feature is used to sort different test cases.
+
+        >>> from test import significance, DEFAULT_WEIGHT
+        >>> @significance
+        ... def f():
+        ...     pass
+        ...
+        >>> @significance(42)
+        ... def g():
+        ...     pass
+        ...
+        >>> f.significance == DEFAULT_WEIGHT
+        True
+        >>> g.significance
+        42
+        >>>
+
+    :param weight_or_fn: either function that should be wrapped or integer that reflects the
+        significance / importance of the function that should be wrapped up
+    :type weight_or_fn: typing.Union[typing.Callable, int]
+    :param optional_weight: optional weight of the function or feature that has been wrapped up
+    :type optional_weight: typing.Optional[int]
+    :return: wrapped function that provides a property ``significance`` now
+    :rtype: typing.Callable
+    :raises TypeError: when the first argument is not integer nor callable
+    :raises ValueError: when the first argument is an integer and the second not ``None``
+    """
 
 
 class EnvironmentTests(unittest.TestCase):
