@@ -1121,10 +1121,12 @@ class BackendHelper:
         )
 
     @staticmethod
-    def extract_all() -> typing.Dict[str, QUERY_RESULT_TYPE]:
+    def extract_all(ignore_schema: bool = False) -> typing.Dict[str, QUERY_RESULT_TYPE]:
         """
         Extract all data stored in the current database, sorted by table
 
+        :param ignore_schema: switch whether the schema of the database should be ignored
+        :type ignore_schema: bool
         :return: all data stored in the database
         """
 
@@ -1135,5 +1137,14 @@ class BackendHelper:
 
         result = {}
         for t in tables:
-            result[t] = BackendHelper.get_value(t)[1]
+            if not ignore_schema:
+                try:
+                    result[t] = BackendHelper.get_value(t)[1]
+                except ValueError:
+                    BackendHelper.query_logger.error(
+                        f"The table {t} could not be extracted. It might "
+                        "conflict with the database schema definition?"
+                    )
+            else:
+                result[t] = BackendHelper._execute(f"SELECT * FROM {t}")
         return result
