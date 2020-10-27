@@ -48,6 +48,39 @@ def significance(
     :raises ValueError: when the first argument is an integer and the second not ``None``
     """
 
+    if isinstance(weight_or_fn, int):
+        weight = weight_or_fn
+
+        if optional_weight is not None:
+            raise ValueError(f"Second parameter should be None, not {type(optional_weight)}")
+
+        def wrap_outer(fn: typing.Callable) -> typing.Callable:
+            setattr(fn, "significance", weight)
+
+            @functools.wraps(fn)
+            def wrap_inner(*args, **kwargs):
+                return fn(*args, **kwargs)
+
+            return wrap_inner
+
+        return wrap_outer
+
+    elif isinstance(weight_or_fn, typing.Callable):
+        func = weight_or_fn
+        weight = optional_weight
+        if optional_weight is None:
+            weight = DEFAULT_WEIGHT
+
+        @functools.wraps(func)
+        def wrap(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        setattr(wrap, "significance", weight)
+        return wrap
+
+    else:
+        raise TypeError(f"Expected callable or int as first argument, not {type(weight_or_fn)})")
+
 
 class EnvironmentTests(unittest.TestCase):
     """
