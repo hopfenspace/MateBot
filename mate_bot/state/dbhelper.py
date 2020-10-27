@@ -1119,3 +1119,21 @@ class BackendHelper:
             f'INSERT INTO {table} ({", ".join(values.keys())}) VALUES ({", ".join(["%s"] * len(values))})',
             tuple(values.values())
         )
+
+    @staticmethod
+    def extract_all() -> typing.Dict[str, QUERY_RESULT_TYPE]:
+        """
+        Extract all data stored in the current database, sorted by table
+
+        :return: all data stored in the database
+        """
+
+        tables = BackendHelper._execute("SHOW TABLES")[1]
+        BackendHelper.query_logger.debug(f"Found {len(tables)} tables in the database.")
+        tables = [list(t.values())[0] for t in tables]
+        BackendHelper.query_logger.debug(f"Table names: {', '.join(tables)}")
+
+        result = {}
+        for t in tables:
+            result[t] = BackendHelper.get_value(t)[1]
+        return result
