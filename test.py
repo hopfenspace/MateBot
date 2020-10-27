@@ -26,6 +26,52 @@ class EnvironmentTests(unittest.TestCase):
         import pymysql
         del pytz, tzlocal, telegram, pymysql
 
+    def test_config(self):
+        from mate_bot.config import config
+
+        mandatory_keys = [
+            ("general", dict),
+            ("token", str),
+            ("chats", dict),
+            ("community", dict),
+            ("database", dict),
+            ("consumables", list)
+        ]
+
+        for k in mandatory_keys:
+            self.assertIn(k[0], config)
+            self.assertIsInstance(config[k[0]], k[1])
+
+        mandatory_subkeys = [
+            ("general:max-amount", int),
+            ("general:max-consume", int),
+            ("chats:internal", int),
+            ("community:payment-consent", int),
+            ("community:payment-denial", int),
+            ("database:host", str),
+            ("database:db", str),
+            ("database:user", str),
+            ("database:password", str)
+        ]
+
+        for k in mandatory_subkeys:
+            first, second = k[0].split(":")
+            self.assertIn(second, config[first])
+            self.assertIsInstance(config[first][second], k[1])
+
+        mandatory_consumable_keys = [
+            ("name", str),
+            ("description", str),
+            ("price", int),
+            ("messages", list),
+            ("symbol", str)
+        ]
+
+        for consumable in config["consumables"]:
+            for k in mandatory_consumable_keys:
+                self.assertIn(k[0], consumable)
+                self.assertIsInstance(consumable[k[0]], k[1])
+
 
 class CollectivesTests(unittest.TestCase):
     """
