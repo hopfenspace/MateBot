@@ -104,6 +104,51 @@ class StateTests(unittest.TestCase):
 
     pass
 
+    def test_db_schema_conversion(self):
+        pass
+
+    def test_db_execute(self):
+        pass
+
+    def test_db_checking(self):
+        pass
+
+    def test_db_rebuild_database(self):
+        pass
+
+    def test_db_get_values_by_key_manually(self):
+        pass
+
+    def test_db_get_values_by_key(self):
+        pass
+
+    def test_db_get_value_manually(self):
+        pass
+
+    def test_db_get_value(self):
+        pass
+
+    def test_db_set_value_manually(self):
+        pass
+
+    def test_db_set_value(self):
+        pass
+
+    def test_db_set_all_manually(self):
+        pass
+
+    def test_db_set_all(self):
+        pass
+
+    def test_db_insert_manually(self):
+        pass
+
+    def test_db_insert(self):
+        pass
+
+    def test_db_extract_all(self):
+        pass
+
 
 if __name__ == "__main__":
     unittest.main()
