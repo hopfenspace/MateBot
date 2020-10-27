@@ -846,7 +846,8 @@ class BackendHelper:
         """
 
         BackendHelper._check_location(table, column)
-        BackendHelper._check_identifier(identifier)
+        if identifier is not None:
+            BackendHelper._check_identifier(identifier)
 
         if column is None:
             if identifier is None:
