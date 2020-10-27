@@ -115,6 +115,18 @@ class EnvironmentTests(unittest.TestCase):
                 self.assertIn(k[0], consumable)
                 self.assertIsInstance(consumable[k[0]], k[1])
 
+    def test_significance(self):
+        @significance
+        def f():
+            pass
+
+        @significance(42)
+        def g():
+            pass
+
+        self.assertEqual(f.significance, DEFAULT_WEIGHT)
+        self.assertEqual(g.significance, 42)
+
 
 class CollectivesTests(unittest.TestCase):
     """
