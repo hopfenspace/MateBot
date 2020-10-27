@@ -193,7 +193,46 @@ class StateTests(unittest.TestCase):
     pass
 
     def test_db_schema_conversion(self):
-        pass
+        from mate_bot.state.dbhelper import DATABASE_SCHEMA as SCHEMA
+
+        mandatory_keys = [
+            "users",
+            "transactions",
+            "collectives",
+            "collectives_users",
+            "collective_messages",
+            "externals"
+        ]
+
+        for k in mandatory_keys:
+            self.assertIn(k, SCHEMA)
+
+        self.assertEqual(str(SCHEMA["users"]), SCHEMA["users"]._to_string(4))
+
+        self.assertEqual(
+            SCHEMA["users"]._to_string(0),
+            "CREATE TABLE users ("
+            "`id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT, "
+            "`tid` BIGINT UNIQUE, "
+            "`username` VARCHAR(255), "
+            "`name` VARCHAR(255) NOT NULL, "
+            "`balance` MEDIUMINT NOT NULL DEFAULT 0, "
+            "`permission` BOOLEAN NOT NULL DEFAULT false, "
+            "`active` BOOLEAN NOT NULL DEFAULT true, "
+            "`created` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+            "`accessed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+        )
+
+        self.assertEqual(
+            SCHEMA["externals"]._to_string(0),
+            "CREATE TABLE externals ("
+            "`id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT, "
+            "`internal` INT, "
+            "`external` INT NOT NULL UNIQUE, "
+            "`changed` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, "
+            "FOREIGN KEY (internal) REFERENCES users(id) ON DELETE CASCADE, "
+            "FOREIGN KEY (external) REFERENCES users(id) ON DELETE CASCADE);"
+        )
 
     def test_db_execute(self):
         pass
