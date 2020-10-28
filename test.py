@@ -106,19 +106,30 @@ class SortedTestSuite(unittest.TestSuite):
         :return: None
         """
 
+        def calc_test_case(case: unittest.TestCase) -> int:
+            if hasattr(case, "significance"):
+                return -case.significance
+            if not hasattr(case, "_testMethodName"):
+                raise TypeError("Expected TestCase instance with attribute _testMethodName")
+
+            method = getattr(case, case._testMethodName, None)
+            if method is not None and hasattr(method, "significance"):
+                return -method.significance
+            return DEFAULT_WEIGHT
+
         def significance_sorting(value: typing.Union[SortedTestSuite, unittest.TestCase]) -> int:
             if isinstance(value, SortedTestSuite):
                 if hasattr(value, "significance"):
                     return -value.significance
-                return DEFAULT_WEIGHT
+
+                total = 0
+                for test in value.get():
+                    total += calc_test_case(test)
+
+                return -total or DEFAULT_WEIGHT
 
             elif isinstance(value, unittest.TestCase):
-                if hasattr(value, "significance"):
-                    return -value.significance
-                method = getattr(value, value._testMethodName, None)
-                if method is not None and hasattr(method, "significance"):
-                    return -method.significance
-                return DEFAULT_WEIGHT
+                return calc_test_case(value)
 
             else:
                 raise TypeError(f"Expected SortedTestSuite or a TestCase object, not {type(value)}")
