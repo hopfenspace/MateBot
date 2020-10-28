@@ -82,6 +82,35 @@ def significance(
         raise TypeError(f"Expected callable or int as first argument, not {type(weight_or_fn)})")
 
 
+class SortedTestSuite(unittest.TestSuite):
+    """
+    Test suite as collection of a number of TestCases that can be sorted by significance
+
+    For more information, see the base class :class:`unittest.suite.TestSuite`.
+    """
+
+    def get(self) -> typing.List[unittest.TestCase]:
+        """
+        Retrieve the list of test cases that are currently assigned to this test suite
+
+        :return: list of assigned test case instances
+        :rtype: typing.List[unittest.TestCase]
+        """
+
+        return self._tests
+
+    def run(self, result: unittest.TestResult, debug: bool = False) -> unittest.TestResult:
+        """
+        Run the test suite
+
+        See the documentation of the ``unittest`` package for more information,
+        see `here <https://docs.python.org/3/library/unittest.html>`_.
+        """
+
+        self.sort()
+        return super().run(result)
+
+
 class EnvironmentTests(unittest.TestCase):
     """
     Testing suite for the environment the MateBot is running in
