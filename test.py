@@ -283,8 +283,20 @@ class StateTests(unittest.TestCase):
         from mate_bot.config import config
         self.helper.db_config = config["database"].copy()
 
+    @significance(7)
+    def test_db_available(self):
+        """
+        Verify that the database is reachable and the connection credentials are valid
+        """
 
+        pass
+
+    @significance(6)
     def test_db_schema_conversion(self):
+        """
+        Verify the conversion of the database schema to SQL statements
+        """
+
         from mate_bot.state.dbhelper import DATABASE_SCHEMA as SCHEMA
 
         mandatory_keys = [
@@ -326,46 +338,124 @@ class StateTests(unittest.TestCase):
             "FOREIGN KEY (external) REFERENCES users(id) ON DELETE CASCADE);"
         )
 
+    @significance(5)
+    def test_db_execute_no_commit(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper._execute_no_commit`
+        """
+
+        pass
+
+    @significance(4)
     def test_db_execute(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper._execute`
+        """
+
         pass
 
+    @significance(3)
     def test_db_checking(self):
+        """
+        Verify the ``_check*`` functions of :class:`mate_bot.state.dbhelper.BackendHelper`
+        """
+
         pass
 
+    @significance(2)
     def test_db_rebuild_database(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.rebuild_database`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_values_by_key_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_values_by_key_manually`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_values_by_key(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_values_by_key`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_value_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_value_manually`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_value(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_value`
+        """
+
         pass
 
     def test_db_set_value_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_value_manually`
+        """
+
         pass
 
     def test_db_set_value(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_value`
+        """
+
         pass
 
     def test_db_set_all_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_all_manually`
+        """
+
         pass
 
     def test_db_set_all(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_all`
+        """
+
         pass
 
     def test_db_insert_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.insert_manually`
+        """
+
         pass
 
     def test_db_insert(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.insert`
+        """
+
         pass
 
     def test_db_extract_all(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.extract_all`
+        """
+
+        pass
+
+    def test_db_speed(self):
+        """
+        Verify that the query execution speed of the database is high enough
+        """
+
         pass
 
 
