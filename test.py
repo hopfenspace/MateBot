@@ -125,8 +125,7 @@ class SortedTestSuite(unittest.TestSuite):
                 total = 0
                 for test in value.get():
                     total += calc_test_case(test)
-
-                return -total or DEFAULT_WEIGHT
+                return total or DEFAULT_WEIGHT
 
             elif isinstance(value, unittest.TestCase):
                 return calc_test_case(value)
@@ -243,6 +242,7 @@ class EnvironmentTests(unittest.TestCase):
                 self.assertIn(k[0], consumable)
                 self.assertIsInstance(consumable[k[0]], k[1])
 
+    @significance(127)
     def test_significance(self):
         """
         Verify the significance wrapper function and sorting test cases
