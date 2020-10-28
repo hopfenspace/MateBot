@@ -42,14 +42,10 @@ class Communism(BaseCollective):
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
         self._price = 0
         self._fulfilled = None
-        super().__init__(arguments)
+        super().__init__(arguments, 0)
+        self.add_user(arguments[0])
 
-        if isinstance(arguments, tuple):
-            user = self._handle_tuple_constructor_argument(arguments, 0)
-            if user is not None:
-                self.add_user(user)
-
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the core information for the communism description message
 
@@ -80,7 +76,7 @@ class Communism(BaseCollective):
         :rtype: str
         """
 
-        markdown = self._get_basic_representation()
+        markdown = self.get_core_info()
 
         if self.active:
             markdown += "\n_The communism is currently active._"
@@ -146,7 +142,7 @@ class Communism(BaseCollective):
         messages = self.get_messages(message.chat.id)
         for msg in messages:
             message.bot.edit_message_text(
-                f"*Communism by {self.creator.name}*\n\n{self._get_basic_representation()}"
+                f"*Communism by {self.creator.name}*\n\n{self.get_core_info()}"
                 "\n_This communism management message is not active anymore. "
                 "A more recent message has been sent to the chat to replace this one._",
                 chat_id = msg[0],
@@ -174,6 +170,7 @@ class Communism(BaseCollective):
         :rtype: bool
         """
 
+        logger.debug(f"Attempting to close communism {self.get()}...")
         users = self.get_users()
         participants = self.externals + len(users)
         if participants == 0:

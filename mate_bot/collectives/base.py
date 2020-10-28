@@ -19,18 +19,18 @@ from mate_bot.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
 
 logger = logging.getLogger("collectives")
 
-_forwarding_arguments = typing.Tuple[int, MateBotUser, telegram.Bot]
-_creation_arguments = typing.Tuple[MateBotUser, int, str, telegram.Message]
-_constructor_tuple = typing.Union[_forwarding_arguments, _creation_arguments]
-
-COLLECTIVE_ARGUMENTS = typing.Union[int, _forwarding_arguments, _creation_arguments]
+_CREATION_ARGUMENTS = typing.Tuple[MateBotUser, int, str, typing.Optional[telegram.Message]]
+COLLECTIVE_ARGUMENTS = typing.Union[int, _CREATION_ARGUMENTS]
 
 
 class BaseCollective(MessageCoordinator, UserCoordinator):
     """
     Base class for collective operations
 
-    :param arguments: either internal ID or tuple of arguments for creation or forwarding
+    :param arguments: either an internal ID of an existing collective operation or a tuple
+        of arguments to create a new collective operation based on those supplied values
+    :param default_externals: default value to use for collective operations
+        (note that ``None`` is not just a placeholder but a valid default value instead!)
     :raises ValueError: when a supplied argument has an invalid value
     :raises TypeError: when a supplied argument has the wrong type
     :raises RuntimeError: when the collective ID doesn't match the class definition
@@ -50,7 +50,11 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
     _ALLOWED_COLUMNS: typing.List[str] = []
 
-    def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
+    def __init__(
+            self,
+            arguments: COLLECTIVE_ARGUMENTS,
+            default_externals: typing.Union[int, None]
+    ):
         if type(self)._communistic is None:
             raise RuntimeError("You need to set '_communistic' in a subclass")
 
@@ -60,7 +64,10 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             if type(self)._communistic != self._communistic:
                 raise RuntimeError("Remote record does not match collective operation type")
 
-        elif not isinstance(arguments, tuple):
+        elif isinstance(arguments, tuple):
+            self._handle_tuple_constructor_argument(arguments, default_externals)
+
+        else:
             raise TypeError("Expected int or tuple of arguments")
 
     @classmethod
@@ -141,31 +148,26 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
     def _handle_tuple_constructor_argument(
             self,
-            arguments: _constructor_tuple,
-            ext: typing.Optional[int] = None
-    ) -> typing.Optional[MateBotUser]:
+            arguments: _CREATION_ARGUMENTS,
+            externals: typing.Union[int, None]
+    ) -> None:
         """
-        Handle the tuple argument of the derived classes' constructors
+        Handle the tuple argument of the classes' constructors
 
-        The constructor of the derived classes accepts either a single integer
+        The constructor of the :class:`BaseCollective` accepts either a single integer
         or a tuple of arguments. The handling of the tuple is very similar in
         the currently implemented subclasses. The tuple contains either three
-        or four elements which defines the action that should be taken.
+        or four elements (because the fourth element is considered optional).
 
         If the tuple has three values, the following types are excepted:
 
-        * ``ìnt`` as the internal ID of the collective operation in the database
-        * :class:`mate_bot.state.user.MateBotUser` as receiver of the collective
-          management message
-        * ``telegram.Bot`` to be able to send messages to the user
-
-        The given MateBot user will receive a forwarded management message of the
-        collective operation, containing all data from it. The message is also
-        registered, so that it can be updated and synced in all chats as well.
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
+        * ``int`` as amount of the collective operation
+        * ``str`` as reason for the collective operation
 
         If the tuple has four values, the following types are excepted:
 
-        * :class:`mate_bot.state.user.MateBotUser` as initiating user
+        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
         * ``str`` as reason for the collective operation
         * ``telegram.Message`` as message that initiated the collective
@@ -174,76 +176,69 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         user will be stored as creator for the collective. The amount and reason
         values are self-explanatory. The last value is the message that contains the
         command to start the new collective operation and will be used to reply to.
+        As it is considered optional, no reply will be sent if the fourth value
+        is absent or set to ``None`` to make the collective independent of Telegram.
 
         :param arguments: collection of arguments as described above
-        :param ext: optional number of external users that joined the collective
-        :type ext: typing.Optional[int]
-        :return: optional MateBotUser (only when a new collective has been created)
-        :rtype: typing.Optional[MateBotUser]
+        :param externals: optional number of external users that joined the collective
+            (note that ``None`` is not just a placeholder but a valid default value instead!)
+        :type externals: typing.Union[int, None]
+        :return: None
         :raises ValueError: when the tuple does not contain three or four elements
         :raises TypeError: when the values in the tuple have wrong types
         """
 
         if len(arguments) == 3:
-
-            collective_id, user, bot = arguments
-            if not isinstance(collective_id, int):
-                raise TypeError("Expected int as first element")
-            if not isinstance(user, MateBotUser):
-                raise TypeError("Expected MateBotUser object as second element")
-            if not isinstance(bot, telegram.Bot):
-                raise TypeError("Expected telegram.Bot object as third element")
-
-            self._id = collective_id
-            self.update()
-
-            forwarded = bot.send_message(
-                chat_id = user.tid,
-                text = self.get_markdown(),
-                reply_markup = self._get_inline_keyboard(),
-                parse_mode = "Markdown"
-            )
-
-            self.register_message(forwarded.chat_id, forwarded.message_id)
+            user, amount, reason = arguments
+            message = None
 
         elif len(arguments) == 4:
-
             user, amount, reason, message = arguments
-            if not isinstance(user, MateBotUser):
-                raise TypeError("Expected MateBotUser object as first element")
-            if not isinstance(amount, int):
-                raise TypeError("Expected int object as second element")
-            if not isinstance(reason, str):
-                raise TypeError("Expected str object as third element")
+
+        else:
+            raise ValueError("Expected three or four arguments for the tuple")
+
+        if not isinstance(user, MateBotUser):
+            raise TypeError("Expected MateBotUser object as first element")
+        if not isinstance(amount, int):
+            raise TypeError("Expected int object as second element")
+        if not isinstance(reason, str):
+            raise TypeError("Expected str object as third element")
+
+        self._creator = user.uid
+        self._amount = amount
+        self._description = reason
+        self._externals = externals
+        self._active = True
+
+        self._create_new_record()
+        logger.info(f"New collective by {user.name} of {amount} for '{reason}' (ID {self._id})")
+
+        if message is not None:
             if not isinstance(message, telegram.Message):
-                raise TypeError("Expected telegram.Message as fourth element")
+                raise TypeError("Expected optional telegram.Message as fourth element")
 
-            self._creator = user.uid
-            self._amount = amount
-            self._description = reason
-            self._externals = ext
-            self._active = True
-
-            self._create_new_record()
-
-            reply = message.reply_markdown(self.get_markdown(), reply_markup = self._get_inline_keyboard())
+            reply = message.reply_markdown(
+                self.get_markdown(),
+                reply_markup=self._get_inline_keyboard()
+            )
             self.register_message(reply.chat_id, reply.message_id)
+            logger.debug(f"Sent reply message {reply.message_id} to chat {reply.chat_id}")
 
             if message.chat_id != config["chats"]["internal"]:
                 msg = message.bot.send_message(
                     config["chats"]["internal"],
                     self.get_markdown(),
-                    reply_markup = self._get_inline_keyboard(),
-                    parse_mode = "Markdown"
+                    reply_markup=self._get_inline_keyboard(),
+                    parse_mode="Markdown"
                 )
                 self.register_message(msg.chat_id, msg.message_id)
-
-            return user
+                logger.debug(f"Sent reply message {reply.message_id} to internal chat")
 
         else:
-            raise ValueError("Expected three or four arguments for the tuple")
+            logger.debug("No reply message has been sent")
 
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the basic information for the collective's management message
 
@@ -411,6 +406,8 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         :rtype: bool
         """
 
+        logger.debug(f"Aborting collective {self._id}...")
+
         if self._active:
             connection = None
 
@@ -546,6 +543,49 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
                 reply_markup=markup,
                 parse_mode=parse_mode
             )
+
+    def forward(
+            self,
+            receiver: MateBotUser,
+            bot: telegram.Bot,
+            sender: typing.Optional[MateBotUser] = None
+    ) -> None:
+        """
+        Forward the collective management message to another user
+
+        In case the argument ``sender`` is given, a second message will be added as a
+        reply to the actual management message to inform the receiver about the sender.
+        This allows the receiver to contact the sender and e.g. ask questions about it.
+
+        :param receiver: user that should receive a copy of the collective in private chat
+        :type receiver: MateBotUser
+        :param bot: the Telegram Bot that's used to send messages
+        :type bot: telegram.Bot
+        :param sender: optional user that forwarded the collective operation
+        :type sender: typing.Optional[MateBotUser]
+        :return: None
+        """
+
+        if not isinstance(receiver, MateBotUser):
+            raise TypeError(f"Expected MateBotUser object as receiver, but got {type(receiver)}")
+        if not isinstance(bot, telegram.Bot):
+            raise TypeError(f"Expected telegram.Bot object as bot, but got {type(bot)}")
+
+        forwarded = bot.send_message(
+            chat_id=receiver.tid,
+            text=self.get_markdown(),
+            reply_markup=self._get_inline_keyboard(),
+            parse_mode="Markdown"
+        )
+
+        self.register_message(forwarded.chat_id, forwarded.message_id)
+
+        if forwarded.chat_id != config["chats"]["internal"] and sender is not None:
+            forwarded.reply_text(
+                f"Note that you receive this message because {sender} forwarded it to you."
+            )
+
+        logger.debug(f"Forwarded collective {self._id} to {receiver} by {sender or 'someone'}")
 
     @property
     def active(self) -> bool:

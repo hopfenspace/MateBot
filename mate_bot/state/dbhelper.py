@@ -846,7 +846,8 @@ class BackendHelper:
         """
 
         BackendHelper._check_location(table, column)
-        BackendHelper._check_identifier(identifier)
+        if identifier is not None:
+            BackendHelper._check_identifier(identifier)
 
         if column is None:
             if identifier is None:
@@ -1118,3 +1119,32 @@ class BackendHelper:
             f'INSERT INTO {table} ({", ".join(values.keys())}) VALUES ({", ".join(["%s"] * len(values))})',
             tuple(values.values())
         )
+
+    @staticmethod
+    def extract_all(ignore_schema: bool = False) -> typing.Dict[str, QUERY_RESULT_TYPE]:
+        """
+        Extract all data stored in the current database, sorted by table
+
+        :param ignore_schema: switch whether the schema of the database should be ignored
+        :type ignore_schema: bool
+        :return: all data stored in the database
+        """
+
+        tables = BackendHelper._execute("SHOW TABLES")[1]
+        BackendHelper.query_logger.debug(f"Found {len(tables)} tables in the database.")
+        tables = [list(t.values())[0] for t in tables]
+        BackendHelper.query_logger.debug(f"Table names: {', '.join(tables)}")
+
+        result = {}
+        for t in tables:
+            if not ignore_schema:
+                try:
+                    result[t] = BackendHelper.get_value(t)[1]
+                except ValueError:
+                    BackendHelper.query_logger.error(
+                        f"The table {t} could not be extracted. It might "
+                        "conflict with the database schema definition?"
+                    )
+            else:
+                result[t] = BackendHelper._execute(f"SELECT * FROM {t}")
+        return result

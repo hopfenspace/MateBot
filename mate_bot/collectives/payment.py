@@ -33,10 +33,7 @@ class Payment(BaseCollective):
     _ALLOWED_COLUMNS = ["active"]
 
     def __init__(self, arguments: COLLECTIVE_ARGUMENTS):
-        super().__init__(arguments)
-
-        if isinstance(arguments, tuple):
-            self._handle_tuple_constructor_argument(arguments, None)
+        super().__init__(arguments, None)
 
     def get_votes(self) -> typing.Tuple[typing.List[MateBotUser], typing.List[MateBotUser]]:
         """
@@ -60,7 +57,7 @@ class Payment(BaseCollective):
 
         return approved, disapproved
 
-    def _get_basic_representation(self) -> str:
+    def get_core_info(self) -> str:
         """
         Retrieve the basic information for the payment request's management message
 
@@ -92,7 +89,7 @@ class Payment(BaseCollective):
         :rtype: str
         """
 
-        markdown = self._get_basic_representation()
+        markdown = self.get_core_info()
 
         if status is not None:
             markdown += status
@@ -199,6 +196,7 @@ class Payment(BaseCollective):
         :rtype: typing.Tuple[bool, typing.List[MateBotUser], typing.List[MateBotUser]]
         """
 
+        logger.debug(f"Attempting to close payment request {self.get()}...")
         approved, disapproved = self.get_votes()
 
         if len(approved) - len(disapproved) >= config["community"]["payment-consent"]:
