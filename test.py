@@ -22,6 +22,13 @@ def significance(
     based on their "weight". A higher weight should be executed earlier, a lower
     weight later. This feature is used to sort different test cases.
 
+    .. note::
+        Note that you can only sort functions and methods of a class using this
+        feature, not the class itself. The sorting of the test cases takes place
+        in the method :meth:`SortedTestSuite.sort`. Look into its docs for more details.
+
+    The following valid example illustrates how the wrapper can be used on a function:
+
         >>> from test import significance, DEFAULT_WEIGHT
         >>> @significance
         ... def f():
