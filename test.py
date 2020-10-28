@@ -236,6 +236,55 @@ class EnvironmentTests(unittest.TestCase):
         self.assertEqual(f.significance, DEFAULT_WEIGHT)
         self.assertEqual(g.significance, 42)
 
+        class MockTest(unittest.TestCase):
+            def debug(self) -> None:
+                pass
+
+            def run(
+                    self,
+                    result: typing.Optional[unittest.result.TestResult] = None
+            ) -> typing.Optional[unittest.result.TestResult]:
+                pass
+
+            @significance(3)
+            def test_a(self):
+                pass
+
+            @significance(42)
+            def test_b(self):
+                pass
+
+            def test_c(self):
+                pass
+
+            @significance(1337)
+            def test_d(self):
+                pass
+
+            @significance
+            def test_e(self):
+                pass
+
+        tests = [
+            MockTest("test_a"),
+            MockTest("test_b"),
+            MockTest("test_c"),
+            MockTest("test_d"),
+            MockTest("test_e")
+        ]
+
+        sorted_tests = [
+            tests[3],
+            tests[1],
+            tests[0],
+            tests[2],
+            tests[4]
+        ]
+
+        mock = SortedTestSuite(tests)
+        mock.sort()
+        self.assertListEqual(mock._tests, sorted_tests)
+
 
 class CollectivesTests(unittest.TestCase):
     """
