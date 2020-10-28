@@ -359,4 +359,6 @@ class StateTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    loader = unittest.loader.TestLoader()
+    loader.suiteClass = SortedTestSuite
+    unittest.main(testLoader=loader)
