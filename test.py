@@ -89,6 +89,35 @@ class SortedTestSuite(unittest.TestSuite):
     For more information, see the base class :class:`unittest.suite.TestSuite`.
     """
 
+    def sort(self) -> None:
+        """
+        Sort the test cases and test suites based on their significance in-place
+
+        This method should be executed directly before :meth:`run` starts.
+        It sorts the assigned test cases by their significance in-place.
+
+        :return: None
+        """
+
+        def significance_sorting(value: typing.Union[SortedTestSuite, unittest.TestCase]) -> int:
+            if isinstance(value, SortedTestSuite):
+                if hasattr(value, "significance"):
+                    return -value.significance
+                return DEFAULT_WEIGHT
+
+            elif isinstance(value, unittest.TestCase):
+                if hasattr(value, "significance"):
+                    return -value.significance
+                method = getattr(value, value._testMethodName, None)
+                if method is not None and hasattr(method, "significance"):
+                    return -method.significance
+                return DEFAULT_WEIGHT
+
+            else:
+                raise TypeError(f"Expected SortedTestSuite or a TestCase object, not {type(value)}")
+
+        self._tests.sort(key=significance_sorting)
+
     def get(self) -> typing.List[unittest.TestCase]:
         """
         Retrieve the list of test cases that are currently assigned to this test suite
