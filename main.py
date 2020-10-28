@@ -159,11 +159,15 @@ class _Installer(_SubcommandHelper):
         :return: None
         """
 
+        import test
+
         verbosity = 1
         if self.args.verbose:
             verbosity = 2
 
-        unittest.main("test", argv=[sys.argv[0]], exit=False, verbosity=verbosity)
+        loader = unittest.loader.TestLoader()
+        loader.suiteClass = test.SortedTestSuite
+        unittest.main("test", argv=[sys.argv[0]], exit=False, verbosity=verbosity, testLoader=loader)
 
     def install_database(self) -> None:
         """
