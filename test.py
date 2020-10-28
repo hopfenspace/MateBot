@@ -163,22 +163,41 @@ class EnvironmentTests(unittest.TestCase):
     Testing suite for the environment the MateBot is running in
     """
 
+    @significance(10)
     def test_os(self):
+        """
+        Verify the host OS is some flavor of Linux
+        """
+
         self.assertEqual(sys.platform, "linux")
 
+    @significance(10)
     def test_py_version(self):
+        """
+        Verify the Python version is at least 3.7
+        """
+
         self.assertEqual(sys.version_info.major, 3)
         self.assertGreaterEqual(sys.version_info.minor, 7)
 
     @staticmethod
     def test_imports():
+        """
+        Verify that required modules can be imported
+        """
+
         import pytz
         import tzlocal
         import telegram
         import pymysql
         del pytz, tzlocal, telegram, pymysql
 
+    @significance(7)
     def test_config(self):
+        """
+        Verify the config file
+        """
+
         from mate_bot.config import config
 
         mandatory_keys = [
@@ -225,6 +244,10 @@ class EnvironmentTests(unittest.TestCase):
                 self.assertIsInstance(consumable[k[0]], k[1])
 
     def test_significance(self):
+        """
+        Verify the significance wrapper function and sorting test cases
+        """
+
         @significance
         def f():
             pass
