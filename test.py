@@ -1,9 +1,19 @@
 """
 MateBot testing suite
+
+Call this module directly using ``python3 -m test`` to easily
+run all unittests provided by it. This module contains all
+different unittests used by the whole project in one file.
+The classes are designed to distinguish between the packages
+they are about to check. The :class:`EnvironmentTests`
+is considered special, as it does not check a specific package
+or module of the code base but rather the environment the code
+is executed in (e.g. OS type, valid configuration file, ...).
 """
 
 import sys
 import typing
+import logging
 import unittest
 import functools
 
