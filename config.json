@@ -28,6 +28,45 @@
 	"testing":  {
 		"db": "mate_db_test"
 	},
+	"logging": {
+		"version": 1,
+		"disable_existing_loggers": true,
+		"incremental": false,
+		"formatters": {
+			"console": {
+				"style": "{",
+				"class": "logging.Formatter",
+				"format": "{asctime}: MateBot {process}: [{levelname}] {name}: {message}",
+				"datefmt": "%d.%m.%Y %H:%M"
+			},
+			"file": {
+				"style": "{",
+				"class": "logging.Formatter",
+				"format": "matebot {process}: [{levelname}] {name}: {message}",
+				"datefmt": "%d.%m.%Y %H:%M"
+			}
+		},
+		"handlers": {
+			"console": {
+				"level": "DEBUG",
+				"class": "logging.StreamHandler",
+				"formatter": "console",
+				"stream": "ext://sys.stdout"
+			},
+			"file": {
+				"level": "DEBUG",
+				"class": "logging.handlers.WatchedFileHandler",
+				"formatter": "file",
+				"filename": "matebot.log",
+				"encoding": "UTF-8"
+			}
+		},
+		"loggers": {},
+		"root": {
+			"handlers": ["console", "file"],
+			"level": "DEBUG"
+		}
+	},
 	"consumables": [
 		{
 			"name": "drink",
