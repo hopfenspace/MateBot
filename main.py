@@ -76,6 +76,11 @@ class _Runner(_SubcommandHelper):
         if not self.args.silent:
             BackendHelper._query_logger = logging.getLogger("database")
 
+        self.logger.info("Checking database connection...")
+        BackendHelper.db_config = config["database"]
+        BackendHelper.get_value("users")
+
+        self.logger.debug("Creating Updater...")
         updater = Updater(config["token"], use_context = True)
 
         self.logger.info("Adding error handler...")
