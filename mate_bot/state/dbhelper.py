@@ -1131,9 +1131,11 @@ class BackendHelper:
         """
 
         tables = BackendHelper._execute("SHOW TABLES")[1]
-        BackendHelper.query_logger.debug(f"Found {len(tables)} tables in the database.")
+        if isinstance(BackendHelper.query_logger, logging.Logger):
+            BackendHelper.query_logger.debug(f"Found {len(tables)} tables in the database.")
         tables = [list(t.values())[0] for t in tables]
-        BackendHelper.query_logger.debug(f"Table names: {', '.join(tables)}")
+        if isinstance(BackendHelper.query_logger, logging.Logger):
+            BackendHelper.query_logger.debug(f"Table names: {', '.join(tables)}")
 
         result = {}
         for t in tables:
@@ -1141,10 +1143,11 @@ class BackendHelper:
                 try:
                     result[t] = BackendHelper.get_value(t)[1]
                 except ValueError:
-                    BackendHelper.query_logger.error(
-                        f"The table {t} could not be extracted. It might "
-                        "conflict with the database schema definition?"
-                    )
+                    if isinstance(BackendHelper.query_logger, logging.Logger):
+                        BackendHelper.query_logger.error(
+                            f"The table {t} could not be extracted. It might "
+                            "conflict with the database schema definition?"
+                        )
             else:
                 result[t] = BackendHelper._execute(f"SELECT * FROM {t}")
         return result

@@ -14,3 +14,4 @@ This is the complete documentation of the source code.
     commands
     parsing
     registry
+    test

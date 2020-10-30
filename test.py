@@ -1,9 +1,19 @@
 """
 MateBot testing suite
+
+Call this module directly using ``python3 -m test`` to easily
+run all unittests provided by it. This module contains all
+different unittests used by the whole project in one file.
+The classes are designed to distinguish between the packages
+they are about to check. The :class:`EnvironmentTests`
+is considered special, as it does not check a specific package
+or module of the code base but rather the environment the code
+is executed in (e.g. OS type, valid configuration file, ...).
 """
 
 import sys
 import typing
+import logging
 import unittest
 import functools
 
@@ -106,19 +116,29 @@ class SortedTestSuite(unittest.TestSuite):
         :return: None
         """
 
+        def calc_test_case(case: unittest.TestCase) -> int:
+            if hasattr(case, "significance"):
+                return -case.significance
+            if not hasattr(case, "_testMethodName"):
+                raise TypeError("Expected TestCase instance with attribute _testMethodName")
+
+            method = getattr(case, case._testMethodName, None)
+            if method is not None and hasattr(method, "significance"):
+                return -method.significance
+            return DEFAULT_WEIGHT
+
         def significance_sorting(value: typing.Union[SortedTestSuite, unittest.TestCase]) -> int:
             if isinstance(value, SortedTestSuite):
                 if hasattr(value, "significance"):
                     return -value.significance
-                return DEFAULT_WEIGHT
+
+                total = 0
+                for test in value.get():
+                    total += calc_test_case(test)
+                return total or DEFAULT_WEIGHT
 
             elif isinstance(value, unittest.TestCase):
-                if hasattr(value, "significance"):
-                    return -value.significance
-                method = getattr(value, value._testMethodName, None)
-                if method is not None and hasattr(method, "significance"):
-                    return -method.significance
-                return DEFAULT_WEIGHT
+                return calc_test_case(value)
 
             else:
                 raise TypeError(f"Expected SortedTestSuite or a TestCase object, not {type(value)}")
@@ -152,22 +172,41 @@ class EnvironmentTests(unittest.TestCase):
     Testing suite for the environment the MateBot is running in
     """
 
+    @significance(10)
     def test_os(self):
+        """
+        Verify the host OS is some flavor of Linux
+        """
+
         self.assertEqual(sys.platform, "linux")
 
+    @significance(10)
     def test_py_version(self):
+        """
+        Verify the Python version is at least 3.7
+        """
+
         self.assertEqual(sys.version_info.major, 3)
         self.assertGreaterEqual(sys.version_info.minor, 7)
 
     @staticmethod
     def test_imports():
+        """
+        Verify that required modules can be imported
+        """
+
         import pytz
         import tzlocal
         import telegram
         import pymysql
         del pytz, tzlocal, telegram, pymysql
 
+    @significance(7)
     def test_config(self):
+        """
+        Verify the config file
+        """
+
         from mate_bot.config import config
 
         mandatory_keys = [
@@ -213,7 +252,12 @@ class EnvironmentTests(unittest.TestCase):
                 self.assertIn(k[0], consumable)
                 self.assertIsInstance(consumable[k[0]], k[1])
 
+    @significance(127)
     def test_significance(self):
+        """
+        Verify the significance wrapper function and sorting test cases
+        """
+
         @significance
         def f():
             pass
@@ -224,6 +268,55 @@ class EnvironmentTests(unittest.TestCase):
 
         self.assertEqual(f.significance, DEFAULT_WEIGHT)
         self.assertEqual(g.significance, 42)
+
+        class MockTest(unittest.TestCase):
+            def debug(self) -> None:
+                pass
+
+            def run(
+                    self,
+                    result: typing.Optional[unittest.result.TestResult] = None
+            ) -> typing.Optional[unittest.result.TestResult]:
+                pass
+
+            @significance(3)
+            def test_a(self):
+                pass
+
+            @significance(42)
+            def test_b(self):
+                pass
+
+            def test_c(self):
+                pass
+
+            @significance(1337)
+            def test_d(self):
+                pass
+
+            @significance
+            def test_e(self):
+                pass
+
+        tests = [
+            MockTest("test_a"),
+            MockTest("test_b"),
+            MockTest("test_c"),
+            MockTest("test_d"),
+            MockTest("test_e")
+        ]
+
+        sorted_tests = [
+            tests[3],
+            tests[1],
+            tests[0],
+            tests[2],
+            tests[4]
+        ]
+
+        mock = SortedTestSuite(tests)
+        mock.sort()
+        self.assertListEqual(mock._tests, sorted_tests)
 
 
 class CollectivesTests(unittest.TestCase):
@@ -272,8 +365,20 @@ class StateTests(unittest.TestCase):
         from mate_bot.config import config
         self.helper.db_config = config["database"].copy()
 
+    @significance(7)
+    def test_db_available(self):
+        """
+        Verify that the database is reachable and the connection credentials are valid
+        """
 
+        pass
+
+    @significance(6)
     def test_db_schema_conversion(self):
+        """
+        Verify the conversion of the database schema to SQL statements
+        """
+
         from mate_bot.state.dbhelper import DATABASE_SCHEMA as SCHEMA
 
         mandatory_keys = [
@@ -315,46 +420,124 @@ class StateTests(unittest.TestCase):
             "FOREIGN KEY (external) REFERENCES users(id) ON DELETE CASCADE);"
         )
 
+    @significance(5)
+    def test_db_execute_no_commit(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper._execute_no_commit`
+        """
+
+        pass
+
+    @significance(4)
     def test_db_execute(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper._execute`
+        """
+
         pass
 
+    @significance(3)
     def test_db_checking(self):
+        """
+        Verify the ``_check*`` functions of :class:`mate_bot.state.dbhelper.BackendHelper`
+        """
+
         pass
 
+    @significance(2)
     def test_db_rebuild_database(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.rebuild_database`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_values_by_key_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_values_by_key_manually`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_values_by_key(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_values_by_key`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_value_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_value_manually`
+        """
+
         pass
 
+    @significance(1)
     def test_db_get_value(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.get_value`
+        """
+
         pass
 
     def test_db_set_value_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_value_manually`
+        """
+
         pass
 
     def test_db_set_value(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_value`
+        """
+
         pass
 
     def test_db_set_all_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_all_manually`
+        """
+
         pass
 
     def test_db_set_all(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.set_all`
+        """
+
         pass
 
     def test_db_insert_manually(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.insert_manually`
+        """
+
         pass
 
     def test_db_insert(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.insert`
+        """
+
         pass
 
     def test_db_extract_all(self):
+        """
+        Verify :meth:`mate_bot.state.dbhelper.BackendHelper.extract_all`
+        """
+
+        pass
+
+    def test_db_speed(self):
+        """
+        Verify that the query execution speed of the database is high enough
+        """
+
         pass
 
 

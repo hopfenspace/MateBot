@@ -43,7 +43,8 @@ class Communism(BaseCollective):
         self._price = 0
         self._fulfilled = None
         super().__init__(arguments, 0)
-        self.add_user(arguments[0])
+        if isinstance(arguments, tuple):
+            self.add_user(arguments[0])
 
     def get_core_info(self) -> str:
         """
