@@ -15,7 +15,6 @@ from telegram.ext import (
 )
 
 from mate_bot import err, log, registry
-from mate_bot.config import config
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
 
@@ -32,10 +31,12 @@ class _SubcommandHelper:
 
     args: argparse.Namespace
     logger: logging.Logger
+    _config: typing.Optional[dict]
 
     def __init__(self, args: argparse.Namespace, logger: logging.Logger):
         self.args = args
         self.logger = logger
+        self._config = None
 
     def __call__(self) -> int:
         """
@@ -49,6 +50,19 @@ class _SubcommandHelper:
         """
 
         raise NotImplementedError
+
+    @property
+    def config(self) -> typing.Optional[dict]:
+        """
+        Get a copy of the MateBot configuration
+        """
+
+        if self._config is None:
+            self.logger.debug("Attempting to import configuration files...")
+            import mate_bot.config
+            self._config = mate_bot.config.config
+            self.logger.debug("Imported configuration successfully.")
+        return self._config.copy()
 
     def setup_database(self):
         """
@@ -90,7 +104,7 @@ class _Runner(_SubcommandHelper):
         self.setup_database()
 
         self.logger.debug("Creating Updater...")
-        updater = Updater(config["token"], use_context = True)
+        updater = Updater(self.config["token"], use_context = True)
 
         self.logger.info("Adding error handler...")
         updater.dispatcher.add_error_handler(err.log_error)
