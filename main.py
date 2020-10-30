@@ -2,9 +2,11 @@
 
 import os
 import sys
+import json
 import typing
 import logging
 import argparse
+import datetime
 import unittest
 
 from telegram.ext import (
@@ -48,6 +50,18 @@ class _SubcommandHelper:
 
         raise NotImplementedError
 
+    def setup_database(self):
+        """
+        Setup the database configuration in the :class:`mate_bot.state.dbhelper.BackendHelper`
+        """
+
+        if not self.args.silent:
+            BackendHelper.query_logger = logging.getLogger("database")
+
+        self.logger.info("Checking database connection...")
+        BackendHelper.db_config = self.config["database"]
+        BackendHelper.get_value("users")
+
 
 class _Runner(_SubcommandHelper):
     """
@@ -73,12 +87,7 @@ class _Runner(_SubcommandHelper):
             print(f"MateBot process ID: {os.getpid()}")
             self.logger.debug(f"Running in process ID {os.getpid()}")
 
-        if not self.args.silent:
-            BackendHelper._query_logger = logging.getLogger("database")
-
-        self.logger.info("Checking database connection...")
-        BackendHelper.db_config = config["database"]
-        BackendHelper.get_value("users")
+        self.setup_database()
 
         self.logger.debug("Creating Updater...")
         updater = Updater(config["token"], use_context = True)
@@ -143,6 +152,7 @@ class _Installer(_SubcommandHelper):
             self.check_config()
         if not self.args.no_testing:
             self.check_unittests()
+        self.setup_database()
         if not self.args.no_database:
             self.install_database()
 
@@ -204,12 +214,7 @@ class _Extractor(_SubcommandHelper):
         :rtype: int
         """
 
-        if not self.args.silent:
-            BackendHelper.query_logger = logging.getLogger("database")
-
-        self.logger.info("Checking database connection...")
-        BackendHelper.db_config = self.config["database"]
-        BackendHelper.get_value("users")
+        self.setup_database()
 
         extraction = BackendHelper.extract_all(self.args.ignore_schema)
         if self.args.raw:
