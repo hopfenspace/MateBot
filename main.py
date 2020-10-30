@@ -323,6 +323,34 @@ class MateBot:
             help = "extract the raw data from the MateBot database"
         )
 
+        extract.add_argument(
+            "-f", "--force",
+            help = "allow overwriting existing files",
+            dest = "force",
+            action = "store_true"
+        )
+
+        extract.add_argument(
+            "-i", "--ignore",
+            help = "disable the strict schema checks and extract everything",
+            dest = "ignore_schema",
+            action = "store_true"
+        )
+
+        extract.add_argument(
+            "-o", "--output",
+            help = "filename the data should be written to",
+            dest = "output",
+            default = ""
+        )
+
+        extract.add_argument(
+            "-r", "--raw",
+            help = "output the raw data without converting data to valid JSON",
+            dest = "raw",
+            action = "store_true"
+        )
+
         return parser
 
 
