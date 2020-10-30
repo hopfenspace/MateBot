@@ -204,7 +204,42 @@ class _Extractor(_SubcommandHelper):
         :rtype: int
         """
 
-        pass
+        if not self.args.silent:
+            BackendHelper.query_logger = logging.getLogger("database")
+
+        self.logger.info("Checking database connection...")
+        BackendHelper.db_config = self.config["database"]
+        BackendHelper.get_value("users")
+
+        extraction = BackendHelper.extract_all(self.args.ignore_schema)
+        if self.args.raw:
+            result = str(extraction)
+
+        else:
+            for table in extraction:
+                data = extraction[table]
+                for entry in data:
+                    for k in entry:
+                        if isinstance(entry[k], datetime.datetime):
+                            entry[k] = int(entry[k].timestamp())
+
+            result = json.dumps(extraction, indent = 4, sort_keys = True)
+
+        if self.args.output:
+            if os.path.exists(self.args.output) and not self.args.force:
+                print(
+                    f"File '{self.args.output}' already exists. "
+                    f"It will not be overwritten unless -f is given.",
+                    file = sys.stderr
+                )
+            else:
+                with open(self.args.output, "w") as f:
+                    f.write(result)
+
+        else:
+            print(result)
+
+        return 0
 
 
 class MateBot:
