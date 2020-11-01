@@ -35,13 +35,16 @@ class _SubcommandHelper:
         self.args = args
         self._config = None
 
-    def __call__(self) -> int:
+    def __call__(self, logger: logging.Logger) -> int:
         """
         Execute the main part of the command
 
         This method is not implemented in this class.
         A subclass should implement this method instead.
 
+        :param logger: logger object that should be set as instance
+            attribute before the command is executed
+        :type logger: logging.Logger
         :return: exit code of the feature
         :rtype: int
         """
@@ -55,10 +58,10 @@ class _SubcommandHelper:
         """
 
         if self._config is None:
-            self.logger.debug("Attempting to import configuration files...")
+            self.logger.info("Attempting to import configuration files...")
             import mate_bot.config
             self._config = mate_bot.config.config
-            self.logger.debug("Imported configuration successfully.")
+            self.logger.info("Imported configuration successfully.")
         return self._config.copy()
 
     def setup_database(self):
@@ -86,13 +89,18 @@ class _Runner(_SubcommandHelper):
         typing.Type[FilteredChosenInlineResultHandler]
     ]
 
-    def __call__(self) -> int:
+    def __call__(self, logger: logging.Logger) -> int:
         """
         Execute the main part of the ``run`` command
 
+        :param logger: logger object that should be set as instance
+            attribute before the command is executed
+        :type logger: logging.Logger
         :return: exit code of the feature
         :rtype: int
         """
+
+        self.logger = logger
 
         if self.args.pid:
             print(f"MateBot process ID: {os.getpid()}")
@@ -151,13 +159,18 @@ class _Installer(_SubcommandHelper):
     MateBot executor of the ``install`` subcommand
     """
 
-    def __call__(self) -> int:
+    def __call__(self, logger: logging.Logger) -> int:
         """
         Execute the main part of the ``install`` command
 
+        :param logger: logger object that should be set as instance
+            attribute before the command is executed
+        :type logger: logging.Logger
         :return: exit code of the feature
         :rtype: int
         """
+
+        self.logger = logger
 
         if not self.args.no_config_check:
             self.check_config()
@@ -217,13 +230,18 @@ class _Extractor(_SubcommandHelper):
     MateBot executor of the ``extract`` subcommand
     """
 
-    def __call__(self) -> int:
+    def __call__(self, logger: logging.Logger) -> int:
         """
         Execute the main part of the ``extract`` command
 
+        :param logger: logger object that should be set as instance
+            attribute before the command is executed
+        :type logger: logging.Logger
         :return: exit code of the feature
         :rtype: int
         """
+
+        self.logger = logger
 
         self.setup_database()
 
@@ -300,7 +318,7 @@ class MateBot:
 
         command = getattr(self, self._args.command, NotImplemented)
         logger.debug(f"Calling {command}...")
-        code = command()
+        code = command(logger)
         logger.info(f"Finished with exit code {code}.")
         return code
 
