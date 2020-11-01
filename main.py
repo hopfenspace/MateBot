@@ -4,17 +4,17 @@ import os
 import sys
 import json
 import typing
-import logging
 import argparse
 import datetime
 import unittest
+import logging.config
 
 from telegram.ext import (
     Updater, Dispatcher, CommandHandler,
     CallbackQueryHandler, InlineQueryHandler
 )
 
-from mate_bot import err, log, registry
+from mate_bot import err, registry
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
 
@@ -25,17 +25,14 @@ class _SubcommandHelper:
 
     :param args: Namespace of parsed arguments
     :type args: argparse.Namespace
-    :param logger: logger object that should be used for logging purposes
-    :type logger: logging.Logger
     """
 
     args: argparse.Namespace
     logger: logging.Logger
     _config: typing.Optional[dict]
 
-    def __init__(self, args: argparse.Namespace, logger: logging.Logger):
+    def __init__(self, args: argparse.Namespace):
         self.args = args
-        self.logger = logger
         self._config = None
 
     def __call__(self) -> int:
@@ -265,40 +262,46 @@ class MateBot:
     """
     MateBot application executor
 
-    :param args: parsed program arguments as returned by ``parse_args``
-    :type args: argparse.Namespace
+    :param args: optional parsed program arguments as returned by ``parse_args``
+    :type args: typing.Optional[argparse.Namespace]
     """
 
-    _args: argparse.Namespace
+    _args: typing.Optional[argparse.Namespace]
 
-    def __init__(self, args: argparse.Namespace):
+    run: _Runner
+    install: _Installer
+    extract: _Extractor
+
+    def __init__(self, args: typing.Optional[argparse.Namespace] = None):
+        if args is None:
+            args = MateBot.setup().parse_args()
         self._args = args
 
-        if self._args.silent:
-            self.logger = logging.getLogger()
-            self.logger.addHandler(logging.NullHandler())
-        else:
-            log.setup()
-            self.logger = logging.getLogger("runner")
+        self.run = _Runner(args)
+        self.install = _Installer(args)
+        self.extract = _Extractor(args)
 
-        self.run = _Runner(args, self.logger)
-        self.install = _Installer(args, self.logger)
-        self.extract = _Extractor(args, self.logger)
-
-        self.logger.debug(f"Created  {self}.")
-
-    def start(self) -> int:
+    def start(self, configuration: dict) -> int:
         """
         Start the runner to execute the programs to handle the specified arguments
 
+        :param configuration: configuration dictionary as loaded e.g. by a ``json.load``
+        :type configuration: dict
         :return: program exit code
         :rtype: int
         """
 
-        command = getattr(self, self._args.command)
-        self.logger.debug(f"Calling {command}...")
+        if self._args.silent:
+            logger = logging.getLogger()
+            logger.addHandler(logging.NullHandler())
+        else:
+            logging.config.dictConfig(configuration["logging"])
+            logger = logging.getLogger("runner")
+
+        command = getattr(self, self._args.command, NotImplemented)
+        logger.debug(f"Calling {command}...")
         code = command()
-        self.logger.info(f"Finished with exit code {code}.")
+        logger.info(f"Finished with exit code {code}.")
         return code
 
     @staticmethod
@@ -409,5 +412,6 @@ class MateBot:
 
 
 if __name__ == "__main__":
-    arguments = MateBot.setup().parse_args()
-    exit(MateBot(arguments).start())
+    runner = MateBot()
+    from mate_bot.config import config
+    exit(runner.start(config))
