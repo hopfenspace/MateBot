@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import typing
-import logging
+import logging.config
 
 from telegram.ext import (
     Updater, Dispatcher, CommandHandler,
@@ -9,7 +9,6 @@ from telegram.ext import (
 )
 
 from mate_bot import err
-from mate_bot import log
 from mate_bot import registry
 from mate_bot.config import config
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
@@ -48,8 +47,8 @@ def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bo
 
 
 if __name__ == "__main__":
-    log.setup()
-    logger = logging.getLogger()
+    logging.config.dictConfig(config["database"])
+    logger = logging.getLogger("root")
     BackendHelper.db_config = config["database"]
     BackendHelper.query_logger = logging.getLogger("database")
 
