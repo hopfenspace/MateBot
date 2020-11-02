@@ -47,7 +47,7 @@ def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bo
 
 
 if __name__ == "__main__":
-    logging.config.dictConfig(config["database"])
+    logging.config.dictConfig(config["logging"])
     logger = logging.getLogger("root")
     BackendHelper.db_config = config["database"]
     BackendHelper.query_logger = logging.getLogger("database")
