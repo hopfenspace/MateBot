@@ -14,9 +14,21 @@ from telegram.ext import (
     CallbackQueryHandler, InlineQueryHandler
 )
 
-from mate_bot import err, registry
+from mate_bot import err
+from mate_bot import registry
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
+
+
+class NoDebugFilter(logging.Filter):
+    """
+    Logging filter that filters out any DEBUG message for the specified logger or handler
+    """
+
+    def filter(self, record: logging.LogRecord) -> int:
+        if super().filter(record):
+            return record.levelno > logging.DEBUG
+        return True
 
 
 class _SubcommandHelper:
@@ -314,6 +326,8 @@ class MateBot:
             logger.addHandler(logging.NullHandler())
         else:
             logging.config.dictConfig(configuration["logging"])
+            for handler in logging.root.handlers:
+                handler.addFilter(NoDebugFilter("telegram"))
             logger = logging.getLogger("runner")
 
         command = getattr(self, self._args.command, NotImplemented)
