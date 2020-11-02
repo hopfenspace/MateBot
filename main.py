@@ -46,12 +46,27 @@ def _add(dispatcher: Dispatcher, handler: handler_types, pool: dict, pattern: bo
             dispatcher.add_handler(handler(name, pool[name]))
 
 
+class NoDebugFilter(logging.Filter):
+    """
+    Logging filter that filters out any DEBUG message for the specified logger or handler
+    """
+
+    def filter(self, record: logging.LogRecord) -> int:
+        if super().filter(record):
+            return record.levelno > logging.DEBUG
+        return True
+
+
 if __name__ == "__main__":
     logging.config.dictConfig(config["logging"])
-    logger = logging.getLogger("root")
+    for handler in logging.root.handlers:
+        handler.addFilter(NoDebugFilter("telegram"))
+    logger = logging.getLogger()
     BackendHelper.db_config = config["database"]
     BackendHelper.query_logger = logging.getLogger("database")
+    BackendHelper.get_value("users")
 
+    logger.debug("Registering bot token with Updater...")
     updater = Updater(config["token"], use_context = True)
 
     logger.info("Adding error handler...")
