@@ -9,15 +9,12 @@ import datetime
 import unittest
 import logging.config
 
-from telegram.ext import (
-    Updater, Dispatcher, CommandHandler,
-    CallbackQueryHandler, InlineQueryHandler
-)
+import telegram.ext
 
 from mate_bot import err
 from mate_bot import registry
-from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 from mate_bot.state.dbhelper import BackendHelper
+from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 
 
 class NoDebugFilter(logging.Filter):
@@ -95,9 +92,9 @@ class _Runner(_SubcommandHelper):
     """
 
     handler_types = typing.Union[
-        typing.Type[CommandHandler],
-        typing.Type[CallbackQueryHandler],
-        typing.Type[InlineQueryHandler],
+        typing.Type[telegram.ext.CommandHandler],
+        typing.Type[telegram.ext.CallbackQueryHandler],
+        typing.Type[telegram.ext.InlineQueryHandler],
         typing.Type[FilteredChosenInlineResultHandler]
     ]
 
@@ -121,14 +118,14 @@ class _Runner(_SubcommandHelper):
         self.setup_database()
 
         self.logger.debug("Creating Updater...")
-        updater = Updater(self.config["token"], use_context = True)
+        updater = telegram.ext.Updater(self.config["token"], use_context = True)
 
         self.logger.info("Adding error handler...")
         updater.dispatcher.add_error_handler(err.log_error)
 
-        self.add_handler(updater.dispatcher, CommandHandler, registry.commands, False)
-        self.add_handler(updater.dispatcher, CallbackQueryHandler, registry.callback_queries, True)
-        self.add_handler(updater.dispatcher, InlineQueryHandler, registry.inline_queries, True)
+        self.add_handler(updater.dispatcher, telegram.ext.CommandHandler, registry.commands, False)
+        self.add_handler(updater.dispatcher, telegram.ext.CallbackQueryHandler, registry.callback_queries, True)
+        self.add_handler(updater.dispatcher, telegram.ext.InlineQueryHandler, registry.inline_queries, True)
         self.add_handler(updater.dispatcher, FilteredChosenInlineResultHandler, registry.inline_results, True)
 
         self.logger.info("Starting bot...")
@@ -139,7 +136,7 @@ class _Runner(_SubcommandHelper):
 
     def add_handler(
             self,
-            dispatcher: Dispatcher,
+            dispatcher: telegram.ext.Dispatcher,
             handler: handler_types,
             pool: dict,
             pattern: bool = True
