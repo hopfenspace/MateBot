@@ -27,6 +27,10 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
     """
     Base class for collective operations
 
+    Keep in mind that this class uses multiple inheritance:
+
+    .. image:: collectives_hierarchy.png
+
     :param arguments: either an internal ID of an existing collective operation or a tuple
         of arguments to create a new collective operation based on those supplied values
     :param default_externals: default value to use for collective operations
