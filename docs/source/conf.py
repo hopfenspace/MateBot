@@ -23,7 +23,7 @@ copyright = '2020, myOmikron, Crsi, gammelalf'
 author = 'myOmikron, Crsi, gammelalf'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1-rc'
+release = '0.2-rc'
 
 
 # -- General configuration ---------------------------------------------------
