@@ -12,6 +12,11 @@ Database
 Database Information
 ********************
 
+Overview
+========
+
+.. image:: database.png
+
 Creation
 ========
 
