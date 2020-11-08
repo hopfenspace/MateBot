@@ -176,7 +176,7 @@ class BaseBotUser(BackendHelper):
 
         self._unpack_record(record)
 
-        if self._user:
+        if hasattr(self, "_user") and self._user:
             if self._name != self._user.full_name:
                 self._name = self._update_record("name", self._user.full_name)
             if self._username != self._user.username:
