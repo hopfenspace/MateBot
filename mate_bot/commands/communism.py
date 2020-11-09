@@ -38,7 +38,10 @@ class CommunismCommand(BaseCommand):
             "can join afterwards (you might need to remember them). Users without "
             "Telegram can also join by adding an 'external'. You have to collect the "
             "money from each external by yourself. After everyone has joined, "
-            "you close the communism to calculate and evenly distribute the price."
+            "you close the communism to calculate and evenly distribute the price.\n\n"
+            "There are two subcommands that can be used. You can get your "
+            "active communism as a new message in the current chat by using `show`. "
+            "You can stop your currently active communism using `stop`."
         )
 
         self.parser.add_argument("amount", type=amount_type)
