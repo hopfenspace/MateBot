@@ -126,7 +126,7 @@ class Transaction(BackendHelper):
 
     def log_info(self) -> None:
         """
-        Create a short logging notification about the transaction
+        Create a short logging notification about the attempt to perform the transaction
 
         This method is not implemented in this class and provides a
         hook that might be implemented in a subclass. It will be
@@ -139,7 +139,7 @@ class Transaction(BackendHelper):
 
     def log_message(self) -> None:
         """
-        Create a long logging information about the transaction
+        Create a long logging information about the fulfilled transaction
 
         This method is not implemented in this class and provides a
         hook that might be implemented in a subclass. It will be
@@ -158,6 +158,8 @@ class Transaction(BackendHelper):
         :raises TypeError: when the ``bot`` is not None and no ``telegram.Bot`` object
         :return: None
         """
+
+        self.log_info()
 
         if self._amount < 0:
             raise RuntimeError("No negative transactions!")
@@ -207,7 +209,6 @@ class Transaction(BackendHelper):
                 if connection:
                     connection.close()
 
-            self.log_info()
             self.log_message()
 
 
@@ -255,7 +256,7 @@ class LoggedTransaction(Transaction):
         """
 
         logger.info(
-            f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}'"
+            f"Transferring {self.amount} from {self.src} to {self.dst} for '{self.reason}' ..."
         )
 
     def log_message(self) -> None:
@@ -267,6 +268,8 @@ class LoggedTransaction(Transaction):
 
         :return: None
         """
+
+        logger.debug(f"Transaction from {self.src} to {self.dst} fulfilled.")
 
         if self._bot is not None:
             if not isinstance(self._bot, telegram.Bot):
