@@ -208,6 +208,7 @@ class BaseCommand:
                 self._verify_internal_membership(update, user, context.bot)
 
             args = self.parser.parse(update.effective_message)
+            logger.debug(f"Parsed command's arguments: {args}")
             self.run(args, update)
 
         except ParsingError as err:
