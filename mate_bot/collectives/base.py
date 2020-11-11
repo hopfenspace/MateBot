@@ -539,14 +539,29 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         :return: None
         """
 
+        static_error_message = (
+            "Message is not modified: specified new message content and reply markup "
+            "are exactly the same as a current content and reply markup of the message"
+        )
+
         for c, m in self.get_messages():
-            bot.edit_message_text(
-                content,
-                chat_id=c,
-                message_id=m,
-                reply_markup=markup,
-                parse_mode=parse_mode
-            )
+            try:
+                bot.edit_message_text(
+                    content,
+                    chat_id=c,
+                    message_id=m,
+                    reply_markup=markup,
+                    parse_mode=parse_mode
+                )
+
+            except telegram.error.BadRequest as exc:
+                if str(exc) == static_error_message:
+                    logger.warning(
+                        "Ignoring telegram.error.BadRequest exception in edit_all_messages",
+                        exc_info=True
+                    )
+                else:
+                    raise
 
     def forward(
             self,
