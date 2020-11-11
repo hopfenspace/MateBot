@@ -48,11 +48,8 @@ class StartCommand(BaseCommand):
         if sender.is_bot:
             return
 
-        external = True
-        if update.message.chat.id == config["bot"]["chat"]:
-            external = False
-
-        elif update.message.chat.type != "private":
+        external = update.message.chat.id != config["bot"]["chat"]
+        if external and update.message.chat.type != "private":
             update.message.reply_text("This command should be executed in private chat.")
             return
 
