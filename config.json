@@ -61,7 +61,14 @@
 				"encoding": "UTF-8"
 			}
 		},
-		"loggers": {},
+		"loggers": {
+			"collectives": {},
+			"commands": {},
+			"config": {},
+			"database": {},
+			"error": {},
+			"state": {}
+		},
 		"root": {
 			"handlers": ["console", "file"],
 			"level": "DEBUG"
