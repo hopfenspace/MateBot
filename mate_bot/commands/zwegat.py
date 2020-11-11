@@ -20,7 +20,11 @@ class ZwegatCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("zwegat", "Show the central funds.")
+        super().__init__(
+            "zwegat",
+            "Use this command to show the central funds.\n\n"
+            "This command can only be used by internal users."
+        )
 
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """

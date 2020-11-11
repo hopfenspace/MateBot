@@ -21,7 +21,15 @@ class StartCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("start", "Use once per user to start interacting with this bot.")
+        super().__init__(
+            "start",
+            "Use this command once per user to start interacting with this bot.\n\n"
+            "This command creates your user account in case it was not yet. Otherwise, "
+            "this command might not be pretty useful. Note that you should not delete "
+            "the chat with the bot in order to receive personal notifications from it.\n\n"
+            "Use /help for more information about how to use this bot and its commands."
+        )
+
         self.parser.add_argument("trash-bin", nargs="*")
 
     def run(self, args: Namespace, update: telegram.Update) -> None:

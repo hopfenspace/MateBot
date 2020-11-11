@@ -25,9 +25,18 @@ class HistoryCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("history", "Request your made transactions.\n\n"
-                                    "You can specify the amount of most recent transactions "
-                                    "you want so see or a format in which to export all of them.")
+        super().__init__(
+            "history",
+            "Use this command to get an overview of your transactions.\n\n"
+            "You can specify the number of most recent transactions (default "
+            "10) which will be returned by the bot. Using a huge number will "
+            "just print all your transactions, maybe in multiple messages.\n\n"
+            "You could also export the whole history of your personal transactions "
+            "as downloadable file. Currently supported formats are `csv` and `json`. "
+            "Just add one of those two format specifiers after the command. Note "
+            "that this variant is restricted to your personal chat with the bot."
+        )
+
         self.parser.add_argument(
             "length",
             nargs="?",

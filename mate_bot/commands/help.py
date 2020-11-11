@@ -29,6 +29,7 @@ class HelpCommand(BaseCommand):
             "command. If no argument is passed, it will print its "
             "usage and a list of all available commands."
         )
+
         self.parser.add_argument("command", type=command_type, nargs="?")
 
     def run(self, args: Namespace, update: telegram.Update) -> None:

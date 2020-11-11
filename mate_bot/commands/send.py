@@ -23,7 +23,18 @@ class SendCommand(BaseCommand):
     """
 
     def __init__(self):
-        super().__init__("send", "Send money to another user.")
+        super().__init__(
+            "send",
+            "Use this command to send money to another user.\n\n"
+            "Performing this command allows you to send money to someone else. "
+            "Obviously, the receiver of your transaction has to be registered with "
+            "this bot. For security purposes, the bot will ask you to confirm your "
+            "proposed transaction before the virtual money will be transferred.\n\n"
+            "The first and second argument, `amount` and `receiver` respectively, are "
+            "mandatory. But you can add as many extra words as you want afterwards. "
+            "Those are treated as description/reason for your transaction."
+        )
+
         self.parser.add_argument("amount", type=amount_type)
         self.parser.add_argument("receiver", type=user_type)
         self.parser.add_argument("reason", default="<no description>", nargs="*")
