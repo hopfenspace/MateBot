@@ -163,6 +163,27 @@ class _Runner(_SubcommandHelper):
                 dispatcher.add_handler(handler(name, pool[name]))
 
 
+class _Manager(_SubcommandHelper):
+    """
+    MateBot executor of the ``manage`` subcommand
+    """
+
+    def __call__(self, logger: logging.Logger) -> int:
+        """
+        Execute the main part of the ``manage`` command
+
+        :param logger: logger object that should be set as instance
+            attribute before the command is executed
+        :type logger: logging.Logger
+        :return: exit code of the feature
+        :rtype: int
+        """
+
+        self.logger = logger
+
+        return 0
+
+
 class _Installer(_SubcommandHelper):
     """
     MateBot executor of the ``install`` subcommand
@@ -296,6 +317,7 @@ class MateBot:
     _args: typing.Optional[argparse.Namespace]
 
     run: _Runner
+    manage: _Manager
     install: _Installer
     extract: _Extractor
 
@@ -305,6 +327,7 @@ class MateBot:
         self._args = args
 
         self.run = _Runner(args)
+        self.manage = _Manager(args)
         self.install = _Installer(args)
         self.extract = _Extractor(args)
 
@@ -376,6 +399,29 @@ class MateBot:
             help = "print the process ID after startup",
             dest = "pid",
             action = "store_true"
+        )
+
+        manage = subcommands.add_parser(
+            "manage",
+            help = "manage MateBot data for its users"
+        )
+
+        manage.add_argument(
+            "-b", "--balance",
+            help = "get the current account balance",
+            action = "store_true"
+        )
+
+        manage.add_argument(
+            "-p", "--permission",
+            help = "get or set the permission flag of the user",
+            choices = ("allow", "deny", "get")
+        )
+
+        manage.add_argument(
+            "user",
+            help = "internal user ID, user's Telegram ID or unambiguous username",
+            nargs = "+"
         )
 
         install = subcommands.add_parser(
