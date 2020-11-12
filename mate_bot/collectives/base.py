@@ -597,7 +597,7 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             parse_mode="Markdown"
         )
 
-        self.register_message(forwarded.chat_id, forwarded.message_id)
+        self.replace_message(forwarded.chat_id, forwarded.message_id)
 
         if forwarded.chat_id != config["chats"]["internal"] and sender is not None:
             forwarded.reply_text(
