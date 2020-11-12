@@ -602,7 +602,7 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
                 chat_id=c,
                 message_id=m,
                 text=self.get_markdown(
-                    "_This management message has been disabled. Look below in this "
+                    "_\nThis management message has been disabled. Look below in this "
                     "chat to get a more recent version with updated content._"
                 ),
                 reply_markup=telegram.InlineKeyboardMarkup([]),
