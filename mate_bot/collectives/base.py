@@ -597,6 +597,18 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
             parse_mode="Markdown"
         )
 
+        for c, m in self.get_messages(forwarded.chat_id):
+            bot.edit_message_text(
+                chat_id=c,
+                message_id=m,
+                text=self.get_markdown(
+                    "_This management message has been disabled. Look below in this "
+                    "chat to get a more recent version with updated content._"
+                ),
+                reply_markup=telegram.InlineKeyboardMarkup([]),
+                parse_mode="Markdown"
+            )
+
         self.replace_message(forwarded.chat_id, forwarded.message_id)
 
         if forwarded.chat_id != config["chats"]["internal"] and sender is not None:
