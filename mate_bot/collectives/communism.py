@@ -79,7 +79,9 @@ class Communism(BaseCollective):
 
         markdown = self.get_core_info()
 
-        if self.active:
+        if status is not None:
+            markdown += status
+        elif self.active:
             markdown += "\n_The communism is currently active._"
         elif not self.active:
             markdown += "\n_The communism has been closed._"
