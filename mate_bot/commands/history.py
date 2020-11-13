@@ -88,14 +88,14 @@ class HistoryCommand(BaseCommand):
 
         if args.export == "json":
 
-            with tempfile.TemporaryFile(mode = "w+b") as file:
-                file.write(json.dumps(logs, indent = 4).encode("UTF-8"))
+            with tempfile.TemporaryFile(mode="w+b") as file:
+                file.write(json.dumps(logs, indent=4).encode("UTF-8"))
                 file.seek(0)
 
                 update.effective_message.reply_document(
-                    document = file,
-                    filename = "transactions.json",
-                    caption = (
+                    document=file,
+                    filename="transactions.json",
+                    caption=(
                         "You requested the export of your transaction log. "
                         f"This file contains all known transactions of {user.name}."
                     )
@@ -103,20 +103,20 @@ class HistoryCommand(BaseCommand):
 
         elif args.export == "csv":
 
-            with tempfile.TemporaryFile(mode = "w+") as file:
-                writer = csv.DictWriter(file, fieldnames = logs[0].keys(), quoting = csv.QUOTE_ALL)
+            with tempfile.TemporaryFile(mode="w+") as file:
+                writer = csv.DictWriter(file, fieldnames=logs[0].keys(), quoting=csv.QUOTE_ALL)
                 writer.writeheader()
                 writer.writerows(logs)
                 file.seek(0)
                 content = file.read().encode("UTF-8")
 
-            with tempfile.TemporaryFile(mode = "w+b") as file:
+            with tempfile.TemporaryFile(mode="w+b") as file:
                 file.write(content)
                 file.seek(0)
                 update.effective_message.reply_document(
-                    document = file,
-                    filename = "transactions.csv",
-                    caption = (
+                    document=file,
+                    filename="transactions.csv",
+                    caption=(
                         "You requested the export of your transaction log. "
                         f"This file contains all known transactions of {user.name}."
                     )

@@ -91,7 +91,7 @@ class VouchCommand(BaseCommand):
                 update.effective_message.reply_text(
                     "You don't vouch for any external user at the moment. "
                     "To change this, use `/vouch add|remove <username>`.",
-                    parse_mode = "Markdown"
+                    parse_mode="Markdown"
                 )
 
             else:

@@ -67,13 +67,13 @@ class SendCommand(BaseCommand):
         update.effective_message.reply_text(
             f"Do you want to send {args.amount / 100 :.2f}€ to {str(args.receiver)}?"
             f"\nDescription: `{reason}`",
-            reply_markup = telegram.InlineKeyboardMarkup([
+            reply_markup=telegram.InlineKeyboardMarkup([
                 [
-                    telegram.InlineKeyboardButton("CONFIRM", callback_data = e("confirm")),
-                    telegram.InlineKeyboardButton("ABORT", callback_data = e("abort"))
+                    telegram.InlineKeyboardButton("CONFIRM", callback_data=e("confirm")),
+                    telegram.InlineKeyboardButton("ABORT", callback_data=e("abort"))
                 ]
             ]),
-            parse_mode = "Markdown"
+            parse_mode="Markdown"
         )
 
 
@@ -134,13 +134,13 @@ class SendCallbackQuery(BaseCallbackQuery):
 
                 update.callback_query.message.edit_text(
                     f"Okay, you sent {amount / 100 :.2f}€ to {str(receiver)}",
-                    reply_markup = telegram.InlineKeyboardMarkup([])
+                    reply_markup=telegram.InlineKeyboardMarkup([])
                 )
 
             else:
                 update.callback_query.message.edit_text(
                     "You aborted the operation. No money has been sent.",
-                    reply_markup = telegram.InlineKeyboardMarkup([])
+                    reply_markup=telegram.InlineKeyboardMarkup([])
                 )
 
         except (IndexError, ValueError, TypeError, RuntimeError):
@@ -150,6 +150,6 @@ class SendCallbackQuery(BaseCallbackQuery):
             )
             update.callback_query.message.edit_text(
                 "There was an error processing this request. No money has been sent.",
-                reply_markup = telegram.InlineKeyboardMarkup([])
+                reply_markup=telegram.InlineKeyboardMarkup([])
             )
             raise

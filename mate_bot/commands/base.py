@@ -391,12 +391,12 @@ class BaseInlineQuery:
         """
 
         return telegram.InlineQueryResultArticle(
-            id = self.get_result_id(*args),
-            title = heading,
-            input_message_content = telegram.InputTextMessageContent(
-                message_text = msg_text,
-                parse_mode = parse_mode,
-                disable_web_page_preview = True
+            id=self.get_result_id(*args),
+            title=heading,
+            input_message_content=telegram.InputTextMessageContent(
+                message_text=msg_text,
+                parse_mode=parse_mode,
+                disable_web_page_preview=True
             )
         )
 

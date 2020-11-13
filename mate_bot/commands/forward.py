@@ -118,7 +118,7 @@ class ForwardInlineQuery(BaseInlineQuery):
                         if user.uid != community.uid:
                             users.append(user)
 
-            users.sort(key = lambda u: u.name.lower())
+            users.sort(key=lambda u: u.name.lower())
 
             answers = []
             for choice in users:
