@@ -103,10 +103,15 @@ class _SubcommandHelper:
         if "sep" in kwargs:
             sep = kwargs["sep"]
 
+        try:
+            msg = sep.join(map(str, args))
+        except (TypeError, ValueError):
+            msg = args
+
         if "file" in kwargs and kwargs["file"] == sys.stderr:
-            self.logger.error(sep.join(args))
+            self.logger.error(msg)
         else:
-            self.logger.info(sep.join(args))
+            self.logger.info(msg)
 
 
 class _Runner(_SubcommandHelper):
