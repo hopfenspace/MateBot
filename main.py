@@ -85,6 +85,26 @@ class _SubcommandHelper:
         BackendHelper.db_config = self.config["database"]
         BackendHelper.get_value("users")
 
+    def print(self, *args, **kwargs) -> None:
+        """
+        Print to the console and log to logfiles as well
+
+        :param args: any positional arguments
+        :param kwargs: any keyword arguments
+        :return: None
+        """
+
+        print(*args, **kwargs)
+
+        sep = " "
+        if "sep" in kwargs:
+            sep = kwargs["sep"]
+
+        if "file" in kwargs and kwargs["file"] == sys.stderr:
+            self.logger.error(sep.join(args))
+        else:
+            self.logger.info(sep.join(args))
+
 
 class _Runner(_SubcommandHelper):
     """
@@ -251,7 +271,7 @@ class _Installer(_SubcommandHelper):
         :return: None
         """
 
-        self.logger.warning("Installing database... This may overwrite existing data!")
+        self.print("Installing database... This may overwrite existing data!", file = sys.stderr)
         BackendHelper.rebuild_database()
 
 
@@ -291,7 +311,7 @@ class _Extractor(_SubcommandHelper):
 
         if self.args.output:
             if os.path.exists(self.args.output) and not self.args.force:
-                print(
+                self.print(
                     f"File '{self.args.output}' already exists. "
                     f"It will not be overwritten unless -f is given.",
                     file = sys.stderr
