@@ -9,6 +9,7 @@ import datetime
 import unittest
 import logging.config
 
+import pymysql.err
 import telegram.ext
 
 from mate_bot import err
@@ -202,6 +203,34 @@ class _Manager(_SubcommandHelper):
         self.logger = logger
 
         return 0
+
+    @staticmethod
+    def get_user(name: str) -> typing.Optional[MateBotUser]:
+        """
+        Return the MateBot user found for the given name (which might be a user ID as well)
+
+        :param name: unique user ID or unambiguous username to identify a user
+        :type name: str
+        :return: the only MateBot user found or None
+        :rtype: typing.Optional[MateBotUser]
+        """
+
+        if name.isdigit():
+            number = int(name)
+            uid = MateBotUser.get_uid_from_tid(number)
+            if uid is None:
+                try:
+                    return MateBotUser(number)
+                except pymysql.err.DataError:
+                    pass
+
+        else:
+            targets = find_user_by_name(name), find_user_by_username(name)
+            if all(targets) or not any(targets):
+                targets = find_user_by_name(name, True), find_user_by_username(name, True)
+            if all(targets) or not any(targets):
+                return
+            return list(filter(lambda x: x is not None, targets))[0]
 
 
 class _Installer(_SubcommandHelper):
