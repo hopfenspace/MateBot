@@ -52,7 +52,11 @@ class HelpCommand(BaseCommand):
         update.effective_message.reply_markdown(msg)
 
     @staticmethod
-    def get_help_usage(commands: dict, usage: str, user: typing.Optional[MateBotUser]) -> str:
+    def get_help_usage(
+            commands: dict,
+            usage: str,
+            user: typing.Optional[MateBotUser] = None
+    ) -> str:
         """
         Retrieve the help message from the help command without arguments
 
