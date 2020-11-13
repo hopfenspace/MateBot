@@ -807,18 +807,18 @@ class BackendHelper:
             return BackendHelper._execute_no_commit(
                 f"SELECT * FROM {table} WHERE id=%s",
                 (identifier,),
-                connection = connection
+                connection=connection
             )
 
         if identifier is None:
             return BackendHelper._execute_no_commit(
                 f"SELECT {column} FROM {table}",
-                connection = connection
+                connection=connection
             )
         return BackendHelper._execute_no_commit(
             f"SELECT {column} FROM {table} WHERE id=%s",
             (identifier,),
-            connection = connection
+            connection=connection
         )
 
     @staticmethod

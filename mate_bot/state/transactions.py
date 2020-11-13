@@ -285,7 +285,7 @@ class LoggedTransaction(Transaction):
                     f"Receiver: {self.dst}\n"
                     f"Amount: {self.amount / 100:.2f}€\n"
                     f"Reason: `{self.reason}`",
-                    parse_mode = "Markdown"
+                    parse_mode="Markdown"
                 )
 
 
