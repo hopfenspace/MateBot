@@ -57,7 +57,11 @@ class BaseCommand:
         registry.commands[self.name] = self
 
     @property
-    def usage(self):
+    def usage(self) -> str:
+        """
+        Get the usage string of a command
+        """
+
         if self._usage is None:
             return f"/{self.name} {self.parser.default_usage}"
         else:
