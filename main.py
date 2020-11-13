@@ -15,6 +15,8 @@ import telegram.ext
 from mate_bot import err
 from mate_bot import registry
 from mate_bot.state.dbhelper import BackendHelper
+from mate_bot.state.user import MateBotUser
+from mate_bot.state.finders import find_user_by_name, find_user_by_username
 from mate_bot.commands.handler import FilteredChosenInlineResultHandler
 
 
