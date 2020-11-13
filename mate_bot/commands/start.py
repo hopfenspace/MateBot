@@ -30,8 +30,6 @@ class StartCommand(BaseCommand):
             "Use /help for more information about how to use this bot and its commands."
         )
 
-        self.parser.add_argument("trash-bin", nargs="*")
-
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
