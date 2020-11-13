@@ -42,11 +42,7 @@ class HelpCommand(BaseCommand):
         """
 
         if args.command:
-            msg = "*Usages:*\n"
-            msg += "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
-            msg += "\n\n" \
-                   "*Description:*\n"
-            msg += args.command.description
+            msg = self.get_help_for_command(args.command)
         else:
             commands = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{commands}"
@@ -68,6 +64,20 @@ class HelpCommand(BaseCommand):
             )
         else:
             update.effective_message.reply_markdown(msg)
+
+    @staticmethod
+    def get_help_for_command(command: BaseCommand) -> str:
+        """
+        Get the help message for a specific command in Markdown
+
+        :param command: command which should be used for help message generation
+        :type command: BaseCommand
+        :return: Markdown-enabled help message for a specific command
+        :rtype: str
+        """
+
+        usages = "\n".join(map(lambda x: f"`/{command.name} {x}`", command.parser.usages))
+        return f"*Usages:*\n{usages}\n\n*Description:*\n{command.description}"
 
 
 class HelpInlineQuery(BaseInlineQuery):
