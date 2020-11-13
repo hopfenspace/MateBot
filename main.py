@@ -202,6 +202,43 @@ class _Manager(_SubcommandHelper):
 
         self.logger = logger
 
+        self.setup_database()
+
+        users = []
+        for u in self.args.user:
+            user = self.get_user(u)
+            if user is None:
+                self.print(f"No user found for input key '{u}'.")
+                continue
+            users.append(user)
+
+        if len(users) == 0:
+            self.print("No valid users found. Aborting.", file = sys.stderr)
+            return 1
+
+        for u in users:
+            if self.args.balance:
+                self.print(f"Account balance for user {u}: {u.balance}")
+
+            if self.args.permission == "get":
+                self.print(f"User account {u} has vote permissions: {u.permission}")
+
+            elif self.args.permission == "allow":
+                old = u.permission
+                u.permission = True
+                if u.permission != old:
+                    self.print(f"User {u} now has new vote permissions!")
+                else:
+                    self.print(f"User {u} already had vote permissions, so nothing has changed.")
+
+            elif self.args.permission == "deny":
+                old = u.permission
+                u.permission = False
+                if u.permission != old:
+                    self.print(f"User {u} has lost the vote permissions!")
+                else:
+                    self.print(f"User {u} had no vote permissions, so nothing has changed.")
+
         return 0
 
     @staticmethod
