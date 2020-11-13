@@ -27,8 +27,6 @@ class DataCommand(BaseCommand):
             "To view your transactions, use the command `/history` instead."
         )
 
-        self.parser.add_argument("trash-bin", nargs="*")
-
     def run(self, args: Namespace, update: telegram.Update) -> None:
         """
         :param args: parsed namespace containing the arguments
