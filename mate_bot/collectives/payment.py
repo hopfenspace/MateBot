@@ -161,11 +161,11 @@ class Payment(BaseCollective):
                     "\n_This payment request management message is not active anymore. "
                     "A more recent message has been sent to the chat to replace this one._"
                 ),
-                chat_id = msg[0],
-                message_id = msg[1],
-                parse_mode = "Markdown",
-                reply_to_message_id = reply.message_id,
-                reply_markup = telegram.InlineKeyboardMarkup([])
+                chat_id=msg[0],
+                message_id=msg[1],
+                parse_mode="Markdown",
+                reply_to_message_id=reply.message_id,
+                reply_markup=telegram.InlineKeyboardMarkup([])
             )
             self.unregister_message(msg[0], msg[1])
 

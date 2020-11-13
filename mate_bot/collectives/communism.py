@@ -116,18 +116,18 @@ class Communism(BaseCollective):
 
         return telegram.InlineKeyboardMarkup([
             [
-                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data = f("toggle")),
+                telegram.InlineKeyboardButton("JOIN / LEAVE", callback_data=f("toggle")),
             ],
             [
-                telegram.InlineKeyboardButton("FORWARD", switch_inline_query_current_chat = f"{self.get()} ")
+                telegram.InlineKeyboardButton("FORWARD", switch_inline_query_current_chat=f"{self.get()} ")
             ],
             [
-                telegram.InlineKeyboardButton("EXTERNALS +", callback_data = f("increase")),
-                telegram.InlineKeyboardButton("EXTERNALS -", callback_data = f("decrease")),
+                telegram.InlineKeyboardButton("EXTERNALS +", callback_data=f("increase")),
+                telegram.InlineKeyboardButton("EXTERNALS -", callback_data=f("decrease")),
             ],
             [
-                telegram.InlineKeyboardButton("ACCEPT", callback_data = f("accept")),
-                telegram.InlineKeyboardButton("CANCEL", callback_data = f("cancel")),
+                telegram.InlineKeyboardButton("ACCEPT", callback_data=f("accept")),
+                telegram.InlineKeyboardButton("CANCEL", callback_data=f("cancel")),
             ]
         ])
 
@@ -148,11 +148,11 @@ class Communism(BaseCollective):
                 f"*Communism by {self.creator.name}*\n\n{self.get_core_info()}"
                 "\n_This communism management message is not active anymore. "
                 "A more recent message has been sent to the chat to replace this one._",
-                chat_id = msg[0],
-                message_id = msg[1],
-                parse_mode = "Markdown",
-                reply_to_message_id = reply.message_id,
-                reply_markup = telegram.InlineKeyboardMarkup([])
+                chat_id=msg[0],
+                message_id=msg[1],
+                parse_mode="Markdown",
+                reply_to_message_id=reply.message_id,
+                reply_markup=telegram.InlineKeyboardMarkup([])
             )
             self.unregister_message(msg[0], msg[1])
 
