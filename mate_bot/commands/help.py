@@ -118,6 +118,22 @@ class HelpInlineQuery(BaseInlineQuery):
 
         return f"help-{int(datetime.datetime.now().timestamp())}"
 
+    def get_command_help(self, command: str) -> typing.Optional[telegram.InlineQueryResult]:
+        """
+        Get the help message for a specific command requested as possible answer
+
+        :param command: name of one of the supported commands, see :mod:`mate_bot.registry`
+        :type command: str
+        :return: help message as inline query result for one specific command
+        :rtype: typing.Optional[telegram.InlineQueryResult]
+        """
+
+        if command not in registry.commands:
+            return
+
+        text = HelpCommand.get_help_for_command(registry.commands[command])
+        return self.get_result(f"Help on /{command}", text)
+
     def get_help(self) -> telegram.InlineQueryResult:
         """
         Get the generic help message as only answer of an inline query handled by this class
@@ -128,7 +144,12 @@ class HelpInlineQuery(BaseInlineQuery):
 
         return self.get_result(
             "Help",
-            "#TODO"
+            "This bot provides limited inline support. To get more information about inline "
+            "bots, look at [the Telegram blog](https://telegram.org/blog/inline-bots).\n\n"
+            "Currently, a basic user search to forward communisms (see /communism) and payment "
+            "requests (see /pay) is supported. You may have a look at those two commands in "
+            "order to know how you might be able to use the inline feature of this bot.\n"
+            "You could try out the inline feature with some of the supported commands!"
         )
 
     def run(self, query: telegram.InlineQuery) -> None:
@@ -140,4 +161,8 @@ class HelpInlineQuery(BaseInlineQuery):
         :return: None
         """
 
-        query.answer([self.get_help()])
+        first_word = query.query.split(" ")[0]
+        if first_word.lower() in registry.commands:
+            query.answer([self.get_command_help(first_word.lower())])
+        else:
+            query.answer([self.get_help()])
