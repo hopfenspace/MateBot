@@ -52,7 +52,7 @@ class HelpCommand(BaseCommand):
             #msg = self.get_help_usage(registry.commands, self.usage, user)
             msg = "NotImplemented"
 
-        self.client.room_send(
+        await self.client.room_send(
             room.room_id,
             "m.notice",
             {"msgtype": "m.notice", "body": msg},
