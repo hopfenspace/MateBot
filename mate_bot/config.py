@@ -10,13 +10,14 @@ class MateBotConfig(Config):
 
     def __init__(self):
         super(MateBotConfig, self).__init__()
+        del self["logging"]
+
+        self.room = ""
 
         self.general = Namespace()
         self.general.max_amount = 10000
         self.general.max_consume = 10
         self.general.db_localtime = False
-
-        self.room = ""
 
         self.community = Namespace()
         self.community.payment_consent = 2
@@ -36,11 +37,11 @@ class MateBotConfig(Config):
 
         self.logging = Namespace()
         self.logging.version = 1
-        self.logging.disable_existing_loggers = True
+        self.logging.disable_existing_loggers = False
         self.logging.incremental = False
 
         self.logging.root = Namespace()
-        self.logging.root.level = "DEBUG"
+        self.logging.root.level = "INFO"
         self.logging.root.handlers = ["console", "file"]
 
         self.logging.formatters = Namespace()
@@ -58,13 +59,13 @@ class MateBotConfig(Config):
             "datefmt": "%d.%m.%Y %H:%M"
         }
         self.logging.handlers.console = {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "console",
             "stream": "ext://sys.stdout"
         }
         self.logging.handlers.file = {
-            "level": "DEBUG",
+            "level": "INFO",
             "class": "logging.handlers.WatchedFileHandler",
             "formatter": "file",
             "filename": "matebot.log",
