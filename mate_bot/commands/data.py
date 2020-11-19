@@ -72,7 +72,7 @@ class DataCommand(BaseCommand):
         result = (
             f"Overview over currently stored data for {user.name}:\n"
             f"\n```\n"
-            f"User ID: {user.uid}\n"
+            f"User ID: {user.id}\n"
             f"Matrix ID: {user.matrix_id}\n"
             f"Name: {user.name}\n"
             f"Username: {user.username}\n"
