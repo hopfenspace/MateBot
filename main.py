@@ -15,6 +15,7 @@ from mate_bot.commands.base import BaseCommand
 from mate_bot.commands.help import HelpCommand
 from mate_bot.commands.balance import BalanceCommand
 from mate_bot.commands.start import StartCommand
+from mate_bot.commands.consume import ConsumeCommand
 
 
 async def main():
@@ -29,6 +30,8 @@ async def main():
     client.add_event_callback(HelpCommand(client), RoomMessageText)
     client.add_event_callback(BalanceCommand(client), RoomMessageText)
     client.add_event_callback(StartCommand(client), RoomMessageText)
+    for consumable in config["consumables"]:
+        client.add_event_callback(ConsumeCommand(client, **consumable), RoomMessageText)
 
     await run(client, config)
 

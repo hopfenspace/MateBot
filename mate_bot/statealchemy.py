@@ -25,6 +25,10 @@ class MateBotUser(_Base, Representable):
     accessed = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
     @staticmethod
+    def push():
+        SESSION.commit()
+
+    @staticmethod
     def new(matrix_id: str, **kwargs) -> "MateBotUser":
         user = MateBotUser(matrix_id=matrix_id, **kwargs)
         SESSION.add(user)
