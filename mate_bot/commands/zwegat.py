@@ -4,9 +4,10 @@ MateBot command executor classes for /zwegat
 
 import logging
 
-import telegram
+from nio import MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.state.user import CommunityUser, MateBotUser
+from mate_bot.statealchemy import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 
@@ -19,28 +20,32 @@ class ZwegatCommand(BaseCommand):
     Command executor for /zwegat
     """
 
-    def __init__(self):
+    def __init__(self, api: ApiWrapper):
         super().__init__(
+            api,
             "zwegat",
             "Use this command to show the central funds.\n\n"
             "This command can only be used by internal users."
         )
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
-        user = MateBotUser(update.effective_message.from_user)
-        if not self.ensure_permissions(user, 2, update.effective_message):
-            return
+        user = User.get(event.sender)
+        #if not self.ensure_permissions(user, 2, update.effective_message):
+        #    return
 
-        total = CommunityUser().balance / 100
+        total = User.community_user().balance / 100
         if total >= 0:
-            update.effective_message.reply_text(f"Peter errechnet ein massives Vermögen von {total:.2f}€")
+            msg = f"Peter errechnet ein massives Vermögen von {total:.2f}€"
         else:
-            update.effective_message.reply_text(f"Peter errechnet Gesamtschulden von {-total:.2f}€")
+            msg = f"Peter errechnet Gesamtschulden von {-total:.2f}€"
+        self.api.send_message(msg, room.room_id, send_as_notice=True)
