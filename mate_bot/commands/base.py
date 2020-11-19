@@ -69,7 +69,7 @@ class BaseCommand:
         else:
             return self._usage
 
-    async def run(self, args: Namespace, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Perform command-specific actions
 
@@ -84,6 +84,41 @@ class BaseCommand:
         """
 
         raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
+
+    async def __call__(self, room: MatrixRoom, event: RoomMessageText) -> None:
+        """
+        Parse arguments of the incoming update and execute the .run() method
+
+        This method is the callback method used by telegram.CommandHandler.
+        Note that this method also catches any exceptions and prints them.
+
+        :param update: incoming Telegram update
+        :type update: telegram.Update
+        :param context: Telegram callback context
+        :type context: telegram.ext.CallbackContext
+        :return: None
+        """
+        if not event.body.startswith(f"!{self.name}"):
+            return
+
+        try:
+            logger.debug(f"{type(self).__name__} by {event.sender}")
+
+            """if self.name != "start":
+                if MateBotUser.get_uid_from_tid(event.sender) is None:
+                    #update.effective_message.reply_text("You need to /start first.")
+                    return
+
+                #user = MateBotUser(event.sender)
+                #self._verify_internal_membership(update, user, context.bot)"""
+
+            args = self.parser.parse(event)
+            logger.debug(f"Parsed command's arguments: {args}")
+            await self.run(args, room, event)
+
+        except ParsingError as err:
+            pass
+            #update.effective_message.reply_markdown(str(err))
 
     def ensure_permissions(self, user: "MateBotUser", level: int, msg: telegram.Message) -> bool:
         """
@@ -187,41 +222,6 @@ class BaseCommand:
                 f"for you. You can't have a voucher when you try to become an internal "
                 f"user. Therefore, your account status was not updated."
             )
-
-    async def __call__(self, room: MatrixRoom, event: RoomMessageText) -> None:
-        """
-        Parse arguments of the incoming update and execute the .run() method
-
-        This method is the callback method used by telegram.CommandHandler.
-        Note that this method also catches any exceptions and prints them.
-
-        :param update: incoming Telegram update
-        :type update: telegram.Update
-        :param context: Telegram callback context
-        :type context: telegram.ext.CallbackContext
-        :return: None
-        """
-        if not event.body.startswith(f"!{self.name}"):
-            return
-
-        try:
-            logger.debug(f"{type(self).__name__} by {event.sender}")
-
-            """if self.name != "start":
-                if MateBotUser.get_uid_from_tid(event.sender) is None:
-                    #update.effective_message.reply_text("You need to /start first.")
-                    return
-
-                #user = MateBotUser(event.sender)
-                #self._verify_internal_membership(update, user, context.bot)"""
-
-            args = self.parser.parse(event)
-            logger.debug(f"Parsed command's arguments: {args}")
-            await self.run(args, event)
-
-        except ParsingError as err:
-            pass
-            #update.effective_message.reply_markdown(str(err))
 
 
 '''

@@ -6,7 +6,7 @@ import typing
 import logging
 import datetime
 
-from nio import AsyncClient, RoomMessageText
+from nio import AsyncClient, RoomMessageText, MatrixRoom
 
 from mate_bot import registry
 from mate_bot.commands.base import BaseCommand
@@ -34,7 +34,7 @@ class HelpCommand(BaseCommand):
 
         self.parser.add_argument("command", type=command_type, nargs="?")
 
-    async def run(self, args: Namespace, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
@@ -52,7 +52,12 @@ class HelpCommand(BaseCommand):
             #msg = self.get_help_usage(registry.commands, self.usage, user)
             msg = "NotImplemented"
 
-        print(msg)
+        self.client.room_send(
+            room.room_id,
+            "m.notice",
+            {"msgtype": "m.notice", "body": msg},
+            ignore_unverified_devices=True
+        )
         #update.effective_message.reply_markdown(msg)
 
     @staticmethod
