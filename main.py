@@ -3,8 +3,11 @@
 import asyncio
 import logging
 
+from nio import InviteEvent
+
 from hopfenmatrix.client import new_async_client
 from hopfenmatrix.run import run
+from hopfenmatrix.callbacks import apply_filter, auto_join, allowed_rooms
 
 from mate_bot.config import config
 from mate_bot.state.dbhelper import BackendHelper
@@ -16,6 +19,7 @@ async def main():
     BackendHelper.get_value("users")
 
     client = new_async_client(config)
+    client.add_event_callback(apply_filter(auto_join(client), allowed_rooms(config.room)), InviteEvent)
 
     await run(client, config)
 

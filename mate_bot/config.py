@@ -16,12 +16,7 @@ class MateBotConfig(Config):
         self.general.max_consume = 10
         self.general.db_localtime = False
 
-        self.chats = Namespace()
-        self.chats.internal = 0
-        self.chats.transactions = []
-        self.chats.notification = []
-        self.chats.stacktrace = []
-        self.chats.debugging = []
+        self.room = ""
 
         self.community = Namespace()
         self.community.payment_consent = 2
