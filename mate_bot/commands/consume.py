@@ -9,7 +9,7 @@ import typing as _typing
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import MateBotUser
+from mate_bot.statealchemy import MateBotUser, Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
@@ -69,16 +69,12 @@ class ConsumeCommand(BaseCommand):
             msg = "You can't consume that many goods at once!"
 
         else:
-            sender.balance -= self.price * args.number
-            sender.push()
-            #reason = f"consume: {args.number}x {self.name}"
-            #LoggedTransaction(
-            #    sender,
-            #    CommunityUser(),
-            #    self.price * args.number,
-            #    reason,
-            #update.effective_message.bot
-            #).commit()
+            Transaction.perform(
+                sender,
+                MateBotUser.community_user(),
+                self.price * args.number,
+                f"consume: {args.number}x {self.name}"
+            )
             msg = _random.choice(self.messages) + self.symbol * args.number
 
         await self.api.send_message(msg, room.room_id, send_as_notice=True)

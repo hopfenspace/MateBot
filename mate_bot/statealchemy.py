@@ -2,7 +2,7 @@ import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean, Sequence, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Sequence, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker
 
 from mate_bot.parsing.util import Representable
@@ -52,6 +52,44 @@ class MateBotUser(_Base, Representable):
             return MateBotUser.get(matrix_id)
         except ValueError:
             return MateBotUser.new(matrix_id, **kwargs)
+
+    @staticmethod
+    def community_user():
+        return SESSION.query(MateBotUser).filter_by(id=1).first()
+
+
+class Transaction(_Base):
+    __tablename__ = "transactions"
+
+    id = Column(Integer, Sequence("transaction_id_seq"), primary_key=True)
+    sender = Column(ForeignKey("users.id"), nullable=False)
+    receiver = Column(ForeignKey("users.id"), nullable=False)
+    amount = Column(Integer, nullable=False)
+    reason = Column(String(255))
+    registered = Column(DateTime, default=datetime.datetime.now)
+
+    @staticmethod
+    def perform(
+            sender: MateBotUser,
+            receiver: MateBotUser,
+            amount: int,
+            reason: str = None
+    ) -> "Transaction":
+
+        if amount < 0:
+            raise ValueError("No negative transactions!")
+        elif amount == 0:
+            raise ValueError("Empty transaction!")
+        if sender is receiver:
+            raise ValueError("Sender equals receiver!")
+
+        sender.balance -= amount
+        receiver.balance += amount
+
+        transaction = Transaction(sender=sender.id, receiver=receiver.id, amount=amount, reason=reason)
+        SESSION.add(transaction)
+        SESSION.commit()
+        return transaction
 
 
 # Setup db
