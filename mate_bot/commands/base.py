@@ -6,6 +6,7 @@ import typing
 import logging
 
 import telegram.ext
+from nio import AsyncClient, MatrixRoom, RoomMessageText
 
 from mate_bot import registry
 from mate_bot.config import config
@@ -48,7 +49,8 @@ class BaseCommand:
     :type usage: Optional[str]
     """
 
-    def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
+    def __init__(self, client: AsyncClient, name: str, description: str, usage: typing.Optional[str] = None):
+        self.client = client
         self.name = name
         self._usage = usage
         self.description = description
@@ -67,7 +69,7 @@ class BaseCommand:
         else:
             return self._usage
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    async def run(self, args: Namespace, event: RoomMessageText) -> None:
         """
         Perform command-specific actions
 
@@ -186,7 +188,7 @@ class BaseCommand:
                 f"user. Therefore, your account status was not updated."
             )
 
-    def __call__(self, update: telegram.Update, context: telegram.ext.CallbackContext) -> None:
+    async def __call__(self, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Parse arguments of the incoming update and execute the .run() method
 
@@ -201,22 +203,23 @@ class BaseCommand:
         """
 
         try:
-            logger.debug(f"{type(self).__name__} by {update.effective_message.from_user.name}")
+            logger.debug(f"{type(self).__name__} by {event.sender}")
 
-            if self.name != "start":
-                if MateBotUser.get_uid_from_tid(update.effective_message.from_user.id) is None:
-                    update.effective_message.reply_text("You need to /start first.")
+            """if self.name != "start":
+                if MateBotUser.get_uid_from_tid(event.sender) is None:
+                    #update.effective_message.reply_text("You need to /start first.")
                     return
 
-                user = MateBotUser(update.effective_message.from_user)
-                self._verify_internal_membership(update, user, context.bot)
+                #user = MateBotUser(event.sender)
+                #self._verify_internal_membership(update, user, context.bot)"""
 
-            args = self.parser.parse(update.effective_message)
+            args = self.parser.parse(event)
             logger.debug(f"Parsed command's arguments: {args}")
-            self.run(args, update)
+            #await self.run(args, event)
 
         except ParsingError as err:
-            update.effective_message.reply_markdown(str(err))
+            pass
+            #update.effective_message.reply_markdown(str(err))
 
 
 class BaseCallbackQuery:

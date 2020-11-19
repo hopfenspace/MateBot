@@ -23,27 +23,27 @@ from mate_bot.commands.consume import ConsumeCommand
 # constructors of the base classes care about adding the
 # specific executor object to the correct registry pool.
 
-BalanceCommand()
-BlameCommand()
-CommunismCommand()
-DataCommand()
-HelpCommand()
-HistoryCommand()
-PayCommand()
-SendCommand()
-StartCommand()
-VouchCommand()
-ZwegatCommand()
+#BalanceCommand()
+#BlameCommand()
+#CommunismCommand()
+#DataCommand()
+#HelpCommand()
+#HistoryCommand()
+#PayCommand()
+#SendCommand()
+#StartCommand()
+#VouchCommand()
+#ZwegatCommand()
 
-for consumable in config["consumables"]:
-    ConsumeCommand(**consumable)
+#for consumable in config["consumables"]:
+#    ConsumeCommand(**consumable)
 
-CommunismCallbackQuery()
-PayCallbackQuery()
-SendCallbackQuery()
-VouchCallbackQuery()
+#CommunismCallbackQuery()
+#PayCallbackQuery()
+#SendCallbackQuery()
+#VouchCallbackQuery()
 
-ForwardInlineQuery(r"^\d+(\s?\S?)*")
-HelpInlineQuery(r"")
+#ForwardInlineQuery(r"^\d+(\s?\S?)*")
+#HelpInlineQuery(r"")
 
-ForwardInlineResult(r"^forward-\d+-\d+-\d+")
+#ForwardInlineResult(r"^forward-\d+-\d+-\d+")
