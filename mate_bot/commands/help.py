@@ -71,4 +71,3 @@ class HelpCommand(BaseCommand):
             {"msgtype": "m.notice", "format": "plain", "body": msg},
             ignore_unverified_devices=True
         )
-        #update.effective_message.reply_markdown(msg)

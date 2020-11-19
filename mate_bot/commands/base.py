@@ -5,15 +5,12 @@ MateBot command handling base library
 import typing
 import logging
 
-import telegram.ext
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 
 from mate_bot import registry
-from mate_bot.config import config
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
-#from mate_bot.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")
@@ -65,7 +62,7 @@ class BaseCommand:
         """
 
         if self._usage is None:
-            return f"/{self.name} {self.parser.default_usage}"
+            return f"!{self.name} {self.parser.default_usage}"
         else:
             return self._usage
 
@@ -77,8 +74,10 @@ class BaseCommand:
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         :raises NotImplementedError: because this method should be overwritten by subclasses
         """
@@ -87,15 +86,14 @@ class BaseCommand:
 
     async def __call__(self, room: MatrixRoom, event: RoomMessageText) -> None:
         """
-        Parse arguments of the incoming update and execute the .run() method
+        Parse arguments of the incoming event and execute the .run() method
 
-        This method is the callback method used by telegram.CommandHandler.
-        Note that this method also catches any exceptions and prints them.
+        This method is the callback method used by `AsyncClient.add_callback_handler`.
 
-        :param update: incoming Telegram update
-        :type update: telegram.Update
-        :param context: Telegram callback context
-        :type context: telegram.ext.CallbackContext
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
         if not event.body.startswith(f"!{self.name}"):
@@ -117,9 +115,18 @@ class BaseCommand:
             await self.run(args, room, event)
 
         except ParsingError as err:
-            pass
-            #update.effective_message.reply_markdown(str(err))
+            await self.client.room_send(
+                room.room_id,
+                "m.room.message",
+                {
+                    "msgtype": "m.notice",
+                    "format": "plain",
+                    "body": str(err)
+                },
+                ignore_unverified_devices=True
+            )
 
+'''
     def ensure_permissions(self, user: "MateBotUser", level: int, msg: telegram.Message) -> bool:
         """
         Ensure that a user is allowed to perform an operation that requires specific permissions
@@ -224,7 +231,6 @@ class BaseCommand:
             )
 
 
-'''
 class BaseCallbackQuery:
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
