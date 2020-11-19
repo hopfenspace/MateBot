@@ -34,7 +34,7 @@ class HelpCommand(BaseCommand):
 
         self.parser.add_argument("command", type=command_type, nargs="?")
 
-    def run(self, args: Namespace, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
