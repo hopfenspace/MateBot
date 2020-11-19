@@ -4,7 +4,7 @@ MateBot's CommandParser
 
 import typing
 
-import telegram
+from nio import RoomMessageText
 
 from mate_bot.err import ParsingError
 from mate_bot.parsing.util import EntityString, Namespace, Representable
@@ -60,7 +60,7 @@ class CommandParser(Representable):
         self._usages.append(CommandUsage())
         return self._usages[-1]
 
-    def parse(self, msg: telegram.Message) -> Namespace:
+    def parse(self, msg: RoomMessageText) -> Namespace:
         """
         Parse a telegram message into a namespace.
 
@@ -213,7 +213,7 @@ class CommandParser(Representable):
         return namespace
 
     @staticmethod
-    def _split(msg: telegram.Message) -> typing.Iterator[EntityString]:
+    def _split(msg: RoomMessageText) -> typing.Iterator[EntityString]:
         """
         Split a telegram message into EntityStrings
 
@@ -228,7 +228,7 @@ class CommandParser(Representable):
         :rtype: Iterator[EntityString]
         """
 
-        last_entity = 0
+        """last_entity = 0
 
         for entity in msg.entities:
             # If there is normal text left before the next entity
@@ -240,4 +240,6 @@ class CommandParser(Representable):
 
         # Return left over text which might be after the last entity
         if msg.text[last_entity:]:
-            yield from map(EntityString, filter(bool, msg.text[last_entity:].split()))
+            yield from map(EntityString, filter(bool, msg.text[last_entity:].split()))"""
+
+        yield from msg.body.split()

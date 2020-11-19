@@ -4,8 +4,6 @@ Collection of simple utility classes
 
 from typing import Optional
 
-from telegram import MessageEntity
-
 
 class Representable(object):
     """
@@ -72,10 +70,10 @@ class EntityString(Representable, str):
     :type entity: MessageEntity
     """
 
-    def __new__(cls, string: str, entity: Optional[MessageEntity] = None) -> "EntityString":
+    def __new__(cls, string: str, entity: Optional[object] = None) -> "EntityString":
         return str.__new__(cls, string)
 
-    def __init__(self, string: str, entity: Optional[MessageEntity] = None):
+    def __init__(self, string: str, entity: Optional[object] = None):
         super(EntityString, self).__init__()
         self.entity = entity
 
