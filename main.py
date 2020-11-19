@@ -12,6 +12,7 @@ from hopfenmatrix.callbacks import apply_filter, auto_join, allowed_rooms
 from mate_bot.config import config
 #from mate_bot.state.dbhelper import BackendHelper
 from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.help import HelpCommand
 
 
 async def main():
@@ -24,6 +25,7 @@ async def main():
     client = new_async_client(config)
     client.add_event_callback(apply_filter(auto_join(client), allowed_rooms(config.room)), InviteEvent)
     client.add_event_callback(BaseCommand(client, "test", "I'm a test command"), RoomMessageText)
+    client.add_event_callback(HelpCommand(client), RoomMessageText)
 
     await run(client, config)
 

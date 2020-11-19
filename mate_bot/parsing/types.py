@@ -96,6 +96,7 @@ def user(arg: EntityString) -> MateBotUser:
 
     else:
         raise ValueError('No user mentioned. Try with "@".')
+'''
 
 
 def command(arg: str) -> BaseCommand:
@@ -113,4 +114,3 @@ def command(arg: str) -> BaseCommand:
         return registry.commands[arg.lower()]
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")
-'''

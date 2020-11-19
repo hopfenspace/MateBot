@@ -6,10 +6,10 @@ import typing
 import logging
 import datetime
 
-import telegram
+from nio import AsyncClient, RoomMessageText
 
 from mate_bot import registry
-from mate_bot.commands.base import BaseCommand, BaseInlineQuery
+from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import command as command_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.state.user import MateBotUser
@@ -23,8 +23,9 @@ class HelpCommand(BaseCommand):
     Command executor for /help
     """
 
-    def __init__(self):
+    def __init__(self, client: AsyncClient):
         super().__init__(
+            client,
             "help",
             "The `/help` command prints the help page for any "
             "command. If no argument is passed, it will print its "
@@ -33,7 +34,7 @@ class HelpCommand(BaseCommand):
 
         self.parser.add_argument("command", type=command_type, nargs="?")
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
@@ -43,13 +44,16 @@ class HelpCommand(BaseCommand):
         """
 
         if args.command:
-            msg = self.get_help_for_command(args.command)
+            usages = "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
+            msg = f"*Usages:*\n{usages}\n\n*Description:*\n{args.command.description}"
 
         else:
-            user = MateBotUser(update.effective_message.from_user)
-            msg = self.get_help_usage(registry.commands, self.usage, user)
+            #user = MateBotUser(update.effective_message.from_user)
+            #msg = self.get_help_usage(registry.commands, self.usage, user)
+            msg = "NotImplemented"
 
-        update.effective_message.reply_markdown(msg)
+        print(msg)
+        #update.effective_message.reply_markdown(msg)
 
     @staticmethod
     def get_help_usage(
@@ -86,83 +90,3 @@ class HelpCommand(BaseCommand):
                 )
 
         return msg
-
-    @staticmethod
-    def get_help_for_command(command: BaseCommand) -> str:
-        """
-        Get the help message for a specific command in Markdown
-
-        :param command: command which should be used for help message generation
-        :type command: BaseCommand
-        :return: Markdown-enabled help message for a specific command
-        :rtype: str
-        """
-
-        usages = "\n".join(map(lambda x: f"`/{command.name} {x}`", command.parser.usages))
-        return f"*Usages:*\n{usages}\n\n*Description:*\n{command.description}"
-
-
-class HelpInlineQuery(BaseInlineQuery):
-    """
-    Get inline help messages like /help does as command
-    """
-
-    def get_result_id(self, *args) -> str:
-        """
-        Generate a result ID based on the current time and the static word ``help``
-
-        :param args: ignored collection of parameters
-        :return: result ID for any inline query seeking for help
-        :rtype: str
-        """
-
-        return f"help-{int(datetime.datetime.now().timestamp())}"
-
-    def get_command_help(self, command: str) -> typing.Optional[telegram.InlineQueryResult]:
-        """
-        Get the help message for a specific command requested as possible answer
-
-        :param command: name of one of the supported commands, see :mod:`mate_bot.registry`
-        :type command: str
-        :return: help message as inline query result for one specific command
-        :rtype: typing.Optional[telegram.InlineQueryResult]
-        """
-
-        if command not in registry.commands:
-            return
-
-        text = HelpCommand.get_help_for_command(registry.commands[command])
-        return self.get_result(f"Help on /{command}", text)
-
-    def get_help(self) -> telegram.InlineQueryResult:
-        """
-        Get the generic help message as only answer of an inline query handled by this class
-
-        :return: help message as inline query result
-        :rtype: telegram.InlineQueryResult
-        """
-
-        return self.get_result(
-            "Help",
-            "This bot provides limited inline support. To get more information about inline "
-            "bots, look at [the Telegram blog](https://telegram.org/blog/inline-bots).\n\n"
-            "Currently, a basic user search to forward communisms (see /communism) and payment "
-            "requests (see /pay) is supported. You may have a look at those two commands in "
-            "order to know how you might be able to use the inline feature of this bot.\n"
-            "You could try out the inline feature with some of the supported commands!"
-        )
-
-    def run(self, query: telegram.InlineQuery) -> None:
-        """
-        Answer the inline query by providing the result of :meth:`get_help`
-
-        :param query: inline query as part of an incoming Update
-        :type query: telegram.InlineQuery
-        :return: None
-        """
-
-        first_word = query.query.split(" ")[0]
-        if first_word.lower() in registry.commands:
-            query.answer([self.get_command_help(first_word.lower())])
-        else:
-            query.answer([self.get_help()])
