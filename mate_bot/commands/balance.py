@@ -49,7 +49,7 @@ class BalanceCommand(BaseCommand):
             msg = f"Balance of {user.name} is: {user.balance / 100 : .2f}€"
 
         else:
-            user = MateBotUser.get(event.sender)
+            user = MateBotUser.get_or_create(event.sender)
             msg =f"Your balance is: {user.balance / 100 :.2f}€"
 
         await self.client.room_send(
