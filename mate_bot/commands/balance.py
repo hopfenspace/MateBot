@@ -5,6 +5,7 @@ MateBot command executor classes for /balance
 import logging
 
 from nio import MatrixRoom, RoomMessageText, AsyncClient
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import MateBotUser
 from mate_bot.commands.base import BaseCommand
@@ -20,9 +21,9 @@ class BalanceCommand(BaseCommand):
     Command executor for /balance
     """
 
-    def __init__(self, client: AsyncClient):
+    def __init__(self, api: ApiWrapper):
         super().__init__(
-            client,
+            api,
             "balance",
             "Use this command to show a user's balance.\n\n"
             "When you use this command without arguments, the bot will "
@@ -52,9 +53,4 @@ class BalanceCommand(BaseCommand):
             user = MateBotUser.get_or_create(event.sender)
             msg =f"Your balance is: {user.balance / 100 :.2f}€"
 
-        await self.client.room_send(
-            room.room_id,
-            "m.room.message",
-            {"msgtype": "m.notice", "body": msg},
-            ignore_unverified_devices=True
-        )
+        await self.api.send_message(msg, room.room_id, send_as_notice=True)

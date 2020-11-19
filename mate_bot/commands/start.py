@@ -5,6 +5,7 @@ MateBot command executor classes for /start
 import logging
 
 from nio import AsyncClient, MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import MateBotUser
 from mate_bot.commands.base import BaseCommand
@@ -19,9 +20,9 @@ class StartCommand(BaseCommand):
     Command executor for /start
     """
 
-    def __init__(self, client: AsyncClient):
+    def __init__(self, api: ApiWrapper):
         super().__init__(
-            client,
+            api,
             "start",
             "Use this command once per user to start interacting with this bot.\n\n"
             "This command creates your user account in case it was not yet. Otherwise, "
@@ -48,12 +49,7 @@ class StartCommand(BaseCommand):
             user = MateBotUser.new(event.sender)
             msg = f"Thank you for registering, {event.sender}"
 
-        await self.client.room_send(
-            room.room_id,
-            "m.room.message",
-            {"msgtype": "m.notice", "body": msg},
-            ignore_unverified_devices=True
-        )
+        await self.api.send_message(msg, room.room_id, send_as_notice=True)
         '''
         external = update.message.chat.id != config["bot"]["chat"]
         if external and update.message.chat.type != "private":

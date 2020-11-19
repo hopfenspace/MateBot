@@ -6,6 +6,7 @@ import typing
 import logging
 
 from nio import AsyncClient, MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot import registry
 from mate_bot.err import ParsingError
@@ -46,8 +47,8 @@ class BaseCommand:
     :type usage: Optional[str]
     """
 
-    def __init__(self, client: AsyncClient, name: str, description: str, usage: typing.Optional[str] = None):
-        self.client = client
+    def __init__(self, api: ApiWrapper, name: str, description: str, usage: typing.Optional[str] = None):
+        self.api = api
         self.name = name
         self._usage = usage
         self.description = description

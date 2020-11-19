@@ -7,6 +7,7 @@ import random as _random
 import typing as _typing
 
 from nio import AsyncClient, MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import MateBotUser
 from mate_bot.parsing.types import natural as natural_type
@@ -27,7 +28,7 @@ class ConsumeCommand(BaseCommand):
     the constructor in order to implement a new command.
     """
 
-    def __init__(self, client: AsyncClient, name: str, description: str, price: int, messages: _typing.List[str], symbol: str):
+    def __init__(self, api: ApiWrapper, name: str, description: str, price: int, messages: _typing.List[str], symbol: str):
         """
         :param name: name of the command
         :type name: str
@@ -39,7 +40,7 @@ class ConsumeCommand(BaseCommand):
         :type messages: typing.List[str]
         """
 
-        super().__init__(client, name, description)
+        super().__init__(api, name, description)
         if not self.description:
             self.description = f"Consume {name}s for {price / 100 :.2f}€ each."
 
@@ -80,9 +81,4 @@ class ConsumeCommand(BaseCommand):
             #).commit()
             msg = _random.choice(self.messages) + self.symbol * args.number
 
-        await self.client.room_send(
-            room.room_id,
-            "m.room.message",
-            {"msgtype": "m.notice", "body": msg},
-            ignore_unverified_devices=True
-        )
+        await self.api.send_message(msg, room.room_id, send_as_notice=True)

@@ -5,6 +5,7 @@ MateBot command executor classes for /help
 import logging
 
 from nio import AsyncClient, RoomMessageText, MatrixRoom
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot import registry
 from mate_bot.commands.base import BaseCommand
@@ -20,9 +21,9 @@ class HelpCommand(BaseCommand):
     Command executor for /help
     """
 
-    def __init__(self, client: AsyncClient):
+    def __init__(self, api: ApiWrapper):
         super().__init__(
-            client,
+            api,
             "help",
             "The `/help` command prints the help page for any "
             "command. If no argument is passed, it will print its "
@@ -65,9 +66,4 @@ class HelpCommand(BaseCommand):
                     )
             '''
 
-        await self.client.room_send(
-            room.room_id,
-            "m.room.message",
-            {"msgtype": "m.notice", "format": "plain", "body": msg},
-            ignore_unverified_devices=True
-        )
+        await self.api.send_message(msg, room.room_id, send_as_notice=True)

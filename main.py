@@ -5,9 +5,7 @@ import logging
 
 from nio import InviteEvent, RoomMessageText
 
-from hopfenmatrix.client import new_async_client
-from hopfenmatrix.run import run
-from hopfenmatrix.callbacks import apply_filter, auto_join, allowed_rooms
+from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.config import config
 #from mate_bot.state.dbhelper import BackendHelper
@@ -25,15 +23,17 @@ async def main():
     BackendHelper.get_value("users")
     '''
 
-    client = new_async_client(config)
-    client.add_event_callback(apply_filter(auto_join(client), allowed_rooms(config.room)), InviteEvent)
-    client.add_event_callback(HelpCommand(client), RoomMessageText)
-    client.add_event_callback(BalanceCommand(client), RoomMessageText)
-    client.add_event_callback(StartCommand(client), RoomMessageText)
-    for consumable in config.consumables:
-        client.add_event_callback(ConsumeCommand(client, **consumable), RoomMessageText)
+    api = ApiWrapper(config=config)
+    api.set_auto_join(allowed_rooms=[config.room])
 
-    await run(client, config)
+    client = api.client
+    client.add_event_callback(HelpCommand(api), RoomMessageText)
+    client.add_event_callback(BalanceCommand(api), RoomMessageText)
+    client.add_event_callback(StartCommand(api), RoomMessageText)
+    for consumable in config.consumables:
+        client.add_event_callback(ConsumeCommand(api, **consumable), RoomMessageText)
+
+    await api.start_bot()
 
 
 if __name__ == "__main__":
