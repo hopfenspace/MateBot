@@ -1,10 +1,9 @@
 {
 	"general": {
-		"max-amount": 10000,
-		"max-consume": 10,
-		"db-localtime": false
+		"max_amount": 10000,
+		"max_consume": 10,
+		"db_localtime": false
 	},
-	"token": "<Telegram bot token here>",
 	"chats": {
 		"internal": 0,
 		"transactions": [],
@@ -13,9 +12,9 @@
 		"debugging": []
 	},
 	"community": {
-		"payment-consent": 2,
-		"payment-denial": 2,
-		"multiple-externals": true
+		"payment_consent": 2,
+		"payment_denial": 2,
+		"multiple_externals": true
 	},
 	"database": {
 		"host": "localhost",
