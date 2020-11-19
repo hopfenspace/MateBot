@@ -46,6 +46,7 @@ class MateBotConfig(Config):
 
         self.logging.formatters = Namespace()
         self.logging.handlers = Namespace()
+        self.logging.filters = Namespace()
         self.logging.formatters.console = {
             "style": "{",
             "class": "logging.Formatter",
@@ -62,14 +63,21 @@ class MateBotConfig(Config):
             "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "console",
+            "filters": ["no_peewee_debug"],
             "stream": "ext://sys.stdout"
         }
         self.logging.handlers.file = {
             "level": "INFO",
             "class": "logging.handlers.WatchedFileHandler",
             "formatter": "file",
+            "filters": ["no_peewee_debug"],
             "filename": "matebot.log",
             "encoding": "UTF-8"
+        }
+        self.logging.filters.no_peewee_debug = {
+            "()": "hopfenmatrix.logging.NotBelowFilter",
+            "name": "peewee",
+            "level": logging.INFO
         }
 
         self.logging.loggers = Namespace()
