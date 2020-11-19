@@ -7,7 +7,7 @@ import logging
 from nio import MatrixRoom, RoomMessageText, AsyncClient
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import MateBotUser
+from mate_bot.statealchemy import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
@@ -50,7 +50,7 @@ class BalanceCommand(BaseCommand):
             msg = f"Balance of {user.name} is: {user.balance / 100 : .2f}€"
 
         else:
-            user = MateBotUser.get_or_create(event.sender)
+            user = User.get_or_create(event.sender)
             msg =f"Your balance is: {user.balance / 100 :.2f}€"
 
         await self.api.send_message(msg, room.room_id, send_as_notice=True)

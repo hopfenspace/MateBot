@@ -9,7 +9,7 @@ import typing as _typing
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import MateBotUser, Transaction
+from mate_bot.statealchemy import User, Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
@@ -61,7 +61,7 @@ class ConsumeCommand(BaseCommand):
         :return: None
         """
 
-        sender = MateBotUser.get_or_create(event.sender)
+        sender = User.get_or_create(event.sender)
         #if not self.ensure_permissions(sender, 1, update.effective_message):
         #    return
 
@@ -71,7 +71,7 @@ class ConsumeCommand(BaseCommand):
         else:
             Transaction.perform(
                 sender,
-                MateBotUser.community_user(),
+                User.community_user(),
                 self.price * args.number,
                 f"consume: {args.number}x {self.name}"
             )

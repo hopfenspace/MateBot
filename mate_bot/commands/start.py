@@ -7,7 +7,7 @@ import logging
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import MateBotUser
+from mate_bot.statealchemy import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 
@@ -43,10 +43,10 @@ class StartCommand(BaseCommand):
         """
 
         try:
-            user = MateBotUser.get(event.sender)
+            user = User.get(event.sender)
             msg = f"You are already registered, {event.sender}"
         except ValueError:
-            user = MateBotUser.new(event.sender)
+            user = User.new(event.sender)
             msg = f"Thank you for registering, {event.sender}"
 
         await self.api.send_message(msg, room.room_id, send_as_notice=True)

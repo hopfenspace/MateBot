@@ -6,7 +6,7 @@ See :class:`mate_bot.parsing.actions.Action`'s type parameter
 import re
 
 from mate_bot import registry
-from mate_bot.statealchemy import MateBotUser
+from mate_bot.statealchemy import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 
@@ -68,17 +68,17 @@ def natural(arg: str) -> int:
     return result
 
 
-def user(arg: str) -> MateBotUser:
+def user(arg: str) -> User:
     """
     Convert the string into a MateBot user as defined in the ``state`` package
 
     :param arg: string to be parsed
     :type arg: EntityString
     :return: fully functional MateBot user
-    :rtype: MateBotUser
+    :rtype: User
     :raises ValueError: when username is ambiguous or the argument wasn't a mention
     """
-    return MateBotUser.get(arg)
+    return User.get(arg)
 
 
 def command(arg: str) -> BaseCommand:
