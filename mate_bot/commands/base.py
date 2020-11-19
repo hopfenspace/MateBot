@@ -201,6 +201,8 @@ class BaseCommand:
         :type context: telegram.ext.CallbackContext
         :return: None
         """
+        if not (event.body.startswith(f"!{self.name}") or event.body.startswith(self.name)):
+            return
 
         try:
             logger.debug(f"{type(self).__name__} by {event.sender}")
