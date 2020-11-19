@@ -6,15 +6,14 @@ import logging
 import random as _random
 import typing as _typing
 
-from nio import AsyncClient, MatrixRoom, RoomMessageText
+from nio import MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import User, Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, VOUCHED
 from mate_bot.parsing.util import Namespace
-#from mate_bot.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("commands")
@@ -62,8 +61,8 @@ class ConsumeCommand(BaseCommand):
         """
 
         sender = User.get_or_create(event.sender)
-        #if not self.ensure_permissions(sender, 1, update.effective_message):
-        #    return
+        if not self.ensure_permissions(sender, VOUCHED, room):
+            return
 
         if args.number > config.general.max_consume:
             msg = "You can't consume that many goods at once!"

@@ -4,9 +4,10 @@ MateBot command executor classes for /help
 
 import logging
 
-from nio import AsyncClient, RoomMessageText, MatrixRoom
+from nio import RoomMessageText, MatrixRoom
 from hopfenmatrix.api_wrapper import ApiWrapper
 
+from mate_bot.statealchemy import User
 from mate_bot import registry
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import command as command_type
@@ -51,9 +52,8 @@ class HelpCommand(BaseCommand):
             command_list = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{command_list}"
 
-            '''
-            user = MateBotUser(event.sender)
-            if user and isinstance(user, MateBotUser) and user.external:
+            user = User.get(event.sender)
+            if user.external:
                 msg += "\n\nYou are an external user. Some commands may be restricted."
 
                 if user.creditor is None:
@@ -64,6 +64,5 @@ class HelpCommand(BaseCommand):
                         "do this, the internal user needs to execute `/vouch "
                         "<your username>`. Afterwards, you may use this bot."
                     )
-            '''
 
         await self.api.send_message(msg, room.room_id, send_as_notice=True)

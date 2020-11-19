@@ -24,6 +24,14 @@ class User(_Base, Representable):
     created = Column(DateTime, default=datetime.datetime.now)
     accessed = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
+    @property
+    def external(self):
+        return False
+
+    @property
+    def creditor(self):
+        return True
+
     @staticmethod
     def push():
         SESSION.commit()

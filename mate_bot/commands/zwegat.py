@@ -8,7 +8,7 @@ from nio import MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import User
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, INTERNAL
 from mate_bot.parsing.util import Namespace
 
 
@@ -39,9 +39,9 @@ class ZwegatCommand(BaseCommand):
         :return: None
         """
 
-        #user = User.get(event.sender)
-        #if not self.ensure_permissions(user, 2, update.effective_message):
-        #    return
+        user = User.get(event.sender)
+        if not self.ensure_permissions(user, INTERNAL, room):
+            return
 
         total = User.community_user().balance / 100
         if total >= 0:

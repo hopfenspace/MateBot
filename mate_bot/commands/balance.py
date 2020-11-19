@@ -4,11 +4,11 @@ MateBot command executor classes for /balance
 
 import logging
 
-from nio import MatrixRoom, RoomMessageText, AsyncClient
+from nio import MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.statealchemy import User
-from mate_bot.commands.base import BaseCommand
+from mate_bot.commands.base import BaseCommand, INTERNAL
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
 
@@ -46,8 +46,11 @@ class BalanceCommand(BaseCommand):
         """
 
         if args.user:
-            user = args.user
-            msg = f"Balance of {user.name} is: {user.balance / 100 : .2f}€"
+            sender = User.get(event.sender)
+            if not self.ensure_permissions(sender, INTERNAL, room):
+                return
+
+            msg = f"Balance of {args.user} is: {args.user.balance / 100 : .2f}€"
 
         else:
             user = User.get_or_create(event.sender)
