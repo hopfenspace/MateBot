@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, Sequence, DateTime
 from sqlalchemy.orm import sessionmaker
 
-from parsing.util import Representable
+from mate_bot.parsing.util import Representable
 
 
 _Base = declarative_base()
