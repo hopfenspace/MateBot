@@ -2,6 +2,7 @@
 MateBot collection of command executors
 """
 
+'''
 from mate_bot.config import config
 from mate_bot.commands.balance import BalanceCommand
 from mate_bot.commands.blame import BlameCommand
@@ -47,3 +48,4 @@ ForwardInlineQuery(r"^\d+(\s?\S?)*")
 HelpInlineQuery(r"")
 
 ForwardInlineResult(r"^forward-\d+-\d+-\d+")
+'''
