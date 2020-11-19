@@ -39,7 +39,7 @@ class ZwegatCommand(BaseCommand):
         :return: None
         """
 
-        user = User.get(event.sender)
+        #user = User.get(event.sender)
         #if not self.ensure_permissions(user, 2, update.effective_message):
         #    return
 
@@ -48,4 +48,4 @@ class ZwegatCommand(BaseCommand):
             msg = f"Peter errechnet ein massives Vermögen von {total:.2f}€"
         else:
             msg = f"Peter errechnet Gesamtschulden von {-total:.2f}€"
-        self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await self.api.send_message(msg, room.room_id, send_as_notice=True)
