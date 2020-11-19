@@ -64,7 +64,7 @@ class ConsumeCommand(BaseCommand):
         #if not self.ensure_permissions(sender, 1, update.effective_message):
         #    return
 
-        if args.number > config["general"]["max-consume"]:
+        if args.number > config.general.max_consume:
             msg = "You can't consume that many goods at once!"
 
         else:

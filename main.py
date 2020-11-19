@@ -30,7 +30,7 @@ async def main():
     client.add_event_callback(HelpCommand(client), RoomMessageText)
     client.add_event_callback(BalanceCommand(client), RoomMessageText)
     client.add_event_callback(StartCommand(client), RoomMessageText)
-    for consumable in config["consumables"]:
+    for consumable in config.consumables:
         client.add_event_callback(ConsumeCommand(client, **consumable), RoomMessageText)
 
     await run(client, config)
