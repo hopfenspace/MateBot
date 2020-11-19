@@ -201,7 +201,7 @@ class BaseCommand:
         :type context: telegram.ext.CallbackContext
         :return: None
         """
-        if not (event.body.startswith(f"!{self.name}") or event.body.startswith(self.name)):
+        if event.body.startswith(f"!{self.name}"):
             return
 
         try:
@@ -217,7 +217,7 @@ class BaseCommand:
 
             args = self.parser.parse(event)
             logger.debug(f"Parsed command's arguments: {args}")
-            #await self.run(args, event)
+            await self.run(args, event)
 
         except ParsingError as err:
             pass
