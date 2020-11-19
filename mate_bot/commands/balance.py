@@ -4,9 +4,9 @@ MateBot command executor classes for /balance
 
 import logging
 
-import telegram
+from nio import MatrixRoom, RoomMessageText, AsyncClient
 
-from mate_bot.state.user import MateBotUser
+from mate_bot.statealchemy import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import user as user_type
 from mate_bot.parsing.util import Namespace
@@ -20,8 +20,9 @@ class BalanceCommand(BaseCommand):
     Command executor for /balance
     """
 
-    def __init__(self):
+    def __init__(self, client: AsyncClient):
         super().__init__(
+            client,
             "balance",
             "Use this command to show a user's balance.\n\n"
             "When you use this command without arguments, the bot will "
@@ -32,19 +33,28 @@ class BalanceCommand(BaseCommand):
 
         self.parser.add_argument("user", type=user_type, nargs="?")
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
         if args.user:
             user = args.user
-            update.effective_message.reply_text(f"Balance of {user.name} is: {user.balance / 100 : .2f}€")
+            msg = f"Balance of {user.name} is: {user.balance / 100 : .2f}€"
 
         else:
-            user = MateBotUser(update.effective_message.from_user)
-            update.effective_message.reply_text(f"Your balance is: {user.balance / 100 :.2f}€")
+            user = MateBotUser.get(event.session_id)
+            msg =f"Your balance is: {user.balance / 100 :.2f}€"
+
+        await self.client.room_send(
+            room.room_id,
+            "m.room.message",
+            {"msgtype": "m.notice", "body": msg},
+            ignore_unverified_devices=True
+        )

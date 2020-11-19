@@ -6,11 +6,9 @@ See :class:`mate_bot.parsing.actions.Action`'s type parameter
 import re
 
 from mate_bot import registry
-#from mate_bot.state.user import MateBotUser
-#from mate_bot.state.finders import find_user_by_username
+from mate_bot.statealchemy import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
-from mate_bot.parsing.util import EntityString
 
 
 __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")
@@ -70,8 +68,7 @@ def natural(arg: str) -> int:
     return result
 
 
-'''
-def user(arg: EntityString) -> MateBotUser:
+def user(arg: str) -> MateBotUser:
     """
     Convert the string into a MateBot user as defined in the ``state`` package
 
@@ -81,22 +78,7 @@ def user(arg: EntityString) -> MateBotUser:
     :rtype: MateBotUser
     :raises ValueError: when username is ambiguous or the argument wasn't a mention
     """
-
-    if arg.entity is None:
-        raise ValueError('No user mentioned. Try with "@".')
-
-    elif arg.entity.type == "mention":
-        usr = find_user_by_username(arg)
-        if usr is None:
-            raise ValueError("Ambiguous username. Please send /start to the bot privately.")
-        return usr
-
-    elif arg.entity.type == "text_mention":
-        return MateBotUser(arg.entity.user)
-
-    else:
-        raise ValueError('No user mentioned. Try with "@".')
-'''
+    return MateBotUser.get(arg)
 
 
 def command(arg: str) -> BaseCommand:
