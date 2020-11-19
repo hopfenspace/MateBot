@@ -30,7 +30,7 @@ class StartCommand(BaseCommand):
             "Use /help for more information about how to use this bot and its commands."
         )
 
-    def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
