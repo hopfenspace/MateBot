@@ -54,8 +54,8 @@ class HelpCommand(BaseCommand):
 
         await self.client.room_send(
             room.room_id,
-            "m.notice",
-            {"msgtype": "m.notice", "body": msg},
+            "m.room.message",
+            {"msgtype": "m.notice", "format": "plain", "body": msg},
             ignore_unverified_devices=True
         )
         #update.effective_message.reply_markdown(msg)
