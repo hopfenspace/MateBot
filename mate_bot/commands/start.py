@@ -4,10 +4,9 @@ MateBot command executor classes for /start
 
 import logging
 
-import telegram
+from nio import AsyncClient, MatrixRoom, RoomMessageText
 
-from mate_bot.state.user import MateBotUser
-from mate_bot.config import config
+from mate_bot.statealchemy import MateBotUser
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 
@@ -20,8 +19,9 @@ class StartCommand(BaseCommand):
     Command executor for /start
     """
 
-    def __init__(self):
+    def __init__(self, client: AsyncClient):
         super().__init__(
+            client,
             "start",
             "Use this command once per user to start interacting with this bot.\n\n"
             "This command creates your user account in case it was not yet. Otherwise, "
@@ -30,22 +30,31 @@ class StartCommand(BaseCommand):
             "Use /help for more information about how to use this bot and its commands."
         )
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
-        if update.message is None:
-            return
+        try:
+            user = MateBotUser.get(event.sender)
+            msg = f"You are already registered, {event.sender}"
+        except ValueError:
+            user = MateBotUser.new(event.sender)
+            msg = f"Thank you for registering, {event.sender}"
 
-        sender = update.message.from_user
-        if sender.is_bot:
-            return
-
+        await self.client.room_send(
+            room.room_id,
+            "m.room.message",
+            {"msgtype": "m.notice", "body": msg},
+            ignore_unverified_devices=True
+        )
+        '''
         external = update.message.chat.id != config["bot"]["chat"]
         if external and update.message.chat.type != "private":
             update.message.reply_text("This command should be executed in private chat.")
@@ -79,3 +88,4 @@ class StartCommand(BaseCommand):
             )
 
         update.message.reply_markdown(answer)
+        '''

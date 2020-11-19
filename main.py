@@ -14,6 +14,7 @@ from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.commands.help import HelpCommand
 from mate_bot.commands.balance import BalanceCommand
+from mate_bot.commands.start import StartCommand
 
 
 async def main():
@@ -27,6 +28,7 @@ async def main():
     client.add_event_callback(apply_filter(auto_join(client), allowed_rooms(config.room)), InviteEvent)
     client.add_event_callback(HelpCommand(client), RoomMessageText)
     client.add_event_callback(BalanceCommand(client), RoomMessageText)
+    client.add_event_callback(StartCommand(client), RoomMessageText)
 
     await run(client, config)
 
