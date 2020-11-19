@@ -6,8 +6,8 @@ See :class:`mate_bot.parsing.actions.Action`'s type parameter
 import re
 
 from mate_bot import registry
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.finders import find_user_by_username
+#from mate_bot.state.user import MateBotUser
+#from mate_bot.state.finders import find_user_by_username
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 from mate_bot.parsing.util import EntityString
@@ -70,6 +70,7 @@ def natural(arg: str) -> int:
     return result
 
 
+'''
 def user(arg: EntityString) -> MateBotUser:
     """
     Convert the string into a MateBot user as defined in the ``state`` package
@@ -112,3 +113,4 @@ def command(arg: str) -> BaseCommand:
         return registry.commands[arg.lower()]
     except KeyError:
         raise ValueError(f"{arg} is an unknown command")
+'''

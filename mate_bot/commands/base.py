@@ -13,7 +13,7 @@ from mate_bot.config import config
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
+#from mate_bot.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")
@@ -85,7 +85,7 @@ class BaseCommand:
 
         raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
 
-    def ensure_permissions(self, user: MateBotUser, level: int, msg: telegram.Message) -> bool:
+    def ensure_permissions(self, user: "MateBotUser", level: int, msg: telegram.Message) -> bool:
         """
         Ensure that a user is allowed to perform an operation that requires specific permissions
 
@@ -152,7 +152,7 @@ class BaseCommand:
     def _verify_internal_membership(
             self,
             update: telegram.Update,
-            user: MateBotUser,
+            user: "MateBotUser",
             bot: telegram.Bot
     ) -> None:
         """
@@ -183,7 +183,7 @@ class BaseCommand:
             bot.send_message(
                 user.tid,
                 f"You receive this message because you executed /{self.name} in "
-                f"an internal chat. It looks like {MateBotUser(creditor)} vouches "
+                "an internal chat. It looks like {MateBotUser(creditor)} vouches "
                 f"for you. You can't have a voucher when you try to become an internal "
                 f"user. Therefore, your account status was not updated."
             )
@@ -222,6 +222,7 @@ class BaseCommand:
             #update.effective_message.reply_markdown(str(err))
 
 
+'''
 class BaseCallbackQuery:
     """
     Base class for all MateBot callback queries executed by the CallbackQueryHandler
@@ -469,3 +470,4 @@ class BaseInlineResult:
         """
 
         raise NotImplementedError("Overwrite the BaseInlineQuery.run() method in a subclass")
+'''
