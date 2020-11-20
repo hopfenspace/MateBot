@@ -54,4 +54,4 @@ class BlameCommand(BaseCommand):
             msg = "The users with the highest debts are:\n"
         msg += "\n".join(map(str, debtors))
 
-        api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)
