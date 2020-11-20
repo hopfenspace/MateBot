@@ -13,6 +13,7 @@ from mate_bot import registry
 from mate_bot.err import ParsingError
 from mate_bot.parsing.parser import CommandParser
 from mate_bot.parsing.util import Namespace
+from mate_bot.config import config
 
 
 logger = logging.getLogger("commands")
@@ -107,8 +108,7 @@ class BaseCommand:
         :type event: nio.RoomMessageText
         :return: None
         """
-        if not event.body.startswith(f"!{self.name}"):
-            return
+        event.body = event.body[len(config.matrix.command_prefix):].strip()
 
         try:
             logger.debug(f"{type(self).__name__} by {event.sender}")
