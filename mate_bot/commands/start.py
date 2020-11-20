@@ -7,7 +7,7 @@ import logging
 from nio import AsyncClient, MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import User
+from mate_bot.state import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.util import Namespace
 

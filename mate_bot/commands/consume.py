@@ -9,7 +9,7 @@ import typing as _typing
 from nio import MatrixRoom, RoomMessageText
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import User, Transaction
+from mate_bot.state import User, Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand, VOUCHED

@@ -6,7 +6,7 @@ See :class:`mate_bot.parsing.actions.Action`'s type parameter
 import re
 
 from mate_bot import registry
-from mate_bot.statealchemy import User
+from mate_bot.state import User
 from mate_bot.commands.base import BaseCommand
 from mate_bot.config import config
 

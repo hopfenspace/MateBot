@@ -7,7 +7,7 @@ import logging
 from nio import RoomMessageText, MatrixRoom
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.statealchemy import User
+from mate_bot.state import User
 from mate_bot import registry
 from mate_bot.commands.base import BaseCommand
 from mate_bot.parsing.types import command as command_type
