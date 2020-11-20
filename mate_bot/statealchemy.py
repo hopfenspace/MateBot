@@ -58,7 +58,7 @@ class User(_Base, Representable):
 
     @staticmethod
     def get(id_: Union[str, int]) -> "User":
-        if isinstance(id, str):
+        if isinstance(id_, str):
             query = SESSION.query(User).filter_by(matrix_id=id_)
         else:
             query = SESSION.query(User).filter_by(id=id_)
