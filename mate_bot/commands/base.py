@@ -132,11 +132,11 @@ class BaseCommand:
             user = User.get(event.sender)
         except ValueError:
             user = User.new(event.sender)
-            await api.send_reply(f"Welcome {user}, please enjoy your drinks", room.room_id, event, send_as_notice=True)
+            await api.send_reply(f"Welcome {user}, please enjoy your drinks", room, event, send_as_notice=True)
 
         if room.room_id == config.room and user.external:
             user.external = False
-            await api.send_reply(f"{user}, you are now an internal.", room.room_id, event, send_as_notice=True)
+            await api.send_reply(f"{user}, you are now an internal.", room, event, send_as_notice=True)
 
         return user
 
@@ -171,8 +171,10 @@ class BaseCommand:
         :param level: minimal required permission level to be allowed to perform some action
         :type level: int
         :param api: api to reply with
-        :type api: hopfenmatrix.api_warpper.ApiWrapper
-        :param room: room to reply to
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
+        :param event: event to reply to
+        :type event: nio.RoomMessageText
+        :param room: room to reply in
         :type room: nio.MatrixRoom
         :return: whether further access should be allowed (``True``) or not
         :rtype: bool
@@ -199,8 +201,9 @@ class BaseCommand:
         else:
             return True
 
-        await api.send_reply(msg, room.room_id, event, send_as_notice=True)
+        await api.send_reply(msg, room, event, send_as_notice=True)
         return False
+
 
 '''
     def _verify_internal_membership(
