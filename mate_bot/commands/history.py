@@ -7,10 +7,10 @@ import json
 import logging
 import tempfile
 
-import telegram
+from nio import MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import TransactionLog
+from mate_bot.statealchemy import User, Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand
@@ -24,8 +24,9 @@ class HistoryCommand(BaseCommand):
     Command executor for /history
     """
 
-    def __init__(self):
+    def __init__(self, api: ApiWrapper):
         super().__init__(
+            api,
             "history",
             "Use this command to get an overview of your transactions.\n\n"
             "You can specify the number of most recent transactions (default "
@@ -50,32 +51,34 @@ class HistoryCommand(BaseCommand):
             choices=("json", "csv")
         )
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
         if args.export is None:
-            self._handle_report(args, update)
+            self._handle_report(args, room, event)
         else:
-            self._handle_export(args, update)
+            self._handle_export(args, room, event)
 
-    @staticmethod
-    def _handle_export(args: Namespace, update: telegram.Update) -> None:
+    def _handle_export(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to export the full transaction log of a user
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room to reply in
+        :type room: nio.MatrixRoom
         :return: None
         """
 
+        '''
         if update.effective_chat.type != update.effective_chat.PRIVATE:
             update.effective_message.reply_text("This command can only be used in private chat.")
             return
@@ -121,52 +124,49 @@ class HistoryCommand(BaseCommand):
                         f"This file contains all known transactions of {user.name}."
                     )
                 )
+        '''
+        self.api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
 
-    @staticmethod
-    def _handle_report(args: Namespace, update: telegram.Update) -> None:
+    def _handle_report(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to report the most current transaction entries of a user
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param room: room to reply in
+        :type room: nio.MatrixRoom
         :return: None
         """
 
-        user = MateBotUser(update.effective_message.from_user)
-        logs = TransactionLog(user, args.length).to_list()
-        log = "\n".join(logs)
-        heading = f"Transaction history for {user.name}:\n```"
+        user = User(event.sender)
+        logs = Transaction.get(user, args.length)
+
+        heading = f"Transaction history for {user.name}:\n\n"
+        text = f"{heading}{'\n'.join(logs)}"
         if len(logs) == 0:
-            update.effective_message.reply_text("You don't have any registered transactions yet.")
-            return
+             self.api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
+             return
 
-        if update.effective_message.chat.type != update.effective_chat.PRIVATE:
-
-            text = f"{heading}\n{log}```"
-            if len(text) > 4096:
-                update.effective_message.reply_text(
-                    "Your requested transaction logs are too long. Try a smaller "
-                    "number of entries or execute this command in private chat again."
-                )
-            else:
-                update.effective_message.reply_markdown_v2(text)
+        #elif update.effective_message.chat.type != update.effective_chat.PRIVATE:
+        #    if len(text) > 4096:
+        #        update.effective_message.reply_text(
+        #            "Your requested transaction logs are too long. Try a smaller "
+        #            "number of entries or execute this command in private chat again."
+        #        )
+        #    else:
+        #        update.effective_message.reply_markdown_v2(text)
 
         else:
-
-            text = f"{heading}\n{log}```"
             if len(text) < 4096:
-                update.effective_message.reply_markdown_v2(text)
+                await self.api.send_message(text, room.room_id, send_as_notice=True)
                 return
 
-            results = [heading]
-            for entry in logs:
-                if len("\n".join(results + [entry])) > 4096:
-                    results.append("```")
-                    update.effective_message.reply_markdown_v2("\n".join(results))
-                    results = ["```"]
-                results.append(entry)
+            else:
+                results = heading
+                for entry in map(str, logs):
+                    if len(f"{results}\n{entry}") > 4096:
+                        await self.api.send_message(results, room.room_id, send_as_notice=True)
+                        results = ""
+                    results += "\n" + entry
 
-            if len(results) > 0:
-                update.effective_message.reply_markdown_v2("\n".join(results + ["```"]))
+                await self.api.send_message(results, room.room_id, send_as_notice=True)

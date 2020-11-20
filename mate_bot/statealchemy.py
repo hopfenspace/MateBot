@@ -1,9 +1,11 @@
 import datetime
+from typing import List
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, Sequence, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.expression import or_
 
 from mate_bot.parsing.util import Representable
 
@@ -98,6 +100,19 @@ class Transaction(_Base):
         SESSION.add(transaction)
         SESSION.commit()
         return transaction
+
+    @staticmethod
+    def get(self, user: User, length: int = None) -> List["Transaction"]:
+        query = SESSION.query(Transaction).filter(
+            or_(
+                Transaction.sender == user.id,
+                Transaction.receiver == user.id
+            )
+        )
+        if length is None:
+            return query.all()
+        else:
+            return query.slice(0, length)
 
 
 # Setup db
