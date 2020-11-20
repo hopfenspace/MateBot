@@ -63,11 +63,11 @@ class HistoryCommand(BaseCommand):
         """
 
         if args.export is None:
-            self._handle_report(args, room, event)
+            await self._handle_report(args, room, event)
         else:
-            self._handle_export(args, room, event)
+            await self._handle_export(args, room, event)
 
-    def _handle_export(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def _handle_export(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to export the full transaction log of a user
 
@@ -125,9 +125,9 @@ class HistoryCommand(BaseCommand):
                     )
                 )
         '''
-        self.api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
+        await self.api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
 
-    def _handle_report(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def _handle_report(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to report the most current transaction entries of a user
 
@@ -142,10 +142,11 @@ class HistoryCommand(BaseCommand):
         logs = Transaction.get(user, args.length)
 
         heading = f"Transaction history for {user.name}:\n\n"
-        text = f"{heading}{'\n'.join(logs)}"
+        text = heading + "\n".join(map(str, logs))
+
         if len(logs) == 0:
-             self.api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
-             return
+            await self.api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
+            return
 
         #elif update.effective_message.chat.type != update.effective_chat.PRIVATE:
         #    if len(text) > 4096:
