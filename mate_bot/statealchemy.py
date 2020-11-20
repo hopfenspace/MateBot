@@ -1,3 +1,4 @@
+import logging
 import datetime
 from typing import List
 
@@ -9,6 +10,8 @@ from sqlalchemy.sql.expression import or_
 
 from mate_bot.parsing.util import Representable
 
+
+logger = logging.getLogger("state")
 
 _Base = declarative_base()
 
@@ -86,6 +89,8 @@ class Transaction(_Base):
             reason: str = None
     ) -> "Transaction":
 
+        logger.debug(f"A transaction of {amount} cents from {sender} to {user} is about to be performed.")
+
         if amount < 0:
             raise ValueError("No negative transactions!")
         elif amount == 0:
@@ -99,10 +104,14 @@ class Transaction(_Base):
         transaction = Transaction(sender=sender.id, receiver=receiver.id, amount=amount, reason=reason)
         SESSION.add(transaction)
         SESSION.commit()
+
+        logger.info(f"{sender} just paid {receiver} {amount} cents")
+
         return transaction
 
     @staticmethod
     def get(self, user: User, length: int = None) -> List["Transaction"]:
+        logger.debug(f"A transaction history was requested by {user}")
         query = SESSION.query(Transaction).filter(
             or_(
                 Transaction.sender == user.id,
@@ -116,7 +125,7 @@ class Transaction(_Base):
 
 
 # Setup db
-_ENGINE = create_engine("sqlite:///test.db", echo=True)
+_ENGINE = create_engine("sqlite:///test.db", echo=logger.level == logging.DEBUG)
 SESSION = sessionmaker(bind=_ENGINE)()
 _Base.metadata.create_all(_ENGINE)
 User.get_or_create("", name="Community", username="Community", active=True)
