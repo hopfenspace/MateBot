@@ -121,7 +121,7 @@ class Transaction(_Base):
         if length is None:
             return query.all()
         else:
-            return query.slice(0, length)
+            return query.slice(0, length).all()
 
 
 # Setup db
