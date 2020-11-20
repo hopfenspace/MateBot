@@ -1,6 +1,6 @@
 import logging
 import datetime
-from typing import List
+from typing import List, Union
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -57,15 +57,19 @@ class User(_Base, Representable):
         return user
 
     @staticmethod
-    def get(matrix_id: str) -> "User":
-        query = SESSION.query(User).filter_by(matrix_id=matrix_id)
+    def get(id_: Union[str, int]) -> "User":
+        if isinstance(id, str):
+            query = SESSION.query(User).filter_by(matrix_id=id_)
+        else:
+            query = SESSION.query(User).filter_by(id=id_)
+
         count = query.count()
         if count == 1:
             return query.first()
         elif count == 0:
-            raise ValueError(f"No user with the id '{matrix_id}'")
+            raise ValueError(f"No user with the id '{id_}'")
         else:
-            raise RuntimeError(f"The database is broken: Found more than one user with id '{matrix_id}'")
+            raise RuntimeError(f"The database is broken: Found more than one user with id '{id_}'")
 
     @staticmethod
     def get_or_create(matrix_id: str, **kwargs) -> "User":
@@ -90,7 +94,9 @@ class Transaction(_Base):
     registered = Column(DateTime, default=datetime.datetime.now)
 
     def __str__(self):
-        return f"{self.registered}: {self.amount/100:>+6.2f}: {self.sender:<16} >> {self.receiver:<16} :: {self.reason}"
+        sender = User.get(self.sender)
+        receiver = User.get(self.receiver)
+        return f"{self.registered}: {self.amount/100:>+6.2f}: {sender:<20} >> {receiver:<20} :: {self.reason}"
 
     @staticmethod
     def perform(
