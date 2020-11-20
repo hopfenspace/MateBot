@@ -110,7 +110,7 @@ class Transaction(_Base):
         return transaction
 
     @staticmethod
-    def get(self, user: User, length: int = None) -> List["Transaction"]:
+    def get(user: User, length: int = None) -> List["Transaction"]:
         logger.debug(f"A transaction history was requested by {user}")
         query = SESSION.query(Transaction).filter(
             or_(
