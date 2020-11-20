@@ -34,6 +34,16 @@ class VouchCommand(BaseCommand):
             "community decides to disable the external user's account, you have to pay "
             "remaining debts, if there are any. However, you would also get the balance in "
             "case it's positive. After all, you are responsible to deal with the external user."
+            "Use this command to vouch for other users.\n\n",
+            "The possible interactions with this bot are pretty limited for external "
+            "people for security purposes. If you intend to use this bot, you can ask an "
+            "internal user to vouch for you. Doing so gives you the necessary permissions.\n\n"
+            "On the other hand, internal users can vouch for externals to allow them to use "
+            "this bot. You should note that you will be held responsible in case the user "
+            "you are vouching for can't pay possible debts for whatever reason. If the "
+            "community decides to disable the external user's account, you have to pay "
+            "remaining debts, if there are any. However, you would also get the balance in "
+            "case it's positive. After all, you are responsible to deal with the external user."
         )
 
         p = self.parser.new_usage()
