@@ -21,10 +21,9 @@ class User(_Base, Representable):
 
     id = Column(Integer, Sequence("user_id_seq"), primary_key=True)
     matrix_id = Column(String(255), unique=True)
-    name = Column(String(255))
-    username = Column(String(255))
+    display_name = Column(String(255))
     balance = Column(Integer, default=0)
-    permission = Column(Integer, default=0)
+    permission = Column(Boolean, default=False)
     active = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.datetime.now)
     accessed = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
@@ -42,10 +41,8 @@ class User(_Base, Representable):
             return None
 
     def __str__(self):
-        if self.username:
-            return self.username
-        elif self.name:
-            return self.name
+        if self.display_name:
+            return self.display_name
         else:
             return self.matrix_id
 
@@ -158,4 +155,4 @@ class External(_Base):
 _ENGINE = create_engine("sqlite:///test.db", echo=logger.level == logging.DEBUG)
 SESSION = sessionmaker(bind=_ENGINE)()
 _Base.metadata.create_all(_ENGINE)
-User.get_or_create("", name="Community", username="Community", active=True)
+User.get_or_create("", display_name="Community", active=True)
