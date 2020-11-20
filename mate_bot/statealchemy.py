@@ -89,7 +89,7 @@ class Transaction(_Base):
             reason: str = None
     ) -> "Transaction":
 
-        logger.debug(f"A transaction of {amount} cents from {sender} to {user} is about to be performed.")
+        logger.debug(f"A transaction of {amount} cents from {sender} to {receiver} is about to be performed.")
 
         if amount < 0:
             raise ValueError("No negative transactions!")
