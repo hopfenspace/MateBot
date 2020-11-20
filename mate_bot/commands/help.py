@@ -80,4 +80,4 @@ class HelpCommand(BaseCommand):
                         f"<your username></code>. Afterwards, you may use this bot."
                     )
 
-        await api.send_reply(msg, room, formatted_message=msg_formatted, event, send_as_notice=True)
+        await api.send_reply(msg, room, event, formatted_message=msg_formatted, send_as_notice=True)
