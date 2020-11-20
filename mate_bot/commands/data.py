@@ -48,7 +48,7 @@ class DataCommand(BaseCommand):
             msg = "This command can only be used in private chat."
 
         else:
-            user = User.get(event.sender)
+            user = await self.get_sender(api, room, event)
 
             if user.external:
                 relations = f"Creditor user: {user.creditor}"
@@ -75,4 +75,4 @@ class DataCommand(BaseCommand):
                 f"Use the /history command to see your transaction log."
             )
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room, event, send_as_notice=True)

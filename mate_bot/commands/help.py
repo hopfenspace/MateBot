@@ -47,7 +47,7 @@ class HelpCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
-        user = self.get_sender(api, room, event)
+        user = await self.get_sender(api, room, event)
 
         if args.command:
             usages = "\n".join(map(lambda x: f"{api.config.matrix.command_prefix} {args.command.name} {x}", args.command.parser.usages))
@@ -80,4 +80,4 @@ class HelpCommand(BaseCommand):
                         f"<your username></code>. Afterwards, you may use this bot."
                     )
 
-        await api.send_message(msg, room.room_id, formatted_message=msg_formatted, send_as_notice=True)
+        await api.send_reply(msg, room, formatted_message=msg_formatted, event, send_as_notice=True)

@@ -154,7 +154,7 @@ class HistoryCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
-        user = self.get_sender(api, room, event)
+        user = await self.get_sender(api, room, event)
 
         logs = Transaction.history(user, args.length)
 
@@ -187,4 +187,4 @@ class HistoryCommand(BaseCommand):
                         results = ""
                     results += "\n" + entry
 
-                await api.send_message(results, room.room_id, send_as_notice=True)
+                await api.send_reply(results, room, event, send_as_notice=True)

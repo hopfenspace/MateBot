@@ -130,20 +130,27 @@ class BaseCommand:
             await api.send_message(str(err), room.room_id, send_as_notice=True)
 
     @staticmethod
-    def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
+    async def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
         try:
             user = User.get(event.sender)
         except ValueError:
             user = User.new(event.sender)
-            api.send_message(f"Welcome {user}, please enjoy your drinks", room.room_id, send_as_notice=True)
+            await api.send_reply(f"Welcome {user}, please enjoy your drinks", room, event, send_as_notice=True)
 
         if room.room_id == config.room and user.external:
             user.external = False
-            api.send_message(f"{user}, you are now an internal.")
+            await api.send_reply(f"{user}, you are now an internal.", room, event, send_as_notice=True)
 
         return user
 
-    def ensure_permissions(self, user: User, level: int, api: ApiWrapper, room: MatrixRoom) -> bool:
+    async def ensure_permissions(
+            self,
+            user: User,
+            level: int,
+            api: ApiWrapper,
+            event: RoomMessageText,
+            room: MatrixRoom
+    ) -> bool:
         """
         Ensure that a user is allowed to perform an operation that requires specific permissions
 
@@ -167,8 +174,10 @@ class BaseCommand:
         :param level: minimal required permission level to be allowed to perform some action
         :type level: int
         :param api: api to reply with
-        :type api: hopfenmatrix.api_warpper.ApiWrapper
-        :param room: room to reply to
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
+        :param event: event to reply to
+        :type event: nio.RoomMessageText
+        :param room: room to reply in
         :type room: nio.MatrixRoom
         :return: whether further access should be allowed (``True``) or not
         :rtype: bool
@@ -195,8 +204,9 @@ class BaseCommand:
         else:
             return True
 
-        api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room, event, send_as_notice=True)
         return False
+
 
 '''
     def _verify_internal_membership(
