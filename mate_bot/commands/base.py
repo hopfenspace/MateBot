@@ -140,7 +140,7 @@ class BaseCommand:
             if room.room_id != config.room:
                 user.external = True
 
-        display_name = str(await api.client.get_displayname(user.matrix_id))
+        display_name = (await api.client.get_displayname(user.matrix_id)).displayname
         if display_name != user.display_name:
             user.display_name = display_name
             user.push()
