@@ -31,11 +31,15 @@ class User(_Base, Representable):
 
     @property
     def external(self):
-        return False
+        return SESSION.query(External).find_by(external=self.id).count() == 1
 
     @property
-    def creditor(self):
-        return True
+    def creditor(self) -> "User":
+        try:
+            return User(SESSION.query(External).find_by(external=self.id).first().internal)
+        except Exception as err:
+            logger.debug(str(err))
+            return None
 
     def __str__(self):
         if self.username:
@@ -139,6 +143,15 @@ class Transaction(_Base):
             return query.all()
         else:
             return query.slice(0, length).all()
+
+
+class External(_Base):
+    __tablename__ = "externals"
+
+    id = Column(Integer, Sequence("transaction_id_seq"), primary_key=True)
+    internal = Column(ForeignKey("users.id"), nullable=False)
+    external = Column(ForeignKey("users.id"), nullable=False, unique=True)
+    changed = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
 
 
 # Setup db
