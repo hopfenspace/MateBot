@@ -59,6 +59,6 @@ class BalanceCommand(BaseCommand):
             msg = f"Balance of {args.user} is: {args.user.balance / 100 : .2f}€"
 
         else:
-            msg =f"Your balance is: {sender.balance / 100 :.2f}€"
+            msg = f"Your balance is: {sender.balance / 100 :.2f}€"
 
         await api.send_reply(msg, room, event, send_as_notice=True)

@@ -25,12 +25,12 @@ class HelpCommand(BaseCommand):
     def __init__(self):
         super().__init__(
             "help",
-            "The `/help` command prints the help page for any "
+            "The help command prints the help page for any "
             "command. If no argument is passed, it will print its "
             "usage and a list of all available commands.",
             "The <code>help</code> command prints the help page for any "
             "command. If no argument is passed, it will print its "
-            "usage and a alist of all available commands."
+            "usage and a list of all available commands."
         )
 
         self.parser.add_argument("command", type=command_type, nargs="?")
@@ -51,7 +51,7 @@ class HelpCommand(BaseCommand):
 
         if args.command:
             usages = "\n".join(map(lambda x: f"{api.config.matrix.command_prefix} {args.command.name} {x}", args.command.parser.usages))
-            usages_formatted = "\n",join(map(lambda x: f"<code>{api.config.matrix.command_prefix} {args.command.name} {x}</code>", args.command.parser.usages))
+            usages_formatted = "\n".join(map(lambda x: f"<code>{api.config.matrix.command_prefix} {args.command.name} {x}</code>", args.command.parser.usages))
             msg = f"Usages:\n{usages}\n\nDescription:\n{args.command.description}"
             msg_formatted = f"<em>Usages:</em>\n{usages_formatted}\n\n<em>Description:</em>\n{args.command.description_formatted}"
 

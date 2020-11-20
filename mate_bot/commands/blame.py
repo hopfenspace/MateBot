@@ -17,7 +17,7 @@ logger = logging.getLogger("commands")
 
 class BlameCommand(BaseCommand):
     """
-    Command executor for /blame
+    Command executor for blame
     """
 
     def __init__(self):

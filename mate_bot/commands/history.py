@@ -35,10 +35,10 @@ class HistoryCommand(BaseCommand):
             "as downloadable file. Currently supported formats are csv and json. "
             "Just add one of those two format specifiers after the command. Note "
             "that this variant is restricted to your personal chat with the bot.",
-            "Use this command to get an overview of your transactions.\n\n"
+            "Use this command to get an overview of your transactions.<br /><br />"
             "You can specify the number of most recent transactions (default "
             "10) which will be returned by the bot. Using a huge number will "
-            "just print all your transactions, maybe in multiple messages.\n\n"
+            "just print all your transactions, maybe in multiple messages.<br /><br />"
             "You could also export the whole history of your personal transactions "
             "as downloadable file. Currently supported formats are <code>csv</code> and <code>json</code>. "
             "Just add one of those two format specifiers after the command. Note "
@@ -138,7 +138,7 @@ class HistoryCommand(BaseCommand):
                     )
                 )
         '''
-        await api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
+        await api.send_message("NotImplementedError", room, event, send_as_notice=True)
 
     async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
@@ -176,14 +176,14 @@ class HistoryCommand(BaseCommand):
 
         else:
             if len(text) < 4096:
-                await api.send_message(text, room.room_id, send_as_notice=True)
+                await api.send_message(text, room, event, send_as_notice=True)
                 return
 
             else:
                 results = heading
                 for entry in map(str, logs):
                     if len(f"{results}\n{entry}") > 4096:
-                        await api.send_message(results, room.room_id, send_as_notice=True)
+                        await api.send_message(results, room, event, send_as_notice=True)
                         results = ""
                     results += "\n" + entry
 

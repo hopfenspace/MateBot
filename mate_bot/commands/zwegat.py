@@ -25,7 +25,7 @@ class ZwegatCommand(BaseCommand):
             "zwegat",
             "Use this command to show the central funds.\n\n"
             "This command can only be used by internal users.",
-            "Use this command to show the central funds.\n\n"
+            "Use this command to show the central funds.<br /><br />"
             "This command can only be used by internal users."
         )
 

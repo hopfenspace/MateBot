@@ -26,8 +26,8 @@ class DataCommand(BaseCommand):
             "Use this command to see the data the bot has stored about you.\n\n"
             "This command can only be used in private chat to protect private data.\n"
             "To view your transactions, use the command history instead.",
-            "Use this command to see the data the bot has stored about you.\n\n"
-            "This command can only be used in private chat to protect private data.\n"
+            "Use this command to see the data the bot has stored about you.<br /><br />"
+            "This command can only be used in private chat to protect private data.<br />"
             "To view your transactions, use the command <code>history</code> instead."
         )
 
@@ -46,6 +46,7 @@ class DataCommand(BaseCommand):
 
         if not api.is_room_private(room):
             msg = "This command can only be used in private chat."
+            msg_formatted = "This command can only be used in private chat."
 
         else:
             user = await self.get_sender(api, room, event)
@@ -75,4 +76,20 @@ class DataCommand(BaseCommand):
                 f"Use the /history command to see your transaction log."
             )
 
-        await api.send_reply(msg, room, event, send_as_notice=True)
+            msg_formatted = (
+                f"Overview over currently stored data for {user}:<br />"
+                f"<br /><br />"
+                f"<pre><code>User ID: {user.id}<br />"
+                f"Matrix ID: {user.matrix_id}<br />"
+                f"Display Name: {user.display_name}<br />"
+                f"Balance: {user.balance / 100 :.2f}€<br />"
+                f"Vote permissions: {user.permission}<br />"
+                f"External user: {user.external}<br />"
+                f"{relations}<br />"
+                f"Account created: {user.created}<br />"
+                f"Last transaction: {user.accessed}</code></pre><br />"
+                f"<br />"
+                f"Use the /history command to see your transaction log."
+            )
+
+        await api.send_reply(msg, room, event, formatted_message=msg_formatted, send_as_notice=True)
