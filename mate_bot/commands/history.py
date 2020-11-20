@@ -188,6 +188,6 @@ class HistoryCommand(BaseCommand):
                         results = ""
                     results += "\n" + entry
                     results_formatted = results.replace('\n', '<br />')
-                    results_formatted = "<pre><code>" + results_formatted + "</code></pre>"
+                results_formatted = "<pre><code>" + results_formatted + "</code></pre>"
 
                 await api.send_reply(results, room, event, formatted_message=results_formatted, send_as_notice=True)
