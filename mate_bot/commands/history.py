@@ -181,10 +181,13 @@ class HistoryCommand(BaseCommand):
 
             else:
                 results = heading
+                results_formatted = ""
                 for entry in map(str, logs):
                     if len(f"{results}\n{entry}") > 4096:
                         await api.send_message(results, room, event, send_as_notice=True)
                         results = ""
                     results += "\n" + entry
+                    results_formatted = results.replace('\n', '<br />')
+                    results_formatted = "<pre><code>" + results_formatted + "</code></pre>"
 
-                await api.send_reply(results, room, event, send_as_notice=True)
+                await api.send_reply(results, room, event, formatted_message=results_formatted, send_as_notice=True)
