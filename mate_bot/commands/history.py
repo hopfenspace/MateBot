@@ -32,7 +32,15 @@ class HistoryCommand(BaseCommand):
             "10) which will be returned by the bot. Using a huge number will "
             "just print all your transactions, maybe in multiple messages.\n\n"
             "You could also export the whole history of your personal transactions "
-            "as downloadable file. Currently supported formats are `csv` and `json`. "
+            "as downloadable file. Currently supported formats are csv and json. "
+            "Just add one of those two format specifiers after the command. Note "
+            "that this variant is restricted to your personal chat with the bot.",
+            "Use this command to get an overview of your transactions.\n\n"
+            "You can specify the number of most recent transactions (default "
+            "10) which will be returned by the bot. Using a huge number will "
+            "just print all your transactions, maybe in multiple messages.\n\n"
+            "You could also export the whole history of your personal transactions "
+            "as downloadable file. Currently supported formats are <code>csv</code> and <code>json</code>. "
             "Just add one of those two format specifiers after the command. Note "
             "that this variant is restricted to your personal chat with the bot."
         )
