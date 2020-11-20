@@ -14,9 +14,10 @@ class ReadOnlyDict(dict):
     """
 
     def __setitem__(self, key, value):
-        _logging.getLogger("config").warning(
-            f"Ignoring write access to the config ({key}:{value})"
+        _logging.getLogger("config").error(
+            f"Denied write access to the read-only config ({key}:{value})"
         )
+        raise RuntimeError("Writing to ReadOnlyDict denied")
 
     def __setattr__(self, key, value):
         self[key] = value
