@@ -43,7 +43,7 @@ class User(_Base):
     @property
     def creditor(self) -> _Optional["User"]:
         try:
-            return User(_SESSION.query(_External).filter_by(external=self.id).first().internal)
+            return User.get(_SESSION.query(_External).filter_by(external=self.id).first().internal)
         except Exception as err:
             _logger.debug(str(err))
             return None
