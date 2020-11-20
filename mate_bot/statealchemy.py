@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, Sequence, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.expression import or_
+from sqlalchemy.sql import func
 
 from mate_bot.parsing.util import Representable
 
@@ -86,6 +87,11 @@ class User(_Base, Representable):
     @staticmethod
     def community_user():
         return SESSION.query(User).filter_by(id=1).first()
+
+    @staticmethod
+    def put_blame() -> List["User"]:
+        max_ = SESSION.query(func.max(User.balance)).first()[0]
+        return SESSION.query(User).filter_by(balance=max_).all()
 
 
 class Transaction(_Base):

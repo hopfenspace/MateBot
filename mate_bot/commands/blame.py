@@ -4,11 +4,12 @@ MateBot command executor classes for /blame
 
 import logging
 
-import telegram
+from nio import MatrixRoom, RoomMessageText
+from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.commands.base import BaseCommand
-from mate_bot.state.user import MateBotUser
+from mate_bot.commands.base import BaseCommand, INTERNAL
 from mate_bot.parsing.util import Namespace
+from mate_bot.statealchemy import User
 
 
 logger = logging.getLogger("commands")
@@ -28,29 +29,29 @@ class BlameCommand(BaseCommand):
             "This command can only be executed by internal users."
         )
 
-    def run(self, args: Namespace, update: telegram.Update) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param update: incoming Telegram update
-        :type update: telegram.Update
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
+        :param room: room the message came in
+        :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
-        user = MateBotUser(update.effective_message.from_user)
-        if not self.ensure_permissions(user, 2, update.effective_message):
+        user = User.get(event.sender)
+        if not self.ensure_permissions(user, INTERNAL, room):
             return
 
-        debtors = MateBotUser.get_worst_debtors()
-        if len(debtors) == 0:
-            update.effective_message.reply_text(
-                "Good news! No one has to be blamed, all users have positive balances!"
-            )
-            return
+        debtors = User.put_blame()
 
         if len(debtors) == 1:
             msg = "The user with the highest debt is:\n"
         else:
             msg = "The users with the highest debts are:\n"
-        msg += "\n".join(map(lambda x: x.username if x.username else x.name, debtors))
-        update.effective_message.reply_text(msg)
+        msg += "\n".join(map(str, debtors))
+
+        api.send_message(msg, room.room_id, send_as_notice=True)
