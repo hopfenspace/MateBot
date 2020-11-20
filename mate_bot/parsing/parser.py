@@ -212,17 +212,12 @@ class CommandParser(Representable):
         return namespace
 
     @staticmethod
-    def _split(msg: RoomMessageText) -> typing.Iterator[EntityString]:
+    def _split(event: RoomMessageText) -> typing.Iterator[EntityString]:
         """
-        Split a telegram message into EntityStrings
+        Currently unused.
 
-        This functions splits by spaces while keeping entities intact.
-
-        Danger!!!
-        Nested entities would probably break this.
-
-        :param msg: telegram message to tokenize
-        :type msg: telegram.Message
+        :param event: event to process
+        :type event: nio.RoomMessageText
         :return: list of argument strings
         :rtype: Iterator[EntityString]
         """
@@ -241,4 +236,4 @@ class CommandParser(Representable):
         if msg.text[last_entity:]:
             yield from map(EntityString, filter(bool, msg.text[last_entity:].split()))"""
 
-        yield from msg.body.split()
+        yield from event.stripped_body.split()

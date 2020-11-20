@@ -108,8 +108,6 @@ class BaseCommand:
         :type event: nio.RoomMessageText
         :return: None
         """
-        event.body = event.body[len(config.matrix.command_prefix):].strip()
-
         try:
             logger.debug(f"{type(self).__name__} by {event.sender}")
 
