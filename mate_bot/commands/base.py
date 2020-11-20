@@ -137,6 +137,9 @@ class BaseCommand:
             user = User.new(event.sender)
             await api.send_reply(f"Welcome {user}, please enjoy your drinks", room, event, send_as_notice=True)
 
+            if room.room_id != config.room:
+                user.external = True
+
         display_name = str(await api.client.get_displayname(user.matrix_id))
         if display_name != user.display_name:
             user.display_name = display_name
