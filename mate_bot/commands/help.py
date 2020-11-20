@@ -66,4 +66,4 @@ class HelpCommand(BaseCommand):
                         "<your username>`. Afterwards, you may use this bot."
                     )
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)

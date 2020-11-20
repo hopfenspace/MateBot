@@ -43,7 +43,7 @@ class BlameCommand(BaseCommand):
         """
         user = self.get_sender(api, room, event)
 
-        if not self.ensure_permissions(user, INTERNAL, api, room):
+        if not self.ensure_permissions(user, INTERNAL, api, event, room):
             return
 
         debtors = User.put_blame()
@@ -54,4 +54,4 @@ class BlameCommand(BaseCommand):
             msg = "The users with the highest debts are:\n"
         msg += "\n".join(map(str, debtors))
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)

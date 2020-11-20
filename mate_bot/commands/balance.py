@@ -48,7 +48,7 @@ class BalanceCommand(BaseCommand):
         sender = self.get_sender(api, room, event)
 
         if args.user:
-            if not self.ensure_permissions(sender, INTERNAL, api, room):
+            if not self.ensure_permissions(sender, INTERNAL, api, event, room):
                 return
 
             msg = f"Balance of {args.user} is: {args.user.balance / 100 : .2f}€"
@@ -56,4 +56,4 @@ class BalanceCommand(BaseCommand):
         else:
             msg =f"Your balance is: {sender.balance / 100 :.2f}€"
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)

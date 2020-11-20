@@ -179,4 +179,4 @@ class HistoryCommand(BaseCommand):
                         results = ""
                     results += "\n" + entry
 
-                await api.send_message(results, room.room_id, send_as_notice=True)
+                await api.send_reply(results, room.room_id, event, send_as_notice=True)

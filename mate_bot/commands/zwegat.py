@@ -41,7 +41,7 @@ class ZwegatCommand(BaseCommand):
         """
         user = self.get_sender(api, room, event)
 
-        if not self.ensure_permissions(user, INTERNAL, api, room):
+        if not self.ensure_permissions(user, INTERNAL, api, event, room):
             return
 
         total = User.community_user().balance / 100
@@ -49,4 +49,4 @@ class ZwegatCommand(BaseCommand):
             msg = f"Peter errechnet ein massives Vermögen von {total:.2f}€"
         else:
             msg = f"Peter errechnet Gesamtschulden von {-total:.2f}€"
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)

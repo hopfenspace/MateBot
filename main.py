@@ -20,8 +20,11 @@ async def main():
     api = ApiWrapper(config=config)
     api.set_auto_join(allowed_rooms=[config.room])
 
-    def register_command(cmd: BaseCommand, aliases: List[str] = []):
-        api.register_command(cmd, [cmd.name] + aliases)
+    def register_command(cmd: BaseCommand, aliases: List[str] = None):
+        if aliases is None:
+            api.register_command(cmd, [cmd.name])
+        else:
+            api.register_command(cmd, [cmd.name] + aliases)
 
     register_command(HelpCommand())
     register_command(BalanceCommand())

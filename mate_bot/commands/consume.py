@@ -63,7 +63,7 @@ class ConsumeCommand(BaseCommand):
         """
         sender = self.get_sender(api, room, event)
 
-        if not self.ensure_permissions(sender, VOUCHED, api, room):
+        if not self.ensure_permissions(sender, VOUCHED, api, event, room):
             return
 
         if args.number > config.general.max_consume:
@@ -78,4 +78,4 @@ class ConsumeCommand(BaseCommand):
             )
             msg = _random.choice(self.messages) + self.symbol * args.number
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)
