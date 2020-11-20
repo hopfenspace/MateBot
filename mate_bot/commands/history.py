@@ -138,7 +138,7 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        user = User(event.sender)
+        user = User.get(event.sender)
         logs = Transaction.get(user, args.length)
 
         heading = f"Transaction history for {user.name}:\n\n"
