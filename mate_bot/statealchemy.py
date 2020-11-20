@@ -31,12 +31,12 @@ class User(_Base, Representable):
 
     @property
     def external(self):
-        return SESSION.query(External).find_by(external=self.id).count() == 1
+        return SESSION.query(External).filter_by(external=self.id).count() == 1
 
     @property
     def creditor(self) -> "User":
         try:
-            return User(SESSION.query(External).find_by(external=self.id).first().internal)
+            return User(SESSION.query(External).filter_by(external=self.id).first().internal)
         except Exception as err:
             logger.debug(str(err))
             return None
