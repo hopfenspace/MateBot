@@ -37,8 +37,17 @@ class PayCommand(BaseCommand):
             "your request to verify that your request is valid and legitimate. "
             "In case it's approved, the community will send the money to you.\n\n"
             "There are two subcommands that can be used. You can get your "
-            "active request as a new message in the current chat by using `show`. "
-            "You can stop your currently active payment request using `stop`."
+            "active request as a new message in the current chat by using show. "
+            "You can stop your currently active payment request using stop.",
+            "Use this command to create a payment request.\n\n"
+            "When you want to get money from the community, a payment "
+            "request needs to be created. It requires an amount and a description. "
+            "The community members with vote permissions will then vote for or against "
+            "your request to verify that your request is valid and legitimate. "
+            "In case it's approved, the community will send the money to you.\n\n"
+            "There are two subcommands that can be used. You can get your "
+            "active request as a new message in the current chat by using <code>show</code>. "
+            "You can stop your currently active payment request using <code>stop</code>."
         )
 
         self.parser.add_argument("amount", type=amount_type)
