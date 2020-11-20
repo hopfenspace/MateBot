@@ -37,6 +37,14 @@ class User(_Base, Representable):
     def creditor(self):
         return True
 
+    def __str__(self):
+        if self.username:
+            return self.username
+        elif self.name:
+            return self.name
+        else:
+            return self.matrix_id
+
     @staticmethod
     def push():
         SESSION.commit()
@@ -80,6 +88,9 @@ class Transaction(_Base):
     amount = Column(Integer, nullable=False)
     reason = Column(String(255))
     registered = Column(DateTime, default=datetime.datetime.now)
+
+    def __str__(self):
+        return f"{self.registered}: {self.amount/100:>+6.2f}: {self.sender:<16} >> {self.receiver:<16} :: {self.reason}"
 
     @staticmethod
     def perform(
