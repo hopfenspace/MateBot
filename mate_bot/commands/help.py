@@ -27,7 +27,10 @@ class HelpCommand(BaseCommand):
             "help",
             "The `/help` command prints the help page for any "
             "command. If no argument is passed, it will print its "
-            "usage and a list of all available commands."
+            "usage and a list of all available commands.",
+            "The <code>help</code> command prints the help page for any "
+            "command. If no argument is passed, it will print its "
+            "usage and a alist of all available commands."
         )
 
         self.parser.add_argument("command", type=command_type, nargs="?")
@@ -47,23 +50,34 @@ class HelpCommand(BaseCommand):
         user = self.get_sender(api, room, event)
 
         if args.command:
-            usages = "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
-            msg = f"*Usages:*\n{usages}\n\n*Description:*\n{args.command.description}"
+            usages = "\n".join(map(lambda x: f"{api.config.matrix.command_prefix} {args.command.name} {x}", args.command.parser.usages))
+            usages_formatted = "\n",join(map(lambda x: f"<code>{api.config.matrix.command_prefix} {args.command.name} {x}</code>", args.command.parser.usages))
+            msg = f"Usages:\n{usages}\n\nDescription:\n{args.command.description}"
+            msg_formatted = f"<em>Usages:</em>\n{usages_formatted}\n\n<em>Description:</em>\n{args.command.description_formatted}"
 
         else:
-            command_list = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
+            command_list = "\n".join(map(lambda c: f" - {c}", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{command_list}"
+            msg_formatted = f"{self.usage}\n\n<em>List of commands:</em>\n\n{command_list}"
 
             if user.external:
                 msg += "\n\nYou are an external user. Some commands may be restricted."
+                msg_formatted += "\n\nYou are an external user. Some commands may be restricted."
 
                 if user.creditor is None:
                     msg += (
-                        "\nYou don't have any creditor. Your possible interactions "
-                        "with the bot are very limited for security purposes. You "
-                        "can ask some internal user to act as your voucher. To "
-                        "do this, the internal user needs to execute `/vouch "
-                        "<your username>`. Afterwards, you may use this bot."
+                        f"\nYou don't have any creditor. Your possible interactions "
+                        f"with the bot are very limited for security purposes. You "
+                        f"can ask some internal user to act as your voucher. To "
+                        f"do this, the internal user needs to execute {api.config.matrix.command_prefix} vouch "
+                        f"<your username>. Afterwards, you may use this bot."
+                    )
+                    msg_formatted += (
+                        f"\nYou don't have any creditor. Your possible interactions "
+                        f"with the bot are very limited for security purposes. You "
+                        f"can ask some internal user to act as your voucher. To "
+                        f"do this, the internal user needs to execute <code>{api.config.matrix.command_prefix} vouch "
+                        f"<your username></code>. Afterwards, you may use this bot."
                     )
 
-        await api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, formatted_message=msg_formatted, send_as_notice=True)
