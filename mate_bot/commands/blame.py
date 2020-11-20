@@ -26,6 +26,10 @@ class BlameCommand(BaseCommand):
             "Use this command to show the user(s) with the highest debts.\n\n"
             "Put the user(s) with the highest debts to the pillory and make them "
             "settle their debts, e.g. by buying stuff like new bottle crates. "
+            "This command can only be executed by internal users.",
+            "Use this command to show the user(s) with the highest debts.\n\n"
+            "Put the user(s) with the highest debts to the pillory and make them "
+            "settle their debts, e.g. by buying stuff like new bottle crates. "
             "This command can only be executed by internal users."
         )
 
