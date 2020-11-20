@@ -148,7 +148,7 @@ class HistoryCommand(BaseCommand):
         """
 
         user = User.get(event.sender)
-        logs = Transaction.get(user, args.length)
+        logs = Transaction.history(user, args.length)
 
         heading = f"Transaction history for {user}:\n\n"
         text = heading + "\n".join(map(str, logs))
