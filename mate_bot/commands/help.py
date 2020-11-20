@@ -51,18 +51,18 @@ class HelpCommand(BaseCommand):
 
         if args.command:
             usages = "\n".join(map(lambda x: f"{api.config.matrix.command_prefix} {args.command.name} {x}", args.command.parser.usages))
-            usages_formatted = "\n".join(map(lambda x: f"<code>{api.config.matrix.command_prefix} {args.command.name} {x}</code>", args.command.parser.usages))
+            usages_formatted = "<br />".join(map(lambda x: f"<code>{api.config.matrix.command_prefix} {args.command.name} {x}</code>", args.command.parser.usages))
             msg = f"Usages:\n{usages}\n\nDescription:\n{args.command.description}"
-            msg_formatted = f"<em>Usages:</em>\n{usages_formatted}\n\n<em>Description:</em>\n{args.command.description_formatted}"
+            msg_formatted = f"<em>Usages:</em><br />{usages_formatted}<br /><br /><em>Description:</em><br />{args.command.description_formatted}"
 
         else:
             command_list = "\n".join(map(lambda c: f" - {c}", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{command_list}"
-            msg_formatted = f"{self.usage}\n\n<em>List of commands:</em>\n\n{command_list}"
+            msg_formatted = f"{self.usage}<br /><br /><em>List of commands:</em><br /><br />{command_list}"
 
             if user.external:
                 msg += "\n\nYou are an external user. Some commands may be restricted."
-                msg_formatted += "\n\nYou are an external user. Some commands may be restricted."
+                msg_formatted += "<br /><br />You are an external user. Some commands may be restricted."
 
                 if user.creditor is None:
                     msg += (
@@ -73,7 +73,7 @@ class HelpCommand(BaseCommand):
                         f"<your username>. Afterwards, you may use this bot."
                     )
                     msg_formatted += (
-                        f"\nYou don't have any creditor. Your possible interactions "
+                        f"<br />You don't have any creditor. Your possible interactions "
                         f"with the bot are very limited for security purposes. You "
                         f"can ask some internal user to act as your voucher. To "
                         f"do this, the internal user needs to execute <code>{api.config.matrix.command_prefix} vouch "
