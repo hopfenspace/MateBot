@@ -94,8 +94,8 @@ class Transaction(_Base):
     registered = Column(DateTime, default=datetime.datetime.now)
 
     def __str__(self):
-        sender = User.get(self.sender)
-        receiver = User.get(self.receiver)
+        sender = str(User.get(self.sender))
+        receiver = str(User.get(self.receiver))
         return f"{self.registered}: {self.amount/100:>+6.2f}: {sender:<20} >> {receiver:<20} :: {self.reason}"
 
     @staticmethod
