@@ -27,7 +27,7 @@ class ConsumeCommand(BaseCommand):
     the constructor in order to implement a new command.
     """
 
-    def __init__(self, name: str, description: str, price: int, messages: _typing.List[str], symbol: str):
+    def __init__(self, name: str, description: str, description_formatted: str, price: int, messages: _typing.List[str], symbol: str):
         """
         :param name: name of the command
         :type name: str
@@ -39,9 +39,11 @@ class ConsumeCommand(BaseCommand):
         :type messages: typing.List[str]
         """
 
-        super().__init__(name, description)
+        super().__init__(name, description, description_formatted)
         if not self.description:
             self.description = f"Consume {name}s for {price / 100 :.2f}€ each."
+        if not self.description_formatted:
+            self.description_formatted = f"Consume {name}s for {price / 100 :.2f}€ each."
 
         self.parser.add_argument("number", default=1, type=natural_type, nargs="?")
 
