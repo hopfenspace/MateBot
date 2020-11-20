@@ -51,14 +51,17 @@ class BaseCommand:
     :type name: str
     :param description: a multiline string describing what the command does
     :type description: str
+    :param description_formatted: a multiline string describing what the command does. Formatted with html.
+    :type description_formatted: str
     :param usage: a single line string showing the basic syntax
     :type usage: Optional[str]
     """
 
-    def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
+    def __init__(self, name: str, description: str, description_formatted:str, usage: typing.Optional[str] = None):
         self.name = name
         self._usage = usage
         self.description = description
+        self.description_formatted = description_formatted
         self.parser = CommandParser(self.name)
 
         registry.commands[self.name] = self
