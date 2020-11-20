@@ -24,6 +24,8 @@ class ZwegatCommand(BaseCommand):
         super().__init__(
             "zwegat",
             "Use this command to show the central funds.\n\n"
+            "This command can only be used by internal users.",
+            "Use this command to show the central funds.\n\n"
             "This command can only be used by internal users."
         )
 
