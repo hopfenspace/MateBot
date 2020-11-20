@@ -40,6 +40,10 @@ class User(_Base, Representable):
             logger.debug(str(err))
             return None
 
+    @property
+    def debtors(self) -> List["User"]:
+        return list(map(User.get, SESSION.query(External).filter_by(internal=self.id).all()))
+
     def __str__(self):
         if self.display_name:
             return self.display_name

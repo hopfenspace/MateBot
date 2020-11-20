@@ -47,43 +47,28 @@ class DataCommand(BaseCommand):
 
         user = User.get(event.sender)
 
-        '''
         if user.external:
-            if user.creditor:
-                creditor = MateBotUser(user.creditor)
-                relations = f"Creditor user: {creditor.name}"
-                if creditor.username:
-                    relations += f" ({creditor.username})"
-            else:
-                relations = "Creditor user: None"
+            relations = f"Creditor user: {user.creditor}"
 
         else:
-            users = ", ".join(map(
-                lambda u: f"{u.name} ({u.username})" if u.username else u.name,
-                map(
-                    lambda i: MateBotUser(i),
-                    user.debtors
-                )
-            ))
-            if len(users) == 0:
+            users = ", ".join(map(str, user.debtors))
+            if users == "":
                 users = "None"
             relations = f"Debtor user{'s' if len(users) != 1 else ''}: {users}"
-        '''
 
         result = (
-            f"Overview over currently stored data for {user.name}:\n"
-            f"\n```\n"
+            f"Overview over currently stored data for {user}:\n"
+            f"\n\n"
             f"User ID: {user.id}\n"
             f"Matrix ID: {user.matrix_id}\n"
-            f"Name: {user.name}\n"
-            f"Username: {user.username}\n"
+            f"Display Name: {user.display_name}\n"
             f"Balance: {user.balance / 100 :.2f}€\n"
             f"Vote permissions: {user.permission}\n"
             f"External user: {user.external}\n"
-            # f"{relations}\n"
+            f"{relations}\n"
             f"Account created: {user.created}\n"
             f"Last transaction: {user.accessed}\n"
-            f"```\n"
+            f"\n"
             f"Use the /history command to see your transaction log."
         )
 
