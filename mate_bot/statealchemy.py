@@ -96,7 +96,7 @@ class Transaction(_Base):
     def __str__(self):
         sender = str(User.get(self.sender))
         receiver = str(User.get(self.receiver))
-        return f"{self.registered}: {self.amount/100:>+6.2f}: {sender:<20} >> {receiver:<20} :: {self.reason}"
+        return f"{self.registered}: {self.amount/100:>+6.2f}: {sender} >> {receiver} :: {self.reason}"
 
     @staticmethod
     def perform(

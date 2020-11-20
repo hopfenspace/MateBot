@@ -22,9 +22,8 @@ class HelpCommand(BaseCommand):
     Command executor for /help
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "help",
             "The `/help` command prints the help page for any "
             "command. If no argument is passed, it will print its "
@@ -33,10 +32,12 @@ class HelpCommand(BaseCommand):
 
         self.parser.add_argument("command", type=command_type, nargs="?")
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -65,4 +66,4 @@ class HelpCommand(BaseCommand):
                         "<your username>`. Afterwards, you may use this bot."
                     )
 
-        await self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)

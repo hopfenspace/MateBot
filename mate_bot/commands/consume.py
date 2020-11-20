@@ -27,7 +27,7 @@ class ConsumeCommand(BaseCommand):
     the constructor in order to implement a new command.
     """
 
-    def __init__(self, api: ApiWrapper, name: str, description: str, price: int, messages: _typing.List[str], symbol: str):
+    def __init__(self, name: str, description: str, price: int, messages: _typing.List[str], symbol: str):
         """
         :param name: name of the command
         :type name: str
@@ -39,7 +39,7 @@ class ConsumeCommand(BaseCommand):
         :type messages: typing.List[str]
         """
 
-        super().__init__(api, name, description)
+        super().__init__(name, description)
         if not self.description:
             self.description = f"Consume {name}s for {price / 100 :.2f}€ each."
 
@@ -49,10 +49,12 @@ class ConsumeCommand(BaseCommand):
         self.messages = messages
         self.symbol = symbol
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -76,4 +78,4 @@ class ConsumeCommand(BaseCommand):
             )
             msg = _random.choice(self.messages) + self.symbol * args.number
 
-        await self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)

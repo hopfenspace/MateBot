@@ -2,8 +2,6 @@
 
 import asyncio
 
-from nio import RoomMessageText
-
 from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.config import config
@@ -20,15 +18,14 @@ async def main():
     api = ApiWrapper(config=config)
     api.set_auto_join(allowed_rooms=[config.room])
 
-    client = api.client
-    client.add_event_callback(HelpCommand(api), RoomMessageText)
-    client.add_event_callback(BalanceCommand(api), RoomMessageText)
-    client.add_event_callback(StartCommand(api), RoomMessageText)
-    client.add_event_callback(ZwegatCommand(api), RoomMessageText)
-    client.add_event_callback(DataCommand(api), RoomMessageText)
-    client.add_event_callback(HistoryCommand(api), RoomMessageText)
+    api.register_command(HelpCommand(), ["help"])
+    api.register_command(BalanceCommand(), ["balance"])
+    api.register_command(StartCommand(), ["start"])
+    api.register_command(ZwegatCommand(), ["zwegat"])
+    api.register_command(DataCommand(), ["data"])
+    api.register_command(HistoryCommand(), ["history"])
     for consumable in config.consumables:
-        client.add_event_callback(ConsumeCommand(api, **consumable), RoomMessageText)
+        api.register_command(ConsumeCommand(**consumable), [consumable["name"]])
 
     await api.start_bot()
 

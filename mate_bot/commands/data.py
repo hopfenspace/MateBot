@@ -20,19 +20,20 @@ class DataCommand(BaseCommand):
     Command executor for /data
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "data",
             "Use this command to see the data the bot has stored about you.\n\n"
             "This command can only be used in private chat to protect private data.\n"
             "To view your transactions, use the command `/history` instead."
         )
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -86,4 +87,4 @@ class DataCommand(BaseCommand):
             f"Use the /history command to see your transaction log."
         )
 
-        await self.api.send_message(result, room.room_id, send_as_notice=True)
+        await api.send_message(result, room.room_id, send_as_notice=True)

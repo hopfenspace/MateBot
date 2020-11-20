@@ -20,18 +20,19 @@ class ZwegatCommand(BaseCommand):
     Command executor for /zwegat
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "zwegat",
             "Use this command to show the central funds.\n\n"
             "This command can only be used by internal users."
         )
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -48,4 +49,4 @@ class ZwegatCommand(BaseCommand):
             msg = f"Peter errechnet ein massives Vermögen von {total:.2f}€"
         else:
             msg = f"Peter errechnet Gesamtschulden von {-total:.2f}€"
-        await self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)

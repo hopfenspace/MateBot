@@ -20,9 +20,8 @@ class StartCommand(BaseCommand):
     Command executor for /start
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "start",
             "Use this command once per user to start interacting with this bot.\n\n"
             "This command creates your user account in case it was not yet. Otherwise, "
@@ -31,10 +30,12 @@ class StartCommand(BaseCommand):
             "Use /help for more information about how to use this bot and its commands."
         )
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -49,7 +50,7 @@ class StartCommand(BaseCommand):
             user = User.new(event.sender)
             msg = f"Thank you for registering, {event.sender}"
 
-        await self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)
         '''
         external = update.message.chat.id != config["bot"]["chat"]
         if external and update.message.chat.type != "private":

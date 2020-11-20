@@ -54,8 +54,7 @@ class BaseCommand:
     :type usage: Optional[str]
     """
 
-    def __init__(self, api: ApiWrapper, name: str, description: str, usage: typing.Optional[str] = None):
-        self.api = api
+    def __init__(self, name: str, description: str, usage: typing.Optional[str] = None):
         self.name = name
         self._usage = usage
         self.description = description
@@ -74,7 +73,7 @@ class BaseCommand:
         else:
             return self._usage
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Perform command-specific actions
 
@@ -82,6 +81,8 @@ class BaseCommand:
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -92,12 +93,14 @@ class BaseCommand:
 
         raise NotImplementedError("Overwrite the BaseCommand.run() method in a subclass")
 
-    async def __call__(self, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def __call__(self, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Parse arguments of the incoming event and execute the .run() method
 
         This method is the callback method used by `AsyncClient.add_callback_handler`.
 
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -120,19 +123,10 @@ class BaseCommand:
 
             args = self.parser.parse(event)
             logger.debug(f"Parsed command's arguments: {args}")
-            await self.run(args, room, event)
+            await self.run(args, api, room, event)
 
         except ParsingError as err:
-            await self.client.room_send(
-                room.room_id,
-                "m.room.message",
-                {
-                    "msgtype": "m.notice",
-                    "format": "plain",
-                    "body": str(err)
-                },
-                ignore_unverified_devices=True
-            )
+            await api.send_message(str(err), room.room_id, send_as_notice=True)
 
     def ensure_permissions(self, user: User, level: int, room: MatrixRoom) -> bool:
         """
@@ -184,7 +178,7 @@ class BaseCommand:
         else:
             return True
 
-        self.api.send_message(msg, room.room_id, send_as_notice=True)
+        api.send_message(msg, room.room_id, send_as_notice=True)
         return False
 
 '''

@@ -21,9 +21,8 @@ class BalanceCommand(BaseCommand):
     Command executor for /balance
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "balance",
             "Use this command to show a user's balance.\n\n"
             "When you use this command without arguments, the bot will "
@@ -34,10 +33,12 @@ class BalanceCommand(BaseCommand):
 
         self.parser.add_argument("user", type=user_type, nargs="?")
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -56,4 +57,4 @@ class BalanceCommand(BaseCommand):
             user = User.get_or_create(event.sender)
             msg =f"Your balance is: {user.balance / 100 :.2f}€"
 
-        await self.api.send_message(msg, room.room_id, send_as_notice=True)
+        await api.send_message(msg, room.room_id, send_as_notice=True)

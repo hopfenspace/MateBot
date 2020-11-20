@@ -24,9 +24,8 @@ class HistoryCommand(BaseCommand):
     Command executor for /history
     """
 
-    def __init__(self, api: ApiWrapper):
+    def __init__(self):
         super().__init__(
-            api,
             "history",
             "Use this command to get an overview of your transactions.\n\n"
             "You can specify the number of most recent transactions (default "
@@ -51,10 +50,12 @@ class HistoryCommand(BaseCommand):
             choices=("json", "csv")
         )
 
-    async def run(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
         :param room: room the message came in
         :type room: nio.MatrixRoom
         :param event: incoming message event
@@ -63,18 +64,22 @@ class HistoryCommand(BaseCommand):
         """
 
         if args.export is None:
-            await self._handle_report(args, room, event)
+            await self._handle_report(args, api, room, event)
         else:
-            await self._handle_export(args, room, event)
+            await self._handle_export(args, api, room, event)
 
-    async def _handle_export(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def _handle_export(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to export the full transaction log of a user
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param room: room to reply in
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
+        :param room: room the message came in
         :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
@@ -125,16 +130,20 @@ class HistoryCommand(BaseCommand):
                     )
                 )
         '''
-        await self.api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
+        await api.send_message("NotImplementedError", room.room_id, send_as_notice=True)
 
-    async def _handle_report(self, args: Namespace, room: MatrixRoom, event: RoomMessageText) -> None:
+    async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to report the most current transaction entries of a user
 
         :param args: parsed namespace containing the arguments
         :type args: argparse.Namespace
-        :param room: room to reply in
+        :param api: the api to respond with
+        :type api: hopfenmatrix.api_wrapper.ApiWrapper
+        :param room: room the message came in
         :type room: nio.MatrixRoom
+        :param event: incoming message event
+        :type event: nio.RoomMessageText
         :return: None
         """
 
@@ -145,7 +154,7 @@ class HistoryCommand(BaseCommand):
         text = heading + "\n".join(map(str, logs))
 
         if len(logs) == 0:
-            await self.api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
+            await api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
             return
 
         #elif update.effective_message.chat.type != update.effective_chat.PRIVATE:
@@ -159,15 +168,15 @@ class HistoryCommand(BaseCommand):
 
         else:
             if len(text) < 4096:
-                await self.api.send_message(text, room.room_id, send_as_notice=True)
+                await api.send_message(text, room.room_id, send_as_notice=True)
                 return
 
             else:
                 results = heading
                 for entry in map(str, logs):
                     if len(f"{results}\n{entry}") > 4096:
-                        await self.api.send_message(results, room.room_id, send_as_notice=True)
+                        await api.send_message(results, room.room_id, send_as_notice=True)
                         results = ""
                     results += "\n" + entry
 
-                await self.api.send_message(results, room.room_id, send_as_notice=True)
+                await api.send_message(results, room.room_id, send_as_notice=True)
