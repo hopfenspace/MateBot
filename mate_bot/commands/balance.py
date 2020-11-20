@@ -28,6 +28,11 @@ class BalanceCommand(BaseCommand):
             "When you use this command without arguments, the bot will "
             "reply with your current amount of money stored in your virtual "
             "wallet. If you specify a username or mention someone as an argument,"
+            "the 'balance' of this user is returned instead of yours.",
+            "Use this command to show a user's balance.\n\n"
+            "When you use this command without arguments, the bot will "
+            "reply with your current amount of money stored in your virtual "
+            "wallet. If you specify a username or mention someone as an argument,"
             "the 'balance' of this user is returned instead of yours."
         )
 
