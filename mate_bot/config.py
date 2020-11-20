@@ -92,6 +92,7 @@ class MateBotConfig(Config):
             {
                 "name": "drink",
                 "description": "",
+                "description_formatted": "",
                 "price": 100,
                 "messages": [
                     "Okay, enjoy your "
@@ -101,6 +102,7 @@ class MateBotConfig(Config):
             {
                 "name": "water",
                 "description": "",
+                "description_formatted": "",
                 "price": 50,
                 "messages": [
                     "HYDRATION! ",
@@ -114,6 +116,7 @@ class MateBotConfig(Config):
             {
                 "name": "pizza",
                 "description": "",
+                "description_formatted": "",
                 "price": 200,
                 "messages": [
                     "Okay, enjoy your ",
@@ -124,6 +127,7 @@ class MateBotConfig(Config):
             {
                 "name": "ice",
                 "description": "",
+                "description_formatted": "",
                 "price": 50,
                 "messages": [
                     "Okay, enjoy your ",
