@@ -25,7 +25,10 @@ class DataCommand(BaseCommand):
             "data",
             "Use this command to see the data the bot has stored about you.\n\n"
             "This command can only be used in private chat to protect private data.\n"
-            "To view your transactions, use the command `/history` instead."
+            "To view your transactions, use the command history instead.",
+            "Use this command to see the data the bot has stored about you.\n\n"
+            "This command can only be used in private chat to protect private data.\n"
+            "To view your transactions, use the command <code>history</code> instead."
         )
 
     async def run(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
