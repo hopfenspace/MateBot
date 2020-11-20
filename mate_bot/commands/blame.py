@@ -41,8 +41,8 @@ class BlameCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        user = self.get_sender(api, room, event)
 
-        user = User.get(event.sender)
         if not self.ensure_permissions(user, INTERNAL, api, room):
             return
 

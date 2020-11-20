@@ -44,6 +44,7 @@ class HelpCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        user = self.get_sender(api, room, event)
 
         if args.command:
             usages = "\n".join(map(lambda x: f"`/{args.command.name} {x}`", args.command.parser.usages))
@@ -53,7 +54,6 @@ class HelpCommand(BaseCommand):
             command_list = "\n".join(map(lambda c: f" - `{c}`", sorted(registry.commands.keys())))
             msg = f"{self.usage}\n\nList of commands:\n\n{command_list}"
 
-            user = User.get(event.sender)
             if user.external:
                 msg += "\n\nYou are an external user. Some commands may be restricted."
 

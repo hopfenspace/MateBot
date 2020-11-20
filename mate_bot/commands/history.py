@@ -146,8 +146,8 @@ class HistoryCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        user = self.get_sender(api, room, event)
 
-        user = User.get(event.sender)
         logs = Transaction.history(user, args.length)
 
         heading = f"Transaction history for {user}:\n\n"

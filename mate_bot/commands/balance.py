@@ -45,16 +45,15 @@ class BalanceCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        sender = self.get_sender(api, room, event)
 
         if args.user:
-            sender = User.get(event.sender)
             if not self.ensure_permissions(sender, INTERNAL, api, room):
                 return
 
             msg = f"Balance of {args.user} is: {args.user.balance / 100 : .2f}€"
 
         else:
-            user = User.get_or_create(event.sender)
-            msg =f"Your balance is: {user.balance / 100 :.2f}€"
+            msg =f"Your balance is: {sender.balance / 100 :.2f}€"
 
         await api.send_message(msg, room.room_id, send_as_notice=True)

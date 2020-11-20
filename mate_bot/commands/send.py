@@ -47,8 +47,8 @@ class SendCommand(BaseCommand):
         :type update: telegram.Update
         :return: None
         """
+        sender = self.get_sender(api, room, event)
 
-        sender = MateBotUser(update.effective_message.from_user)
         if isinstance(args.reason, list):
             reason = "send: " + " ".join(args.reason)
         else:

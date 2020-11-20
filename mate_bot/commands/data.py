@@ -41,35 +41,35 @@ class DataCommand(BaseCommand):
         :return: None
         """
 
-        #if update.effective_message.chat.type != "private":
-        #    update.effective_message.reply_text("This command can only be used in private chat.")
-        #    return
-
-        user = User.get(event.sender)
-
-        if user.external:
-            relations = f"Creditor user: {user.creditor}"
+        if not api.is_room_private(room):
+            msg = "This command can only be used in private chat."
 
         else:
-            users = ", ".join(map(str, user.debtors))
-            if users == "":
-                users = "None"
-            relations = f"Debtor user{'s' if len(users) != 1 else ''}: {users}"
+            user = User.get(event.sender)
 
-        result = (
-            f"Overview over currently stored data for {user}:\n"
-            f"\n\n"
-            f"User ID: {user.id}\n"
-            f"Matrix ID: {user.matrix_id}\n"
-            f"Display Name: {user.display_name}\n"
-            f"Balance: {user.balance / 100 :.2f}€\n"
-            f"Vote permissions: {user.permission}\n"
-            f"External user: {user.external}\n"
-            f"{relations}\n"
-            f"Account created: {user.created}\n"
-            f"Last transaction: {user.accessed}\n"
-            f"\n"
-            f"Use the /history command to see your transaction log."
-        )
+            if user.external:
+                relations = f"Creditor user: {user.creditor}"
 
-        await api.send_message(result, room.room_id, send_as_notice=True)
+            else:
+                users = ", ".join(map(str, user.debtors))
+                if users == "":
+                    users = "None"
+                relations = f"Debtor user{'s' if len(users) != 1 else ''}: {users}"
+
+            msg = (
+                f"Overview over currently stored data for {user}:\n"
+                f"\n\n"
+                f"User ID: {user.id}\n"
+                f"Matrix ID: {user.matrix_id}\n"
+                f"Display Name: {user.display_name}\n"
+                f"Balance: {user.balance / 100 :.2f}€\n"
+                f"Vote permissions: {user.permission}\n"
+                f"External user: {user.external}\n"
+                f"{relations}\n"
+                f"Account created: {user.created}\n"
+                f"Last transaction: {user.accessed}\n"
+                f"\n"
+                f"Use the /history command to see your transaction log."
+            )
+
+        await api.send_message(msg, room.room_id, send_as_notice=True)

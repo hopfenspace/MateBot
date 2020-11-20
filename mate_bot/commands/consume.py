@@ -61,8 +61,8 @@ class ConsumeCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        sender = self.get_sender(api, room, event)
 
-        sender = User.get_or_create(event.sender)
         if not self.ensure_permissions(sender, VOUCHED, api, room):
             return
 

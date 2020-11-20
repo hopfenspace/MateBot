@@ -9,7 +9,6 @@ from mate_bot.config import config
 from mate_bot.commands.base import BaseCommand
 from mate_bot.commands.help import HelpCommand
 from mate_bot.commands.balance import BalanceCommand
-from mate_bot.commands.start import StartCommand
 from mate_bot.commands.zwegat import ZwegatCommand
 from mate_bot.commands.consume import ConsumeCommand
 from mate_bot.commands.data import DataCommand
@@ -26,7 +25,6 @@ async def main():
 
     register_command(HelpCommand())
     register_command(BalanceCommand())
-    register_command(StartCommand())
     register_command(ZwegatCommand())
     register_command(DataCommand())
     register_command(HistoryCommand())

@@ -126,6 +126,20 @@ class BaseCommand:
         except ParsingError as err:
             await api.send_message(str(err), room.room_id, send_as_notice=True)
 
+    @staticmethod
+    def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
+        try:
+            user = User.get(event.sender)
+        except ValueError:
+            user = User.new(event.sender)
+            api.send_message(f"Welcome {user}, please enjoy your drinks", room.room_id, send_as_notice=True)
+
+        if room.room_id == config.room and user.external:
+            user.external = False
+            api.send_message(f"{user}, you are now an internal.")
+
+        return user
+
     def ensure_permissions(self, user: User, level: int, api: ApiWrapper, room: MatrixRoom) -> bool:
         """
         Ensure that a user is allowed to perform an operation that requires specific permissions

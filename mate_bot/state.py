@@ -33,11 +33,8 @@ class User(_Base):
         return _SESSION.query(_External).filter_by(external=self.id).count() == 1
 
     @external.setter
-    def set_external(self, is_external: bool):
-        current = self.external
-        if current == is_external:
-            return
-        elif current is True:
+    def external(self, is_external: bool):
+        if is_external is False:
             _SESSION.delete(_SESSION.query(_External).filter_by(external=self.id).all())
         else:
             _SESSION.add(_External(external=self.id))
@@ -52,7 +49,7 @@ class User(_Base):
             return None
 
     @creditor.setter
-    def set_creditor(self, user: _Optional["User"]):
+    def creditor(self, user: _Optional["User"]):
         if user is None:
             _SESSION.query(_External).filter_by(external=self.id).first().internal = None
         else:
