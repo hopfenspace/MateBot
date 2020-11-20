@@ -41,7 +41,7 @@ class ZwegatCommand(BaseCommand):
         """
 
         user = User.get(event.sender)
-        if not self.ensure_permissions(user, INTERNAL, room):
+        if not self.ensure_permissions(user, INTERNAL, api, room):
             return
 
         total = User.community_user().balance / 100

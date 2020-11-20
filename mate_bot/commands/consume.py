@@ -63,7 +63,7 @@ class ConsumeCommand(BaseCommand):
         """
 
         sender = User.get_or_create(event.sender)
-        if not self.ensure_permissions(sender, VOUCHED, room):
+        if not self.ensure_permissions(sender, VOUCHED, api, room):
             return
 
         if args.number > config.general.max_consume:

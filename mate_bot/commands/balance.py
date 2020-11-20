@@ -48,7 +48,7 @@ class BalanceCommand(BaseCommand):
 
         if args.user:
             sender = User.get(event.sender)
-            if not self.ensure_permissions(sender, INTERNAL, room):
+            if not self.ensure_permissions(sender, INTERNAL, api, room):
                 return
 
             msg = f"Balance of {args.user} is: {args.user.balance / 100 : .2f}€"

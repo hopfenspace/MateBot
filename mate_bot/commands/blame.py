@@ -43,7 +43,7 @@ class BlameCommand(BaseCommand):
         """
 
         user = User.get(event.sender)
-        if not self.ensure_permissions(user, INTERNAL, room):
+        if not self.ensure_permissions(user, INTERNAL, api, room):
             return
 
         debtors = User.put_blame()

@@ -128,7 +128,7 @@ class BaseCommand:
         except ParsingError as err:
             await api.send_message(str(err), room.room_id, send_as_notice=True)
 
-    def ensure_permissions(self, user: User, level: int, room: MatrixRoom) -> bool:
+    def ensure_permissions(self, user: User, level: int, api: ApiWrapper, room: MatrixRoom) -> bool:
         """
         Ensure that a user is allowed to perform an operation that requires specific permissions
 
@@ -151,6 +151,8 @@ class BaseCommand:
         :type user: MateBotUser
         :param level: minimal required permission level to be allowed to perform some action
         :type level: int
+        :param api: api to reply with
+        :type api: hopfenmatrix.api_warpper.ApiWrapper
         :param room: room to reply to
         :type room: nio.MatrixRoom
         :return: whether further access should be allowed (``True``) or not
