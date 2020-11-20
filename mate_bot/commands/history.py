@@ -162,7 +162,7 @@ class HistoryCommand(BaseCommand):
         text = heading + "\n".join(map(str, logs))
 
         if len(logs) == 0:
-            await api.send_message("You don't have any registered transactions yet.", room.room_id, send_as_notice=True)
+            await api.send_message("You don't have any registered transactions yet.", room, event, send_as_notice=True)
             return
 
         #elif update.effective_message.chat.type != update.effective_chat.PRIVATE:
