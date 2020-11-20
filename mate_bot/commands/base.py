@@ -127,7 +127,7 @@ class BaseCommand:
             await api.send_message(str(err), room.room_id, send_as_notice=True)
 
     @staticmethod
-    def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
+    async def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
         try:
             user = User.get(event.sender)
         except ValueError:
@@ -140,7 +140,7 @@ class BaseCommand:
 
         return user
 
-    def ensure_permissions(
+    async def ensure_permissions(
             self,
             user: User,
             level: int,
@@ -199,7 +199,7 @@ class BaseCommand:
         else:
             return True
 
-        api.send_reply(msg, room.room_id, event, send_as_notice=True)
+        await api.send_reply(msg, room.room_id, event, send_as_notice=True)
         return False
 
 '''

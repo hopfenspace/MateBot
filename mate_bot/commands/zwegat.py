@@ -39,7 +39,7 @@ class ZwegatCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
-        user = self.get_sender(api, room, event)
+        user = await self.get_sender(api, room, event)
 
         if not self.ensure_permissions(user, INTERNAL, api, event, room):
             return
@@ -49,4 +49,4 @@ class ZwegatCommand(BaseCommand):
             msg = f"Peter errechnet ein massives Vermögen von {total:.2f}€"
         else:
             msg = f"Peter errechnet Gesamtschulden von {-total:.2f}€"
-        await api.send_reply(msg, room.room_id, event, send_as_notice=True)
+        await api.send_reply(msg, room, event, send_as_notice=True)
