@@ -67,6 +67,10 @@ class User(_Base):
             return self.matrix_id
 
     @staticmethod
+    def push():
+        _SESSION.commit()
+
+    @staticmethod
     def new(matrix_id: str, **kwargs) -> "User":
         user = User(matrix_id=matrix_id, **kwargs)
         _SESSION.add(user)
