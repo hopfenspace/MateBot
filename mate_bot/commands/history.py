@@ -9,7 +9,7 @@ import tempfile
 from nio import MatrixRoom, RoomMessageText, UploadResponse
 from hopfenmatrix.api_wrapper import ApiWrapper
 
-from mate_bot.state import User, Transaction
+from mate_bot.state import Transaction
 from mate_bot.parsing.types import natural as natural_type
 from mate_bot.parsing.util import Namespace
 from mate_bot.commands.base import BaseCommand
@@ -69,11 +69,49 @@ class HistoryCommand(BaseCommand):
         :type event: nio.RoomMessageText
         :return: None
         """
+        user = await self.get_sender(api, room, event)
 
-        if args.export is None:
-            await self._handle_report(args, api, room, event)
+        logs = Transaction.history(user, args.length)
+
+        if len(logs) == 0:
+            msg = "You don't have any registered transactions yet."
+            await api.send_reply(msg, room, event, send_as_notice=True)
+
+        elif args.export is None:
+            if not await api.is_room_private(room) and len(logs) > 20:
+                msg = ("Your requested transaction logs are too long. Try a smaller "
+                       "number of entries or execute this command in private chat again.")
+                formatted_msg = None
+
+            else:
+                msg = f"Transaction history for {user}:\n\n" + "\n".join(map(str, logs))
+                formatted_msg = (f"Transaction history for {user}:<br /><br />"
+                                 f"<pre><code>{'<br />'.join(map(str, logs))}</code></pre>")
+
+            await api.send_reply(msg, room, event, formatted_message=formatted_msg, send_as_notice=True)
+
         else:
-            await self._handle_export(args, api, room, event)
+            if not await api.is_room_private(room):
+                await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
+                return
+
+            logs = list(map(Transaction.as_exportable_dict, logs))
+
+            if args.export == "json":
+                mime_type = "application/json"
+                text = json.dumps(logs, indent=2)
+
+            else:  # args.export == "csv":
+                mime_type = "text/csv"
+                text = ";".join(logs[0].keys())
+                for log in logs:
+                    text += "\n" + ";".join(map(str, log.values()))
+
+            with tempfile.TemporaryFile(mode="w+b") as file:
+                file.write(text.encode("utf-8"))
+                file.seek(0)
+
+                await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
 
     async def send_file(
         self,
@@ -114,82 +152,3 @@ class HistoryCommand(BaseCommand):
         else:
             await api.send_message(f"Failed to send {file_name}", room, send_as_notice=True)
             logger.info(f"Failed to upload image. Failure response: {resp}")
-
-    async def _handle_export(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
-        """
-        Handle the request to export the full transaction log of a user
-
-        :param args: parsed namespace containing the arguments
-        :type args: argparse.Namespace
-        :param api: the api to respond with
-        :type api: hopfenmatrix.api_wrapper.ApiWrapper
-        :param room: room the message came in
-        :type room: nio.MatrixRoom
-        :param event: incoming message event
-        :type event: nio.RoomMessageText
-        :return: None
-        """
-
-        if not await api.is_room_private(room):
-            await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
-            return
-
-        user = await self.get_sender(api, room, event)
-
-        logs = Transaction.history(user, args.length)
-        logs = list(map(Transaction.as_exportable_dict, logs))
-
-        if len(logs) == 0:
-            await api.send_reply("You don't have any registered transactions yet.", room, event, send_as_notice=True)
-            return
-
-        else:
-            if args.export == "json":
-                mime_type = "application/json"
-                text = json.dumps(logs, indent=2)
-
-            else:  # args.export == "csv":
-                mime_type = "text/csv"
-                text = ";".join(logs[0].keys())
-                for log in logs:
-                    text += "\n"+";".join(map(str, log.values()))
-
-            with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(text.encode("utf-8"))
-                file.seek(0)
-
-                await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
-
-    async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
-        """
-        Handle the request to report the most current transaction entries of a user
-
-        :param args: parsed namespace containing the arguments
-        :type args: argparse.Namespace
-        :param api: the api to respond with
-        :type api: hopfenmatrix.api_wrapper.ApiWrapper
-        :param room: room the message came in
-        :type room: nio.MatrixRoom
-        :param event: incoming message event
-        :type event: nio.RoomMessageText
-        :return: None
-        """
-        user = await self.get_sender(api, room, event)
-
-        logs = Transaction.history(user, args.length)
-
-        if len(logs) == 0:
-            msg = "You don't have any registered transactions yet."
-            formatted_msg = None
-
-        elif not api.is_room_private(room) and len(logs) > 20:
-            msg = ("Your requested transaction logs are too long. Try a smaller "
-                   "number of entries or execute this command in private chat again.")
-            formatted_msg = None
-
-        else:
-            msg = f"Transaction history for {user}:\n\n" + "\n".join(map(str, logs))
-            formatted_msg = (f"Transaction history for {user}:<br /><br />"
-                             f"<pre><code>{'<br />'.join(map(str, logs))}</code></pre>")
-
-        await api.send_reply(msg, room, event, formatted_message=formatted_msg, send_as_notice=True)
