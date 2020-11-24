@@ -81,37 +81,36 @@ class HistoryCommand(BaseCommand):
             if not await api.is_room_private(room) and len(logs) > 20:
                 msg = ("Your requested transaction logs are too long. Try a smaller "
                        "number of entries or execute this command in private chat again.")
-                formatted_msg = None
+                await api.send_reply(msg, room, event, send_as_notice=True)
 
             else:
                 msg = f"Transaction history for {user}:\n\n" + "\n".join(map(str, logs))
                 formatted_msg = (f"Transaction history for {user}:<br /><br />"
                                  f"<pre><code>{'<br />'.join(map(str, logs))}</code></pre>")
-
-            await api.send_reply(msg, room, event, formatted_message=formatted_msg, send_as_notice=True)
+                await api.send_reply(msg, room, event, formatted_message=formatted_msg, send_as_notice=True)
 
         else:
             if not await api.is_room_private(room):
                 await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
-                return
 
-            logs = list(map(Transaction.as_exportable_dict, logs))
+            else:
+                logs = list(map(Transaction.as_exportable_dict, logs))
 
-            if args.export == "json":
-                mime_type = "application/json"
-                text = json.dumps(logs, indent=2)
+                if args.export == "json":
+                    mime_type = "application/json"
+                    text = json.dumps(logs, indent=2)
 
-            else:  # args.export == "csv":
-                mime_type = "text/csv"
-                text = ";".join(logs[0].keys())
-                for log in logs:
-                    text += "\n" + ";".join(map(str, log.values()))
+                else:  # args.export == "csv":
+                    mime_type = "text/csv"
+                    text = ";".join(logs[0].keys())
+                    for log in logs:
+                        text += "\n" + ";".join(map(str, log.values()))
 
-            with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(text.encode("utf-8"))
-                file.seek(0)
+                with tempfile.TemporaryFile(mode="w+b") as file:
+                    file.write(text.encode("utf-8"))
+                    file.seek(0)
 
-                await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
+                    await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
 
     async def send_file(
         self,
