@@ -158,28 +158,18 @@ class HistoryCommand(BaseCommand):
 
         logs = Transaction.history(user, args.length)
 
-        heading = f"Transaction history for {user}:\n\n"
-        text = heading + "\n".join(map(str, logs))
-
         if len(logs) == 0:
-            await api.send_message("You don't have any registered transactions yet.", room, event, send_as_notice=True)
-            return
+            msg = "You don't have any registered transactions yet."
 
-        #elif update.effective_message.chat.type != update.effective_chat.PRIVATE:
-        #    if len(text) > 4096:
-        #        update.effective_message.reply_text(
-        #            "Your requested transaction logs are too long. Try a smaller "
-        #            "number of entries or execute this command in private chat again."
-        #        )
-        #    else:
-        #        update.effective_message.reply_markdown_v2(text)
+        elif not api.is_room_private(room) and len(logs) > 20:
+            msg = ("Your requested transaction logs are too long. Try a smaller "
+                   "number of entries or execute this command in private chat again.")
 
         else:
-            if len(text) < 4096:
-                await api.send_message(text, room, event, send_as_notice=True)
-                return
+            heading = f"Transaction history for {user}:\n\n"
+            msg = heading + "\n".join(map(str, logs))
 
-            else:
+            if len(msg) > 4096:
                 results = heading
                 results_formatted = ""
                 for entry in map(str, logs):
@@ -191,3 +181,5 @@ class HistoryCommand(BaseCommand):
                 results_formatted = "<pre><code>" + results_formatted + "</code></pre>"
 
                 await api.send_reply(results, room, event, formatted_message=results_formatted, send_as_notice=True)
+
+        await api.send_message(msg, room, event, send_as_notice=True)
