@@ -180,26 +180,16 @@ class HistoryCommand(BaseCommand):
 
         if len(logs) == 0:
             msg = "You don't have any registered transactions yet."
+            formatted_msg = None
 
         elif not api.is_room_private(room) and len(logs) > 20:
             msg = ("Your requested transaction logs are too long. Try a smaller "
                    "number of entries or execute this command in private chat again.")
+            formatted_msg = None
 
         else:
-            heading = f"Transaction history for {user}:\n\n"
-            msg = heading + "\n".join(map(str, logs))
+            msg = f"Transaction history for {user}:\n\n" + "\n".join(map(str, logs))
+            formatted_msg = (f"Transaction history for {user}:<br /><br />"
+                             f"<pre><code>{'<br />'.join(map(str, logs))}</code></pre>")
 
-            if len(msg) > 4096:
-                results = heading
-                results_formatted = ""
-                for entry in map(str, logs):
-                    if len(f"{results}\n{entry}") > 4096:
-                        await api.send_message(results, room, event, send_as_notice=True)
-                        results = ""
-                    results += "\n" + entry
-                    results_formatted = results.replace('\n', '<br />')
-                results_formatted = "<pre><code>" + results_formatted + "</code></pre>"
-
-                await api.send_reply(results, room, event, formatted_message=results_formatted, send_as_notice=True)
-
-        await api.send_message(msg, room, event, send_as_notice=True)
+        await api.send_reply(msg, room, event, formatted_message=formatted_msg, send_as_notice=True)
