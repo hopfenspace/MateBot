@@ -127,7 +127,7 @@ class BaseCommand:
             await self.run(args, api, room, event)
 
         except ParsingError as err:
-            await api.send_message(str(err), room.room_id, send_as_notice=True)
+            await api.send_message(str(err), room, event, send_as_notice=True)
 
     @staticmethod
     async def get_sender(api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> User:
