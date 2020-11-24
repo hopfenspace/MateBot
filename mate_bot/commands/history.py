@@ -97,57 +97,15 @@ class HistoryCommand(BaseCommand):
                 logs = list(map(Transaction.as_exportable_dict, logs))
 
                 if args.export == "json":
-                    mime_type = "application/json"
                     text = json.dumps(logs, indent=2)
 
                 else:  # args.export == "csv":
-                    mime_type = "text/csv"
                     text = ";".join(logs[0].keys())
                     for log in logs:
                         text += "\n" + ";".join(map(str, log.values()))
 
-                with tempfile.TemporaryFile(mode="w+b") as file:
+                with tempfile.NamedTemporaryFile(mode="w+b") as file:
                     file.write(text.encode("utf-8"))
                     file.seek(0)
 
-                    await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
-
-    async def send_file(
-        self,
-        api: ApiWrapper,
-        room: MatrixRoom,
-        file_name: str,
-        mime_type: str,
-        file_handler,
-        file_size: int = None
-
-    ):
-        resp, maybe_keys = await api.client.upload(
-            file_handler,
-            content_type=mime_type,
-            filename=file_name,
-            filesize=file_size
-        )
-
-        if isinstance(resp, UploadResponse):
-            logger.info("File was uploaded successfully to server. ")
-
-            content = {
-                "body": file_name,
-                "info": {
-                    "size": file_size,
-                    "mimetype": mime_type,
-                },
-                "msgtype": "m.file",
-                "url": resp.content_uri,
-            }
-
-            await api.client.room_send(
-                room.room_id,
-                message_type="m.room.message",
-                content=content
-            )
-
-        else:
-            await api.send_message(f"Failed to send {file_name}", room, send_as_notice=True)
-            logger.info(f"Failed to upload image. Failure response: {resp}")
+                    await api.send_file(file.name, room, description=f"transaction.{args.export}")
