@@ -2,13 +2,11 @@
 MateBot command executor classes for /history
 """
 
-import csv
 import json
 import logging
 import tempfile
-import os
+import tzlocal
 
-import aiofiles
 from nio import MatrixRoom, RoomMessageText, UploadResponse
 from hopfenmatrix.api_wrapper import ApiWrapper
 
@@ -155,7 +153,7 @@ class HistoryCommand(BaseCommand):
                     "receiver": transaction.receiver,
                     "amount": transaction.amount,
                     "reason": transaction.reason,
-                    "date": transaction.registered
+                    "date": str(transaction.registered)
                 })
 
             with tempfile.TemporaryFile(mode="w+b") as file:
