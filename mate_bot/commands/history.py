@@ -5,7 +5,6 @@ MateBot command executor classes for /history
 import json
 import logging
 import tempfile
-import tzlocal
 
 from nio import MatrixRoom, RoomMessageText, UploadResponse
 from hopfenmatrix.api_wrapper import ApiWrapper
@@ -138,44 +137,26 @@ class HistoryCommand(BaseCommand):
         user = await self.get_sender(api, room, event)
 
         logs = Transaction.history(user, args.length)
+        logs = list(map(Transaction.as_exportable_dict, logs))
 
         if len(logs) == 0:
             await api.send_reply("You don't have any registered transactions yet.", room, event, send_as_notice=True)
             return
 
-        if args.export == "json":
-            jsonable_logs = list(map(Transaction.as_exportable_dict, logs))
+        else:
+            if args.export == "json":
+                export = json.dumps(logs, indent=2)
+
+            else:  # args.export == "csv":
+                export = ";".join(logs[0].keys())
+                for log in logs:
+                    export += "\n"+";".join(log.values())
 
             with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(json.dumps(jsonable_logs, indent=2).encode("UTF-8"))
+                file.write(export.encode("utf-8"))
                 file.seek(0)
 
                 await self.send_file(api, room, "transactions.json", "application/json", file)
-
-        elif args.export == "csv":
-            await api.send_message("NotImplementedError", room, event, send_as_notice=True)
-
-            '''
-            this is NO SQL!!! (thanks pycharm)
-            with tempfile.TemporaryFile(mode="w+") as file:
-                writer = csv.DictWriter(file, fieldnames=logs[0].keys(), quoting=csv.QUOTE_ALL)
-                writer.writeheader()
-                writer.writerows(logs)
-                file.seek(0)
-                content = file.read().encode("UTF-8")
-
-            with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(content)
-                file.seek(0)
-                update.effective_message.reply_document(
-                    document=file,
-                    filename="transactions.csv",
-                    caption=(
-                        "You requested the export of your transaction log. "
-                        f"This file contains all known transactions of {user.name}."
-                    )
-                )
-            '''
 
     async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
