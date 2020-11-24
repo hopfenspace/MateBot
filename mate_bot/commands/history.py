@@ -95,28 +95,26 @@ class HistoryCommand(BaseCommand):
 
         if isinstance(resp, UploadResponse):
             logger.info("File was uploaded successfully to server. ")
-        else:
-            logger.info(f"Failed to upload image. Failure response: {resp}")
 
-        content = {
-            "body": file_name,
-            "info": {
-                "size": file_size,
-                "mimetype": mime_type,
-            },
-            "msgtype": "m.file",
-            "url": resp.content_uri,
-        }
+            content = {
+                "body": file_name,
+                "info": {
+                    "size": file_size,
+                    "mimetype": mime_type,
+                },
+                "msgtype": "m.file",
+                "url": resp.content_uri,
+            }
 
-        try:
             await api.client.room_send(
                 room.room_id,
                 message_type="m.room.message",
                 content=content
             )
-            logger.info("Image was sent successfully")
-        except Exception:
-            logger.info(f"Image send of file {image} failed.")
+
+        else:
+            await api.send_message(f"Failed to send {file_name}", room, send_as_notice=True)
+            logger.info(f"Failed to upload image. Failure response: {resp}")
 
     async def _handle_export(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
