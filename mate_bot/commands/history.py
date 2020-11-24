@@ -133,7 +133,7 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        if not api.is_room_private(room):
+        if not await api.is_room_private(room):
             await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
             return
 
@@ -160,7 +160,7 @@ class HistoryCommand(BaseCommand):
                 file.write(json.dumps(jsonable_logs, indent=2).encode("UTF-8"))
                 file.seek(0)
 
-                self.send_file(api, room, "transactions.json", "application/json", file)
+                await self.send_file(api, room, "transactions.json", "application/json", file)
 
         elif args.export == "csv":
             await api.send_message("NotImplementedError", room, event, send_as_notice=True)
