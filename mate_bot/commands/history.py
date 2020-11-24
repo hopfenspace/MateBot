@@ -135,7 +135,7 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        if api.is_room_private(room):
+        if not api.is_room_private(room):
             await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
             return
 
