@@ -88,7 +88,7 @@ class HistoryCommand(BaseCommand):
         file_size: int = None
 
     ):
-       resp, maybe_keys = await api.client.upload(
+        resp, maybe_keys = await api.client.upload(
             file_handler,
             content_type=mime_type,
             filename=file_name,
