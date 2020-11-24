@@ -145,18 +145,20 @@ class HistoryCommand(BaseCommand):
 
         else:
             if args.export == "json":
-                export = json.dumps(logs, indent=2)
+                mime_type = "application/json"
+                text = json.dumps(logs, indent=2)
 
             else:  # args.export == "csv":
-                export = ";".join(logs[0].keys())
+                mime_type = "text/csv"
+                text = ";".join(logs[0].keys())
                 for log in logs:
-                    export += "\n"+";".join(log.values())
+                    text += "\n"+";".join(map(str, log.values()))
 
             with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(export.encode("utf-8"))
+                file.write(text.encode("utf-8"))
                 file.seek(0)
 
-                await self.send_file(api, room, "transactions.json", "application/json", file)
+                await self.send_file(api, room, f"transactions.{args.export}", mime_type, file)
 
     async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
