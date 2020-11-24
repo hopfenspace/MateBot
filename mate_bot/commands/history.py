@@ -6,8 +6,10 @@ import csv
 import json
 import logging
 import tempfile
+import os
 
-from nio import MatrixRoom, RoomMessageText
+import aiofiles
+from nio import MatrixRoom, RoomMessageText, UploadResponse
 from hopfenmatrix.api_wrapper import ApiWrapper
 
 from mate_bot.state import User, Transaction
@@ -76,6 +78,48 @@ class HistoryCommand(BaseCommand):
         else:
             await self._handle_export(args, api, room, event)
 
+    async def send_file(
+        self,
+        api: ApiWrapper,
+        room: MatrixRoom,
+        file_name: str,
+        mime_type: str,
+        file_handler,
+        file_size: int = None
+
+    ):
+       resp, maybe_keys = await api.client.upload(
+            file_handler,
+            content_type=mime_type,
+            filename=file_name,
+            filesize=file_size
+        )
+
+        if isinstance(resp, UploadResponse):
+            logger.info("File was uploaded successfully to server. ")
+        else:
+            logger.info(f"Failed to upload image. Failure response: {resp}")
+
+        content = {
+            "body": file_name,
+            "info": {
+                "size": file_size,
+                "mimetype": mime_type,
+            },
+            "msgtype": "m.file",
+            "url": resp.content_uri,
+        }
+
+        try:
+            await api.client.room_send(
+                room.room_id,
+                message_type="m.room.message",
+                content=content
+            )
+            logger.info("Image was sent successfully")
+        except Exception:
+            logger.info(f"Image send of file {image} failed.")
+
     async def _handle_export(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
         Handle the request to export the full transaction log of a user
@@ -91,34 +135,40 @@ class HistoryCommand(BaseCommand):
         :return: None
         """
 
-        '''
-        if update.effective_chat.type != update.effective_chat.PRIVATE:
-            update.effective_message.reply_text("This command can only be used in private chat.")
+        if api.is_room_private(room):
+            await api.send_reply("This command can only be used in private chat.", room, event, send_as_notice=True)
             return
 
-        user = MateBotUser(update.effective_message.from_user)
-        logs = TransactionLog(user).to_json()
+        user = await self.get_sender(api, room, event)
+
+        logs = Transaction.history(user, args.length)
+
         if len(logs) == 0:
-            update.effective_message.reply_text("You don't have any registered transactions yet.")
+            await api.send_reply("You don't have any registered transactions yet.", room, event, send_as_notice=True)
             return
 
         if args.export == "json":
+            jsonable_logs = []
+            for transaction in logs:
+                jsonable_logs.append({
+                    "sender": transaction.sender,
+                    "receiver": transaction.receiver,
+                    "amount": transaction.amount,
+                    "reason": transaction.reason,
+                    "date": transaction.registered
+                })
 
             with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(json.dumps(logs, indent=4).encode("UTF-8"))
+                file.write(json.dumps(jsonable_logs, indent=2).encode("UTF-8"))
                 file.seek(0)
 
-                update.effective_message.reply_document(
-                    document=file,
-                    filename="transactions.json",
-                    caption=(
-                        "You requested the export of your transaction log. "
-                        f"This file contains all known transactions of {user.name}."
-                    )
-                )
+                self.send_file(api, room, "transactions.json", "application/json", file)
 
         elif args.export == "csv":
+            await api.send_message("NotImplementedError", room, event, send_as_notice=True)
 
+            '''
+            this is NO SQL!!! (thanks pycharm)
             with tempfile.TemporaryFile(mode="w+") as file:
                 writer = csv.DictWriter(file, fieldnames=logs[0].keys(), quoting=csv.QUOTE_ALL)
                 writer.writeheader()
@@ -137,8 +187,7 @@ class HistoryCommand(BaseCommand):
                         f"This file contains all known transactions of {user.name}."
                     )
                 )
-        '''
-        await api.send_message("NotImplementedError", room, event, send_as_notice=True)
+            '''
 
     async def _handle_report(self, args: Namespace, api: ApiWrapper, room: MatrixRoom, event: RoomMessageText) -> None:
         """
