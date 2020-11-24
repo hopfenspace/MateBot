@@ -113,16 +113,36 @@ class Transaction(_Base):
     __tablename__ = "transactions"
 
     id = _Column(_Integer, _Sequence("transaction_id_seq"), primary_key=True)
-    sender = _Column(_ForeignKey("users.id"), nullable=False)
-    receiver = _Column(_ForeignKey("users.id"), nullable=False)
+    sender_id = _Column(_ForeignKey("users.id"), nullable=False)
+    receiver_id = _Column(_ForeignKey("users.id"), nullable=False)
     amount = _Column(_Integer, nullable=False)
     reason = _Column(_String(255))
-    registered = _Column(_DateTime, default=_datetime.datetime.now)
+    date = _Column(_DateTime, default=_datetime.datetime.now)
+
+    @property
+    def sender(self) -> User:
+        return User.get(self.sender_id)
+
+    @property
+    def receiver(self) -> User:
+        return User.get(self.receiver_id)
+
+    def as_exportable_dict(self):
+        """
+        Create a dict containing the relevant data as primitive types.
+
+        :return: dict representing the transaction
+        :rtype: dict
+        """
+        return {
+            "sender": str(self.sender),
+            "receiver": str(self.receiver),
+            "amount": self.amount,
+            "date": str(self.date)
+        }
 
     def __str__(self):
-        sender = str(User.get(self.sender))
-        receiver = str(User.get(self.receiver))
-        return f"{self.registered}: {self.amount/100:>+6.2f}: {sender} >> {receiver} :: {self.reason}"
+        return f"{self.date}: {self.amount/100:>+6.2f}: {self.sender} >> {self.receiver} :: {self.reason}"
 
     @staticmethod
     def perform(
@@ -144,7 +164,7 @@ class Transaction(_Base):
         sender.balance -= amount
         receiver.balance += amount
 
-        transaction = Transaction(sender=sender.id, receiver=receiver.id, amount=amount, reason=reason)
+        transaction = Transaction(sender_id=sender.id, receiver_id=receiver.id, amount=amount, reason=reason)
         _SESSION.add(transaction)
         _SESSION.commit()
 
@@ -157,8 +177,8 @@ class Transaction(_Base):
         _logger.debug(f"A transaction history was requested by {user}")
         query = _SESSION.query(Transaction).filter(
             or_(
-                Transaction.sender == user.id,
-                Transaction.receiver == user.id
+                Transaction.sender_id == user.id,
+                Transaction.receiver_id == user.id
             )
         )
         if length is None:

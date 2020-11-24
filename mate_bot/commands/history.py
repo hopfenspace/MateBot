@@ -146,15 +146,7 @@ class HistoryCommand(BaseCommand):
             return
 
         if args.export == "json":
-            jsonable_logs = []
-            for transaction in logs:
-                jsonable_logs.append({
-                    "sender": transaction.sender,
-                    "receiver": transaction.receiver,
-                    "amount": transaction.amount,
-                    "reason": transaction.reason,
-                    "date": str(transaction.registered)
-                })
+            jsonable_logs = list(map(Transaction.as_exportable_dict, logs))
 
             with tempfile.TemporaryFile(mode="w+b") as file:
                 file.write(json.dumps(jsonable_logs, indent=2).encode("UTF-8"))
