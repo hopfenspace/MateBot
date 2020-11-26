@@ -279,7 +279,7 @@ def main():
 
         return community
 
-    def make_reason_consume(r: str) -> str:
+    def make_reason_consume(r: str, amount: int = 1) -> str:
         return "consume: " + r
 
     def make_reason_pay(r: str) -> str:
@@ -304,6 +304,22 @@ def main():
                         CommunityUser(),
                         -tr["diff"],
                         make_reason_consume(tr["reason"])
+                    )
+
+                elif "x" in tr["reason"] and any(
+                        [tr["reason"].startswith(k) for k in ["drink", "ice", "water", "pizza"]]
+                ):
+                    try:
+                        amount = int(tr["reason"].split("x")[1])
+                    except ValueError as err:
+                        print(f"Error: {err}")
+                        print("The following data set could not be imported properly:\n{tr}")
+
+                    t = MigratedTransaction(
+                        find(tr["user"], current_state)["u"],
+                        CommunityUser(),
+                        -tr["diff"],
+                        make_reason_consume(tr["reason"], amount)
                     )
 
                 elif tr["reason"].startswith("pay"):
