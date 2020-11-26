@@ -22,9 +22,13 @@ def main():
     import json
     import datetime
 
-    from mate_bot.state.dbhelper import execute
+    from mate_bot.config import config
+    from mate_bot.state import dbhelper
     from mate_bot.state.transactions import Transaction
     from mate_bot.state.user import CommunityUser, MateBotUser
+
+    dbhelper.BackendHelper.db_config = config["database"]
+    execute = dbhelper.BackendHelper._execute
 
     class MigratedTransaction(Transaction):
         def fix(self, timestamp: datetime.datetime):
@@ -102,8 +106,8 @@ def main():
             r, _ = insert(u, migration)
             print("User {} was created: {}".format(u["name"], r == 1))
 
-    def check_existing_database(db_name, mod):
-        r, v = mod.execute("SHOW DATABASES")
+    def check_existing_database(db_name, executor_func):
+        r, v = executor_func("SHOW DATABASES")
         if r == 0:
             return False
         return any(db_name in v[c].values() for c in range(len(v)))
@@ -184,24 +188,28 @@ def main():
         return int(b)
 
     def setup_freshly():
-        from mate_bot.state import dbhelper
-        database_name = dbhelper._config["database"]["db"]
-        dbhelper._config["database"]["db"] = ""
+        database_name = dbhelper.BackendHelper.db_config["db"]
+        dbhelper.BackendHelper.db_config["db"] = ""
 
-        if check_existing_database(database_name, dbhelper):
+        if check_existing_database(database_name, dbhelper.BackendHelper._execute):
             print("We found a database '{}'. Attempting to delete it...".format(database_name))
             print("\nTHE EXISTING DATABASE '{}' WILL BE DELETED AND ALL ITS DATA WILL BE ERASED!".format(database_name))
             print("\n\nAre you sure? If not, you can type EXIT to quit.")
             ask_exit()
 
-            dbhelper.execute("DROP DATABASE {}".format(database_name))
+            dbhelper.BackendHelper._execute("DROP DATABASE {}".format(database_name))
             print("Table '{}' deleted.".format(database_name))
 
-        dbhelper.execute("CREATE DATABASE {}".format(database_name))
-        dbhelper._config["database"]["db"] = database_name
+        dbhelper.BackendHelper._execute("CREATE DATABASE {}".format(database_name))
+        dbhelper.BackendHelper.db_config["db"] = database_name
         print("Table '{}' created.".format(database_name))
 
-        setup_database(get_path("database table setup", "create_tables.sql", "create_tables.sql"))
+        print("\nCreating the database schema...\n")
+        for k in dbhelper.DATABASE_SCHEMA:
+            command = dbhelper.DATABASE_SCHEMA[k]._to_string(4)
+            print(command)
+            execute(command)
+        print("\nCompleted database table setup.\n")
 
     def create_user_objects(current_state):
         print("\nRetrieving internal user IDs and creating User objects...")
@@ -413,7 +421,7 @@ def main():
         print("\nYou entered {} as community user balance.".format(community_balance))
         total = sum(u["balance"] for u in state)
         print("The sum of all users' balances is currently {}.".format(total))
-        if total != community_balance:
+        if total != -community_balance:
             print("Something seems to be wrong here! Please verify the data sets!")
             if ask_yes_no("Set the community user's balance to {} (Y) or not (N)? ".format(total)):
                 community_balance = total
