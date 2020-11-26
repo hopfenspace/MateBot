@@ -388,15 +388,13 @@ def main():
         print("Completed initial balance fix.")
 
     def reset_community_balance(balance):
-        print(
-            "\nThe database stores a community's balance of {} for now.".format(
-                execute("SELECT balance FROM users WHERE id=%s", (CommunityUser().uid,))[1][0]["balance"]
-            )
-        )
+        db_balance = execute("SELECT balance FROM users WHERE id=%s", (CommunityUser().uid,))[1][0]["balance"]
+        print("\nThe database stores a community's balance of {} for now.".format(db_balance))
 
-        print("We could reset this value to {} if you want.".format(balance))
-        if ask_yes_no("Reset the community user's balance (Y) or let it untouched (N)? "):
-            execute("UPDATE users SET balance=%s WHERE id=%s", (balance, CommunityUser().uid))
+        if db_balance != balance:
+            print("We could reset this value to {} if you want.".format(balance))
+            if ask_yes_no("Reset the community user's balance (Y) or let it untouched (N)? "):
+                execute("UPDATE users SET balance=%s WHERE id=%s", (balance, CommunityUser().uid))
 
     def migrate_old_data(community_balance: int = None):
         print("\nMigrating old data...\n")
