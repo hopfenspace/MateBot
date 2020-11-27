@@ -3,9 +3,11 @@ MateBot money transaction (sending/receiving) helper library
 """
 
 import os
+import csv
 import time
 import typing
 import logging
+import tempfile
 
 import pytz as _tz
 import tzlocal as _local_tz
@@ -508,6 +510,39 @@ class TransactionLog(BackendHelper):
             result.append(entry.copy())
             result[-1]["registered"] = int(result[-1]["registered"].timestamp())
         return result
+
+    def to_csv(self, strict: bool = False) -> typing.Optional[str]:
+        """
+        Return a valid CSV-formatted string of the user's full transaction history
+
+        :param strict: switch whether the method returns ``None`` for an empty history,
+            otherwise a CSV-formatted string of the headers (only) would be returned)
+        :type strict: bool
+        :return: CSV-formatted string of the user's transaction history
+        :rtype: typing.Optional[str]
+        """
+
+        logs = [{
+            "id": entry["id"],
+            "sender": self.get_name(entry["sender"]),
+            "receiver": self.get_name(entry["receiver"]),
+            "amount": entry["amount"],
+            "cumulative": -entry["amount"] if entry["sender"] == self.uid else entry["amount"],
+            "reason": entry["reason"],
+            "registered": entry["registered"].isoformat()
+        } for entry in self._log]
+
+        if strict and len(logs) == 0:
+            return
+
+        with tempfile.TemporaryFile(mode="w+") as file:
+            writer = csv.DictWriter(file, fieldnames=logs[0].keys(), quoting=csv.QUOTE_ALL)
+            writer.writeheader()
+            writer.writerows(logs)
+            file.seek(0)
+            content = file.read()
+
+        return content
 
     def validate(self, start: int = 0) -> typing.Optional[bool]:
         """
