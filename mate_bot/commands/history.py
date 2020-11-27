@@ -2,7 +2,6 @@
 MateBot command executor classes for /history
 """
 
-import csv
 import json
 import logging
 import tempfile
@@ -81,12 +80,13 @@ class HistoryCommand(BaseCommand):
             return
 
         user = MateBotUser(update.effective_message.from_user)
-        logs = TransactionLog(user).to_json()
-        if len(logs) == 0:
-            update.effective_message.reply_text("You don't have any registered transactions yet.")
-            return
 
         if args.export == "json":
+
+            logs = TransactionLog(user).to_json()
+            if len(logs) == 0:
+                update.effective_message.reply_text("You don't have any registered transactions yet.")
+                return
 
             with tempfile.TemporaryFile(mode="w+b") as file:
                 file.write(json.dumps(logs, indent=4).encode("UTF-8"))
@@ -103,16 +103,15 @@ class HistoryCommand(BaseCommand):
 
         elif args.export == "csv":
 
-            with tempfile.TemporaryFile(mode="w+") as file:
-                writer = csv.DictWriter(file, fieldnames=logs[0].keys(), quoting=csv.QUOTE_ALL)
-                writer.writeheader()
-                writer.writerows(logs)
-                file.seek(0)
-                content = file.read().encode("UTF-8")
+            content = TransactionLog(user).to_csv(True)
+            if content is None:
+                update.effective_message.reply_text("You don't have any registered transactions yet.")
+                return
 
             with tempfile.TemporaryFile(mode="w+b") as file:
-                file.write(content)
+                file.write(content.encode("UTF-8"))
                 file.seek(0)
+
                 update.effective_message.reply_document(
                     document=file,
                     filename="transactions.csv",
