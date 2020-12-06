@@ -19,7 +19,8 @@ support Windows and Mac OS and have no plans to do so.
 
 We encourage you to use another user to run the bot for security purposes,
 e.g. ``matebot`` or ``matebot_user`` (just anything but ``root`` of course).
-Choose a name and stick to it during this setup.
+Choose a name and stick to it during this setup. A simple tool to
+create a new user on a Debian-like machine is ``adduser``.
 
 You need to have at least `Python 3.7 <https://www.python.org/downloads>`_
 with ``pip`` and ``venv`` installed on your system. You will also need a
@@ -35,8 +36,32 @@ steps for you (you need to be ``root`` or prefix the commands with ``sudo``):
     apt-get install mariadb-server python3 python3-pip python3-venv git -y
     mysql_secure_installation
 
+.. _installation_setup_database:
+
+Database configuration
+~~~~~~~~~~~~~~~~~~~~~~
+
+Log into your database server. It requires an account that can create
+users, databases and set privileges. Then, execute the following
+SQL queries. You can choose any user and database name you want.
+**Do not forget to change the password of the new database user!**
+
+.. code-block:: sql
+
+    CREATE USER 'matebot'@localhost IDENTIFIED BY 'password';
+    CREATE DATABASE matedb;
+    GRANT ALL PRIVILEGES ON matedb.* TO 'matebot'@localhost;
+    FLUSH PRIVILEGES;
+
+In case you want to be able to perform unittests, you may also create
+a second database and call it something like ``mate_testdb`` or so.
+
 Code setup
 ~~~~~~~~~~
+
+The following steps should be executed as your target user (e.g.
+``matebot`` or ``matebot_user``). Login or enable it with
+``su - matebot`` or ``sudo -su matebot``.
 
 Clone our repository to your server:
 
@@ -70,7 +95,7 @@ Install the minimally required Python packages:
 
     .. code-block::
 
-        apt install default-libmysqlclient-dev
+        apt install default-libmysqlclient-dev  # requires root permissions
         pip3 install mysqlclient
 
 Telegram Bot Setup

@@ -118,23 +118,14 @@ Database settings
 The database settings provide necessary details about the
 connection to the MySQL / MariaDB server. Other database
 servers are currently not supported. A user with full
-permission for the particular database is needed. Therefore,
-you could follow the instructions below to create a new
-user that is used by the bot to interact with the database.
-**Do not forget to change the password!**
+permission for the particular database is needed.
 
-.. code-block:: sql
-
-    CREATE DATABASE matedb;
-    CREATE USER matebot_user IDENTIFIED BY 'password';
-    GRANT ALL PRIVILEGES ON matedb.* TO matebot_user;
-    FLUSH PRIVILEGES;
+For more information regarding the database, see :ref:`database`.
+For installation instructions, see :ref:`installation_setup_database`.
 
 If you want to be able to perform unittests as well, you
 should create a second table and configure it in the
 ``testing`` section (see below).
-
-For more information regarding the database, see :ref:`database`.
 
 Testing Settings
 ----------------
