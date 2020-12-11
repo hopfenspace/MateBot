@@ -131,21 +131,21 @@ You might want to use this template for our currently implemented commands:
 
 .. code-block::
 
-    balance - Use this command to show a user's balance
-    blame - Use this command to show the user(s) with the highest debts
-    communism - Use this command to start a communism
-    data - Use this command to see the data the bot has stored about you
+    balance - Show a user's balance
+    blame - Show the user(s) with the highest debts
+    communism - Start a communism
+    data - See the data the bot has stored about you
     drink - Consume drinks for 1.00€ each
-    help - Use this command if you need help
-    history - Use this command to get an overview of your transactions
+    help - Get help about commands
+    history - Get an overview of your transactions
     ice - Consume ices for 0.50€ each
-    pay - Use this command to create a payment request
+    pay - Create a payment request
     pizza - Consume pizzas for 2.00€ each
-    send - Use this command once per user to start interacting with this bot
-    start - Use this command once per user to start interacting with this bot
-    vouch - Use this command to vouch for other users
+    send - Send money to another user
+    start -  Start interacting with this bot (only once)
+    vouch - Vouch for other users to allow them to use this bot
     water - Consume waters for 0.50€ each
-    zwegat - Use this command to show the central funds
+    zwegat - Show the central funds
 
 MateBot Configuration
 ---------------------
