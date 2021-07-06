@@ -163,13 +163,13 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
         the currently implemented subclasses. The tuple contains either three
         or four elements (because the fourth element is considered optional).
 
-        If the tuple has three values, the following types are excepted:
+        If the tuple has three values, the following types are expected:
 
         * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
         * ``str`` as reason for the collective operation
 
-        If the tuple has four values, the following types are excepted:
+        If the tuple has four values, the following types are expected:
 
         * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
