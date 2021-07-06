@@ -10,11 +10,11 @@ import pytz as _tz
 import tzlocal as _local_tz
 import telegram
 
-from mate_bot import err
-from mate_bot.config import config
-from mate_bot.collectives.coordinators import MessageCoordinator, UserCoordinator
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
+from matebot_core import err
+from matebot_core.config import config
+from matebot_core.collectives.coordinators import MessageCoordinator, UserCoordinator
+from matebot_core.state.user import MateBotUser
+from matebot_core.state.dbhelper import EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 logger = logging.getLogger("collectives")
@@ -165,13 +165,13 @@ class BaseCollective(MessageCoordinator, UserCoordinator):
 
         If the tuple has three values, the following types are excepted:
 
-        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
+        * :class:`matebot_core.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
         * ``str`` as reason for the collective operation
 
         If the tuple has four values, the following types are excepted:
 
-        * :class:`mate_bot.state.user.MateBotUser` as initiating user (creator)
+        * :class:`matebot_core.state.user.MateBotUser` as initiating user (creator)
         * ``int`` as amount of the collective operation
         * ``str`` as reason for the collective operation
         * ``telegram.Message`` as message that initiated the collective

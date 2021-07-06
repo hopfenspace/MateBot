@@ -12,7 +12,7 @@ import tzlocal as _local_tz
 import pymysql.err as _err
 import telegram as _telegram
 
-from mate_bot.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
+from matebot_core.state.dbhelper import BackendHelper, EXECUTE_TYPE as _EXECUTE_TYPE
 
 
 logger = logging.getLogger("state")

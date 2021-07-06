@@ -5,9 +5,9 @@ MateBot multi-user and multi-message coordinator classes
 import typing
 
 
-from mate_bot import err
-from mate_bot.state.dbhelper import BackendHelper
-from mate_bot.state.user import MateBotUser
+from matebot_core import err
+from matebot_core.state.dbhelper import BackendHelper
+from matebot_core.state.user import MateBotUser
 
 
 class MessageCoordinator(BackendHelper):

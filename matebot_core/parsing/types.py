@@ -1,16 +1,16 @@
 """
 Collection of parser argument types.
-See :class:`mate_bot.parsing.actions.Action`'s type parameter
+See :class:`matebot_core.parsing.actions.Action`'s type parameter
 """
 
 import re
 
-from mate_bot import registry
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.finders import find_user_by_username
-from mate_bot.commands.base import BaseCommand
-from mate_bot.config import config
-from mate_bot.parsing.util import EntityString
+from matebot_core import registry
+from matebot_core.state.user import MateBotUser
+from matebot_core.state.finders import find_user_by_username
+from matebot_core.commands.base import BaseCommand
+from matebot_core.config import config
+from matebot_core.parsing.util import EntityString
 
 
 __amount_pattern = re.compile(r"^(\d+)(?:[,.](\d)(\d)?)?$")

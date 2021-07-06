@@ -13,9 +13,9 @@ import pytz as _tz
 import tzlocal as _local_tz
 import telegram
 
-from mate_bot.config import config
-from mate_bot.state import user
-from mate_bot.state.dbhelper import BackendHelper
+from matebot_core.config import config
+from matebot_core.state import user
+from matebot_core.state.dbhelper import BackendHelper
 
 
 logger = logging.getLogger("state")

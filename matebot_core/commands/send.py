@@ -6,12 +6,12 @@ import logging
 
 import telegram
 
-from mate_bot.parsing.types import amount as amount_type
-from mate_bot.parsing.types import user as user_type
-from mate_bot.parsing.util import Namespace
-from mate_bot.commands.base import BaseCallbackQuery, BaseCommand
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import LoggedTransaction
+from matebot_core.parsing.types import amount as amount_type
+from matebot_core.parsing.types import user as user_type
+from matebot_core.parsing.util import Namespace
+from matebot_core.commands.base import BaseCallbackQuery, BaseCommand
+from matebot_core.state.user import MateBotUser
+from matebot_core.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("commands")

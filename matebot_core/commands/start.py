@@ -6,10 +6,10 @@ import logging
 
 import telegram
 
-from mate_bot.state.user import MateBotUser
-from mate_bot.config import config
-from mate_bot.commands.base import BaseCommand
-from mate_bot.parsing.util import Namespace
+from matebot_core.state.user import MateBotUser
+from matebot_core.config import config
+from matebot_core.commands.base import BaseCommand
+from matebot_core.parsing.util import Namespace
 
 
 logger = logging.getLogger("commands")

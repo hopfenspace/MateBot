@@ -6,11 +6,11 @@ import logging
 
 import telegram
 
-from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
-from mate_bot.parsing import types
-from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import Transaction
+from matebot_core.commands.base import BaseCommand, BaseCallbackQuery
+from matebot_core.parsing import types
+from matebot_core.parsing.util import Namespace
+from matebot_core.state.user import MateBotUser
+from matebot_core.state.transactions import Transaction
 
 
 logger = logging.getLogger("commands")

@@ -8,12 +8,12 @@ import datetime
 
 import telegram
 
-from mate_bot.collectives.base import BaseCollective
-from mate_bot.collectives.communism import Communism
-from mate_bot.collectives.payment import Payment
-from mate_bot.commands.base import BaseInlineQuery, BaseInlineResult
-from mate_bot.state.user import MateBotUser, CommunityUser
-from mate_bot.state import finders
+from matebot_core.collectives.base import BaseCollective
+from matebot_core.collectives.communism import Communism
+from matebot_core.collectives.payment import Payment
+from matebot_core.commands.base import BaseInlineQuery, BaseInlineResult
+from matebot_core.state.user import MateBotUser, CommunityUser
+from matebot_core.state import finders
 
 
 logger = logging.getLogger("commands")

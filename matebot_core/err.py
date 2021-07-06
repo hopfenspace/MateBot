@@ -11,7 +11,7 @@ import urllib.request as _request
 from telegram import Update as _Update, TelegramError
 from telegram.ext import CallbackContext as _CallbackContext
 
-from mate_bot.config import config as _config
+from matebot_core.config import config as _config
 
 
 _logger = _logging.getLogger("error")

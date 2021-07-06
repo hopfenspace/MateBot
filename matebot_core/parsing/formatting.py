@@ -4,7 +4,7 @@ MateBot parser's helper functions for creating usage strings
 
 from typing import Union, Collection
 
-from mate_bot.parsing.actions import Action
+from matebot_core.parsing.actions import Action
 
 
 def plural_s(collection: Union[int, Collection]) -> str:

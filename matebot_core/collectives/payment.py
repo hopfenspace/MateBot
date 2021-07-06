@@ -7,10 +7,10 @@ import logging
 
 import telegram
 
-from mate_bot.config import config
-from mate_bot.collectives.base import BaseCollective, COLLECTIVE_ARGUMENTS
-from mate_bot.state.transactions import LoggedTransaction
-from mate_bot.state.user import CommunityUser, MateBotUser
+from matebot_core.config import config
+from matebot_core.collectives.base import BaseCollective, COLLECTIVE_ARGUMENTS
+from matebot_core.state.transactions import LoggedTransaction
+from matebot_core.state.user import CommunityUser, MateBotUser
 
 
 logger = logging.getLogger("collectives")

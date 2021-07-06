@@ -8,11 +8,11 @@ import tempfile
 
 import telegram
 
-from mate_bot.state.user import MateBotUser
-from mate_bot.state.transactions import TransactionLog
-from mate_bot.parsing.types import natural as natural_type
-from mate_bot.parsing.util import Namespace
-from mate_bot.commands.base import BaseCommand
+from matebot_core.state.user import MateBotUser
+from matebot_core.state.transactions import TransactionLog
+from matebot_core.parsing.types import natural as natural_type
+from matebot_core.parsing.util import Namespace
+from matebot_core.commands.base import BaseCommand
 
 
 logger = logging.getLogger("commands")

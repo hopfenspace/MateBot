@@ -7,14 +7,14 @@ import logging
 
 import telegram
 
-from mate_bot.collectives.base import BaseCollective
-from mate_bot.collectives.communism import Communism
-from mate_bot.collectives.payment import Payment
-from mate_bot.commands.base import BaseCommand, BaseCallbackQuery
-from mate_bot.parsing.types import amount as amount_type
-from mate_bot.parsing.actions import JoinAction
-from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
+from matebot_core.collectives.base import BaseCollective
+from matebot_core.collectives.communism import Communism
+from matebot_core.collectives.payment import Payment
+from matebot_core.commands.base import BaseCommand, BaseCallbackQuery
+from matebot_core.parsing.types import amount as amount_type
+from matebot_core.parsing.actions import JoinAction
+from matebot_core.parsing.util import Namespace
+from matebot_core.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")

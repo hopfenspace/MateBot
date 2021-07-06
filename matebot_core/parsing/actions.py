@@ -5,8 +5,8 @@ MateBot parser's actions class defining arguments.
 from typing import Optional
 import typing
 
-from mate_bot.err import ParsingError
-from mate_bot.parsing.util import Namespace, Representable
+from matebot_core.err import ParsingError
+from matebot_core.parsing.util import Namespace, Representable
 
 
 class Action(Representable):
@@ -39,7 +39,7 @@ class Action(Representable):
     :type default: Any
 
     :param type: A callable that accepts a single string argument,
-                 and returns the converted value. See :ref:`mate_bot.parsing.types` for examples.
+                 and returns the converted value. See :ref:`matebot_core.parsing.types` for examples.
     :type type: Callable
 
     :param choices: A tuple of values that should be allowed.

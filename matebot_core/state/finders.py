@@ -4,8 +4,8 @@ MateBot helper methods to find users, names or usernames
 
 import typing
 
-from mate_bot.state import user
-from mate_bot.state.dbhelper import BackendHelper
+from matebot_core.state import user
+from matebot_core.state.dbhelper import BackendHelper
 
 
 def find_user_by_name(name: str, matching: bool = False) -> typing.Optional[user.MateBotUser]:

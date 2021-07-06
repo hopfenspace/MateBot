@@ -2,20 +2,20 @@
 MateBot collection of command executors
 """
 
-from mate_bot.config import config
-from mate_bot.commands.balance import BalanceCommand
-from mate_bot.commands.blame import BlameCommand
-from mate_bot.commands.communism import CommunismCommand, CommunismCallbackQuery
-from mate_bot.commands.data import DataCommand
-from mate_bot.commands.forward import ForwardInlineQuery, ForwardInlineResult
-from mate_bot.commands.help import HelpCommand, HelpInlineQuery
-from mate_bot.commands.history import HistoryCommand
-from mate_bot.commands.pay import PayCommand, PayCallbackQuery
-from mate_bot.commands.send import SendCommand, SendCallbackQuery
-from mate_bot.commands.start import StartCommand
-from mate_bot.commands.vouch import VouchCommand, VouchCallbackQuery
-from mate_bot.commands.zwegat import ZwegatCommand
-from mate_bot.commands.consume import ConsumeCommand
+from matebot_core.config import config
+from matebot_core.commands.balance import BalanceCommand
+from matebot_core.commands.blame import BlameCommand
+from matebot_core.commands.communism import CommunismCommand, CommunismCallbackQuery
+from matebot_core.commands.data import DataCommand
+from matebot_core.commands.forward import ForwardInlineQuery, ForwardInlineResult
+from matebot_core.commands.help import HelpCommand, HelpInlineQuery
+from matebot_core.commands.history import HistoryCommand
+from matebot_core.commands.pay import PayCommand, PayCallbackQuery
+from matebot_core.commands.send import SendCommand, SendCallbackQuery
+from matebot_core.commands.start import StartCommand
+from matebot_core.commands.vouch import VouchCommand, VouchCallbackQuery
+from matebot_core.commands.zwegat import ZwegatCommand
+from matebot_core.commands.consume import ConsumeCommand
 
 
 # In order to register all executors in the registry, we just

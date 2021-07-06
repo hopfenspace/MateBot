@@ -7,12 +7,12 @@ import logging
 
 import telegram.ext
 
-from mate_bot import registry
-from mate_bot.config import config
-from mate_bot.err import ParsingError
-from mate_bot.parsing.parser import CommandParser
-from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
+from matebot_core import registry
+from matebot_core.config import config
+from matebot_core.err import ParsingError
+from matebot_core.parsing.parser import CommandParser
+from matebot_core.parsing.util import Namespace
+from matebot_core.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")

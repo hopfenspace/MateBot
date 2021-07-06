@@ -8,11 +8,11 @@ import datetime
 
 import telegram
 
-from mate_bot import registry
-from mate_bot.commands.base import BaseCommand, BaseInlineQuery
-from mate_bot.parsing.types import command as command_type
-from mate_bot.parsing.util import Namespace
-from mate_bot.state.user import MateBotUser
+from matebot_core import registry
+from matebot_core.commands.base import BaseCommand, BaseInlineQuery
+from matebot_core.parsing.types import command as command_type
+from matebot_core.parsing.util import Namespace
+from matebot_core.state.user import MateBotUser
 
 
 logger = logging.getLogger("commands")
@@ -60,7 +60,7 @@ class HelpCommand(BaseCommand):
         """
         Retrieve the help message from the help command without arguments
 
-        :param commands: dictionary of registered commands, see :mod:`mate_bot.registry`
+        :param commands: dictionary of registered commands, see :mod:`matebot_core.registry`
         :type commands: dict
         :param usage: usage string of the help command
         :type usage: str
@@ -122,7 +122,7 @@ class HelpInlineQuery(BaseInlineQuery):
         """
         Get the help message for a specific command requested as possible answer
 
-        :param command: name of one of the supported commands, see :mod:`mate_bot.registry`
+        :param command: name of one of the supported commands, see :mod:`matebot_core.registry`
         :type command: str
         :return: help message as inline query result for one specific command
         :rtype: typing.Optional[telegram.InlineQueryResult]

@@ -4,9 +4,9 @@ Specify the use cases of a MateBot command.
 
 import typing
 
-from mate_bot.parsing.util import Representable
-from mate_bot.parsing.actions import Action, StoreAction
-from mate_bot.parsing.formatting import format_action
+from matebot_core.parsing.util import Representable
+from matebot_core.parsing.actions import Action, StoreAction
+from matebot_core.parsing.formatting import format_action
 
 
 class CommandUsage(Representable):
@@ -65,7 +65,7 @@ class CommandUsage(Representable):
         Add an argument.
 
         The ``**kwargs`` and ``dest`` will be handed over to the action's constructor.
-        So see :ref:`mate_bot.parsing.actions` for more information.
+        So see :ref:`matebot_core.parsing.actions` for more information.
 
         :param dest: The name of the attribute to hold the created object(s)
         :type dest: str
@@ -92,7 +92,7 @@ class CommandUsage(Representable):
             >>> str(usage)
             '<foo> <bar ...> [baz]'
 
-        See :ref:`mate_bot.parsing.formatting`
+        See :ref:`matebot_core.parsing.formatting`
         for further reading on how the arguments are formatted.
         """
 

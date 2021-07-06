@@ -8,12 +8,12 @@ import typing as _typing
 
 import telegram
 
-from mate_bot.state.user import MateBotUser, CommunityUser
-from mate_bot.parsing.types import natural as natural_type
-from mate_bot.config import config
-from mate_bot.commands.base import BaseCommand
-from mate_bot.parsing.util import Namespace
-from mate_bot.state.transactions import LoggedTransaction
+from matebot_core.state.user import MateBotUser, CommunityUser
+from matebot_core.parsing.types import natural as natural_type
+from matebot_core.config import config
+from matebot_core.commands.base import BaseCommand
+from matebot_core.parsing.util import Namespace
+from matebot_core.state.transactions import LoggedTransaction
 
 
 logger = logging.getLogger("commands")
