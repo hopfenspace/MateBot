@@ -1,4 +1,4 @@
-python-telegram-bot==12.8
+python-telegram-bot==13.7
 tzlocal==2.1
-PyMySQL==0.10.0
+PyMySQL==1.0.2
 pytz==2020.1
