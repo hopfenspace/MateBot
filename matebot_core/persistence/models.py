@@ -27,37 +27,37 @@ def _make_id_column():
 class User(Base):
     __tablename__ = "users"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
-    balance: int = Column(
+    balance = Column(
         Integer,
         nullable=False,
         default=0
     )
-    permission: bool = Column(
+    permission = Column(
         Boolean,
         nullable=False,
         default=False
     )
-    active: bool = Column(
+    active = Column(
         Boolean,
         nullable=False,
         default=True
     )
-    external: bool = Column(
+    external = Column(
         Boolean,
         nullable=False
     )
-    voucher_id: int = Column(
+    voucher_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=True
     )
-    created: datetime.datetime = Column(
+    created = Column(
         DateTime,
         server_default=func.now()
     )
-    accessed: datetime.datetime = Column(
+    accessed = Column(
         DateTime,
         server_onupdate=FetchedValue(),
         server_default=func.now(),
@@ -89,9 +89,9 @@ class User(Base):
 class Application(Base):
     __tablename__ = "applications"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
-    name: str = Column(
+    name = Column(
         String(255),
         nullable=False
     )
@@ -109,28 +109,28 @@ class Application(Base):
 class UserAlias(Base):
     __tablename__ = "aliases"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
-    user_id: int = Column(
+    user_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
-    app_id: int = Column(
+    app_id = Column(
         Integer,
         ForeignKey("applications.id", ondelete="CASCADE"),
         nullable=False
     )
-    username: str = Column(
+    username = Column(
         String(255)
     )
-    first_name: str = Column(
+    first_name = Column(
         String(255)
     )
-    last_name: str = Column(
+    last_name = Column(
         String(255)
     )
-    app_user_id: str = Column(
+    app_user_id = Column(
         String(255),
         nullable=False
     )
@@ -148,29 +148,29 @@ class UserAlias(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
     # TODO: reference to user ID
-    sender: int = Column(
+    sender = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
     )
     # TODO: reference to user ID
-    receiver: int = Column(
+    receiver = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
     )
-    amount: int = Column(
+    amount = Column(
         Integer,
         nullable=False
     )
-    reason: str = Column(
+    reason = Column(
         String(255),
         nullable=True
     )
-    registered: datetime.datetime = Column(
+    registered = Column(
         DateTime,
         nullable=False,
         server_default=func.now()
@@ -185,41 +185,41 @@ class Transaction(Base):
 class Collective(Base):
     __tablename__ = "collectives"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
-    active: bool = Column(
+    active = Column(
         Boolean,
         nullable=False,
         default=True
     )
-    amount: int = Column(
+    amount = Column(
         Integer,
         nullable=False
     )
-    externals: int = Column(
+    externals = Column(
         Integer,
         nullable=False,
         default=0
     )
-    description: str = Column(
+    description = Column(
         String(255),
         nullable=True
     )
-    communistic: bool = Column(
+    communistic = Column(
         Boolean,
         nullable=False
     )
-    creator: int = Column(
+    creator = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
     )
-    created: datetime.datetime = Column(
+    created = Column(
         DateTime,
         nullable=False,
         server_default=func.now()
     )
-    accessed: datetime.datetime = Column(
+    accessed = Column(
         DateTime,
         nullable=False,
         server_default=func.now(),
@@ -239,19 +239,19 @@ class Collective(Base):
 class CollectivesUsers(Base):
     __tablename__ = "collectives_users"
 
-    id: int = _make_id_column()
+    id = _make_id_column()
 
-    collectives_id: int = Column(
+    collectives_id = Column(
         Integer,
         ForeignKey("collectives.id", ondelete="CASCADE"),
         nullable=False
     )
-    users_id: int = Column(
+    users_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
-    vote: bool = Column(
+    vote = Column(
         Boolean,
         nullable=False
     )
