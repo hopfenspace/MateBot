@@ -82,6 +82,9 @@ class User(Base):
         backref=backref("voucher_user", remote_side=[id])
     )
 
+    def __repr__(self) -> str:
+        return f"User(id={self.id}, balance={self.balance}, aliases={self.aliases})"
+
 
 class Application(Base):
     __tablename__ = "applications"
@@ -98,6 +101,9 @@ class Application(Base):
         cascade="all,delete",
         backref="app"
     )
+
+    def __repr__(self) -> str:
+        return f"Application(id={self.id}, name={self.name})"
 
 
 class UserAlias(Base):
@@ -133,6 +139,11 @@ class UserAlias(Base):
         UniqueConstraint("app_id", "app_user_id"),
     )
 
+    def __repr__(self) -> str:
+        return "UserAlias(id={}, user_id={}, app_id={}, app_user_id={})".format(
+            self.id, self.user_id, self.app_id, self.app_user_id
+        )
+
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -164,6 +175,11 @@ class Transaction(Base):
         nullable=False,
         server_default=func.now()
     )
+
+    def __repr__(self) -> str:
+        return "Transaction(id={}, sender={}, receiver={}, amount={})".format(
+            self.id, self.sender, self.receiver, self.amount
+        )
 
 
 class Collective(Base):
@@ -216,6 +232,9 @@ class Collective(Base):
         backref="collective"
     )
 
+    def __repr__(self) -> str:
+        return f"Collective(id={self.id}, amount={self.amount}, creator={self.creator})"
+
 
 class CollectivesUsers(Base):
     __tablename__ = "collectives_users"
@@ -236,3 +255,6 @@ class CollectivesUsers(Base):
         Boolean,
         nullable=False
     )
+
+    def __repr__(self) -> str:
+        return f"CollectivesUsers(id={self.id})"
