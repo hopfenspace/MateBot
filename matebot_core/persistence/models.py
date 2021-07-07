@@ -8,7 +8,7 @@ from sqlalchemy import (
     Boolean, DateTime, Integer, String,
     Column, FetchedValue, ForeignKey, UniqueConstraint
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from .database import Base
@@ -44,6 +44,15 @@ class User(Base):
         nullable=False,
         default=True
     )
+    external: bool = Column(
+        Boolean,
+        nullable=False
+    )
+    voucher_id: int = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
+    )
     created: datetime.datetime = Column(
         DateTime,
         server_default=func.now()
@@ -59,6 +68,18 @@ class User(Base):
         "UserAlias",
         cascade="all,delete",
         backref="user"
+    )
+    created_collectives = relationship(
+        "Collective",
+        backref="creator_user"
+    )
+    participating_collectives = relationship(
+        "CollectivesUsers",
+        backref="users"
+    )
+    vouching_for = relationship(
+        "User",
+        backref=backref("voucher_user", remote_side=[id])
     )
 
 
@@ -142,4 +163,76 @@ class Transaction(Base):
         DateTime,
         nullable=False,
         server_default=func.now()
+    )
+
+
+class Collective(Base):
+    __tablename__ = "collectives"
+
+    id: int = _make_id_column()
+
+    active: bool = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
+    amount: int = Column(
+        Integer,
+        nullable=False
+    )
+    externals: int = Column(
+        Integer,
+        nullable=False,
+        default=0
+    )
+    description: str = Column(
+        String(255),
+        nullable=True
+    )
+    communistic: bool = Column(
+        Boolean,
+        nullable=False
+    )
+    creator: int = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    created: datetime.datetime = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now()
+    )
+    accessed: datetime.datetime = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    participating_users = relationship(
+        "CollectivesUsers",
+        cascade="all,delete",
+        backref="collective"
+    )
+
+
+class CollectivesUsers(Base):
+    __tablename__ = "collectives_users"
+
+    id: int = _make_id_column()
+
+    collectives_id: int = Column(
+        Integer,
+        ForeignKey("collectives.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    users_id: int = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    vote: bool = Column(
+        Boolean,
+        nullable=False
     )
