@@ -111,3 +111,35 @@ class UserAlias(Base):
     __table_args__ = (
         UniqueConstraint("app_id", "app_user_id"),
     )
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id: int = _make_id_column()
+
+    # TODO: reference to user ID
+    sender: int = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    # TODO: reference to user ID
+    receiver: int = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    amount: int = Column(
+        Integer,
+        nullable=False
+    )
+    reason: str = Column(
+        String(255),
+        nullable=True
+    )
+    registered: datetime.datetime = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now()
+    )
