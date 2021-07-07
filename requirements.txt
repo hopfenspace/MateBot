@@ -2,3 +2,4 @@ python-telegram-bot==13.7
 tzlocal==2.1
 PyMySQL==1.0.2
 pytz==2020.1
+SQLAlchemy==1.4.20
