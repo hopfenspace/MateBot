@@ -2,8 +2,6 @@
 MateBot core database models
 """
 
-import datetime
-
 from sqlalchemy import (
     Boolean, DateTime, Integer, String,
     Column, FetchedValue, ForeignKey, UniqueConstraint
@@ -174,6 +172,19 @@ class Transaction(Base):
         DateTime,
         nullable=False,
         server_default=func.now()
+    )
+    collective_id = Column(
+        Integer,
+        ForeignKey("collectives.id"),
+        nullable=True
+    )
+
+    collective = relationship(
+        "Collective"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("sender", "receiver", "collective_id"),
     )
 
     def __repr__(self) -> str:
