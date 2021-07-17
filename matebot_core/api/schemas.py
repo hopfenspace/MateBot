@@ -2,6 +2,7 @@
 MateBot API schemas
 """
 
+import uuid
 from typing import List, Optional, Union
 
 import pydantic
@@ -14,7 +15,7 @@ class Application(pydantic.BaseModel):
 
 class IncomingApplication(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
-    auth_token: pydantic.constr(min_length=32, max_length=32)
+    auth_token: uuid.UUID
 
 
 class IncomingUserAlias(pydantic.BaseModel):
