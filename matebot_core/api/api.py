@@ -22,7 +22,12 @@ class Users:
     """
 
     @staticmethod
-    @app.get("/users", response_model=List[schemas.User], responses=base_responses, tags=["Users"])
+    @app.get(
+        "/users",
+        response_model=List[schemas.User],
+        tags=["Users"],
+        description="Return a list of all internal user models with their aliases."
+    )
     def get_all_users():
         # TODO
         return JSONResponse(status_code=501, content={
@@ -31,7 +36,12 @@ class Users:
         })
 
     @staticmethod
-    @app.get("/users/{user_id}", response_model=schemas.User, responses=base_responses, tags=["Users"])
+    @app.get(
+        "/users/{user_id}",
+        response_model=schemas.User,
+        tags=["Users"],
+        description="Return the internal model of the user specified by its user ID."
+    )
     def get_user_by_id(user_id: int):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -46,7 +56,13 @@ class Updates:
     """
 
     @staticmethod
-    @app.get("/updates/{timestamp}", response_model=schemas.Updates, responses=base_responses, tags=["Updates"])
+    @app.get(
+        "/updates/{timestamp}",
+        response_model=schemas.Updates,
+        tags=["Updates"],
+        description="Return a collection of new or updated models since the specified UNIX "
+                    "timestamp. This collection must not necessarily be complete."
+    )
     def get_new_updates(timestamp: pydantic.NonNegativeInt):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -61,7 +77,26 @@ class Aliases:
     """
 
     @staticmethod
-    @app.get("/aliases/application/{application}", response_model=List[schemas.UserAlias], responses=base_responses, tags=["Aliases"])
+    @app.get(
+        "/aliases",
+        response_model=List[schemas.UserAlias],
+        tags=["Aliases"],
+        description="Return a list of all known user aliases of all applications."
+    )
+    def get_all_known_aliases():
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_all_known_aliases"
+        })
+
+    @staticmethod
+    @app.get(
+        "/aliases/application/{application}",
+        response_model=List[schemas.UserAlias],
+        tags=["Aliases"],
+        description="Return a list of all users' aliases for a given application name."
+    )
     def get_aliases_by_application_name(application: pydantic.constr(max_length=255)):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -70,7 +105,12 @@ class Aliases:
         })
 
     @staticmethod
-    @app.get("/aliases/user/{user_id}", response_model=schemas.UserAlias, responses=base_responses, tags=["Aliases"])
+    @app.get(
+        "/aliases/user/{user_id}",
+        response_model=List[schemas.UserAlias],
+        tags=["Aliases"],
+        description="Return a list of all aliases of a user for a given user ID."
+    )
     def get_aliases_by_user_id(user_id: pydantic.NonNegativeInt):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -79,7 +119,12 @@ class Aliases:
         })
 
     @staticmethod
-    @app.get("/aliases/id/{alias_id}", response_model=schemas.UserAlias, responses=base_responses, tags=["Aliases"])
+    @app.get(
+        "/aliases/id/{alias_id}",
+        response_model=schemas.UserAlias,
+        tags=["Aliases"],
+        description="Return the alias model of a specific alias ID."
+    )
     def get_alias_by_alias_id(alias_id: pydantic.NonNegativeInt):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -88,7 +133,16 @@ class Aliases:
         })
 
     @staticmethod
-    @app.post("/aliases", response_model=schemas.UserAlias, responses=base_responses, tags=["Aliases"])
+    @app.post(
+        "/aliases",
+        status_code=201,
+        response_model=schemas.UserAlias,
+        responses=base_responses,
+        tags=["Aliases"],
+        description="Create a new alias, overwriting any existing alias of the same combination "
+                    "of `app_user_id` and `application` ID. The `app_user_id` field should "
+                    "reflect the unique internal username of the frontend application."
+    )
     def create_new_alias(alias: schemas.IncomingUserAlias):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -97,7 +151,15 @@ class Aliases:
         })
 
     @staticmethod
-    @app.put("/aliases", response_model=schemas.UserAlias, responses=base_responses, tags=["Aliases"])
+    @app.put(
+        "/aliases",
+        response_model=schemas.UserAlias,
+        responses={404: {}},
+        tags=["Aliases"],
+        description="Update an existing alias model identified by the `alias_id`. Errors will "
+                    "occur when the `alias_id` doesn't exist. It's also possible to overwrite "
+                    "the previous unique `app_user_id` of that `alias_id`."
+    )
     def update_existing_alias(alias: schemas.UserAlias):
         # TODO
         return JSONResponse(status_code=501, content={
@@ -106,8 +168,15 @@ class Aliases:
         })
 
     @staticmethod
-    @app.delete("/aliases", status_code=204, responses={204: {"description": "Successful Delete"}}, tags=["Aliases"])
-    def delete_existing_alias(alias: schemas.UserAlias):
+    @app.delete(
+        "/aliases/{alias_id}",
+        status_code=204,
+        responses={404: {}},
+        tags=["Aliases"],
+        description="Delete an existing alias model identified by the `alias_id`. "
+                    "An error 404 will be returned for unknown `alias_id` values."
+    )
+    def delete_existing_alias(alias_id: int):
         # TODO
         return JSONResponse(status_code=501, content={
             "message": "Feature not implemented.",

@@ -96,8 +96,7 @@ class Transaction(pydantic.BaseModel):
 
 
 class Updates(pydantic.BaseModel):
-    authentic: bool
-    apps: List[Application]
+    applications: List[Application]
     alias: List[UserAlias]
     users: List[User]
     collectives: List[Collective]
