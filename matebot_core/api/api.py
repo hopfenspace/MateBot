@@ -40,6 +40,21 @@ class Users:
         })
 
 
+class Updates:
+    """
+    TODO
+    """
+
+    @staticmethod
+    @app.get("/updates/{timestamp}", response_model=schemas.Updates, responses=base_responses, tags=["Updates"])
+    def get_new_updates(timestamp: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_new_updates"
+        })
+
+
 class Aliases:
     """
     TODO

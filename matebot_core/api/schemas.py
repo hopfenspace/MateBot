@@ -93,3 +93,12 @@ class Transaction(pydantic.BaseModel):
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
     timestamp: pydantic.NonNegativeInt
+
+
+class Updates(pydantic.BaseModel):
+    authentic: bool
+    apps: List[Application]
+    alias: List[UserAlias]
+    users: List[User]
+    collectives: List[Collective]
+    transactions: List[Transaction]
