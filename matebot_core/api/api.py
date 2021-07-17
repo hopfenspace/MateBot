@@ -137,11 +137,12 @@ class Aliases:
         "/aliases",
         status_code=201,
         response_model=schemas.UserAlias,
-        responses=base_responses,
+        responses={409: {}},
         tags=["Aliases"],
         description="Create a new alias, overwriting any existing alias of the same combination "
                     "of `app_user_id` and `application` ID. The `app_user_id` field should "
-                    "reflect the unique internal username of the frontend application."
+                    "reflect the unique internal username of the frontend application. A 409 "
+                    "error will be returned when the combination of those already exists."
     )
     def create_new_alias(alias: schemas.IncomingUserAlias):
         # TODO
@@ -154,11 +155,13 @@ class Aliases:
     @app.put(
         "/aliases",
         response_model=schemas.UserAlias,
-        responses={404: {}},
+        responses={404: {}, 409: {}},
         tags=["Aliases"],
         description="Update an existing alias model identified by the `alias_id`. Errors will "
                     "occur when the `alias_id` doesn't exist. It's also possible to overwrite "
-                    "the previous unique `app_user_id` of that `alias_id`."
+                    "the previous unique `app_user_id` of that `alias_id`. A 409 error will be "
+                    "returned when the combination of those already exists with another existing "
+                    "`alias_id`, while a 404 error will be returned for an unknown `alias_id`."
     )
     def update_existing_alias(alias: schemas.UserAlias):
         # TODO
@@ -174,7 +177,7 @@ class Aliases:
         responses={404: {}},
         tags=["Aliases"],
         description="Delete an existing alias model identified by the `alias_id`. "
-                    "An error 404 will be returned for unknown `alias_id` values."
+                    "A 404 error will be returned for unknown `alias_id` values."
     )
     def delete_existing_alias(alias_id: int):
         # TODO
@@ -190,7 +193,12 @@ class Applications:
     """
 
     @staticmethod
-    @app.get("/applications", response_model=List[schemas.Application], responses=base_responses, tags=["Applications"])
+    @app.get(
+        "/applications",
+        response_model=List[schemas.Application],
+        tags=["Applications"],
+        description="Return a list of all known applications with their respective ID (=`app_id`)."
+    )
     def get_all_applications():
         # TODO
         return JSONResponse(status_code=501, content={
@@ -198,6 +206,8 @@ class Applications:
             "feature": "get_all_applications"
         })
 
+    # Following block has been commented out since there's currently no benefit of those API endpoints
+    """
     @staticmethod
     @app.get("/applications/name/{name}", response_model=schemas.Application, responses=base_responses, tags=["Applications"])
     def get_application_by_name(name: pydantic.constr(max_length=255)):
@@ -215,9 +225,18 @@ class Applications:
             "message": "Feature not implemented.",
             "feature": "get_application_by_name"
         })
+    """
 
     @staticmethod
-    @app.post("/applications", response_model=schemas.Application, responses=base_responses, tags=["Applications"])
+    @app.post(
+        "/applications",
+        response_model=schemas.Application,
+        responses={409: {}},
+        tags=["Applications"],
+        description="Add a new application and create a new ID for it. The UUID `auth_token` "
+                    "is used as a special form of API key to enforce proper authentication. "
+                    "A 409 error will be returned if the application already exists."
+    )
     def add_new_application(application: schemas.IncomingApplication):
         # TODO
         return JSONResponse(status_code=501, content={
