@@ -93,6 +93,7 @@ class Transaction(pydantic.BaseModel):
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
+    collective: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 

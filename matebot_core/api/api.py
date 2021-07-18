@@ -273,11 +273,11 @@ class Transactions:
         description="Return details about a specific transaction identified by its "
                     "`transaction_id`. A 404 error will be returned if that ID is unknown."
     )
-    def get_transaction():
+    def get_transaction_by_id():
         # TODO
         return JSONResponse(status_code=501, content={
             "message": "Feature not implemented.",
-            "feature": "get_transaction"
+            "feature": "get_transaction_by_id"
         })
 
     @staticmethod
