@@ -13,8 +13,6 @@ from . import schemas
 
 app = FastAPI()
 
-base_responses = {}
-
 
 class Users:
     """
@@ -205,27 +203,6 @@ class Applications:
             "message": "Feature not implemented.",
             "feature": "get_all_applications"
         })
-
-    # Following block has been commented out since there's currently no benefit of those API endpoints
-    """
-    @staticmethod
-    @app.get("/applications/name/{name}", response_model=schemas.Application, responses=base_responses, tags=["Applications"])
-    def get_application_by_name(name: pydantic.constr(max_length=255)):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_application_by_name"
-        })
-
-    @staticmethod
-    @app.get("/applications/id/{app_id}", response_model=schemas.Application, responses=base_responses, tags=["Applications"])
-    def get_application_by_id(app_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_application_by_name"
-        })
-    """
 
     @staticmethod
     @app.post(
