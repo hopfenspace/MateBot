@@ -40,7 +40,7 @@ class IncomingCollective(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     communistic: bool
-    creator: Union[pydantic.NonNegativeInt, UserAlias]
+    creator: pydantic.NonNegativeInt
     active: bool = True
     externals: pydantic.NonNegativeInt = 0
     participants: List[Union[pydantic.NonNegativeInt, UserAlias]] = []
@@ -93,6 +93,12 @@ class Transaction(pydantic.BaseModel):
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
+    timestamp: pydantic.NonNegativeInt
+
+
+class SuccessfulCollective(pydantic.BaseModel):
+    collective: Collective
+    transactions: List[Transaction]
     timestamp: pydantic.NonNegativeInt
 
 

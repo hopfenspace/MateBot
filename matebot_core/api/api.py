@@ -329,3 +329,148 @@ class Transactions:
             "message": "Feature not implemented.",
             "feature": "make_a_new_transaction"
         })
+
+
+class Collectives:
+    """
+    TODO
+    """
+
+    @staticmethod
+    @app.get(
+        "/collectives",
+        response_model=List[pydantic.NonNegativeInt],
+        tags=["Collectives"],
+        description="Return a list of all known collective IDs in the system."
+    )
+    def get_all_known_collective_ids():
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_all_known_collective_ids"
+        })
+
+    @staticmethod
+    @app.get(
+        "/collectives/{collective_id}",
+        response_model=schemas.Collective,
+        responses={404: {}},
+        tags=["Collectives"],
+        description="Return an existing collective. A 404 error will be returned "
+                    "if the specified collective ID was not found."
+    )
+    def get_collective_by_id(collective_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_collective_by_id"
+        })
+
+    @staticmethod
+    @app.get(
+        "/collectives/creator/{user_id}",
+        response_model=List[schemas.Collective],
+        responses={404: {}},
+        tags=["Collectives"],
+        description="Return a list of all collectives which have been created by the user with "
+                    "that `user_id`. A 404 error will be returned if the user ID is unknown."
+    )
+    def get_collectives_by_creator(user_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_collectives_by_creator"
+        })
+
+    @staticmethod
+    @app.get(
+        "/collectives/participant/{user_id}",
+        response_model=List[schemas.Collective],
+        responses={404: {}},
+        tags=["Collectives"],
+        description="Return a list of all collectives where the user with that `user_id` has "
+                    "participated in. A 404 error will be returned if the user ID is unknown."
+    )
+    def get_collectives_by_participant(user_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_collectives_by_participant"
+        })
+
+    @staticmethod
+    @app.post(
+        "/collectives",
+        response_model=schemas.Collective,
+        responses={404: {}},
+        tags=["Collectives"],
+        description="Create a new collective based on the specified data. A 404 error will be "
+                    "returned if the user ID of the creator of that collective is unknown."
+    )
+    def create_new_collective(collective: schemas.IncomingCollective):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "create_new_collective"
+        })
+
+    @staticmethod
+    @app.put(
+        "/collectives",
+        response_model=schemas.Collective,
+        responses={404: {}, 409: {}},
+        tags=["Collectives"],
+        description="Update an existing collective based on the specified data. A 404 error "
+                    "will be returned if the collective ID was not found. A 409 error will "
+                    "be returned if any of the following fields was changed (compared to the "
+                    "previous values of that collective ID): `amount`, `description`, `creator`, "
+                    "`active`, `communistic`. This prevents modifications of collective "
+                    "operations after creation. Use the other POST methods if possible instead. "
+                    "A 409 error will also be returned if a closed collective was altered."
+    )
+    def update_existing_collective(collective: schemas.Collective):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "update_existing_collective"
+        })
+
+    @staticmethod
+    @app.post(
+        "/collectives/{collective_id}/accept",
+        response_model=schemas.SuccessfulCollective,
+        responses={404: {}, 409: {}},
+        tags=["Collectives"],
+        description="Accept an existing collective operation. A 409 error will be returned if "
+                    "this is attempted on a closed/inactive collective operation. A 404 error "
+                    "will be returned if the specified `collective_id` is not known. This "
+                    "operation closes the collective and prevents any further changes. Note "
+                    "that this operation will implicitly also perform all transactions to "
+                    "and from all members of the collective, so take care. A frontend "
+                    "application might want to request explicit user approval before."
+    )
+    def accept_existing_collective(collective_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "accept_existing_collective"
+        })
+
+    @staticmethod
+    @app.post(
+        "/collectives/{collective_id}/cancel",
+        response_model=schemas.Collective,
+        responses={404: {}, 409: {}},
+        tags=["Collectives"],
+        description="Cancel an existing collective operation. A 409 error will be returned if "
+                    "this is attempted on a closed/inactive collective operation. A 404 error "
+                    "will be returned if the specified `collective_id` is not known. This "
+                    "operation closes the collective and prevents any further changes. "
+                    "No transactions will be performed based on this collective anymore."
+    )
+    def cancel_existing_collective(collective_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "cancel_existing_collective"
+        })
