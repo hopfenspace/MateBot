@@ -243,3 +243,73 @@ class Applications:
             "message": "Feature not implemented.",
             "feature": "add_new_application"
         })
+
+
+class Transactions:
+    """
+    TODO
+    """
+
+    @staticmethod
+    @app.get(
+        "/transactions",
+        response_model=List[schemas.Transaction],
+        tags=["Transactions"],
+        description="Return a list of all known transactions ever made in the system."
+    )
+    def get_all_known_transactions():
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_all_known_transactions"
+        })
+
+    @staticmethod
+    @app.get(
+        "/transactions/user/{user_id}",
+        response_model=List[schemas.Transaction],
+        responses={404: {}},
+        tags=["Transactions"],
+        description="Return a list of all transactions made by a specific user identified by "
+                    "its `user_id`. A 404 error will be returned if the user ID is unknown."
+    )
+    def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_all_transactions_of_user"
+        })
+
+    @staticmethod
+    @app.get(
+        "/transactions/collective/{collective_id}",
+        response_model=List[schemas.Transaction],
+        responses={404: {}},
+        tags=["Transactions"],
+        description="Return a list of all transactions associated with a specific collective "
+                    "operation identified by the `collective_id`. The list may be empty if "
+                    "the collective operation was cancelled or not submitted yet. "
+                    "A 404 error will be returned if the collective ID is unknown."
+    )
+    def get_all_transactions_of_collective(collective_id: pydantic.NonNegativeInt):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_all_transactions_of_collective"
+        })
+
+    @staticmethod
+    @app.post(
+        "/transactions",
+        response_model=schemas.Transaction,
+        tags=["Transactions"],
+        description="Make a new transaction using the specified data. Note that transactions "
+                    "can't be edited after being sent to this endpoint by design, so take care. "
+                    "The frontend application might want to introduce explicit user approval."
+    )
+    def make_a_new_transaction(transaction: schemas.IncomingTransaction):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "make_a_new_transaction"
+        })
