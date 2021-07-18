@@ -31,6 +31,13 @@ app = FastAPI(
 )
 
 
+def _return_not_implemented_response(feature: str):
+    return JSONResponse(status_code=501, content={
+        "message": "Feature not implemented.",
+        "feature": feature
+    })
+
+
 class Users:
     """
     TODO
@@ -44,11 +51,7 @@ class Users:
         description="Return a list of all internal user models with their aliases."
     )
     def get_all_users():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_users"
-        })
+        _return_not_implemented_response("get_all_users")
 
     @staticmethod
     @app.get(
@@ -58,11 +61,7 @@ class Users:
         description="Return the internal model of the user specified by its user ID."
     )
     def get_user_by_id(user_id: int):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_user_by_id"
-        })
+        _return_not_implemented_response("get_user_by_id")
 
     @staticmethod
     @app.post(
@@ -75,11 +74,7 @@ class Users:
                     "which is already occupied by another user will result in a 409 error."
     )
     def create_new_user(user: schemas.IncomingUser):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "create_new_user"
-        })
+        _return_not_implemented_response("create_new_user")
 
 
 class Updates:
@@ -96,11 +91,7 @@ class Updates:
                     "timestamp. This collection must not necessarily be complete."
     )
     def get_new_updates(timestamp: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_new_updates"
-        })
+        _return_not_implemented_response("get_new_updates")
 
 
 class Aliases:
@@ -116,11 +107,7 @@ class Aliases:
         description="Return a list of all known user aliases of all applications."
     )
     def get_all_known_aliases():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_known_aliases"
-        })
+        _return_not_implemented_response("get_all_known_aliases")
 
     @staticmethod
     @app.get(
@@ -130,11 +117,7 @@ class Aliases:
         description="Return a list of all users' aliases for a given application name."
     )
     def get_aliases_by_application_name(application: pydantic.constr(max_length=255)):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_alias_by_application_name"
-        })
+        _return_not_implemented_response("get_aliases_by_application_name")
 
     @staticmethod
     @app.get(
@@ -144,11 +127,7 @@ class Aliases:
         description="Return a list of all aliases of a user for a given user ID."
     )
     def get_aliases_by_user_id(user_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_aliases_by_user_id"
-        })
+        _return_not_implemented_response("get_aliases_by_user_id")
 
     @staticmethod
     @app.get(
@@ -158,11 +137,7 @@ class Aliases:
         description="Return the alias model of a specific alias ID."
     )
     def get_alias_by_alias_id(alias_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_alias_by_alias_id"
-        })
+        _return_not_implemented_response("get_alias_by_alias_id")
 
     @staticmethod
     @app.post(
@@ -177,11 +152,7 @@ class Aliases:
                     "error will be returned when the combination of those already exists."
     )
     def create_new_alias(alias: schemas.IncomingUserAlias):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "create_new_alias"
-        })
+        _return_not_implemented_response("create_new_alias")
 
     @staticmethod
     @app.put(
@@ -196,11 +167,7 @@ class Aliases:
                     "`alias_id`, while a 404 error will be returned for an unknown `alias_id`."
     )
     def update_existing_alias(alias: schemas.UserAlias):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "update_existing_alias"
-        })
+        _return_not_implemented_response("update_existing_alias")
 
     @staticmethod
     @app.delete(
@@ -212,11 +179,7 @@ class Aliases:
                     "A 404 error will be returned for unknown `alias_id` values."
     )
     def delete_existing_alias(alias_id: int):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "delete_existing_alias"
-        })
+        _return_not_implemented_response("delete_existing_alias")
 
 
 class Applications:
@@ -232,11 +195,7 @@ class Applications:
         description="Return a list of all known applications with their respective ID (=`app_id`)."
     )
     def get_all_applications():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_applications"
-        })
+        _return_not_implemented_response("get_all_applications")
 
     @staticmethod
     @app.post(
@@ -251,11 +210,7 @@ class Applications:
                     "A 409 error will be returned if the application already exists."
     )
     def add_new_application(application: schemas.IncomingApplication):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "add_new_application"
-        })
+        _return_not_implemented_response("add_new_application")
 
 
 class Transactions:
@@ -271,11 +226,7 @@ class Transactions:
         description="Return a list of all known transaction IDs in the system."
     )
     def get_all_known_transaction_ids():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_known_transaction_ids"
-        })
+        _return_not_implemented_response("get_all_known_transaction_ids")
 
     @staticmethod
     @app.get(
@@ -287,11 +238,7 @@ class Transactions:
                     "`transaction_id`. A 404 error will be returned if that ID is unknown."
     )
     def get_transaction_by_id():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_transaction_by_id"
-        })
+        _return_not_implemented_response("get_transaction_by_id")
 
     @staticmethod
     @app.get(
@@ -303,11 +250,7 @@ class Transactions:
                     "its `user_id`. A 404 error will be returned if the user ID is unknown."
     )
     def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_transactions_of_user"
-        })
+        _return_not_implemented_response("get_all_transactions_of_user")
 
     @staticmethod
     @app.get(
@@ -321,11 +264,7 @@ class Transactions:
                     "A 404 error will be returned if the collective ID is unknown."
     )
     def get_all_transactions_of_collective(collective_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_transactions_of_collective"
-        })
+        _return_not_implemented_response("get_all_transactions_of_collective")
 
     @staticmethod
     @app.post(
@@ -337,11 +276,7 @@ class Transactions:
                     "The frontend application might want to introduce explicit user approval."
     )
     def make_a_new_transaction(transaction: schemas.IncomingTransaction):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "make_a_new_transaction"
-        })
+        _return_not_implemented_response("make_a_new_transaction")
 
 
 class Collectives:
@@ -357,11 +292,7 @@ class Collectives:
         description="Return a list of all known collective IDs in the system."
     )
     def get_all_known_collective_ids():
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_all_known_collective_ids"
-        })
+        _return_not_implemented_response("get_all_known_collective_ids")
 
     @staticmethod
     @app.get(
@@ -373,11 +304,7 @@ class Collectives:
                     "if the specified collective ID was not found."
     )
     def get_collective_by_id(collective_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_collective_by_id"
-        })
+        _return_not_implemented_response("get_collective_by_id")
 
     @staticmethod
     @app.get(
@@ -389,11 +316,7 @@ class Collectives:
                     "that `user_id`. A 404 error will be returned if the user ID is unknown."
     )
     def get_collectives_by_creator(user_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_collectives_by_creator"
-        })
+        _return_not_implemented_response("get_collectives_by_creator")
 
     @staticmethod
     @app.get(
@@ -405,11 +328,7 @@ class Collectives:
                     "participated in. A 404 error will be returned if the user ID is unknown."
     )
     def get_collectives_by_participant(user_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "get_collectives_by_participant"
-        })
+        _return_not_implemented_response("get_collectives_by_participant")
 
     @staticmethod
     @app.post(
@@ -421,11 +340,7 @@ class Collectives:
                     "returned if the user ID of the creator of that collective is unknown."
     )
     def create_new_collective(collective: schemas.IncomingCollective):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "create_new_collective"
-        })
+        _return_not_implemented_response("create_new_collective")
 
     @staticmethod
     @app.put(
@@ -442,11 +357,7 @@ class Collectives:
                     "A 409 error will also be returned if a closed collective was altered."
     )
     def update_existing_collective(collective: schemas.Collective):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "update_existing_collective"
-        })
+        _return_not_implemented_response("update_existing_collective")
 
     @staticmethod
     @app.post(
@@ -463,11 +374,7 @@ class Collectives:
                     "application might want to request explicit user approval before."
     )
     def accept_existing_collective(collective_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "accept_existing_collective"
-        })
+        _return_not_implemented_response("accept_existing_collective")
 
     @staticmethod
     @app.post(
@@ -482,8 +389,4 @@ class Collectives:
                     "No transactions will be performed based on this collective anymore."
     )
     def cancel_existing_collective(collective_id: pydantic.NonNegativeInt):
-        # TODO
-        return JSONResponse(status_code=501, content={
-            "message": "Feature not implemented.",
-            "feature": "cancel_existing_collective"
-        })
+        _return_not_implemented_response("cancel_existing_collective")
