@@ -279,114 +279,114 @@ class Transactions:
         _return_not_implemented_response("make_a_new_transaction")
 
 
-class Collectives:
+class Communisms:
     """
     TODO
     """
 
     @staticmethod
     @app.get(
-        "/collectives",
+        "/communisms",
         response_model=List[pydantic.NonNegativeInt],
-        tags=["Collectives"],
-        description="Return a list of all known collective IDs in the system."
+        tags=["Communisms"],
+        description="Return a list of all known communism IDs in the system."
     )
-    def get_all_known_collective_ids():
-        _return_not_implemented_response("get_all_known_collective_ids")
+    def get_all_known_communism_ids():
+        _return_not_implemented_response("get_all_known_communism_ids")
 
     @staticmethod
     @app.get(
-        "/collectives/{collective_id}",
-        response_model=schemas.Collective,
+        "/communisms/{communism_id}",
+        response_model=schemas.Communism,
         responses={404: {}},
-        tags=["Collectives"],
-        description="Return an existing collective. A 404 error will be returned "
-                    "if the specified collective ID was not found."
+        tags=["Communisms"],
+        description="Return an existing communism. A 404 error will be returned "
+                    "if the specified communism ID was not found."
     )
-    def get_collective_by_id(collective_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_collective_by_id")
+    def get_communism_by_id(communism_id: pydantic.NonNegativeInt):
+        _return_not_implemented_response("get_communism_by_id")
 
     @staticmethod
     @app.get(
-        "/collectives/creator/{user_id}",
-        response_model=List[schemas.Collective],
+        "/communisms/creator/{user_id}",
+        response_model=List[schemas.Communism],
         responses={404: {}},
-        tags=["Collectives"],
-        description="Return a list of all collectives which have been created by the user with "
+        tags=["Communisms"],
+        description="Return a list of all communisms which have been created by the user with "
                     "that `user_id`. A 404 error will be returned if the user ID is unknown."
     )
-    def get_collectives_by_creator(user_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_collectives_by_creator")
+    def get_communisms_by_creator(user_id: pydantic.NonNegativeInt):
+        _return_not_implemented_response("get_communisms_by_creator")
 
     @staticmethod
     @app.get(
-        "/collectives/participant/{user_id}",
-        response_model=List[schemas.Collective],
+        "/communisms/participant/{user_id}",
+        response_model=List[schemas.Communism],
         responses={404: {}},
-        tags=["Collectives"],
-        description="Return a list of all collectives where the user with that `user_id` has "
+        tags=["Communisms"],
+        description="Return a list of all communisms where the user with that `user_id` has "
                     "participated in. A 404 error will be returned if the user ID is unknown."
     )
-    def get_collectives_by_participant(user_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_collectives_by_participant")
+    def get_communisms_by_participant(user_id: pydantic.NonNegativeInt):
+        _return_not_implemented_response("get_communisms_by_participant")
 
     @staticmethod
     @app.post(
-        "/collectives",
-        response_model=schemas.Collective,
+        "/communisms",
+        response_model=schemas.Communism,
         responses={404: {}},
-        tags=["Collectives"],
-        description="Create a new collective based on the specified data. A 404 error will be "
-                    "returned if the user ID of the creator of that collective is unknown."
+        tags=["Communisms"],
+        description="Create a new communism based on the specified data. A 404 error will be "
+                    "returned if the user ID of the creator of that communism is unknown."
     )
-    def create_new_collective(collective: schemas.IncomingCollective):
-        _return_not_implemented_response("create_new_collective")
+    def create_new_communism(communism: schemas.IncomingCommunism):
+        _return_not_implemented_response("create_new_communism")
 
     @staticmethod
     @app.put(
-        "/collectives",
-        response_model=schemas.Collective,
+        "/communisms",
+        response_model=schemas.Communism,
         responses={404: {}, 409: {}},
-        tags=["Collectives"],
-        description="Update an existing collective based on the specified data. A 404 error "
-                    "will be returned if the collective ID was not found. A 409 error will "
+        tags=["Communisms"],
+        description="Update an existing communism based on the specified data. A 404 error "
+                    "will be returned if the communism ID was not found. A 409 error will "
                     "be returned if any of the following fields was changed (compared to the "
-                    "previous values of that collective ID): `amount`, `description`, `creator`, "
-                    "`active`, `communistic`. This prevents modifications of collective "
-                    "operations after creation. Use the other POST methods if possible instead. "
-                    "A 409 error will also be returned if a closed collective was altered."
+                    "previous values of that communism ID): `amount`, `description`, `creator`, "
+                    "`active`. This prevents modifications of communism operations after "
+                    "creation. Use the other POST methods if possible instead. A 409 "
+                    "error will also be returned if a closed communism was altered."
     )
-    def update_existing_collective(collective: schemas.Collective):
-        _return_not_implemented_response("update_existing_collective")
+    def update_existing_communism(communism: schemas.Communism):
+        _return_not_implemented_response("update_existing_communism")
 
     @staticmethod
     @app.post(
-        "/collectives/{collective_id}/accept",
-        response_model=schemas.SuccessfulCollective,
+        "/communisms/{communism_id}/accept",
+        response_model=schemas.SuccessfulCommunism,
         responses={404: {}, 409: {}},
-        tags=["Collectives"],
-        description="Accept an existing collective operation. A 409 error will be returned if "
-                    "this is attempted on a closed/inactive collective operation. A 404 error "
-                    "will be returned if the specified `collective_id` is not known. This "
-                    "operation closes the collective and prevents any further changes. Note "
+        tags=["Communisms"],
+        description="Accept an existing communism operation. A 409 error will be returned if "
+                    "this is attempted on a closed/inactive communism operation. A 404 error "
+                    "will be returned if the specified `communism_id` is not known. This "
+                    "operation closes the communism and prevents any further changes. Note "
                     "that this operation will implicitly also perform all transactions to "
-                    "and from all members of the collective, so take care. A frontend "
+                    "and from all members of the communism, so take care. A frontend "
                     "application might want to request explicit user approval before."
     )
-    def accept_existing_collective(collective_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("accept_existing_collective")
+    def accept_existing_communism(communism_id: pydantic.NonNegativeInt):
+        _return_not_implemented_response("accept_existing_communism")
 
     @staticmethod
     @app.post(
-        "/collectives/{collective_id}/cancel",
-        response_model=schemas.Collective,
+        "/communisms/{communism_id}/cancel",
+        response_model=schemas.Communism,
         responses={404: {}, 409: {}},
-        tags=["Collectives"],
-        description="Cancel an existing collective operation. A 409 error will be returned if "
-                    "this is attempted on a closed/inactive collective operation. A 404 error "
-                    "will be returned if the specified `collective_id` is not known. This "
-                    "operation closes the collective and prevents any further changes. "
-                    "No transactions will be performed based on this collective anymore."
+        tags=["Communisms"],
+        description="Cancel an existing communism operation. A 409 error will be returned if "
+                    "this is attempted on a closed/inactive communism operation. A 404 error "
+                    "will be returned if the specified `communism_id` is not known. This "
+                    "operation closes the communism and prevents any further changes. "
+                    "No transactions will be performed based on this communism anymore."
     )
-    def cancel_existing_collective(collective_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("cancel_existing_collective")
+    def cancel_existing_communism(communism_id: pydantic.NonNegativeInt):
+        _return_not_implemented_response("cancel_existing_communism")

@@ -37,7 +37,7 @@ class IncomingApplication(pydantic.BaseModel):
     special_user: UserAlias
 
 
-class IncomingCollective(pydantic.BaseModel):
+class IncomingCommunism(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator: pydantic.NonNegativeInt
@@ -46,7 +46,7 @@ class IncomingCollective(pydantic.BaseModel):
     participants: List[Union[pydantic.NonNegativeInt, UserAlias]] = []
 
 
-class Collective(pydantic.BaseModel):
+class Communism(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
@@ -75,7 +75,7 @@ class User(pydantic.BaseModel):
     aliases: List[UserAlias]
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
-    collectives: List[Collective]
+    communisms: List[Communism]
 
 
 class IncomingTransaction(pydantic.BaseModel):
@@ -83,7 +83,6 @@ class IncomingTransaction(pydantic.BaseModel):
     receiver: Union[pydantic.NonNegativeInt, UserAlias]
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
-    collective: Optional[pydantic.NonNegativeInt]
 
 
 class Transaction(pydantic.BaseModel):
@@ -92,7 +91,8 @@ class Transaction(pydantic.BaseModel):
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
-    collective: Optional[pydantic.NonNegativeInt]
+    communism: Optional[pydantic.NonNegativeInt]
+    refund: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 
@@ -119,8 +119,8 @@ class SuccessfulRefund(pydantic.BaseModel):
     timestamp: pydantic.NonNegativeInt
 
 
-class SuccessfulCollective(pydantic.BaseModel):
-    collective: Collective
+class SuccessfulCommunism(pydantic.BaseModel):
+    communism: Communism
     transactions: List[Transaction]
     timestamp: pydantic.NonNegativeInt
 
@@ -129,5 +129,5 @@ class Updates(pydantic.BaseModel):
     applications: List[Application]
     alias: List[UserAlias]
     users: List[User]
-    collectives: List[Collective]
+    communisms: List[Communism]
     transactions: List[Transaction]
