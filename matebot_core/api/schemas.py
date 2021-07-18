@@ -8,16 +8,6 @@ from typing import List, Optional, Union
 import pydantic
 
 
-class Application(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    name: pydantic.constr(max_length=255)
-
-
-class IncomingApplication(pydantic.BaseModel):
-    name: pydantic.constr(max_length=255)
-    auth_token: uuid.UUID
-
-
 class IncomingUserAlias(pydantic.BaseModel):
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
@@ -50,7 +40,6 @@ class IncomingApplication(pydantic.BaseModel):
 class IncomingCollective(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    communistic: bool
     creator: pydantic.NonNegativeInt
     active: bool = True
     externals: pydantic.NonNegativeInt = 0
@@ -61,7 +50,6 @@ class Collective(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    communistic: bool
     creator: pydantic.NonNegativeInt
     active: bool
     externals: pydantic.NonNegativeInt
@@ -105,6 +93,29 @@ class Transaction(pydantic.BaseModel):
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
     collective: Optional[pydantic.NonNegativeInt]
+    timestamp: pydantic.NonNegativeInt
+
+
+class IncomingRefund(pydantic.BaseModel):
+    amount: pydantic.PositiveInt
+    description: pydantic.constr(max_length=255)
+    creator: pydantic.NonNegativeInt
+    active: bool = True
+
+
+class Refund(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    amount: pydantic.PositiveInt
+    description: pydantic.constr(max_length=255)
+    creator: pydantic.NonNegativeInt
+    active: bool
+    approval: List[pydantic.NonNegativeInt]
+    refusal: List[pydantic.NonNegativeInt]
+
+
+class SuccessfulRefund(pydantic.BaseModel):
+    refund: Refund
+    transactions: List[Transaction]
     timestamp: pydantic.NonNegativeInt
 
 
