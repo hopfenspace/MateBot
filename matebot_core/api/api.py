@@ -64,6 +64,23 @@ class Users:
             "feature": "get_user_by_id"
         })
 
+    @staticmethod
+    @app.post(
+        "/users",
+        response_model=schemas.User,
+        responses={409: {}},
+        tags=["Users"],
+        description="Create a new \"empty\" user account. All aliases specified will "
+                    "be attached to this user account, too. Trying to add a user alias "
+                    "which is already occupied by another user will result in a 409 error."
+    )
+    def create_new_user(user: schemas.IncomingUser):
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "create_new_user"
+        })
+
 
 class Updates:
     """
