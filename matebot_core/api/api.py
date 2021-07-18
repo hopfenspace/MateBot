@@ -76,6 +76,20 @@ class Users:
     def create_new_user(user: schemas.IncomingUser):
         _return_not_implemented_response("create_new_user")
 
+    @staticmethod
+    @app.put(
+        "/users",
+        response_model=schemas.User,
+        responses={404: {}, 409: {}},
+        tags=["Users"],
+        description="Update an existing user model identified by the `user_id`. A 404 error "
+                    "will be returned if the `user_id` is not known. A 409 error will be "
+                    "returned when some of the following fields have been changed compared "
+                    "to the internal user state: `balance`, `created`, `accessed`."
+    )
+    def update_existing_user(user: schemas.User):
+        _return_not_implemented_response("update_existing_user")
+
 
 class Updates:
     """
@@ -146,10 +160,11 @@ class Aliases:
         response_model=schemas.UserAlias,
         responses={409: {}},
         tags=["Aliases"],
-        description="Create a new alias, overwriting any existing alias of the same combination "
+        description="Create a new alias, failing for any existing alias of the same combination "
                     "of `app_user_id` and `application` ID. The `app_user_id` field should "
-                    "reflect the unique internal username of the frontend application. A 409 "
-                    "error will be returned when the combination of those already exists."
+                    "reflect the unique internal username in the frontend application. A 409 "
+                    "error will be returned when the combination of those already exists. A 404 "
+                    "error will be returned if the `user_id` or `application` is not known."
     )
     def create_new_alias(alias: schemas.IncomingUserAlias):
         _return_not_implemented_response("create_new_alias")
