@@ -1,5 +1,5 @@
 """
-MateBot API schemas
+MateBot base schemas
 """
 
 import uuid
