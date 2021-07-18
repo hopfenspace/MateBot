@@ -1,5 +1,18 @@
 """
 MateBot core REST API definitions
+
+This API provides no multi-level security model with different privileges.
+It's an all-or-nothing API, so take care when deploying it. It's
+recommended to put a reverse proxy in front of this API to prevent
+various problems and to introduce proper authentication or user handling.
+
+Any client that wants to perform update operations using `PUT` should
+be aware of the API's use of the `ETag` header. Any resource delivered
+or created by a request will carry the `ETag` header set properly. This
+allows the API to effectively prevent race conditions when multiple clients
+want to update the same resource using `PUT`, since any such request will
+only be performed if the `If-Match` header exists and is set correctly.
+Take a look into the various `PUT` endpoints for more information.
 """
 
 from typing import List
@@ -11,7 +24,11 @@ from fastapi.responses import JSONResponse
 from . import schemas
 
 
-app = FastAPI()
+app = FastAPI(
+    title="MateBot core REST API",
+    version="0.3",
+    description=__doc__
+)
 
 
 class Users:
