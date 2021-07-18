@@ -9,11 +9,9 @@ import pydantic
 
 
 class IncomingUserAlias(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
-    username: Optional[pydantic.constr(max_length=255)]
-    first_name: Optional[pydantic.constr(max_length=255)]
-    last_name: Optional[pydantic.constr(max_length=255)]
 
 
 class UserAlias(pydantic.BaseModel):
@@ -21,9 +19,6 @@ class UserAlias(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
-    username: Optional[pydantic.constr(max_length=255)]
-    first_name: Optional[pydantic.constr(max_length=255)]
-    last_name: Optional[pydantic.constr(max_length=255)]
 
 
 class Application(pydantic.BaseModel):
@@ -57,6 +52,7 @@ class Communism(pydantic.BaseModel):
 
 
 class IncomingUser(pydantic.BaseModel):
+    friendly_name: Optional[pydantic.constr(max_length=255)]
     balance: int = 0
     permission: bool
     active: bool
@@ -67,6 +63,7 @@ class IncomingUser(pydantic.BaseModel):
 
 class User(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
+    friendly_name: Optional[pydantic.constr(max_length=255)]
     balance: int
     permission: bool
     active: bool

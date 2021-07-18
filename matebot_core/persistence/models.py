@@ -27,6 +27,10 @@ class User(Base):
 
     id = _make_id_column()
 
+    name = Column(
+        String(255),
+        nullable=True
+    )
     balance = Column(
         Integer,
         nullable=False,
@@ -124,15 +128,6 @@ class UserAlias(Base):
         Integer,
         ForeignKey("applications.id", ondelete="CASCADE"),
         nullable=False
-    )
-    username = Column(
-        String(255)
-    )
-    first_name = Column(
-        String(255)
-    )
-    last_name = Column(
-        String(255)
     )
     app_user_id = Column(
         String(255),
