@@ -42,6 +42,12 @@ class User(Base):
         nullable=False,
         default=True
     )
+    special = Column(
+        Boolean,
+        nullable=True,
+        default=None,
+        unique=True
+    )
     external = Column(
         Boolean,
         nullable=False

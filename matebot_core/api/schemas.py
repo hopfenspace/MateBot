@@ -36,6 +36,17 @@ class UserAlias(pydantic.BaseModel):
     last_name: Optional[pydantic.constr(max_length=255)]
 
 
+class Application(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    name: pydantic.constr(max_length=255)
+
+
+class IncomingApplication(pydantic.BaseModel):
+    name: pydantic.constr(max_length=255)
+    auth_token: uuid.UUID
+    special_user: UserAlias
+
+
 class IncomingCollective(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)

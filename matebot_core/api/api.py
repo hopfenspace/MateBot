@@ -212,6 +212,8 @@ class Applications:
         tags=["Applications"],
         description="Add a new application and create a new ID for it. The UUID `auth_token` "
                     "is used as a special form of API key to enforce proper authentication. "
+                    "The required alias for the `special_user` is used to create a proper "
+                    "binding to the \"banking user\" for the newly created application. "
                     "A 409 error will be returned if the application already exists."
     )
     def add_new_application(application: schemas.IncomingApplication):
