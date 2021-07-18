@@ -12,7 +12,12 @@ or created by a request will carry the `ETag` header set properly. This
 allows the API to effectively prevent race conditions when multiple clients
 want to update the same resource using `PUT`, since any such request will
 only be performed if the `If-Match` header exists and is set correctly.
-Take a look into the various `PUT` endpoints for more information.
+Take a look into the various `PUT` or `DELETE` endpoints or RFC 7232 for
+more information. The `POST` endpoints ignore the `If-Match` header field
+if it has been set, since newly created resources don't have ETags yet.
+All GET endpoints support the use of the `If-None-Match` header field to
+look for updates to certain resources quickly, if not stated otherwise.
+At the moment, the `/updates` endpoint(s) can be used for that purpose, too.
 """
 
 from typing import List
