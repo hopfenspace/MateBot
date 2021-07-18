@@ -253,15 +253,31 @@ class Transactions:
     @staticmethod
     @app.get(
         "/transactions",
-        response_model=List[schemas.Transaction],
+        response_model=List[pydantic.NonNegativeInt],
         tags=["Transactions"],
-        description="Return a list of all known transactions ever made in the system."
+        description="Return a list of all known transaction IDs in the system."
     )
-    def get_all_known_transactions():
+    def get_all_known_transaction_ids():
         # TODO
         return JSONResponse(status_code=501, content={
             "message": "Feature not implemented.",
-            "feature": "get_all_known_transactions"
+            "feature": "get_all_known_transaction_ids"
+        })
+
+    @staticmethod
+    @app.get(
+        "/transactions/{transaction_id}",
+        response_model=schemas.Transaction,
+        responses={404: {}},
+        tags=["Transactions"],
+        description="Return details about a specific transaction identified by its "
+                    "`transaction_id`. A 404 error will be returned if that ID is unknown."
+    )
+    def get_transaction():
+        # TODO
+        return JSONResponse(status_code=501, content={
+            "message": "Feature not implemented.",
+            "feature": "get_transaction"
         })
 
     @staticmethod
