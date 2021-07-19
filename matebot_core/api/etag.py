@@ -2,20 +2,22 @@
 ETag helper library for the core REST API
 """
 
-from fastapi import HTTPException, Request, Response
+import enum
+import json
+import hashlib
+from typing import Union, List
+
+import pydantic
+from fastapi import Request, Response
 
 
-class CacheHit(HTTPException):
-    pass
+
+from .base import NotModified, PreconditionFailed
 
 
-class PreconditionFailed(HTTPException):
-    pass
-
-
-def handle_cache_hit(request: Request, exc: CacheHit):
+async def handle_cache_hit(request: Request, exc: NotModified):
     return Response("", 304, headers=exc.headers)
 
 
-def handle_failed_precondition(request: Request, exc: PreconditionFailed):
+async def handle_failed_precondition(request: Request, exc: PreconditionFailed):
     return Response("", 412, headers=exc.headers)
