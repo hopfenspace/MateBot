@@ -25,9 +25,10 @@ from typing import List
 import pydantic
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import PlainTextResponse
 
 from . import base, etag
+from .base import _return_not_implemented_response
 from .dependency import LocalRequestData
 from .. import schemas
 from ..persistence import models
@@ -43,11 +44,6 @@ app.add_exception_handler(base.NotModified, etag.handle_cache_hit)
 app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_precondition)
 
 
-def _return_not_implemented_response(feature: str):
-    return JSONResponse(status_code=501, content={
-        "message": "Feature not implemented.",
-        "feature": feature
-    })
 
 
 class Users:
