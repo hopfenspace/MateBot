@@ -17,7 +17,7 @@ def _get_session() -> Generator[Session, None, bool]:
     Return a generator to handle database sessions gracefully
     """
 
-    session = database.LocalSession()
+    session = database.get_new_session()
     try:
         yield session
         session.flush()
