@@ -30,7 +30,7 @@ from fastapi.responses import PlainTextResponse
 from . import base, etag
 from .base import _return_not_implemented_response
 from .dependency import LocalRequestData
-from .routers import refunds
+from .routers import communisms, refunds
 from .. import schemas
 from ..persistence import models
 
@@ -45,6 +45,7 @@ app.add_exception_handler(base.NotModified, etag.handle_cache_hit)
 app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_precondition)
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
 
+app.include_router(communisms.router)
 app.include_router(refunds.router)
 
 
@@ -300,116 +301,3 @@ class Transactions:
     )
     def make_a_new_transaction(transaction: schemas.IncomingTransaction):
         _return_not_implemented_response("make_a_new_transaction")
-
-
-class Communisms:
-    """
-    TODO
-    """
-
-    @staticmethod
-    @app.get(
-        "/communisms",
-        response_model=List[pydantic.NonNegativeInt],
-        tags=["Communisms"],
-        description="Return a list of all known communism IDs in the system."
-    )
-    def get_all_known_communism_ids():
-        _return_not_implemented_response("get_all_known_communism_ids")
-
-    @staticmethod
-    @app.get(
-        "/communisms/{communism_id}",
-        response_model=schemas.Communism,
-        responses={404: {}},
-        tags=["Communisms"],
-        description="Return an existing communism. A 404 error will be returned "
-                    "if the specified communism ID was not found."
-    )
-    def get_communism_by_id(communism_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_communism_by_id")
-
-    @staticmethod
-    @app.get(
-        "/communisms/creator/{user_id}",
-        response_model=List[schemas.Communism],
-        responses={404: {}},
-        tags=["Communisms"],
-        description="Return a list of all communisms which have been created by the user with "
-                    "that `user_id`. A 404 error will be returned if the user ID is unknown."
-    )
-    def get_communisms_by_creator(user_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_communisms_by_creator")
-
-    @staticmethod
-    @app.get(
-        "/communisms/participant/{user_id}",
-        response_model=List[schemas.Communism],
-        responses={404: {}},
-        tags=["Communisms"],
-        description="Return a list of all communisms where the user with that `user_id` has "
-                    "participated in. A 404 error will be returned if the user ID is unknown."
-    )
-    def get_communisms_by_participant(user_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_communisms_by_participant")
-
-    @staticmethod
-    @app.post(
-        "/communisms",
-        response_model=schemas.Communism,
-        responses={404: {}},
-        tags=["Communisms"],
-        description="Create a new communism based on the specified data. A 404 error will be "
-                    "returned if the user ID of the creator of that communism is unknown."
-    )
-    def create_new_communism(communism: schemas.IncomingCommunism):
-        _return_not_implemented_response("create_new_communism")
-
-    @staticmethod
-    @app.put(
-        "/communisms",
-        response_model=schemas.Communism,
-        responses={404: {}, 409: {}},
-        tags=["Communisms"],
-        description="Update an existing communism based on the specified data. A 404 error "
-                    "will be returned if the communism ID was not found. A 409 error will "
-                    "be returned if any of the following fields was changed (compared to the "
-                    "previous values of that communism ID): `amount`, `description`, `creator`, "
-                    "`active`. This prevents modifications of communism operations after "
-                    "creation. Use the other POST methods if possible instead. A 409 "
-                    "error will also be returned if a closed communism was altered."
-    )
-    def update_existing_communism(communism: schemas.Communism):
-        _return_not_implemented_response("update_existing_communism")
-
-    @staticmethod
-    @app.post(
-        "/communisms/{communism_id}/accept",
-        response_model=schemas.SuccessfulCommunism,
-        responses={404: {}, 409: {}},
-        tags=["Communisms"],
-        description="Accept an existing communism operation. A 409 error will be returned if "
-                    "this is attempted on a closed/inactive communism operation. A 404 error "
-                    "will be returned if the specified `communism_id` is not known. This "
-                    "operation closes the communism and prevents any further changes. Note "
-                    "that this operation will implicitly also perform all transactions to "
-                    "and from all members of the communism, so take care. A frontend "
-                    "application might want to request explicit user approval before."
-    )
-    def accept_existing_communism(communism_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("accept_existing_communism")
-
-    @staticmethod
-    @app.post(
-        "/communisms/{communism_id}/cancel",
-        response_model=schemas.Communism,
-        responses={404: {}, 409: {}},
-        tags=["Communisms"],
-        description="Cancel an existing communism operation. A 409 error will be returned if "
-                    "this is attempted on a closed/inactive communism operation. A 404 error "
-                    "will be returned if the specified `communism_id` is not known. This "
-                    "operation closes the communism and prevents any further changes. "
-                    "No transactions will be performed based on this communism anymore."
-    )
-    def cancel_existing_communism(communism_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("cancel_existing_communism")
