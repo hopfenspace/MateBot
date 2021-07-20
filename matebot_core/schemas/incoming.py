@@ -32,7 +32,7 @@ class IncomingCommunism(pydantic.BaseModel):
 
 
 class IncomingUser(pydantic.BaseModel):
-    friendly_name: Optional[pydantic.constr(max_length=255)]
+    name: Optional[pydantic.constr(max_length=255)]
     balance: int = 0
     permission: bool
     active: bool

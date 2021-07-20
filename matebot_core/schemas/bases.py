@@ -21,7 +21,7 @@ class Application(pydantic.BaseModel):
 
 class User(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    friendly_name: Optional[pydantic.constr(max_length=255)]
+    name: Optional[pydantic.constr(max_length=255)]
     balance: int
     permission: bool
     active: bool
