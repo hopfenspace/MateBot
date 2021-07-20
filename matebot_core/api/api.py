@@ -23,10 +23,14 @@ At the moment, the `/updates` endpoint(s) can be used for that purpose, too.
 from typing import List
 
 import pydantic
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, PlainTextResponse
 
-from . import schemas
+from . import base, etag
+from .dependency import LocalRequestData
+from .. import schemas
+from ..persistence import models
 
 
 app = FastAPI(
@@ -34,6 +38,9 @@ app = FastAPI(
     version="0.3",
     description=__doc__
 )
+
+app.add_exception_handler(base.NotModified, etag.handle_cache_hit)
+app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_precondition)
 
 
 def _return_not_implemented_response(feature: str):
@@ -72,7 +79,6 @@ class Users:
     @app.post(
         "/users",
         response_model=schemas.User,
-        responses={409: {}},
         tags=["Users"],
         description="Create a new \"empty\" user account with zero balance."
     )
