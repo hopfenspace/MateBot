@@ -30,15 +30,23 @@ class PreconditionFailed(HTTPException):
 
 class MissingImplementation(HTTPException):
     """
-    TODO
+    Exception raised if a path operation doesn't implement a required feature to work
+
+    This exception should be caught by a special handler
+    that uses its class method `handle` to create a response.
     """
 
     def __init__(self, feature: str):
         super().__init__(status_code=501, detail=feature)
 
-    @staticmethod
-    async def handle(request: Request, exc: HTTPException):
-        print(f"Feature {exc.detail} by {request.url.path} not implemented yet.", file=sys.stderr)
+    @classmethod
+    async def handle(cls, request: Request, exc: HTTPException):
+        print(
+            f"Feature '{exc.detail}' (required for '{request.method} "
+            f"{request.url.path}') not implemented yet.",
+            file=sys.stderr
+        )
+
         return JSONResponse(status_code=501, content={
             "message": "Feature not implemented.",
             "feature": exc.detail,
