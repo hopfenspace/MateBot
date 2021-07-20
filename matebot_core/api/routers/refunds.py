@@ -21,7 +21,6 @@ router = APIRouter(
 @router.get(
     "",
     response_model=List[pydantic.NonNegativeInt],
-    tags=["Refunds"],
     description="Return a list of all known refund IDs in the system."
 )
 def get_all_known_refund_ids(local: LocalRequestData = Depends(LocalRequestData)):
@@ -32,7 +31,6 @@ def get_all_known_refund_ids(local: LocalRequestData = Depends(LocalRequestData)
     "",
     response_model=schemas.Refund,
     responses={404: {}},
-    tags=["Refunds"],
     description="Create a new refund based on the specified data. A 404 error will be "
                 "returned if the user ID of the creator of that refund is unknown."
 )
