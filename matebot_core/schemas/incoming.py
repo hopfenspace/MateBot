@@ -33,12 +33,10 @@ class IncomingCommunism(pydantic.BaseModel):
 
 class IncomingUser(pydantic.BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
-    balance: int = 0
     permission: bool
     active: bool
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
-    aliases: List[UserAlias]
 
 
 class IncomingTransaction(pydantic.BaseModel):

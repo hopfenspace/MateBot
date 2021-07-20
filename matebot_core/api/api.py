@@ -74,9 +74,7 @@ class Users:
         response_model=schemas.User,
         responses={409: {}},
         tags=["Users"],
-        description="Create a new \"empty\" user account. All aliases specified will "
-                    "be attached to this user account, too. Trying to add a user alias "
-                    "which is already occupied by another user will result in a 409 error."
+        description="Create a new \"empty\" user account with zero balance."
     )
     def create_new_user(user: schemas.IncomingUser):
         _return_not_implemented_response("create_new_user")
