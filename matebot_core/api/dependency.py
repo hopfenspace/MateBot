@@ -2,10 +2,10 @@
 MateBot API dependency library
 """
 
-from typing import Generator, Optional
+from typing import Generator
 
 import sqlalchemy.exc
-from fastapi import Request, Response, Header, Depends
+from fastapi import Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from . import etag
@@ -54,14 +54,10 @@ class LocalRequestData:
             self,
             request: Request,
             response: Response,
-            session: Session = Depends(_get_session),
-            match: Optional[str] = Header(None, alias="If-Match"),
-            match_none: Optional[str] = Header(None, alias="If-None-Match")
+            session: Session = Depends(_get_session)
     ):
         self.request = request
         self.response = response
         self.headers = request.headers
         self.entity = etag.Entity(request)
-        self.match = match
-        self.match_none = match_none
         self.session = session
