@@ -15,7 +15,7 @@ only be performed if the `If-Match` header exists and is set correctly.
 Take a look into the various `PUT` or `DELETE` endpoints or RFC 7232 for
 more information. The `POST` endpoints ignore the `If-Match` header field
 if it has been set, since newly created resources don't have ETags yet.
-All GET endpoints support the use of the `If-None-Match` header field to
+All `GET` endpoints support the use of the `If-None-Match` header field to
 look for updates to certain resources quickly, if not stated otherwise.
 At the moment, the `/updates` endpoint(s) can be used for that purpose, too.
 """
