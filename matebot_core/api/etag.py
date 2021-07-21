@@ -60,7 +60,8 @@ class ETag:
             sequence = [m.dict() for m in model if isinstance(m, pydantic.BaseModel)]
             if len(sequence) == len(model):
                 response.headers.append("ETag", self.make_etag(sequence))
-            logger.warning(f"Not all entries of the sequence of length {len(model)} are models")
+            else:
+                logger.warning(f"Not all entries of the sequence of length {len(model)} are models")
         else:
             logger.warning(f"Model {model!r} ({type(model)}) can't get an ETag header")
 
