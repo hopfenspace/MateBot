@@ -44,13 +44,16 @@ class LocalRequestData:
     definition, if it refers to a Query, Header, Path or Cookie.
 
     Just add a single dependency for this class to your path operation
-    to be able to use its attributes in a well-defined manner:
+    to be able to use its attributes in a well-defined manner. It also
+    supports the attachment of the ``ETag`` header as well as specific
+    extra headers to the response using just one additional method call:
 
     .. code-block:: python3
 
         @app.get("/user")
         def get_user(local: LocalRequestData = Depends(LocalRequestData)):
             ...
+            return local.attach_headers(model)
 
     """
 
