@@ -2,6 +2,7 @@
 MateBot router module for /transactions requests
 """
 
+import logging
 from typing import List
 
 import pydantic
@@ -11,6 +12,8 @@ from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/transactions",

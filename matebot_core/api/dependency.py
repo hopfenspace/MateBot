@@ -2,6 +2,7 @@
 MateBot API dependency library
 """
 
+import logging
 from typing import Generator
 
 import sqlalchemy.exc
@@ -10,6 +11,9 @@ from sqlalchemy.orm import Session
 
 from . import etag
 from ..persistence import database
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_session() -> Generator[Session, None, bool]:

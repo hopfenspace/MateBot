@@ -8,6 +8,7 @@ import time
 import uuid
 import random
 import string
+import logging
 from typing import Optional
 
 from fastapi import HTTPException, Request
@@ -15,6 +16,8 @@ from fastapi.encoders import jsonable_encoder
 
 from .. import schemas
 
+
+logger = logging.getLogger(__name__)
 
 startup = time.time()
 runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lower()
@@ -138,9 +141,8 @@ class MissingImplementation(APIException):
         )
 
     async def hook(self, request: Request) -> Optional[str]:
-        print(
+        logger.error(
             f"Feature '{self.detail}' (required for '{request.method} "
-            f"{request.url.path}') not implemented yet.",
-            file=sys.stderr
+            f"{request.url.path}') not implemented yet."
         )
         return

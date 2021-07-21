@@ -4,6 +4,7 @@ ETag helper library for the core REST API
 
 import enum
 import hashlib
+import logging
 import collections
 from typing import List, Union
 
@@ -18,6 +19,9 @@ from fastapi import Request, Response
 
 
 from . import base
+
+
+logger = logging.getLogger(__name__)
 
 
 class HeaderFieldType(enum.Enum):

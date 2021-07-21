@@ -2,6 +2,7 @@
 MateBot router module for /applications requests
 """
 
+import logging
 from typing import List
 
 from fastapi import APIRouter, Depends
@@ -10,6 +11,8 @@ from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/applications",
