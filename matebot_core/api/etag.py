@@ -94,5 +94,5 @@ class ETag:
         :return: weak ETag value as a string
         """
 
-        content = json.dumps(json_object, allow_nan=False, separators=(",", ":")) + base.runtime_key
+        content = json.dumps(json_object, allow_nan=False) + base.runtime_key
         return f'"{hashlib.sha3_256(content.encode("UTF-8")).hexdigest()}"'
