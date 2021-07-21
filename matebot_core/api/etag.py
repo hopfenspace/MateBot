@@ -16,8 +16,6 @@ except ImportError:
 import pydantic
 from fastapi import Request, Response
 
-
-
 from . import base
 
 
@@ -48,27 +46,23 @@ class ETag:
             self.client_tag = None
             self.client_tag_type = HeaderFieldType.ABSENT
 
-    def respond_with(
-            self,
-            response: Response,
-            model: Union[pydantic.BaseModel, List[pydantic.BaseModel]]
-    ) -> Union[pydantic.BaseModel, List[pydantic.BaseModel]]:
+    def add_header(self, response: Response, model: base.ModelType):
         """
-        TODO
+        Add the ETag header field of the model to the response
+
+        :param response: Response object of the handled request
+        :param model: generated model of the completely finished request
         """
 
         if isinstance(model, pydantic.BaseModel):
             response.headers.append("ETag", self.make_etag(model.dict()))
-            return model
         if isinstance(model, collections.Sequence):
             sequence = [m.dict() for m in model if isinstance(m, pydantic.BaseModel)]
             if len(sequence) == len(model):
                 response.headers.append("ETag", self.make_etag(sequence))
-                return model
-            # TODO: add a WARN message to some logger
-            return model
-        # TODO: add a WARN message to some logger
-        return model
+            logger.warning(f"Not all entries of the sequence of length {len(model)} are models")
+        else:
+            logger.warning(f"Model {model!r} ({type(model)}) can't get an ETag header")
 
     def compare(self, model: Union[pydantic.BaseModel, List[pydantic.BaseModel]]) -> bool:
         """

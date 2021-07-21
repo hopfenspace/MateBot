@@ -9,7 +9,7 @@ import sqlalchemy.exc
 from fastapi import Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from . import etag
+from . import base, etag
 from ..persistence import database
 
 
@@ -65,3 +65,14 @@ class LocalRequestData:
         self.headers = request.headers
         self.entity = etag.ETag(request)
         self.session = session
+
+    def attach_headers(self, model: base.ModelType, **kwargs) -> base.ModelType:
+        """
+        Attach the specified headers (excl. ETag) to the response and return the model
+        """
+
+        for k in kwargs:
+            if k.lower() != "etag":
+                self.response.headers.append(k, kwargs[k])
+        self.entity.add_header(self.response, model)
+        return model
