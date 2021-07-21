@@ -3,12 +3,17 @@ ETag helper library for the core REST API
 """
 
 import enum
-import json
 import hashlib
-from typing import Union, List
+import collections
+from typing import List, Union
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 import pydantic
-from fastapi import Request
+from fastapi import Request, Response
 
 
 
@@ -39,6 +44,28 @@ class ETag:
             self.client_tag = None
             self.client_tag_type = HeaderFieldType.ABSENT
 
+    def respond_with(
+            self,
+            response: Response,
+            model: Union[pydantic.BaseModel, List[pydantic.BaseModel]]
+    ) -> Union[pydantic.BaseModel, List[pydantic.BaseModel]]:
+        """
+        TODO
+        """
+
+        if isinstance(model, pydantic.BaseModel):
+            response.headers.append("ETag", self.make_etag(model.dict()))
+            return model
+        if isinstance(model, collections.Sequence):
+            sequence = [m.dict() for m in model if isinstance(m, pydantic.BaseModel)]
+            if len(sequence) == len(model):
+                response.headers.append("ETag", self.make_etag(sequence))
+                return model
+            # TODO: add a WARN message to some logger
+            return model
+        # TODO: add a WARN message to some logger
+        return model
+
     def compare(self, model: Union[pydantic.BaseModel, List[pydantic.BaseModel]]) -> bool:
         """
         Calculate and compare the ETag of the given model with the known client ETag
@@ -67,5 +94,5 @@ class ETag:
         :return: weak ETag value as a string
         """
 
-        content = json.dumps(json_object) + base.runtime_key
+        content = json.dumps(json_object, allow_nan=False, separators=(",", ":")) + base.runtime_key
         return f'"{hashlib.sha3_256(content.encode("UTF-8")).hexdigest()}"'
