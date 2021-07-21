@@ -43,7 +43,7 @@ from fastapi.responses import PlainTextResponse
 from . import base, etag
 from .base import _return_not_implemented_response
 from .dependency import LocalRequestData
-from .routers import aliases, communisms, refunds
+from .routers import aliases, applications, communisms, refunds
 from .. import schemas
 from ..persistence import models
 
@@ -59,6 +59,7 @@ app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_preconditi
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
 
 app.include_router(aliases.router)
+app.include_router(applications.router)
 app.include_router(communisms.router)
 app.include_router(refunds.router)
 
@@ -129,37 +130,6 @@ class Updates:
     )
     def get_new_updates(timestamp: pydantic.NonNegativeInt):
         _return_not_implemented_response("get_new_updates")
-
-
-class Applications:
-    """
-    TODO
-    """
-
-    @staticmethod
-    @app.get(
-        "/applications",
-        response_model=List[schemas.Application],
-        tags=["Applications"],
-        description="Return a list of all known applications with their respective ID (=`app_id`)."
-    )
-    def get_all_applications():
-        _return_not_implemented_response("get_all_applications")
-
-    @staticmethod
-    @app.post(
-        "/applications",
-        response_model=schemas.Application,
-        responses={409: {}},
-        tags=["Applications"],
-        description="Add a new application and create a new ID for it. The UUID `auth_token` "
-                    "is used as a special form of API key to enforce proper authentication. "
-                    "The required alias for the `special_user` is used to create a proper "
-                    "binding to the \"banking user\" for the newly created application. "
-                    "A 409 error will be returned if the application already exists."
-    )
-    def add_new_application(application: schemas.IncomingApplication):
-        _return_not_implemented_response("add_new_application")
 
 
 class Transactions:
