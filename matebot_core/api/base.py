@@ -2,17 +2,18 @@
 MateBot REST API base library
 """
 
-import sys
 import enum
 import time
 import uuid
 import random
 import string
 import logging
-from typing import Optional
+from typing import Any, List, Optional, Union
 
-from fastapi import HTTPException, Request
+import pydantic
+from fastapi import HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 from .. import schemas
 
@@ -22,6 +23,8 @@ logger = logging.getLogger(__name__)
 startup = time.time()
 runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lower()
 runtime_uuid = uuid.UUID(runtime_key)
+
+ModelType = Union[pydantic.BaseModel, List[pydantic.BaseModel]]
 
 
 class RequestMethodType(enum.Enum):
@@ -60,7 +63,7 @@ class APIException(HTTPException):
         pass
 
     @classmethod
-    async def handle(cls, request: Request, exc: HTTPException) -> schemas.APIError:
+    async def handle(cls, request: Request, exc: HTTPException) -> Response:
         """
         Handle exceptions in a generic way to produce APIError models
         """
@@ -69,14 +72,20 @@ class APIException(HTTPException):
         if hasattr(exc, "hook") and callable(exc.hook):
             hook_message = await exc.hook(request)
 
+        status_code = 500
+        if hasattr(exc, "status_code"):
+            status_code = exc.status_code
+        elif isinstance(exc, pydantic.ValidationError):
+            status_code = 422
+
         if not isinstance(exc, HTTPException):
-            return schemas.APIError(
-                status=500,
+            return JSONResponse(jsonable_encoder(schemas.APIError(
+                status=status_code,
                 request=request.url.path,
                 repeat=False,
                 message=exc.__class__.__name__,
                 details=str(jsonable_encoder(exc))
-            )
+            )), status_code=status_code)
 
         repeat = False
         if hasattr(exc, "repeat"):
@@ -87,13 +96,13 @@ class APIException(HTTPException):
                 message = exc.message
         if hook_message is not None:
             message = hook_message
-        return schemas.APIError(
-            status=exc.status_code,
+        return JSONResponse(jsonable_encoder(schemas.APIError(
+            status=status_code,
             request=request.url.path,
             repeat=repeat,
             message=message,
             details=exc.detail
-        )
+        )), status_code=status_code)
 
 
 class NotModified(APIException):
