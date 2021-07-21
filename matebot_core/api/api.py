@@ -33,13 +33,11 @@ The handling of incoming conditional requests is described below:
   * for other methods with `verified` mark, perform the operation
 """
 
-
 import pydantic
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import PlainTextResponse
 
-from . import base, etag
+from . import base
 from .routers import aliases, applications, communisms, refunds, transactions, users
 from .. import schemas
 
@@ -47,7 +45,8 @@ from .. import schemas
 app = FastAPI(
     title="MateBot core REST API",
     version="0.3",
-    description=__doc__
+    description=__doc__,
+    responses={422: {"model": schemas.APIError}}
 )
 
 app.add_exception_handler(base.NotModified, base.NotModified.handle)
@@ -60,6 +59,8 @@ app.include_router(communisms.router)
 app.include_router(refunds.router)
 app.include_router(transactions.router)
 app.include_router(users.router)
+
+app.add_exception_handler(RequestValidationError, base.APIException.handle)
 
 
 class Updates:
