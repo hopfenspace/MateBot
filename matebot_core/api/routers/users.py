@@ -59,7 +59,7 @@ def update_existing_user(
 
 
 @router.get(
-    "{user_id}",
+    "/{user_id}",
     response_model=schemas.User,
     description="Return the internal model of the user specified by its user ID."
 )
