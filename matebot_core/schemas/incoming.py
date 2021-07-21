@@ -19,7 +19,7 @@ class IncomingUserAlias(pydantic.BaseModel):
 class IncomingApplication(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     auth_token: uuid.UUID
-    special_user: UserAlias
+    special_user: IncomingUserAlias
 
 
 class IncomingCommunism(pydantic.BaseModel):
