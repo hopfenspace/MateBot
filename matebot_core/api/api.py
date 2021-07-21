@@ -43,7 +43,7 @@ from fastapi.responses import PlainTextResponse
 from . import base, etag
 from .base import _return_not_implemented_response
 from .dependency import LocalRequestData
-from .routers import aliases, applications, communisms, refunds
+from .routers import aliases, applications, communisms, refunds, users
 from .. import schemas
 from ..persistence import models
 
@@ -62,57 +62,7 @@ app.include_router(aliases.router)
 app.include_router(applications.router)
 app.include_router(communisms.router)
 app.include_router(refunds.router)
-
-
-
-class Users:
-    """
-    TODO
-    """
-
-    @staticmethod
-    @app.get(
-        "/users",
-        response_model=List[schemas.User],
-        tags=["Users"],
-        description="Return a list of all internal user models with their aliases."
-    )
-    def get_all_users():
-        _return_not_implemented_response("get_all_users")
-
-    @staticmethod
-    @app.get(
-        "/users/{user_id}",
-        response_model=schemas.User,
-        tags=["Users"],
-        description="Return the internal model of the user specified by its user ID."
-    )
-    def get_user_by_id(user_id: int):
-        _return_not_implemented_response("get_user_by_id")
-
-    @staticmethod
-    @app.post(
-        "/users",
-        response_model=schemas.User,
-        tags=["Users"],
-        description="Create a new \"empty\" user account with zero balance."
-    )
-    def create_new_user(user: schemas.IncomingUser):
-        _return_not_implemented_response("create_new_user")
-
-    @staticmethod
-    @app.put(
-        "/users",
-        response_model=schemas.User,
-        responses={404: {}, 409: {}},
-        tags=["Users"],
-        description="Update an existing user model identified by the `user_id`. A 404 error "
-                    "will be returned if the `user_id` is not known. A 409 error will be "
-                    "returned when some of the following fields have been changed compared "
-                    "to the internal user state: `balance`, `created`, `accessed`."
-    )
-    def update_existing_user(user: schemas.User):
-        _return_not_implemented_response("update_existing_user")
+app.include_router(users.router)
 
 
 class Updates:
