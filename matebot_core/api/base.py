@@ -4,9 +4,16 @@ MateBot REST API base library
 
 import sys
 import enum
+import uuid
+import random
+import string
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
+
+
+runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lower()
+runtime_uuid = uuid.UUID(runtime_key)
 
 
 class RequestMethodType(enum.Enum):
