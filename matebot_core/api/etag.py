@@ -21,14 +21,6 @@ class HeaderFieldType(enum.Enum):
     IF_NONE_MATCH = "If-None-Match"
 
 
-async def handle_cache_hit(request: Request, exc: NotModified):
-    return Response("", 304, headers=exc.headers)
-
-
-async def handle_failed_precondition(request: Request, exc: PreconditionFailed):
-    return Response("", 412, headers=exc.headers)
-
-
 class Entity:
     """
     TODO

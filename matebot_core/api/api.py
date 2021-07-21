@@ -50,8 +50,8 @@ app = FastAPI(
     description=__doc__
 )
 
-app.add_exception_handler(base.NotModified, etag.handle_cache_hit)
-app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_precondition)
+app.add_exception_handler(base.NotModified, base.NotModified.handle)
+app.add_exception_handler(base.PreconditionFailed, base.PreconditionFailed.handle)
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
 
 app.include_router(aliases.router)

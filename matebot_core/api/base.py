@@ -21,11 +21,29 @@ class NotModified(HTTPException):
     TODO
     """
 
+    @classmethod
+    async def handle(cls, request: Request, exc: HTTPException):
+        return JSONResponse(status_code=304, headers=exc.headers, content={
+            "code": 304,
+            "message": "Resource not modified.",
+            "detail": exc.detail,
+            "request": request.url.path
+        })
+
 
 class PreconditionFailed(HTTPException):
     """
     TODO
     """
+
+    @classmethod
+    async def handle(cls, request: Request, exc: HTTPException):
+        return JSONResponse(status_code=412, headers=exc.headers, content={
+            "code": 412,
+            "message": "Precondition failed.",
+            "detail": exc.detail,
+            "request": request.url.path
+        })
 
 
 class MissingImplementation(HTTPException):
@@ -48,7 +66,8 @@ class MissingImplementation(HTTPException):
         )
 
         return JSONResponse(status_code=501, content={
+            "code": 501,
             "message": "Feature not implemented.",
-            "feature": exc.detail,
+            "detail": exc.detail,
             "request": request.url.path
         })
