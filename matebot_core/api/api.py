@@ -6,18 +6,31 @@ It's an all-or-nothing API, so take care when deploying it. It's
 recommended to put a reverse proxy in front of this API to prevent
 various problems and to introduce proper authentication or user handling.
 
-Any client that wants to perform update operations using `PUT` should
-be aware of the API's use of the `ETag` header. Any resource delivered
-or created by a request will carry the `ETag` header set properly. This
-allows the API to effectively prevent race conditions when multiple clients
-want to update the same resource using `PUT`, since any such request will
-only be performed if the `If-Match` header exists and is set correctly.
-Take a look into the various `PUT` or `DELETE` endpoints or RFC 7232 for
-more information. The `POST` endpoints ignore the `If-Match` header field
-if it has been set, since newly created resources don't have ETags yet.
-All `GET` endpoints support the use of the `If-None-Match` header field to
-look for updates to certain resources quickly, if not stated otherwise.
-At the moment, the `/updates` endpoint(s) can be used for that purpose, too.
+This API supports conditional HTTP requests and will enforce them for
+various types of request that change a resource's state. Any resource
+delivered or created by a request will carry the `ETag` header
+set properly. This allows the API to effectively prevent race
+conditions when multiple clients want to update the same resource
+using `PUT`. Take a look into RFCs 7232 for more information.
+Note that the `Last-Modified` header field is not used by this API.
+
+The handling of incoming conditional requests is described below:
+
+1. Evaluate the `If-Match` precondition:
+  * true and method is `GET`, respond with 304 (Not Modified)
+  * true for other methods, continue with step 2 and set `verified` mark
+  * false, respond with 412 (Precondition Failed)
+  * header field absent, continue with step 2 without mark
+2. Evaluate the `If-None-Match` precondition:
+  * true, continue with step 3 and set `verified` mark
+  * false and method is `GET`, respond with 304 (Not Modified)
+  * false for other methods, respond 412 (Precondition Failed)
+  * header field absent, continue with step 3 without mark
+3. Perform the requested operation:
+  * method is `GET`, return the requested resource
+  * method is `POST`, create the requested resource and return it
+  * for other methods without mark, respond 412 (Precondition Failed)
+  * for other methods with `verified` mark, perform the operation
 """
 
 from typing import List
