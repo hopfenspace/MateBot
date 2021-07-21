@@ -43,7 +43,7 @@ from fastapi.responses import PlainTextResponse
 from . import base, etag
 from .base import _return_not_implemented_response
 from .dependency import LocalRequestData
-from .routers import communisms, refunds
+from .routers import aliases, communisms, refunds
 from .. import schemas
 from ..persistence import models
 
@@ -58,6 +58,7 @@ app.add_exception_handler(base.NotModified, etag.handle_cache_hit)
 app.add_exception_handler(base.PreconditionFailed, etag.handle_failed_precondition)
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
 
+app.include_router(aliases.router)
 app.include_router(communisms.router)
 app.include_router(refunds.router)
 
@@ -128,95 +129,6 @@ class Updates:
     )
     def get_new_updates(timestamp: pydantic.NonNegativeInt):
         _return_not_implemented_response("get_new_updates")
-
-
-class Aliases:
-    """
-    TODO
-    """
-
-    @staticmethod
-    @app.get(
-        "/aliases",
-        response_model=List[schemas.UserAlias],
-        tags=["Aliases"],
-        description="Return a list of all known user aliases of all applications."
-    )
-    def get_all_known_aliases():
-        _return_not_implemented_response("get_all_known_aliases")
-
-    @staticmethod
-    @app.get(
-        "/aliases/application/{application}",
-        response_model=List[schemas.UserAlias],
-        tags=["Aliases"],
-        description="Return a list of all users' aliases for a given application name."
-    )
-    def get_aliases_by_application_name(application: pydantic.constr(max_length=255)):
-        _return_not_implemented_response("get_aliases_by_application_name")
-
-    @staticmethod
-    @app.get(
-        "/aliases/user/{user_id}",
-        response_model=List[schemas.UserAlias],
-        tags=["Aliases"],
-        description="Return a list of all aliases of a user for a given user ID."
-    )
-    def get_aliases_by_user_id(user_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_aliases_by_user_id")
-
-    @staticmethod
-    @app.get(
-        "/aliases/id/{alias_id}",
-        response_model=schemas.UserAlias,
-        tags=["Aliases"],
-        description="Return the alias model of a specific alias ID."
-    )
-    def get_alias_by_alias_id(alias_id: pydantic.NonNegativeInt):
-        _return_not_implemented_response("get_alias_by_alias_id")
-
-    @staticmethod
-    @app.post(
-        "/aliases",
-        status_code=201,
-        response_model=schemas.UserAlias,
-        responses={409: {}},
-        tags=["Aliases"],
-        description="Create a new alias, failing for any existing alias of the same combination "
-                    "of `app_user_id` and `application` ID. The `app_user_id` field should "
-                    "reflect the unique internal username in the frontend application. A 409 "
-                    "error will be returned when the combination of those already exists. A 404 "
-                    "error will be returned if the `user_id` or `application` is not known."
-    )
-    def create_new_alias(alias: schemas.IncomingUserAlias):
-        _return_not_implemented_response("create_new_alias")
-
-    @staticmethod
-    @app.put(
-        "/aliases",
-        response_model=schemas.UserAlias,
-        responses={404: {}, 409: {}},
-        tags=["Aliases"],
-        description="Update an existing alias model identified by the `alias_id`. Errors will "
-                    "occur when the `alias_id` doesn't exist. It's also possible to overwrite "
-                    "the previous unique `app_user_id` of that `alias_id`. A 409 error will be "
-                    "returned when the combination of those already exists with another existing "
-                    "`alias_id`, while a 404 error will be returned for an unknown `alias_id`."
-    )
-    def update_existing_alias(alias: schemas.UserAlias):
-        _return_not_implemented_response("update_existing_alias")
-
-    @staticmethod
-    @app.delete(
-        "/aliases/{alias_id}",
-        status_code=204,
-        responses={404: {}},
-        tags=["Aliases"],
-        description="Delete an existing alias model identified by the `alias_id`. "
-                    "A 404 error will be returned for unknown `alias_id` values."
-    )
-    def delete_existing_alias(alias_id: int):
-        _return_not_implemented_response("delete_existing_alias")
 
 
 class Applications:
