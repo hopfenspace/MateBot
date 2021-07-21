@@ -6,6 +6,17 @@ It's an all-or-nothing API, so take care when deploying it. It's
 recommended to put a reverse proxy in front of this API to prevent
 various problems and to introduce proper authentication or user handling.
 
+The API tries to always return JSON-encoded data to any kind of request,
+if return data is necessary for that response, which is not the case for
+redirects, for example. The only exception is 500 (Internal Server Error),
+where no assumptions of the returned values can be made. Most of the errors
+returned by the API use the `APIError` model to represent their data.
+The only known exception at the moment are 404 (Not Found) and 405 (Method
+Not Allowed), which are not considered as API problems, since the API is
+properly documented for that. This allows user agents to make certain
+assumptions about the returned response, if the returned status code
+equals the expected status code for that operation, usually 200 (OK).
+
 This API supports conditional HTTP requests and will enforce them for
 various types of request that change a resource's state. Any resource
 delivered or created by a request will carry the `ETag` header
@@ -52,6 +63,7 @@ app = FastAPI(
 app.add_exception_handler(base.NotModified, base.NotModified.handle)
 app.add_exception_handler(base.PreconditionFailed, base.PreconditionFailed.handle)
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
+app.add_exception_handler(RequestValidationError, base.APIException.handle)
 
 app.include_router(aliases.router)
 app.include_router(applications.router)
@@ -59,8 +71,6 @@ app.include_router(communisms.router)
 app.include_router(refunds.router)
 app.include_router(transactions.router)
 app.include_router(users.router)
-
-app.add_exception_handler(RequestValidationError, base.APIException.handle)
 
 
 class Updates:
