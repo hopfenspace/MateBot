@@ -8,11 +8,11 @@ import hashlib
 from typing import Union, List
 
 import pydantic
-from fastapi import Request, Response
+from fastapi import Request
 
 
 
-from .base import NotModified, PreconditionFailed
+from . import base
 
 
 class HeaderFieldType(enum.Enum):
@@ -21,7 +21,7 @@ class HeaderFieldType(enum.Enum):
     IF_NONE_MATCH = "If-None-Match"
 
 
-class Entity:
+class ETag:
     """
     TODO
     """
@@ -67,4 +67,5 @@ class Entity:
         :return: weak ETag value as a string
         """
 
-        return f'W/"{hashlib.sha3_256(json.dumps(json_object).encode("UTF-8")).hexdigest()}"'
+        content = json.dumps(json_object) + base.runtime_key
+        return f'"{hashlib.sha3_256(content.encode("UTF-8")).hexdigest()}"'

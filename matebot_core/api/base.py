@@ -4,6 +4,7 @@ MateBot REST API base library
 
 import sys
 import enum
+import time
 import uuid
 import random
 import string
@@ -12,6 +13,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 
 
+startup = time.time()
 runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lower()
 runtime_uuid = uuid.UUID(runtime_key)
 

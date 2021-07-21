@@ -59,5 +59,5 @@ class LocalRequestData:
         self.request = request
         self.response = response
         self.headers = request.headers
-        self.entity = etag.Entity(request)
+        self.entity = etag.ETag(request)
         self.session = session
