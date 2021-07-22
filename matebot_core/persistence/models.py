@@ -10,6 +10,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from .database import Base
+from .. import schemas
 
 
 def _make_id_column():
@@ -90,6 +91,21 @@ class User(Base):
         backref=backref("voucher_user", remote_side=[id])
     )
 
+    @property
+    def schema(self) -> schemas.User:
+        return schemas.User(
+            id=self.id,
+            name=self.name,
+            balance=self.balance,
+            permission=self.permission,
+            active=self.active,
+            external=self.external,
+            voucher=self.voucher_id,
+            aliases=[alias.schema for alias in self.aliases],
+            created=self.created.timestamp(),
+            accessed=self.accessed.timestamp()
+        )
+
     def __repr__(self) -> str:
         return f"User(id={self.id}, balance={self.balance}, aliases={self.aliases})"
 
@@ -109,6 +125,13 @@ class Application(Base):
         cascade="all,delete",
         backref="app"
     )
+
+    @property
+    def schema(self) -> schemas.Application:
+        return schemas.Application(
+            id=self.id,
+            name=self.name
+        )
 
     def __repr__(self) -> str:
         return f"Application(id={self.id}, name={self.name})"
@@ -137,6 +160,15 @@ class UserAlias(Base):
     __table_args__ = (
         UniqueConstraint("app_id", "app_user_id"),
     )
+
+    @property
+    def schema(self) -> schemas.UserAlias:
+        return schemas.UserAlias(
+            alias_id=self.id,
+            user_id=self.user_id,
+            application=self.app.name,
+            app_user_id=self.app_user_id
+        )
 
     def __repr__(self) -> str:
         return "UserAlias(id={}, user_id={}, app_id={}, app_user_id={})".format(
