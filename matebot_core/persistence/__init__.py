@@ -1,0 +1,3 @@
+"""
+MateBot core persistence features
+"""
