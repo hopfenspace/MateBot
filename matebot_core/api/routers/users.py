@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
+from ...persistence import models
 from ... import schemas
 
 
@@ -27,7 +28,9 @@ router = APIRouter(
     description="Return a list of all internal user models with their aliases."
 )
 def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
-    raise MissingImplementation("get_all_users")
+    all_users = [u.schema for u in local.session.query(models.User).all()]
+    local.entity.compare(all_users)
+    return local.attach_headers(all_users)
 
 
 @router.post(
