@@ -72,14 +72,14 @@ class ETag:
 
         precondition_failed = base.PreconditionFailed(
             self.request.url.path,
-            f"Conditional request not matching current model entity tag: {model_tag!r}"
+            f"Conditional request not matching current model entity tag: {model_tag}"
         )
 
         def evaluate_match(header_value: str) -> bool:
             if header_value.strip() == "*":
                 return model_tag is not None
             for tag in map(str.strip, header_value.split(",")):
-                if tag != "" and not tag.startswith("W/") and tag.replace('"', '') == model_tag:
+                if tag != "" and not tag.startswith("W/") and tag == model_tag:
                     return True
             return False
 
@@ -88,7 +88,7 @@ class ETag:
                 return model_tag is None
             # TODO: the weak comparison algorithm should be used here (RFC 7232, 3.2) instead!
             for tag in map(str.strip, header_value.split(",")):
-                if tag != "" and not tag.startswith("W/") and tag.replace('"', '') == model_tag:
+                if tag != "" and not tag.startswith("W/") and tag == model_tag:
                     return False
             return True
 
