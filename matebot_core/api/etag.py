@@ -31,7 +31,7 @@ class HeaderFieldType(enum.Enum):
 
 class ETag:
     """
-    TODO
+    Helper class providing methods to create and compare ETags and related headers
     """
 
     def __init__(self, request: Request):
@@ -72,7 +72,7 @@ class ETag:
 
         precondition_failed = base.PreconditionFailed(
             self.request.url.path,
-            f"Conditional request not matching current model entity tag: {model_tag}"
+            f"Conditional request not matching current model entity tag: {model_tag!r}"
         )
 
         def evaluate_match(header_value: str) -> bool:
