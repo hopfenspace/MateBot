@@ -51,7 +51,7 @@ class ETag:
         if tag is not None:
             response.headers.append("ETag", tag)
 
-    def compare(self, current_model: base.ModelType) -> bool:
+    def compare(self, current_model: Optional[base.ModelType] = None) -> bool:
         """
         Calculate and compare the ETag of the given model with the known client ETag
 
@@ -63,12 +63,56 @@ class ETag:
 
         :param current_model: any subclass of a base model or list thereof
         :return: ``True`` if everything went smoothly
-        :raises NotModified: if the ``If-None-Match`` header for GET requests was set correctly
-        :raises PreconditionFailed: if the ``If-Match`` header for other requests was set correctly
+        :raises NotModified: if the user agent already has the most recent version of a resource
+        :raises PreconditionFailed: if any of the preconditions were not met
         """
 
-        # TODO: implement this method!
-        return False
+        verified = False
+        model_tag = self.make_etag(current_model)
+
+        precondition_failed = base.PreconditionFailed(
+            self.request.url.path,
+            f"Conditional request not matching current model entity tag: {model_tag}"
+        )
+
+        def evaluate_match(header_value: str) -> bool:
+            if header_value.strip() == "*":
+                return model_tag is not None
+            for tag in map(str.strip, header_value.split(",")):
+                if tag != "" and not tag.startswith("W/") and tag.replace('"', '') == model_tag:
+                    return True
+            return False
+
+        def evaluate_none_match(header_value: str) -> bool:
+            if header_value.strip() == "*":
+                return model_tag is None
+            # TODO: the weak comparison algorithm should be used here (RFC 7232, 3.2) instead!
+            for tag in map(str.strip, header_value.split(",")):
+                if tag != "" and not tag.startswith("W/") and tag.replace('"', '') == model_tag:
+                    return False
+            return True
+
+        # Step 1: evaluate the `If-Match` header precondition
+        if self.match is not None and self.match != "":
+            if not evaluate_match(self.match):
+                raise precondition_failed
+            if self.request.method == "GET":
+                raise base.NotModified(self.request.url.path)
+            verified = True
+
+        # Step 2: evaluate the `If-None-Match` header precondition
+        if self.none_match is not None and self.none_match != "":
+            if not evaluate_none_match(self.none_match):
+                if self.request.method == "GET":
+                    raise base.NotModified(self.request.url.path)
+                raise precondition_failed
+            verified = True
+
+        # Step 3: abort further operation if the preconditions were not met
+        if self.request.method not in ("GET", "POST") and not verified:
+            raise precondition_failed
+
+        return True
 
     @staticmethod
     def make_etag(obj: Any) -> Optional[str]:
