@@ -232,14 +232,30 @@ class Transaction(Base):
         )
 
 
+class Ballot(Base):
+    __tablename__ = "ballots"
+
+    id = _make_id_column()
+
+    def __repr__(self) -> str:
+        return "Ballot(id={}, votes={})".format(
+            self.id, [v.vote for v in self.votes]
+        )
+
+
 class Vote(Base):
     __tablename__ = "votes"
 
     id = _make_id_column()
 
+    ballot_id = Column(
+        Integer,
+        ForeignKey("ballots.id", ondelete="CASCADE"),
+        nullable=False
+    )
     user_id = Column(
         Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id"),
         nullable=False
     )
     vote = Column(
@@ -253,12 +269,25 @@ class Vote(Base):
         onupdate=func.now()
     )
 
-    user = relationship("User")
+    ballot = relationship(
+        "Ballot",
+        backref="votes"
+    )
+    user = relationship(
+        "User",
+        backref="votes"
+    )
 
     __table_args__ = (
         CheckConstraint("vote <= 1"),
-        CheckConstraint("vote >= -1")
+        CheckConstraint("vote >= -1"),
+        UniqueConstraint("user_id", "ballot_id"),
     )
+
+    def __repr__(self) -> str:
+        return "Vote(id={}, ballot_id={}, user_id={}, vote={})".format(
+            self.id, self.ballot_id, self.user_id, self.vote
+        )
 
 
 class Collective(Base):
