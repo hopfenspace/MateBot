@@ -3,6 +3,7 @@ ETag helper library for the core REST API
 """
 
 import enum
+import uuid
 import hashlib
 import logging
 import collections
@@ -150,4 +151,4 @@ class ETag:
         cls = type(obj).__name__
         dump = json.dumps(representation, allow_nan=False)
         content = cls + dump + base.runtime_key
-        return f'"{hashlib.sha3_256(content.encode("UTF-8")).hexdigest()}"'
+        return f'"{uuid.UUID(hashlib.md5(content.encode("UTF-8")).hexdigest())}"'
