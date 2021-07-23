@@ -25,7 +25,13 @@ def _get_session() -> Generator[Session, None, bool]:
     try:
         yield session
         session.flush()
-    except sqlalchemy.exc.SQLAlchemyError:
+    except sqlalchemy.exc.DBAPIError as exc:
+        logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {exc.statement!r}")
+        session.rollback()
+        session.close()
+        raise
+    except sqlalchemy.exc.SQLAlchemyError as exc:
+        logger.error(f"{type(exc).__name__}: {str(exc)}")
         session.rollback()
         session.close()
         raise
