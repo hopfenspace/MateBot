@@ -181,14 +181,12 @@ class Transaction(Base):
 
     id = _make_id_column()
 
-    # TODO: reference to user ID
-    sender = Column(
+    sender_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
     )
-    # TODO: reference to user ID
-    receiver = Column(
+    receiver_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
@@ -212,17 +210,25 @@ class Transaction(Base):
         nullable=True
     )
 
+    sender = relationship(
+        "User",
+        foreign_keys=[sender_id]
+    )
+    receiver = relationship(
+        "User",
+        foreign_keys=[receiver_id]
+    )
     collective = relationship(
         "Collective"
     )
 
     __table_args__ = (
-        UniqueConstraint("sender", "receiver", "collective_id"),
+        UniqueConstraint("sender_id", "receiver_id", "collective_id"),
     )
 
     def __repr__(self) -> str:
-        return "Transaction(id={}, sender={}, receiver={}, amount={})".format(
-            self.id, self.sender, self.receiver, self.amount
+        return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
+            self.id, self.sender_id, self.receiver_id, self.amount
         )
 
 
