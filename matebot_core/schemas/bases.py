@@ -10,8 +10,14 @@ import pydantic
 class Vote(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
+    ballot_id: pydantic.NonNegativeInt
     vote: pydantic.conint(ge=-1, le=1)
     modified: pydantic.NonNegativeInt
+
+
+class Ballot(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    votes: List[Vote]
 
 
 class UserAlias(pydantic.BaseModel):
