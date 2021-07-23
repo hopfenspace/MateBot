@@ -3,8 +3,8 @@ MateBot core database models
 """
 
 from sqlalchemy import (
-    Boolean, DateTime, Integer, String,
-    Column, FetchedValue, ForeignKey, UniqueConstraint
+    Boolean, DateTime, Integer, SmallInteger, String,
+    CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
@@ -230,6 +230,35 @@ class Transaction(Base):
         return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
             self.id, self.sender_id, self.receiver_id, self.amount
         )
+
+
+class Vote(Base):
+    __tablename__ = "votes"
+
+    id = _make_id_column()
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    vote = Column(
+        SmallInteger,
+        nullable=False
+    )
+    modified = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    user = relationship("User")
+
+    __table_args__ = (
+        CheckConstraint("vote <= 1"),
+        CheckConstraint("vote >= -1")
+    )
 
 
 class Collective(Base):
