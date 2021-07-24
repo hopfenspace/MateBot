@@ -1,0 +1,3 @@
+"""
+MateBot core REST API
+"""

@@ -3,13 +3,14 @@ MateBot core database models
 """
 
 from sqlalchemy import (
-    Boolean, DateTime, Integer, String,
-    Column, FetchedValue, ForeignKey, UniqueConstraint
+    Boolean, DateTime, Integer, SmallInteger, String,
+    CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from .database import Base
+from .. import schemas
 
 
 def _make_id_column():
@@ -90,6 +91,21 @@ class User(Base):
         backref=backref("voucher_user", remote_side=[id])
     )
 
+    @property
+    def schema(self) -> schemas.User:
+        return schemas.User(
+            id=self.id,
+            name=self.name,
+            balance=self.balance,
+            permission=self.permission,
+            active=self.active,
+            external=self.external,
+            voucher=self.voucher_id,
+            aliases=[alias.schema for alias in self.aliases],
+            created=self.created.timestamp(),
+            accessed=self.accessed.timestamp()
+        )
+
     def __repr__(self) -> str:
         return f"User(id={self.id}, balance={self.balance}, aliases={self.aliases})"
 
@@ -109,6 +125,13 @@ class Application(Base):
         cascade="all,delete",
         backref="app"
     )
+
+    @property
+    def schema(self) -> schemas.Application:
+        return schemas.Application(
+            id=self.id,
+            name=self.name
+        )
 
     def __repr__(self) -> str:
         return f"Application(id={self.id}, name={self.name})"
@@ -138,6 +161,15 @@ class UserAlias(Base):
         UniqueConstraint("app_id", "app_user_id"),
     )
 
+    @property
+    def schema(self) -> schemas.UserAlias:
+        return schemas.UserAlias(
+            alias_id=self.id,
+            user_id=self.user_id,
+            application=self.app.name,
+            app_user_id=self.app_user_id
+        )
+
     def __repr__(self) -> str:
         return "UserAlias(id={}, user_id={}, app_id={}, app_user_id={})".format(
             self.id, self.user_id, self.app_id, self.app_user_id
@@ -149,14 +181,12 @@ class Transaction(Base):
 
     id = _make_id_column()
 
-    # TODO: reference to user ID
-    sender = Column(
+    sender_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
     )
-    # TODO: reference to user ID
-    receiver = Column(
+    receiver_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False
@@ -180,17 +210,105 @@ class Transaction(Base):
         nullable=True
     )
 
+    sender = relationship(
+        "User",
+        foreign_keys=[sender_id]
+    )
+    receiver = relationship(
+        "User",
+        foreign_keys=[receiver_id]
+    )
     collective = relationship(
         "Collective"
     )
 
     __table_args__ = (
-        UniqueConstraint("sender", "receiver", "collective_id"),
+        UniqueConstraint("sender_id", "receiver_id", "collective_id"),
     )
 
     def __repr__(self) -> str:
-        return "Transaction(id={}, sender={}, receiver={}, amount={})".format(
-            self.id, self.sender, self.receiver, self.amount
+        return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
+            self.id, self.sender_id, self.receiver_id, self.amount
+        )
+
+
+class Ballot(Base):
+    __tablename__ = "ballots"
+
+    id = _make_id_column()
+
+    active = Column(
+        Boolean,
+        nullable=False
+    )
+    result = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )
+    closed = Column(
+        DateTime,
+        nullable=True,
+        default=None
+    )
+
+    @property
+    def schema(self) -> schemas.Ballot:
+        return schemas.Ballot(
+            id=self.id,
+            votes=[vote.schema for vote in self.votes]
+        )
+
+    def __repr__(self) -> str:
+        return "Ballot(id={}, votes={})".format(
+            self.id, [v.vote for v in self.votes]
+        )
+
+
+class Vote(Base):
+    __tablename__ = "votes"
+
+    id = _make_id_column()
+
+    ballot_id = Column(
+        Integer,
+        ForeignKey("ballots.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    vote = Column(
+        SmallInteger,
+        nullable=False
+    )
+    modified = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    ballot = relationship(
+        "Ballot",
+        backref="votes"
+    )
+    user = relationship(
+        "User",
+        backref="votes"
+    )
+
+    __table_args__ = (
+        CheckConstraint("vote <= 1"),
+        CheckConstraint("vote >= -1"),
+        UniqueConstraint("user_id", "ballot_id"),
+    )
+
+    def __repr__(self) -> str:
+        return "Vote(id={}, ballot_id={}, user_id={}, vote={})".format(
+            self.id, self.ballot_id, self.user_id, self.vote
         )
 
 

@@ -2,14 +2,18 @@
 MateBot API dependency library
 """
 
-from typing import Generator, Optional
+import logging
+from typing import Generator
 
 import sqlalchemy.exc
-from fastapi import Request, Response, Header, Depends
+from fastapi import Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from . import etag
+from . import base, etag
 from ..persistence import database
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_session() -> Generator[Session, None, bool]:
@@ -21,7 +25,14 @@ def _get_session() -> Generator[Session, None, bool]:
     try:
         yield session
         session.flush()
-    except sqlalchemy.exc.SQLAlchemyError:
+    except sqlalchemy.exc.DBAPIError as exc:
+        details = exc.statement.replace("\n", "")
+        logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}")
+        session.rollback()
+        session.close()
+        raise
+    except sqlalchemy.exc.SQLAlchemyError as exc:
+        logger.error(f"{type(exc).__name__}: {str(exc)}")
         session.rollback()
         session.close()
         raise
@@ -40,13 +51,16 @@ class LocalRequestData:
     definition, if it refers to a Query, Header, Path or Cookie.
 
     Just add a single dependency for this class to your path operation
-    to be able to use its attributes in a well-defined manner:
+    to be able to use its attributes in a well-defined manner. It also
+    supports the attachment of the ``ETag`` header as well as specific
+    extra headers to the response using just one additional method call:
 
     .. code-block:: python3
 
         @app.get("/user")
         def get_user(local: LocalRequestData = Depends(LocalRequestData)):
             ...
+            return local.attach_headers(model)
 
     """
 
@@ -54,14 +68,21 @@ class LocalRequestData:
             self,
             request: Request,
             response: Response,
-            session: Session = Depends(_get_session),
-            match: Optional[str] = Header(None, alias="If-Match"),
-            match_none: Optional[str] = Header(None, alias="If-None-Match")
+            session: Session = Depends(_get_session)
     ):
         self.request = request
         self.response = response
         self.headers = request.headers
-        self.entity = etag.Entity(request)
-        self.match = match
-        self.match_none = match_none
+        self.entity = etag.ETag(request)
         self.session = session
+
+    def attach_headers(self, model: base.ModelType, **kwargs) -> base.ModelType:
+        """
+        Attach the specified headers (excl. ETag) to the response and return the model
+        """
+
+        for k in kwargs:
+            if k.lower() != "etag":
+                self.response.headers.append(k, kwargs[k])
+        self.entity.add_header(self.response, model)
+        return model

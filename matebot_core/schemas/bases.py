@@ -7,7 +7,24 @@ from typing import List, Optional
 import pydantic
 
 
+class Vote(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    user_id: pydantic.NonNegativeInt
+    ballot_id: pydantic.NonNegativeInt
+    vote: pydantic.conint(ge=-1, le=1)
+    modified: pydantic.NonNegativeInt
+
+
+class Ballot(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    active: bool
+    votes: List[Vote]
+    result: Optional[int]
+    closed: Optional[pydantic.NonNegativeInt]
+
+
 class UserAlias(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
     alias_id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)

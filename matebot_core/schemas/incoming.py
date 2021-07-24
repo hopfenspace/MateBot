@@ -10,6 +10,12 @@ import pydantic
 from .bases import UserAlias
 
 
+class IncomingVote(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
+    ballot_id: pydantic.NonNegativeInt
+    vote: pydantic.conint(ge=-1, le=1)
+
+
 class IncomingUserAlias(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
@@ -19,7 +25,7 @@ class IncomingUserAlias(pydantic.BaseModel):
 class IncomingApplication(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     auth_token: uuid.UUID
-    special_user: UserAlias
+    special_user: IncomingUserAlias
 
 
 class IncomingCommunism(pydantic.BaseModel):
