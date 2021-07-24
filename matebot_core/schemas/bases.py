@@ -17,7 +17,10 @@ class Vote(pydantic.BaseModel):
 
 class Ballot(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
+    active: bool
     votes: List[Vote]
+    result: Optional[int]
+    closed: Optional[pydantic.NonNegativeInt]
 
 
 class UserAlias(pydantic.BaseModel):

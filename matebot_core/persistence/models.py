@@ -237,6 +237,28 @@ class Ballot(Base):
 
     id = _make_id_column()
 
+    active = Column(
+        Boolean,
+        nullable=False
+    )
+    result = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )
+    closed = Column(
+        DateTime,
+        nullable=True,
+        default=None
+    )
+
+    @property
+    def schema(self) -> schemas.Ballot:
+        return schemas.Ballot(
+            id=self.id,
+            votes=[vote.schema for vote in self.votes]
+        )
+
     def __repr__(self) -> str:
         return "Ballot(id={}, votes={})".format(
             self.id, [v.vote for v in self.votes]
