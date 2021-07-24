@@ -49,7 +49,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
 from . import base
-from .routers import aliases, applications, ballots, communisms, refunds, transactions, users
+from .routers import aliases, applications, ballots, communisms, refunds, transactions, users, votes
 from .. import schemas
 
 
@@ -72,6 +72,7 @@ app.include_router(communisms.router)
 app.include_router(refunds.router)
 app.include_router(transactions.router)
 app.include_router(users.router)
+app.include_router(votes.router)
 
 
 class Updates:
