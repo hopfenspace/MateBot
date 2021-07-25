@@ -176,6 +176,31 @@ class UserAlias(Base):
         )
 
 
+class TransactionType(Base):
+    __tablename__ = "transaction_types"
+
+    id = _make_id_column()
+
+    name = Column(
+        String(255),
+        unique=True,
+        nullable=False
+    )
+
+    @property
+    def schema(self) -> schemas.TransactionType:
+        return schemas.TransactionType(
+            id=self.id,
+            name=self.name,
+            count=len(self.transactions)
+        )
+
+    def __repr__(self) -> str:
+        return "TransactionType(id={}, name={}, count={})".format(
+            self.id, self.name, len(self.transactions)
+        )
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
@@ -204,9 +229,9 @@ class Transaction(Base):
         nullable=False,
         server_default=func.now()
     )
-    collective_id = Column(
+    transaction_types_id = Column(
         Integer,
-        ForeignKey("collectives.id"),
+        ForeignKey("transaction_types.id"),
         nullable=True
     )
 
@@ -218,13 +243,27 @@ class Transaction(Base):
         "User",
         foreign_keys=[receiver_id]
     )
-    collective = relationship(
-        "Collective"
+    transaction_type = relationship(
+        "TransactionType",
+        backref="transactions"
     )
 
     __table_args__ = (
-        UniqueConstraint("sender_id", "receiver_id", "collective_id"),
+        CheckConstraint("amount >= 0"),
+        CheckConstraint("sender_id != receiver_id")
     )
+
+    @property
+    def schema(self) -> schemas.Transaction:
+        return schemas.Transaction(
+            id=self.id,
+            sender=self.sender_id,
+            receiver=self.receiver_id,
+            amount=self.amount,
+            reason=self.reason,
+            transaction_type=self.transaction_type,
+            timestamp=self.registered.timestamp()
+        )
 
     def __repr__(self) -> str:
         return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
