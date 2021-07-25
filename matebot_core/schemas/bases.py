@@ -7,6 +7,9 @@ from typing import List, Optional
 import pydantic
 
 
+UUID_REGEX = r"^\b[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b$"
+
+
 class Vote(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
@@ -17,6 +20,8 @@ class Vote(pydantic.BaseModel):
 
 class Ballot(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
+    question: pydantic.constr(max_length=255)
+    restricted: bool
     active: bool
     votes: List[Vote]
     result: Optional[int]

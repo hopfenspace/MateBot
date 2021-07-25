@@ -48,12 +48,13 @@ def add_new_vote(
 @router.put(
     "",
     response_model=schemas.Vote,
-    responses={404: {}, 409: {}},
+    responses={403: {}, 404: {}, 409: {}},
     description="Update the `vote` value of an existing vote. Note that this method only "
                 "accepts changes to the `vote` field. Modifying the `modified` field "
                 "would lead to a 409 error. A 409 error will also be returned if the "
                 "combination of `user_id` and `ballot_id` doesn't match the specified "
-                "`id`. A 404 error will be returned if the vote ID is unknown."
+                "`id`. A 404 error will be returned if the vote ID is unknown. A 403 "
+                "error will be returned if the ballot is restricted (forbidding changes)."
 )
 def change_existing_vote(
         vote: schemas.Vote,
@@ -65,10 +66,12 @@ def change_existing_vote(
 @router.delete(
     "",
     status_code=201,
-    responses={404: {}, 409: {}},
+    responses={403: {}, 404: {}, 409: {}},
     description="Delete an existing vote identified by its `id`. A 409 error will be returned "
                 "if the combination of `user_id` and `ballot_id` doesn't match the "
-                "specified `id`. A 404 error will be returned if the vote ID is unknown."
+                "specified `id`. A 404 error will be returned if the vote ID is unknown. "
+                "A 403 error will be returned if the ballot is restricted, i.e. votes can't "
+                "be removed from the ongoing ballot as soon as it has been created."
 )
 def delete_existing_vote(
         vote: schemas.Vote,

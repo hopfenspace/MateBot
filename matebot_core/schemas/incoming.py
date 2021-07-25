@@ -57,3 +57,8 @@ class IncomingRefund(pydantic.BaseModel):
     description: pydantic.constr(max_length=255)
     creator: pydantic.NonNegativeInt
     active: bool = True
+
+
+class IncomingBallot(pydantic.BaseModel):
+    question: pydantic.constr(max_length=255)
+    restricted: bool

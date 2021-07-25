@@ -23,7 +23,7 @@ router = APIRouter(
 @router.get(
     "",
     response_model=List[schemas.Ballot],
-    description="Return a list of all ballots with their ID and list of votes."
+    description="Return a list of all ballots with all associated data, including the votes."
 )
 def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     raise MissingImplementation("get_all_ballots")
@@ -32,9 +32,12 @@ def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
 @router.post(
     "",
     response_model=schemas.Ballot,
-    description="Add a new empty ballot and create a new ID for it."
+    description="Add a new ballot based on the given data and create a new ID for it."
 )
-def add_new_ballot(local: LocalRequestData = Depends(LocalRequestData)):
+def add_new_ballot(
+        ballot: schemas.IncomingBallot,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     raise MissingImplementation("add_new_ballot")
 
 
