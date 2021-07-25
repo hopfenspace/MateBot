@@ -49,12 +49,17 @@ class User(pydantic.BaseModel):
     accessed: pydantic.NonNegativeInt
 
 
+class TransactionType(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    name: pydantic.constr(max_length=255)
+    count: pydantic.NonNegativeInt
+
+
 class Transaction(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     sender: pydantic.NonNegativeInt
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
-    communism: Optional[pydantic.NonNegativeInt]
-    refund: Optional[pydantic.NonNegativeInt]
+    transaction_type: TransactionType
     timestamp: pydantic.NonNegativeInt
