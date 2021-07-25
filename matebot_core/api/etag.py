@@ -2,7 +2,6 @@
 ETag helper library for the core REST API
 """
 
-import enum
 import uuid
 import hashlib
 import logging
@@ -22,12 +21,6 @@ from . import base
 
 
 logger = logging.getLogger(__name__)
-
-
-class HeaderFieldType(enum.Enum):
-    ABSENT = None
-    IF_MATCH = "If-Match"
-    IF_NONE_MATCH = "If-None-Match"
 
 
 class ETag:
