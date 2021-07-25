@@ -306,6 +306,15 @@ class Vote(Base):
         UniqueConstraint("user_id", "ballot_id"),
     )
 
+    @property
+    def schema(self) -> schemas.Vote:
+        return schemas.Vote(
+            id=self.id,
+            user_id=self.user_id,
+            vote=self.vote,
+            modified=self.modified.timestamp()
+        )
+
     def __repr__(self) -> str:
         return "Vote(id={}, ballot_id={}, user_id={}, vote={})".format(
             self.id, self.ballot_id, self.user_id, self.vote
