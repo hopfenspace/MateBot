@@ -360,7 +360,8 @@ class Ballot(Base):
     )
     active = Column(
         Boolean,
-        nullable=False
+        nullable=False,
+        default=True
     )
     result = Column(
         Integer,
