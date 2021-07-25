@@ -43,6 +43,10 @@ class ETag:
 
         tag = self.make_etag(model)
         if tag is not None:
+            if not tag.startswith('"'):
+                tag = '"' + tag
+            if not tag.endswith('"'):
+                tag += '"'
             response.headers.append("ETag", tag)
 
     def compare(self, current_model: Optional[base.ModelType] = None) -> bool:
@@ -73,6 +77,10 @@ class ETag:
             if header_value.strip() == "*":
                 return model_tag is not None
             for tag in map(str.strip, header_value.split(",")):
+                if tag.startswith('"'):
+                    tag = tag[1:]
+                if tag.endswith('"'):
+                    tag = tag[:-1]
                 if tag != "" and not tag.startswith("W/") and tag == model_tag:
                     return True
             return False
@@ -82,6 +90,10 @@ class ETag:
                 return model_tag is None
             # TODO: the weak comparison algorithm should be used here (RFC 7232, 3.2) instead!
             for tag in map(str.strip, header_value.split(",")):
+                if tag.startswith('"'):
+                    tag = tag[1:]
+                if tag.endswith('"'):
+                    tag = tag[:-1]
                 if tag != "" and not tag.startswith("W/") and tag == model_tag:
                     return False
             return True
@@ -144,4 +156,4 @@ class ETag:
         cls = type(obj).__name__
         dump = json.dumps(representation, allow_nan=False)
         content = cls + dump + base.runtime_key
-        return f'"{uuid.UUID(hashlib.md5(content.encode("UTF-8")).hexdigest())}"'
+        return str(uuid.UUID(hashlib.md5(content.encode("UTF-8")).hexdigest()))
