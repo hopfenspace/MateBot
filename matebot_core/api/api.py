@@ -44,12 +44,11 @@ The handling of incoming conditional requests is described below:
   * for other methods with `verified` mark, perform the operation
 """
 
-import pydantic
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
 from . import base
-from .routers import aliases, applications, ballots, communisms, refunds, transactions, users, votes
+from .routers import aliases, applications, ballots, communisms, generic, refunds, transactions, users, votes
 from .. import schemas
 
 
@@ -65,6 +64,8 @@ app.add_exception_handler(base.PreconditionFailed, base.PreconditionFailed.handl
 app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
 app.add_exception_handler(RequestValidationError, base.APIException.handle)
 
+app.include_router(generic.router)
+
 app.include_router(aliases.router)
 app.include_router(applications.router)
 app.include_router(ballots.router)
@@ -73,20 +74,3 @@ app.include_router(refunds.router)
 app.include_router(transactions.router)
 app.include_router(users.router)
 app.include_router(votes.router)
-
-
-class Updates:
-    """
-    TODO
-    """
-
-    @staticmethod
-    @app.get(
-        "/updates/{timestamp}",
-        response_model=schemas.Updates,
-        tags=["Updates"],
-        description="Return a collection of new or updated models since the specified UNIX "
-                    "timestamp. This collection must not necessarily be complete."
-    )
-    def get_new_updates(timestamp: pydantic.NonNegativeInt):
-        raise base.MissingImplementation("get_new_updates")
