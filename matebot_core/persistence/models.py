@@ -119,6 +119,10 @@ class Application(Base):
         String(255),
         nullable=False
     )
+    created = Column(
+        DateTime,
+        server_default=func.now()
+    )
 
     aliases = relationship(
         "UserAlias",
@@ -130,7 +134,8 @@ class Application(Base):
     def schema(self) -> schemas.Application:
         return schemas.Application(
             id=self.id,
-            name=self.name
+            name=self.name,
+            created=self.created.timestamp()
         )
 
     def __repr__(self) -> str:

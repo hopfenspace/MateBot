@@ -40,7 +40,7 @@ class IncomingCommunism(pydantic.BaseModel):
 class IncomingUser(pydantic.BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
-    active: bool
+    active: bool = True
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
 

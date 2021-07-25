@@ -39,6 +39,7 @@ class UserAlias(pydantic.BaseModel):
 class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
+    created: pydantic.NonNegativeInt
 
 
 class User(pydantic.BaseModel):
