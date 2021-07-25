@@ -350,6 +350,14 @@ class Ballot(Base):
 
     id = _make_id_column()
 
+    question = Column(
+        String(255),
+        nullable=False
+    )
+    restricted = Column(
+        Boolean,
+        nullable=False
+    )
     active = Column(
         Boolean,
         nullable=False
@@ -369,7 +377,12 @@ class Ballot(Base):
     def schema(self) -> schemas.Ballot:
         return schemas.Ballot(
             id=self.id,
-            votes=[vote.schema for vote in self.votes]
+            question=self.question,
+            restricted=self.restricted,
+            active=self.active,
+            votes=[vote.schema for vote in self.votes],
+            result=self.result,
+            closed=self.closed and self.closed.timestamp()
         )
 
     def __repr__(self) -> str:
