@@ -2,11 +2,13 @@
 MateBot extra schemas
 """
 
+import uuid
+import datetime
 from typing import List
 
 import pydantic
 
-from .bases import User, UserAlias, Application, Transaction
+from .bases import Transaction
 
 
 class Refund(pydantic.BaseModel):
@@ -42,8 +44,19 @@ class SuccessfulCommunism(pydantic.BaseModel):
 
 
 class Updates(pydantic.BaseModel):
-    applications: List[Application]
-    alias: List[UserAlias]
-    users: List[User]
-    communisms: List[Communism]
-    transactions: List[Transaction]
+    aliases: uuid.UUID
+    applications: uuid.UUID
+    ballots: uuid.UUID
+    communisms: uuid.UUID
+    refunds: uuid.UUID
+    transactions: uuid.UUID
+    users: uuid.UUID
+    votes: uuid.UUID
+    timestamp: pydantic.NonNegativeInt
+
+
+class Status(pydantic.BaseModel):
+    healthy: bool
+    startup: pydantic.NonNegativeInt
+    datetime: datetime.datetime
+    timestamp: pydantic.NonNegativeInt
