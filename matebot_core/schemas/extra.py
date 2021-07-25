@@ -4,7 +4,7 @@ MateBot extra schemas
 
 import uuid
 import datetime
-from typing import List
+from typing import List, Optional
 
 import pydantic
 
@@ -17,8 +17,8 @@ class Refund(pydantic.BaseModel):
     description: pydantic.constr(max_length=255)
     creator: pydantic.NonNegativeInt
     active: bool
-    approval: List[pydantic.NonNegativeInt]
-    refusal: List[pydantic.NonNegativeInt]
+    allowed: Optional[bool]
+    ballot: pydantic.NonNegativeInt
 
 
 class SuccessfulRefund(pydantic.BaseModel):

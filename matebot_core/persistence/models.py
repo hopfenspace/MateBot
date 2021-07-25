@@ -232,6 +232,80 @@ class Transaction(Base):
         )
 
 
+class Refund(Base):
+    __tablename__ = "refunds"
+
+    id = _make_id_column()
+
+    amount = Column(
+        Integer,
+        nullable=False
+    )
+    description = Column(
+        String(255),
+        nullable=True
+    )
+    active = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
+    created = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now()
+    )
+    accessed = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+    creator_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    transaction_id = Column(
+        Integer,
+        ForeignKey("transactions.id"),
+        nullable=True
+    )
+    ballot_id = Column(
+        Integer,
+        ForeignKey("ballots.id"),
+        nullable=False
+    )
+
+    creator = relationship(
+        "User",
+        backref="refunds"
+    )
+    transaction = relationship("Transaction")
+    ballot = relationship("Ballot")
+
+    __table_args__ = (
+        CheckConstraint("amount > 0"),
+    )
+
+    @property
+    def schema(self) -> schemas.Refund:
+        return schemas.Refund(
+            id=self.id,
+            amount=self.amount,
+            description=self.description,
+            creator=self.creator_id,
+            active=self.active,
+            allowed=self.ballot.result,
+            ballot=self.ballot_id
+        )
+
+    def __repr__(self) -> str:
+        return "Refund(id={}, creator={}, amount={}, description={})".format(
+            self.id, self.creator, self.amount, self.description
+        )
+
+
 class Ballot(Base):
     __tablename__ = "ballots"
 
