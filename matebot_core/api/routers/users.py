@@ -102,7 +102,7 @@ def get_user_by_id(
 @router.delete(
     "/{user_id}",
     status_code=204,
-    responses={404:{}, 409: {}},
+    responses={404: {}, 409: {}},
     description="Delete an existing user model identified by its user ID. A 409 "
                 "error will be returned if there are any open refund requests or "
                 "communisms that were either created by that user or which this user "
@@ -113,8 +113,8 @@ def get_user_by_id(
                 "delete any user aliases, but no user history or transactions. "
                 "A 404 error will be returned in case the user ID is unknown."
 )
-def delete_existing_user(
+def delete_existing_user_by_id(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("delete_existing_user")
+    raise MissingImplementation("delete_existing_user_by_id")
