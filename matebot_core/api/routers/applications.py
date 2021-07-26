@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
+from ...persistence import models
 
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,12 @@ router = APIRouter(
 @router.get(
     "",
     response_model=List[schemas.Application],
-    description="Return a list of all known applications with their respective ID (=`app_id`)."
+    description="Return a list of all known applications with their respective ID."
 )
 def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
-    raise MissingImplementation("get_all_applications")
+    all_applications = [a.schema for a in local.session.query(models.Application).all()]
+    local.entity.compare(all_applications)
+    return local.attach_headers(all_applications)
 
 
 @router.post(

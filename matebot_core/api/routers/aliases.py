@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
+from ...persistence import models
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,9 @@ router = APIRouter(
     description="Return a list of all known user aliases of all applications."
 )
 def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
-    raise MissingImplementation("get_all_known_aliases")
+    all_aliases = [a.schema for a in local.session.query(models.UserAlias).all()]
+    local.entity.compare(all_aliases)
+    return local.attach_headers(all_aliases)
 
 
 @router.post(
