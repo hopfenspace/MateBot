@@ -69,6 +69,24 @@ def update_existing_user(
     raise MissingImplementation("update_existing_user")
 
 
+@router.delete(
+    "",
+    status_code=204,
+    responses={409: {}},
+    description="Delete an existing user model. A 409 error will be returned if "
+                "the balance of the user is not zero or if there are any open "
+                "refund requests or communisms that were either created by that "
+                "user or which this user participates in. This operation will "
+                "also delete any user aliases, but no user history or transactions. "
+                "This operation requires a valid header for conditional requests."
+)
+def delete_existing_user(
+        user: schemas.User,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    raise MissingImplementation("delete_existing_user")
+
+
 @router.get(
     "/{user_id}",
     response_model=schemas.User,
@@ -79,3 +97,24 @@ def get_user_by_id(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("get_user_by_id")
+
+
+@router.delete(
+    "/{user_id}",
+    status_code=204,
+    responses={404:{}, 409: {}},
+    description="Delete an existing user model identified by its user ID. A 409 "
+                "error will be returned if there are any open refund requests or "
+                "communisms that were either created by that user or which this user "
+                "participates in. Note that a balance other than zero is acceptable "
+                "in this endpoint, as long as there's some other user vouching for "
+                "the user in question. The voucher will either receive the remaining "
+                "money or has to pay remaining bills. This operation will also "
+                "delete any user aliases, but no user history or transactions. "
+                "A 404 error will be returned in case the user ID is unknown."
+)
+def delete_existing_user(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    raise MissingImplementation("delete_existing_user")
