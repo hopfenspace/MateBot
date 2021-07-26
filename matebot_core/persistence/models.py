@@ -169,7 +169,7 @@ class UserAlias(Base):
     @property
     def schema(self) -> schemas.UserAlias:
         return schemas.UserAlias(
-            alias_id=self.id,
+            id=self.id,
             user_id=self.user_id,
             application=self.app.name,
             app_user_id=self.app_user_id

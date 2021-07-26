@@ -30,7 +30,6 @@ class Ballot(pydantic.BaseModel):
 
 class UserAlias(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    alias_id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
