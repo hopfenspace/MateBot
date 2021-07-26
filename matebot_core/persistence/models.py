@@ -78,14 +78,6 @@ class User(Base):
         cascade="all,delete",
         backref="user"
     )
-    created_collectives = relationship(
-        "Collective",
-        backref="creator_user"
-    )
-    participating_collectives = relationship(
-        "CollectivesUsers",
-        backref="users"
-    )
     vouching_for = relationship(
         "User",
         backref=backref("voucher_user", remote_side=[id])
@@ -453,8 +445,8 @@ class Vote(Base):
         )
 
 
-class Collective(Base):
-    __tablename__ = "collectives"
+class Communism(Base):
+    __tablename__ = "communisms"
 
     id = _make_id_column()
 
@@ -467,23 +459,14 @@ class Collective(Base):
         Integer,
         nullable=False
     )
-    externals = Column(
-        Integer,
-        nullable=False,
-        default=0
-    )
     description = Column(
         String(255),
         nullable=True
     )
-    communistic = Column(
-        Boolean,
-        nullable=False
-    )
-    creator = Column(
+    externals = Column(
         Integer,
-        ForeignKey("users.id"),
-        nullable=False
+        nullable=False,
+        default=0
     )
     created = Column(
         DateTime,
@@ -496,36 +479,57 @@ class Collective(Base):
         server_default=func.now(),
         onupdate=func.now()
     )
-
-    participating_users = relationship(
-        "CollectivesUsers",
-        cascade="all,delete",
-        backref="collective"
+    creator_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
     )
 
+    creator = relationship("User")
+    participants = relationship(
+        "CommunismUsers",
+        cascade="all,delete",
+        backref="communism"
+    )
+
+    __table_args__ = (
+        CheckConstraint("amount <= 1"),
+    )
+
+    @property
+    def schema(self) -> schemas.Communism:
+        return schemas.Communism(
+            id=self.id,
+            amount=self.amount,
+            description=self.description,
+            creator=self.creator_id,
+            active=self.active,
+            externals=self.externals,
+            participants=[user.users_id for user in self.participants]
+        )
+
     def __repr__(self) -> str:
-        return f"Collective(id={self.id}, amount={self.amount}, creator={self.creator})"
+        return f"Communism(id={self.id}, amount={self.amount}, creator={self.creator})"
 
 
-class CollectivesUsers(Base):
-    __tablename__ = "collectives_users"
+class CommunismUsers(Base):
+    __tablename__ = "communisms_users"
 
     id = _make_id_column()
 
-    collectives_id = Column(
+    communism_id = Column(
         Integer,
-        ForeignKey("collectives.id", ondelete="CASCADE"),
+        ForeignKey("communisms.id", ondelete="CASCADE"),
         nullable=False
     )
-    users_id = Column(
+
+    user_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
-    vote = Column(
-        Boolean,
-        nullable=False
-    )
+
+    user = relationship("User", backref="communisms")
 
     def __repr__(self) -> str:
-        return f"CollectivesUsers(id={self.id})"
+        return f"CommunismUsers(id={self.id}, user={self.user})"
