@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
+from ...persistence import models
 
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,13 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[pydantic.NonNegativeInt],
-    description="Return a list of all known transaction IDs in the system."
+    response_model=List[schemas.Transaction],
+    description="Return a list of all transactions in the system."
 )
-def get_all_known_transaction_ids(local: LocalRequestData = Depends(LocalRequestData)):
-    raise MissingImplementation("get_all_known_transaction_ids")
+def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+    all_transactions = [t.schema for t in local.session.query(models.Transaction).all()]
+    local.entity.compare(all_transactions)
+    return local.attach_headers(all_transactions)
 
 
 @router.post(
