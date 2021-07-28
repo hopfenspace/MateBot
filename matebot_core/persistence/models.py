@@ -258,7 +258,7 @@ class Transaction(Base):
             receiver=self.receiver_id,
             amount=self.amount,
             reason=self.reason,
-            transaction_type=self.transaction_type,
+            transaction_type=self.transaction_type.schema,
             timestamp=self.registered.timestamp()
         )
 
@@ -435,6 +435,7 @@ class Vote(Base):
         return schemas.Vote(
             id=self.id,
             user_id=self.user_id,
+            ballot_id=self.ballot_id,
             vote=self.vote,
             modified=self.modified.timestamp()
         )
