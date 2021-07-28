@@ -28,6 +28,7 @@ router = APIRouter(
 )
 def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     all_votes = [u.schema for u in local.session.query(models.Vote).all()]
+    local.entity.model_name = schemas.Vote.__name__
     local.entity.compare(all_votes)
     return local.attach_headers(all_votes)
 

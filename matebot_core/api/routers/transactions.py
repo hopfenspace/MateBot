@@ -29,6 +29,7 @@ router = APIRouter(
 )
 def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     all_transactions = [t.schema for t in local.session.query(models.Transaction).all()]
+    local.entity.model_name = schemas.Transaction.__name__
     local.entity.compare(all_transactions)
     return local.attach_headers(all_transactions)
 

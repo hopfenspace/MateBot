@@ -29,6 +29,7 @@ router = APIRouter(
 )
 def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
     all_aliases = [a.schema for a in local.session.query(models.UserAlias).all()]
+    local.entity.model_name = schemas.UserAlias.__name__
     local.entity.compare(all_aliases)
     return local.attach_headers(all_aliases)
 
