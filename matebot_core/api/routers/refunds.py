@@ -10,8 +10,9 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from .. import helpers
 from ...persistence import models
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,7 @@ router = APIRouter(
     description="Return a list of all refunds in the system."
 )
 def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
-    all_refunds = [r.schema for r in local.session.query(models.Refund).all()]
-    local.entity.model_name = schemas.Refund.__name__
-    local.entity.compare(all_refunds)
-    return local.attach_headers(all_refunds)
+    return helpers.get_all_of_model(models.Refund, local)
 
 
 @router.post(

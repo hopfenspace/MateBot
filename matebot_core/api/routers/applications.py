@@ -9,8 +9,9 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from .. import helpers
 from ...persistence import models
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -27,10 +28,7 @@ router = APIRouter(
     description="Return a list of all known applications with their respective ID."
 )
 def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
-    all_applications = [a.schema for a in local.session.query(models.Application).all()]
-    local.entity.model_name = schemas.Application.__name__
-    local.entity.compare(all_applications)
-    return local.attach_headers(all_applications)
+    return helpers.get_all_of_model(models.Application, local)
 
 
 @router.post(

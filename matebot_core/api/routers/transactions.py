@@ -10,8 +10,9 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from .. import helpers
 from ...persistence import models
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -28,10 +29,7 @@ router = APIRouter(
     description="Return a list of all transactions in the system."
 )
 def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
-    all_transactions = [t.schema for t in local.session.query(models.Transaction).all()]
-    local.entity.model_name = schemas.Transaction.__name__
-    local.entity.compare(all_transactions)
-    return local.attach_headers(all_transactions)
+    return helpers.get_all_of_model(models.Transaction, local)
 
 
 @router.post(

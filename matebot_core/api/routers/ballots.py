@@ -9,8 +9,9 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from .. import helpers
 from ...persistence import models
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -27,10 +28,7 @@ router = APIRouter(
     description="Return a list of all ballots with all associated data, including the votes."
 )
 def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
-    all_ballots = [b.schema for b in local.session.query(models.Ballot).all()]
-    local.entity.model_name = schemas.Ballot.__name__
-    local.entity.compare(all_ballots)
-    return local.attach_headers(all_ballots)
+    return helpers.get_all_of_model(models.Ballot, local)
 
 
 @router.post(

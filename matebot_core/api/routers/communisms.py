@@ -8,6 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
+from .. import helpers
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from ... import schemas
@@ -28,10 +29,7 @@ router = APIRouter(
     description="Return a list of all communisms in the system."
 )
 def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
-    all_communisms = [c.schema for c in local.session.query(models.Communism).all()]
-    local.entity.model_name = schemas.Communism.__name__
-    local.entity.compare(all_communisms)
-    return local.attach_headers(all_communisms)
+    return helpers.get_all_of_model(models.Communism, local)
 
 
 @router.post(
