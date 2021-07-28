@@ -109,6 +109,7 @@ class Application(Base):
 
     name = Column(
         String(255),
+        unique=True,
         nullable=False
     )
     created = Column(
