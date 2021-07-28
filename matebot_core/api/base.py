@@ -102,7 +102,7 @@ class APIException(HTTPException):
             repeat=repeat,
             message=message,
             details=exc.detail
-        )), status_code=status_code)
+        )), status_code=status_code, headers=exc.headers)
 
 
 class NotModified(APIException):
