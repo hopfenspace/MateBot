@@ -48,6 +48,7 @@ def create_new_communism(
     raise MissingImplementation("create_new_communism")
 
 
+'''
 @router.put(
     "",
     response_model=schemas.Communism,
@@ -62,6 +63,28 @@ def create_new_communism(
 )
 def update_existing_communism(
         communism: schemas.Communism,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    raise MissingImplementation("update_existing_communism")
+'''
+
+
+@router.patch(
+    "",
+    response_model=schemas.Communism,
+    responses={404: {}, 409: {}},
+    description="Change certain pieces of mutable information about an already existing "
+                "communism. A 404 error will be returned if the communism ID was not "
+                "found. A 409 error will be returned if a closed communism was altered "
+                "or if the field `active` was set to `false` without also setting the "
+                "field `accepted` to a non-null value. The mechanism of setting `active` "
+                "to `false` is used to accept or close communisms. The fields `externals` "
+                "and `participants` will be used as-is to update the internal state of "
+                "the communism (which will be returned afterwards). Note that duplicate "
+                "entries in the `participants` list will just be silently ignored."
+)
+def update_existing_communism(
+        communism: schemas.UpdatingCommunism,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("update_existing_communism")
