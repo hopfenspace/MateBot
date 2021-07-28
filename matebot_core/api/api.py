@@ -45,7 +45,7 @@ The handling of incoming conditional requests is described below:
 """
 
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import StarletteHTTPException
 
 from . import base
 from .routers import aliases, applications, ballots, communisms, generic, refunds, transactions, users, votes
@@ -59,10 +59,7 @@ app = FastAPI(
     responses={422: {"model": schemas.APIError}}
 )
 
-app.add_exception_handler(base.NotModified, base.NotModified.handle)
-app.add_exception_handler(base.PreconditionFailed, base.PreconditionFailed.handle)
-app.add_exception_handler(base.MissingImplementation, base.MissingImplementation.handle)
-app.add_exception_handler(RequestValidationError, base.APIException.handle)
+app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
 
 app.include_router(generic.router)
 
