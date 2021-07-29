@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import MissingImplementation, APIException
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -47,7 +47,42 @@ def create_new_alias(
         alias: schemas.IncomingUserAlias,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("create_new_alias")
+    user = local.session.get(models.User, alias.user_id)
+    if user is None:
+        raise APIException(
+            status_code=404,
+            detail="",
+            repeat=False,
+            message=f"User ID {alias.user_id!r} was not found."
+        )
+
+    application = local.session.query(models.Application).filter_by(name=alias.application).first()
+    if application is None:
+        raise APIException(
+            status_code=404,
+            detail="",
+            repeat=False,
+            message=f"Application {alias.application!r} was not found."
+        )
+
+    existing_alias = local.session.query(models.UserAlias).filter_by(
+        app_id=application.id,
+        app_user_id=alias.app_user_id
+    ).first()
+    if existing_alias is not None:
+        raise APIException(
+            status_code=409,
+            detail=f"Alias: {existing_alias!r}",
+            repeat=False,
+            message=f"User alias can't be created since it already exists."
+        )
+
+    model = models.UserAlias(
+        user_id=user.id,
+        app_id=application.id,
+        app_user_id=alias.app_user_id
+    )
+    return helpers.create_new_of_model(model, local, logger)
 
 
 @router.put(
