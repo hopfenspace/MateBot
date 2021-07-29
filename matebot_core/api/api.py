@@ -29,10 +29,14 @@ that the `If-Match` header field is the only one used by this API.
 The handling of incoming conditional requests is described as follows:
 
 1. Calculate the current `ETag` of the local resource in question
-2. In case the `If-Match` header field contains that tag ...
+2. In case the `If-Match` header field contains the special value `*` ...
+    1. and the previous step returned no valid `ETag`, because the resource
+       in question doesn't exist yet, respond with 412 (Precondition Failed)
+    2. and the resource in question exists, perform the operation as usual
+3. In case the `If-Match` header field contains that tag ...
     1. and the method is `GET`, respond with 304 (Not Modified)
     2. and for other methods, perform the operation as usual
-3. Otherwise ...
+4. Otherwise ...
     1. and the method is `GET` or `POST`, perform the operation as usual
     2. and for other methods, respond with 412 (Precondition Failed)
 """
