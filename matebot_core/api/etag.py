@@ -35,9 +35,10 @@ class ETag:
         self.request = request
         self.model_name = None
 
-        if request.headers.get("If-None-Match"):
-            logger.warning("'If-None-Match' header not fully supported yet.")
-            logger.debug(f"Field value{request.headers.get('If-None-Match')!r}")
+        for field in ["If-None-Match", "If-Modified-Since", "If-Unmodified-Since", "If-Range"]:
+            if request.headers.get(field):
+                logger.warning(f"'{field}' header not supported or not fully implemented.")
+                logger.debug(f"Field value: {request.headers.get(field)!r}")
 
     def add_header(self, response: Response, model: base.ModelType) -> bool:
         """
@@ -73,7 +74,6 @@ class ETag:
         :raises PreconditionFailed: if any of the preconditions were not met
         """
 
-        verified = False
         model_tag = self.make_etag(current_model, self.model_name)
 
         precondition_failed = base.PreconditionFailed(
@@ -81,53 +81,32 @@ class ETag:
             f"Conditional request not matching current model entity tag: {model_tag}"
         )
 
-        def evaluate_match(header_value: str) -> bool:
-            if header_value.strip() == "*":
-                return model_tag is not None
-            for tag in map(str.strip, header_value.split(",")):
-                if tag.startswith('"'):
-                    tag = tag[1:]
-                if tag.endswith('"'):
-                    tag = tag[:-1]
-                if tag != "" and not tag.startswith("W/") and tag == model_tag:
-                    return True
-            return False
-
-        def evaluate_none_match(header_value: str) -> bool:
-            if header_value.strip() == "*":
-                return model_tag is None
-            # TODO: the weak comparison algorithm should be used here (RFC 7232, 3.2) instead!
-            for tag in map(str.strip, header_value.split(",")):
-                if tag.startswith('"'):
-                    tag = tag[1:]
-                if tag.endswith('"'):
-                    tag = tag[:-1]
-                if tag != "" and not tag.startswith("W/") and tag == model_tag:
-                    return False
-            return True
-
-        # Step 1: evaluate the `If-Match` header precondition
         match = self.request.headers.get("If-Match")
+        if len(self.request.headers.getlist("If-Match")) > 1:
+            logger.warning(f"More than one 'If-Match' header: {self.request.headers.items()}")
+
         if match is not None and match != "":
-            if not evaluate_match(match):
-                raise precondition_failed
-            if self.request.method == "GET":
-                raise base.NotModified(self.request.url.path)
-            verified = True
+            if match.strip() == "*":
+                if model_tag is None:
+                    raise precondition_failed
+                logger.warning(
+                    f"Request for '{self.request.method} {self.request.url.path}' "
+                    f"had 'If-Match' header value '*' for current model {model_tag}."
+                )
+                return True
 
-        # Step 2: evaluate the `If-None-Match` header precondition
-        none_match = self.request.headers.get("If-None-Match")
-        if none_match is not None and none_match != "":
-            if not evaluate_none_match(none_match):
-                if self.request.method == "GET":
-                    raise base.NotModified(self.request.url.path)
-                raise precondition_failed
-            verified = True
+            for tag in map(str.strip, match.split(",")):
+                if tag.startswith('"'):
+                    tag = tag[1:]
+                if tag.endswith('"'):
+                    tag = tag[:-1]
+                if tag != "" and not tag.startswith("W/") and tag == model_tag:
+                    if self.request.method == "GET":
+                        raise base.NotModified(self.request.url.path)
+                    return True
 
-        # Step 3: abort further operation if the preconditions were not met
-        if self.request.method not in ("GET", "POST") and not verified:
+        if self.request.method not in ("GET", "POST"):
             raise precondition_failed
-
         return True
 
     @staticmethod
