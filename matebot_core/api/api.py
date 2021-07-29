@@ -20,28 +20,21 @@ equals the expected status code for that operation, usually 200 (OK).
 This API supports conditional HTTP requests and will enforce them for
 various types of request that change a resource's state. Any resource
 delivered or created by a request will carry the `ETag` header
-set properly. This allows the API to effectively prevent race
+set properly (exceptions are any kind of error response or those
+tagged 'generic'). This allows the API to effectively prevent race
 conditions when multiple clients want to update the same resource
-using `PUT`. Take a look into RFCs 7232 for more information.
-Note that the `Last-Modified` header field is not used by this API.
+using `PUT`. Take a look into RFC 7232 for more information. Note
+that the `If-Match` header field is the only one used by this API.
 
-The handling of incoming conditional requests is described below:
+The handling of incoming conditional requests is described as follows:
 
-1. Evaluate the `If-Match` precondition:
-  * true and method is `GET`, respond with 304 (Not Modified)
-  * true for other methods, continue with step 2 and set `verified` mark
-  * false, respond with 412 (Precondition Failed)
-  * header field absent, continue with step 2 without mark
-2. Evaluate the `If-None-Match` precondition:
-  * true, continue with step 3 and set `verified` mark
-  * false and method is `GET`, respond with 304 (Not Modified)
-  * false for other methods, respond 412 (Precondition Failed)
-  * header field absent, continue with step 3 without mark
-3. Perform the requested operation:
-  * method is `GET`, return the requested resource
-  * method is `POST`, create the requested resource and return it
-  * for other methods without mark, respond 412 (Precondition Failed)
-  * for other methods with `verified` mark, perform the operation
+1. Calculate the current `ETag` of the local resource in question
+2. In case the `If-Match` header field contains that tag ...
+    1. and the method is `GET`, respond with 304 (Not Modified)
+    2. and for other methods, perform the operation as usual
+3. Otherwise ...
+    1. and the method is `GET` or `POST`, perform the operation as usual
+    2. and for other methods, respond with 412 (Precondition Failed)
 """
 
 from fastapi import FastAPI
