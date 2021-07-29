@@ -41,15 +41,11 @@ def create_new_user(
         user: schemas.IncomingUser,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    local.entity.compare(None)
     values = user.dict()
     values["voucher_id"] = values["voucher"]
     del values["voucher"]
     model = models.User(**values)
-    logger.info(f"Adding new user {model.name!r} (external: {model.external!r})...")
-    local.session.add(model)
-    local.session.commit()
-    return local.attach_headers(model.schema)
+    return helpers.create_new_of_model(model, local, logger)
 
 
 @router.put(
