@@ -1,8 +1,12 @@
 """
-MateBot base schemas
+MateBot schemas for the base system
+
+This module contains schemas for users, their aliases,
+applications and the transactions between the users.
 """
 
-from typing import List, Optional
+import uuid
+from typing import List, Optional, Union
 
 import pydantic
 
@@ -10,28 +14,21 @@ import pydantic
 UUID_REGEX = r"^\b[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b$"
 
 
-class Vote(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    user_id: pydantic.NonNegativeInt
-    ballot_id: pydantic.NonNegativeInt
-    vote: pydantic.conint(ge=-1, le=1)
-    modified: pydantic.NonNegativeInt
-
-
-class Ballot(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    question: pydantic.constr(max_length=255)
-    restricted: bool
-    active: bool
-    votes: List[Vote]
-    result: Optional[int]
-    closed: Optional[pydantic.NonNegativeInt]
-
-
-class UserAlias(pydantic.BaseModel):
+class Alias(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
+    app_user_id: pydantic.constr(max_length=255)
+
+
+class AliasCreation(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
+    application: pydantic.constr(max_length=255)
+    app_user_id: pydantic.constr(max_length=255)
+
+
+class AliasUpdate(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
     app_user_id: pydantic.constr(max_length=255)
 
 
@@ -39,6 +36,16 @@ class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     created: pydantic.NonNegativeInt
+
+
+class ApplicationCreation(pydantic.BaseModel):
+    name: pydantic.constr(max_length=255)
+    auth_token: uuid.UUID
+    special_user: AliasCreation
+
+
+class ApplicationUpdate(pydantic.BaseModel):
+    pass
 
 
 class User(pydantic.BaseModel):
@@ -49,9 +56,21 @@ class User(pydantic.BaseModel):
     active: bool
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
-    aliases: List[UserAlias]
+    aliases: List[Alias]
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
+
+
+class UserCreation(pydantic.BaseModel):
+    name: Optional[pydantic.constr(max_length=255)]
+    permission: bool
+    active: bool = True
+    external: bool
+    voucher: Optional[pydantic.NonNegativeInt]
+
+
+class UserUpdate(pydantic.BaseModel):
+    pass
 
 
 class TransactionType(pydantic.BaseModel):
@@ -68,3 +87,14 @@ class Transaction(pydantic.BaseModel):
     reason: Optional[pydantic.constr(max_length=255)]
     transaction_type: TransactionType
     timestamp: pydantic.NonNegativeInt
+
+
+class TransactionCreation(pydantic.BaseModel):
+    sender: Union[pydantic.NonNegativeInt, Alias]
+    receiver: Union[pydantic.NonNegativeInt, Alias]
+    amount: pydantic.NonNegativeInt
+    reason: pydantic.constr(max_length=255)
+
+
+class TransactionUpdate(pydantic.BaseModel):
+    pass
