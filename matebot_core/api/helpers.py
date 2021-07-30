@@ -77,6 +77,6 @@ def create_new_of_model(
             detail=f"Problem arguments: {', '.join(exc.args)!r}",
             repeat=False,
             message=f"Database error: {type(exc).__name__!r}"
-        )
+        ) from exc
 
     return local.attach_headers(model.schema, **kwargs)
