@@ -46,27 +46,6 @@ def create_new_communism(
     raise MissingImplementation("create_new_communism")
 
 
-'''
-@router.put(
-    "",
-    response_model=schemas.Communism,
-    responses={404: {}, 409: {}},
-    description="Update an existing communism based on the specified data. A 404 error "
-                "will be returned if the communism ID was not found. A 409 error will "
-                "be returned if any of the following fields was changed (compared to the "
-                "previous values of that communism ID): `amount`, `description`, `creator`, "
-                "`active`. This prevents modifications of communism operations after "
-                "creation. Use the other POST methods if possible instead. A 409 "
-                "error will also be returned if a closed communism was altered."
-)
-def update_existing_communism(
-        communism: schemas.Communism,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    raise MissingImplementation("update_existing_communism")
-'''
-
-
 @router.patch(
     "",
     response_model=schemas.Communism,
@@ -128,39 +107,3 @@ def get_communisms_by_participant(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("get_communisms_by_participant")
-
-
-@router.post(
-    "/{communism_id}/accept",
-    response_model=schemas.Communism,
-    responses={404: {}, 409: {}},
-    description="Accept an existing communism operation. A 409 error will be returned if "
-                "this is attempted on a closed/inactive communism operation. A 404 error "
-                "will be returned if the specified `communism_id` is not known. This "
-                "operation closes the communism and prevents any further changes. Note "
-                "that this operation will implicitly also perform all transactions to "
-                "and from all members of the communism, so take care. A frontend "
-                "application might want to request explicit user approval before."
-)
-def accept_existing_communism(
-        communism_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    raise MissingImplementation("accept_existing_communism")
-
-
-@router.post(
-    "/{communism_id}/cancel",
-    response_model=schemas.Communism,
-    responses={404: {}, 409: {}},
-    description="Cancel an existing communism operation. A 409 error will be returned if "
-                "this is attempted on a closed/inactive communism operation. A 404 error "
-                "will be returned if the specified `communism_id` is not known. This "
-                "operation closes the communism and prevents any further changes. "
-                "No transactions will be performed based on this communism anymore."
-)
-def cancel_existing_communism(
-        communism_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    raise MissingImplementation("cancel_existing_communism")
