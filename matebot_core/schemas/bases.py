@@ -29,23 +29,27 @@ class AliasCreation(pydantic.BaseModel):
 
 class AliasUpdate(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
+    user_id: pydantic.NonNegativeInt
+    application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
 
 
 class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
+    community_user: Alias
     created: pydantic.NonNegativeInt
 
 
 class ApplicationCreation(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     auth_token: uuid.UUID
-    special_user: AliasCreation
+    community_user: AliasCreation
 
 
 class ApplicationUpdate(pydantic.BaseModel):
-    pass
+    id: pydantic.NonNegativeInt
+    name: pydantic.constr(max_length=255)
 
 
 class User(pydantic.BaseModel):
@@ -70,7 +74,12 @@ class UserCreation(pydantic.BaseModel):
 
 
 class UserUpdate(pydantic.BaseModel):
-    pass
+    id: pydantic.NonNegativeInt
+    name: Optional[pydantic.constr(max_length=255)]
+    permission: bool
+    active: bool
+    external: bool
+    voucher: Optional[pydantic.NonNegativeInt]
 
 
 class TransactionType(pydantic.BaseModel):
@@ -94,7 +103,3 @@ class TransactionCreation(pydantic.BaseModel):
     receiver: Union[pydantic.NonNegativeInt, Alias]
     amount: pydantic.NonNegativeInt
     reason: pydantic.constr(max_length=255)
-
-
-class TransactionUpdate(pydantic.BaseModel):
-    pass

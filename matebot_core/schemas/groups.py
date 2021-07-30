@@ -47,10 +47,6 @@ class BallotCreation(pydantic.BaseModel):
     restricted: bool
 
 
-class BallotUpdate(pydantic.BaseModel):
-    pass
-
-
 class Refund(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
@@ -70,9 +66,9 @@ class RefundCreation(pydantic.BaseModel):
     active: bool = True
 
 
-class RefundUpdate(pydantic.BaseModel):
+class RefundPatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    active: bool
+    active: Optional[bool]
 
 
 class Communism(pydantic.BaseModel):
@@ -97,9 +93,9 @@ class CommunismCreation(pydantic.BaseModel):
     participants: List[Union[pydantic.NonNegativeInt, _Alias]] = []
 
 
-class CommunismUpdate(pydantic.BaseModel):
+class CommunismPatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    active: bool
+    active: Optional[bool]
     accepted: Optional[bool]
-    externals: pydantic.NonNegativeInt
-    participants: List[Union[pydantic.NonNegativeInt, _Alias]]
+    externals: Optional[pydantic.NonNegativeInt]
+    participants: Optional[List[Union[pydantic.NonNegativeInt, _Alias]]]
