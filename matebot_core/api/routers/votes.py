@@ -34,7 +34,7 @@ def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
 @router.post(
     "",
     response_model=schemas.Vote,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Add a new vote to some open ballot. A 404 error will be returned "
                 "if either the user ID or the ballot ID was not found. A 409 error "
                 "will be returned if either the ballot has already been closed or "
@@ -50,7 +50,11 @@ def add_new_vote(
 @router.put(
     "",
     response_model=schemas.Vote,
-    responses={403: {}, 404: {}, 409: {}},
+    responses={
+        403: {"model": schemas.APIError},
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError}
+    },
     description="Update the `vote` value of an existing vote. Note that this method only "
                 "accepts changes to the `vote` field. Modifying the `modified` field "
                 "would lead to a 409 error. A 409 error will also be returned if the "
@@ -68,7 +72,11 @@ def change_existing_vote(
 @router.delete(
     "",
     status_code=201,
-    responses={403: {}, 404: {}, 409: {}},
+    responses={
+        403: {"model": schemas.APIError},
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError}
+    },
     description="Delete an existing vote identified by its `id`. A 409 error will be returned "
                 "if the combination of `user_id` and `ballot_id` doesn't match the "
                 "specified `id`. A 404 error will be returned if the vote ID is unknown. "

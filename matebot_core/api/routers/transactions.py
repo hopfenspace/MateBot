@@ -46,7 +46,7 @@ def make_a_new_transaction(transaction: schemas.TransactionCreation):
 @router.get(
     "/{transaction_id}",
     response_model=schemas.Transaction,
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return details about a specific transaction identified by its "
                 "`transaction_id`. A 404 error will be returned if that ID is unknown."
 )
@@ -60,7 +60,7 @@ def get_transaction_by_id(
 @router.get(
     "/user/{user_id}",
     response_model=List[schemas.Transaction],
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return a list of all transactions made by a specific user identified by "
                 "its `user_id`. A 404 error will be returned if the user ID is unknown."
 )
@@ -71,7 +71,7 @@ def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
 @router.get(
     "/collective/{collective_id}",
     response_model=List[schemas.Transaction],
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return a list of all transactions associated with a specific collective "
                 "operation identified by the `collective_id`. The list may be empty if "
                 "the collective operation was cancelled or not submitted yet. "

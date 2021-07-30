@@ -34,7 +34,7 @@ def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
 @router.post(
     "",
     response_model=schemas.Application,
-    responses={409: {}},
+    responses={409: {"model": schemas.APIError}},
     description="Add a new application and create a new ID for it. The UUID `auth_token` "
                 "is used as a special form of API key to enforce proper authentication. "
                 "The required alias for the `special_user` is used to create a proper "

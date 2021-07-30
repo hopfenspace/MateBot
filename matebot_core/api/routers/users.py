@@ -51,7 +51,7 @@ def create_new_user(
 @router.put(
     "",
     response_model=schemas.User,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Update an existing user model identified by the `user_id`. A 404 error "
                 "will be returned if the `user_id` is not known. A 409 error will be "
                 "returned when some of the following fields have been changed compared "
@@ -67,7 +67,7 @@ def update_existing_user(
 @router.delete(
     "",
     status_code=204,
-    responses={409: {}},
+    responses={409: {"model": schemas.APIError}},
     description="Delete an existing user model. A 409 error will be returned if "
                 "the balance of the user is not zero or if there are any open "
                 "refund requests or communisms that were either created by that "
@@ -85,7 +85,7 @@ def delete_existing_user(
 @router.get(
     "/{user_id}",
     response_model=schemas.User,
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return the internal model of the user specified by its user ID. "
                 "A 404 error will be returned in case the user ID is unknown."
 )
@@ -99,7 +99,7 @@ def get_user_by_id(
 @router.delete(
     "/{user_id}",
     status_code=204,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Delete an existing user model identified by its user ID. A 409 "
                 "error will be returned if there are any open refund requests or "
                 "communisms that were either created by that user or which this user "

@@ -35,7 +35,7 @@ def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
 @router.post(
     "",
     response_model=schemas.Communism,
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Create a new communism based on the specified data. A 404 error will be "
                 "returned if the user ID of the creator of that communism is unknown."
 )
@@ -49,7 +49,7 @@ def create_new_communism(
 @router.patch(
     "",
     response_model=schemas.Communism,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Change certain pieces of mutable information about an already existing "
                 "communism. A 404 error will be returned if the communism ID was not "
                 "found. A 409 error will be returned if a closed communism was altered "
@@ -70,7 +70,7 @@ def update_existing_communism(
 @router.get(
     "/{communism_id}",
     response_model=schemas.Communism,
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return an existing communism. A 404 error will be returned "
                 "if the specified communism ID was not found."
 )
@@ -84,7 +84,7 @@ def get_communism_by_id(
 @router.get(
     "/creator/{user_id}",
     response_model=List[schemas.Communism],
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return a list of all communisms which have been created by the user with "
                 "that `user_id`. A 404 error will be returned if the user ID is unknown."
 )
@@ -98,7 +98,7 @@ def get_communisms_by_creator(
 @router.get(
     "/participant/{user_id}",
     response_model=List[schemas.Communism],
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Return a list of all communisms where the user with that `user_id` has "
                 "participated in. A 404 error will be returned if the user ID is unknown."
 )

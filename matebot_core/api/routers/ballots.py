@@ -46,7 +46,7 @@ def add_new_ballot(
 @router.patch(
     "/{ballot_id}",
     response_model=schemas.Ballot,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Close a ballot to calculate the result based on all votes. "
                 "A 404 error will be returned if the ballot ID is not found. "
                 "A 409 error will be returned if the ballot is already closed."

@@ -36,7 +36,7 @@ def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     status_code=201,
     response_model=schemas.Alias,
-    responses={409: {}},
+    responses={409: {"model": schemas.APIError}},
     description="Create a new alias, failing for any existing alias of the same combination "
                 "of `app_user_id` and `application` ID. The `app_user_id` field should "
                 "reflect the unique internal username in the frontend application. A 409 "
@@ -88,7 +88,7 @@ def create_new_alias(
 @router.put(
     "",
     response_model=schemas.Alias,
-    responses={404: {}, 409: {}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Update an existing alias model identified by the `alias_id`. Errors will "
                 "occur when the `alias_id` doesn't exist. It's also possible to overwrite "
                 "the previous unique `app_user_id` of that `alias_id`. A 409 error will be "
@@ -105,7 +105,7 @@ def update_existing_alias(
 @router.delete(
     "/{alias_id}",
     status_code=204,
-    responses={404: {}},
+    responses={404: {"model": schemas.APIError}},
     description="Delete an existing alias model identified by the `alias_id`. "
                 "A 404 error will be returned for unknown `alias_id` values."
 )
