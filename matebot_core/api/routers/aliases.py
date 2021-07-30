@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation, APIException
+from ..base import APIException, NotFound, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -49,21 +49,11 @@ def create_new_alias(
 ):
     user = local.session.get(models.User, alias.user_id)
     if user is None:
-        raise APIException(
-            status_code=404,
-            detail="",
-            repeat=False,
-            message=f"User ID {alias.user_id!r} was not found."
-        )
+        raise NotFound(f"User ID {alias.user_id!r}")
 
     application = local.session.query(models.Application).filter_by(name=alias.application).first()
     if application is None:
-        raise APIException(
-            status_code=404,
-            detail="",
-            repeat=False,
-            message=f"Application {alias.application!r} was not found."
-        )
+        raise NotFound(f"Application {alias.application!r}")
 
     existing_alias = local.session.query(models.UserAlias).filter_by(
         app_id=application.id,
@@ -129,19 +119,7 @@ def get_aliases_by_application_name(
 
 
 @router.get(
-    "/user/{user_id}",
-    response_model=List[schemas.Alias],
-    description="Return a list of all aliases of a user for a given user ID."
-)
-def get_aliases_by_user_id(
-        user_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    raise MissingImplementation("get_aliases_by_user_id")
-
-
-@router.get(
-    "/id/{alias_id}",
+    "/{alias_id}",
     response_model=schemas.Alias,
     description="Return the alias model of a specific alias ID."
 )
