@@ -2,7 +2,6 @@
 MateBot REST API base library
 """
 
-import enum
 import time
 import uuid
 import random
@@ -25,13 +24,6 @@ runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lowe
 runtime_uuid = uuid.UUID(runtime_key)
 
 ModelType = Union[pydantic.BaseModel, List[pydantic.BaseModel]]
-
-
-class RequestMethodType(enum.Enum):
-    GET = enum.auto()
-    POST = enum.auto()
-    PUT = enum.auto()
-    DELETE = enum.auto()
 
 
 class APIException(HTTPException):
@@ -134,6 +126,20 @@ class NotModified(APIException):
             detail=detail,
             repeat=True,
             message=f"Resource '{str(resource)}' has not been modified."
+        )
+
+
+class NotFound(APIException):
+    """
+    Exception when a requested resource was not found in the system
+    """
+
+    def __init__(self, resource: str, detail: Optional[str] = None):
+        super().__init__(
+            status_code=404,
+            detail=detail,
+            repeat=False,
+            message=f"{resource} was not found."
         )
 
 
