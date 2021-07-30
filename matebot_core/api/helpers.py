@@ -8,9 +8,38 @@ from typing import List, Optional, Type
 import pydantic
 import sqlalchemy.exc
 
-from .base import APIException
+from .base import APIException, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
+
+
+def get_one_of_model(
+        object_id: int,
+        model: Type[models.Base],
+        local: LocalRequestData,
+        **kwargs
+) -> pydantic.BaseModel:
+    """
+    Get the object of a given model that's identified by its object ID
+
+    This method will also take care of handling any conditional request headers
+    and setting the correct ``ETag`` header (besides the others) in the response.
+
+    :param object_id: internal ID (primary key in the database) of the model
+    :param model: class of a SQLAlchemy model
+    :param local: contextual local data
+    :param kwargs: additional headers for the response
+    :return: resulting list of entities
+    :raises NotFound: when the specified object ID returned no result
+    """
+
+    obj = local.session.get(model, object_id)
+    if obj is None:
+        raise NotFound(f"{model.__name__} ID {object_id!r}")
+    schema = obj.schema
+    local.entity.model_name = model.__name__
+    local.entity.compare(schema)
+    return local.attach_headers(schema, **kwargs)
 
 
 def get_all_of_model(
@@ -26,7 +55,7 @@ def get_all_of_model(
 
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
-    :param kwargs: dictionary of additional headers for the response
+    :param kwargs: additional headers for the response
     :return: resulting list of entities
     """
 
@@ -51,7 +80,7 @@ def create_new_of_model(
     :param model: instance of a new SQLAlchemy model without any associated session
     :param local: contextual local data
     :param logger: optional logger that should be used for INFO and ERROR messages
-    :param kwargs: dictionary of additional headers for the response
+    :param kwargs: additional headers for the response
     :return: resulting object (as its schema's instance)
     :raises APIException: when the database operation went wrong (to report the problem)
     """
