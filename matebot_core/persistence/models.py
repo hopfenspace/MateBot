@@ -115,20 +115,16 @@ class Application(Base):
     community_user_alias_id = Column(
         Integer,
         ForeignKey("aliases.id"),
-        nullable=False
+        nullable=True
     )
     created = Column(
         DateTime,
         server_default=func.now()
     )
 
-    aliases = relationship(
-        "UserAlias",
-        cascade="all,delete",
-        backref="app"
-    )
     community_user_alias = relationship(
-        "UserAlias"
+        "UserAlias",
+        foreign_keys=[community_user_alias_id]
     )
 
     @property
