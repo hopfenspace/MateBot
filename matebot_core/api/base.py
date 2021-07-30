@@ -79,12 +79,25 @@ class APIException(HTTPException):
             status_code = 422
 
         if not isinstance(exc, HTTPException):
+            details = jsonable_encoder(exc)
+            if len(details) == 0:
+                details = jsonable_encoder({
+                    "args": str(exc.args),
+                    "cause": str(exc.__cause__),
+                    "context": str(exc.__context__),
+                    "str": str(exc)
+                })
+
+            logger.error(
+                f"{type(exc).__name__}: {exc} @ '{request.method} "
+                f"{request.url.path}' (details: {details})"
+            )
             return JSONResponse(jsonable_encoder(schemas.APIError(
                 status=status_code,
                 request=request.url.path,
                 repeat=False,
                 message=exc.__class__.__name__,
-                details=str(jsonable_encoder(exc))
+                details=str(details)
             )), status_code=status_code)
 
         repeat = False
@@ -96,6 +109,11 @@ class APIException(HTTPException):
                 message = exc.message
         if hook_message is not None:
             message = hook_message
+
+        logger.debug(
+            f"{type(exc).__name__}: {message} @ '{request.method} "
+            f"{request.url.path}' (details: {exc.detail}"
+        )
         return JSONResponse(jsonable_encoder(schemas.APIError(
             status=status_code,
             request=request.url.path,
