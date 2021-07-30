@@ -7,7 +7,7 @@ import uuid
 import random
 import string
 import logging
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 from fastapi import HTTPException, Request, Response
@@ -36,9 +36,10 @@ class APIException(HTTPException):
             status_code: int,
             detail: str,
             repeat: bool = False,
-            message: Optional[str] = None
+            message: Optional[str] = None,
+            headers: Optional[Dict[str, Any]] = None
     ):
-        super().__init__(status_code=status_code, detail=detail)
+        super().__init__(status_code=status_code, detail=detail, headers=headers)
         self.repeat = repeat
         self.message = message
 
@@ -111,7 +112,7 @@ class APIException(HTTPException):
             request=request.url.path,
             repeat=repeat,
             message=message,
-            details=exc.detail
+            details=str(exc.detail)
         )), status_code=status_code, headers=exc.headers)
 
 
