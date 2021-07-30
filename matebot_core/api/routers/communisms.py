@@ -78,7 +78,7 @@ def get_communism_by_id(
         communism_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("get_communism_by_id")
+    return helpers.get_one_of_model(communism_id, models.Communism, local)
 
 
 @router.get(

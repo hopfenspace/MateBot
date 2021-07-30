@@ -5,6 +5,7 @@ MateBot router module for /votes requests
 import logging
 from typing import List
 
+import pydantic
 from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
@@ -88,3 +89,17 @@ def delete_existing_vote(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("delete_existing_vote")
+
+
+@router.get(
+    "/{vote_id}",
+    response_model=schemas.Vote,
+    responses={404: {"model": schemas.APIError}},
+    description="Return details about a specific vote identified by its "
+                "`vote_id`. A 404 error will be returned if that ID is unknown."
+)
+def get_vote_by_id(
+        vote_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    return helpers.get_one_of_model(vote_id, models.Vote, local)

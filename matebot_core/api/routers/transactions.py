@@ -54,7 +54,7 @@ def get_transaction_by_id(
         transaction_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("get_transaction_by_id")
+    return helpers.get_one_of_model(transaction_id, models.Transaction, local)
 
 
 @router.get(

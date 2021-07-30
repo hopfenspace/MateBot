@@ -5,6 +5,7 @@ MateBot router module for /ballots requests
 import logging
 from typing import List
 
+import pydantic
 from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
@@ -51,5 +52,22 @@ def add_new_ballot(
                 "A 404 error will be returned if the ballot ID is not found. "
                 "A 409 error will be returned if the ballot is already closed."
 )
-def close_ballot(ballot_id: int, local: LocalRequestData = Depends(LocalRequestData)):
+def close_ballot(
+        ballot_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     raise MissingImplementation("close_ballot")
+
+
+@router.get(
+    "/{ballot_id}",
+    response_model=schemas.Ballot,
+    responses={404: {"model": schemas.APIError}},
+    description="Return the ballot of a specific ballot ID. A 404 "
+                "error will be returned in case the ballot ID is unknown."
+)
+def get_ballot_by_id(
+        ballot_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    return helpers.get_one_of_model(ballot_id, models.Ballot, local)

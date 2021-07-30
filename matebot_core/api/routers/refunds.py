@@ -78,7 +78,7 @@ def get_refund_by_id(
         refund_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("get_refund_by_id")
+    return helpers.get_one_of_model(refund_id, models.Refund, local)
 
 
 @router.get(

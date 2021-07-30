@@ -93,7 +93,7 @@ def get_user_by_id(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("get_user_by_id")
+    return helpers.get_one_of_model(user_id, models.User, local)
 
 
 @router.delete(

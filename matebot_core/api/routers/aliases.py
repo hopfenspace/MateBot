@@ -92,6 +92,20 @@ def update_existing_alias(
     raise MissingImplementation("update_existing_alias")
 
 
+@router.get(
+    "/{alias_id}",
+    response_model=schemas.Alias,
+    responses={404: {"model": schemas.APIError}},
+    description="Return the alias model of a specific alias ID. A 404 "
+                "error will be returned in case the alias ID is unknown."
+)
+def get_alias_by_id(
+        alias_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    return helpers.get_one_of_model(alias_id, models.UserAlias, local)
+
+
 @router.delete(
     "/{alias_id}",
     status_code=204,
@@ -116,15 +130,3 @@ def get_aliases_by_application_name(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("get_aliases_by_application_name")
-
-
-@router.get(
-    "/{alias_id}",
-    response_model=schemas.Alias,
-    description="Return the alias model of a specific alias ID."
-)
-def get_alias_by_alias_id(
-        alias_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    raise MissingImplementation("get_alias_by_alias_id")
