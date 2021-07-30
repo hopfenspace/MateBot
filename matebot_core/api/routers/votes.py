@@ -41,7 +41,7 @@ def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
                 "the user has already voted in the ballot -- maybe use `PUT` instead."
 )
 def add_new_vote(
-        vote: schemas.IncomingVote,
+        vote: schemas.VoteCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("add_new_vote")

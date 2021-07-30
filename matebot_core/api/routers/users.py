@@ -38,7 +38,7 @@ def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     description="Create a new \"empty\" user account with zero balance."
 )
 def create_new_user(
-        user: schemas.IncomingUser,
+        user: schemas.UserCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     values = user.dict()

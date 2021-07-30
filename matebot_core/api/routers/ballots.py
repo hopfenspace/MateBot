@@ -37,7 +37,7 @@ def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     description="Add a new ballot based on the given data and create a new ID for it."
 )
 def add_new_ballot(
-        ballot: schemas.IncomingBallot,
+        ballot: schemas.BallotCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("add_new_ballot")

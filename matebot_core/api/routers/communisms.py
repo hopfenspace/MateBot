@@ -40,7 +40,7 @@ def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
                 "returned if the user ID of the creator of that communism is unknown."
 )
 def create_new_communism(
-        communism: schemas.IncomingCommunism,
+        communism: schemas.CommunismCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("create_new_communism")
@@ -82,7 +82,7 @@ def update_existing_communism(
                 "entries in the `participants` list will just be silently ignored."
 )
 def update_existing_communism(
-        communism: schemas.UpdatingCommunism,
+        communism: schemas.CommunismPatch,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("update_existing_communism")
@@ -132,7 +132,7 @@ def get_communisms_by_participant(
 
 @router.post(
     "/{communism_id}/accept",
-    response_model=schemas.SuccessfulCommunism,
+    response_model=schemas.Communism,
     responses={404: {}, 409: {}},
     description="Accept an existing communism operation. A 409 error will be returned if "
                 "this is attempted on a closed/inactive communism operation. A 404 error "

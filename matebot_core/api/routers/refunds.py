@@ -40,7 +40,7 @@ def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
                 "returned if the user ID of the creator of that refund is unknown."
 )
 def create_new_refund(
-        refund: schemas.IncomingRefund,
+        refund: schemas.RefundCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("create_new_refund")

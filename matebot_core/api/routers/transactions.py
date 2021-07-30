@@ -39,7 +39,7 @@ def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
                 "can't be edited after being sent to this endpoint by design, so take care. "
                 "The frontend application might want to introduce explicit user approval."
 )
-def make_a_new_transaction(transaction: schemas.IncomingTransaction):
+def make_a_new_transaction(transaction: schemas.TransactionCreation):
     raise MissingImplementation("make_a_new_transaction")
 
 

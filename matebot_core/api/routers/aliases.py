@@ -25,7 +25,7 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[schemas.UserAlias],
+    response_model=List[schemas.Alias],
     description="Return a list of all known user aliases of all applications."
 )
 def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
@@ -35,7 +35,7 @@ def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
 @router.post(
     "",
     status_code=201,
-    response_model=schemas.UserAlias,
+    response_model=schemas.Alias,
     responses={409: {}},
     description="Create a new alias, failing for any existing alias of the same combination "
                 "of `app_user_id` and `application` ID. The `app_user_id` field should "
@@ -44,7 +44,7 @@ def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
                 "error will be returned if the `user_id` or `application` is not known."
 )
 def create_new_alias(
-        alias: schemas.IncomingUserAlias,
+        alias: schemas.AliasCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     user = local.session.get(models.User, alias.user_id)
@@ -87,7 +87,7 @@ def create_new_alias(
 
 @router.put(
     "",
-    response_model=schemas.UserAlias,
+    response_model=schemas.Alias,
     responses={404: {}, 409: {}},
     description="Update an existing alias model identified by the `alias_id`. Errors will "
                 "occur when the `alias_id` doesn't exist. It's also possible to overwrite "
@@ -96,7 +96,7 @@ def create_new_alias(
                 "`alias_id`, while a 404 error will be returned for an unknown `alias_id`."
 )
 def update_existing_alias(
-        alias: schemas.UserAlias,
+        alias: schemas.Alias,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("update_existing_alias")
@@ -118,7 +118,7 @@ def delete_existing_alias(
 
 @router.get(
     "/application/{application}",
-    response_model=List[schemas.UserAlias],
+    response_model=List[schemas.Alias],
     description="Return a list of all users' aliases for a given application name."
 )
 def get_aliases_by_application_name(
@@ -130,7 +130,7 @@ def get_aliases_by_application_name(
 
 @router.get(
     "/user/{user_id}",
-    response_model=List[schemas.UserAlias],
+    response_model=List[schemas.Alias],
     description="Return a list of all aliases of a user for a given user ID."
 )
 def get_aliases_by_user_id(
@@ -142,7 +142,7 @@ def get_aliases_by_user_id(
 
 @router.get(
     "/id/{alias_id}",
-    response_model=schemas.UserAlias,
+    response_model=schemas.Alias,
     description="Return the alias model of a specific alias ID."
 )
 def get_alias_by_alias_id(

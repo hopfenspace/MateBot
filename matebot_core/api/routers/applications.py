@@ -42,7 +42,7 @@ def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
                 "A 409 error will be returned if the application already exists."
 )
 def add_new_application(
-        application: schemas.IncomingApplication,
+        application: schemas.ApplicationCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("add_new_application")

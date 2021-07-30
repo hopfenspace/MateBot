@@ -112,6 +112,11 @@ class Application(Base):
         unique=True,
         nullable=False
     )
+    community_user_alias_id = Column(
+        Integer,
+        ForeignKey("aliases.id"),
+        nullable=False
+    )
     created = Column(
         DateTime,
         server_default=func.now()
@@ -122,12 +127,16 @@ class Application(Base):
         cascade="all,delete",
         backref="app"
     )
+    community_user_alias = relationship(
+        "UserAlias"
+    )
 
     @property
     def schema(self) -> schemas.Application:
         return schemas.Application(
             id=self.id,
             name=self.name,
+            community_user=self.community_user_alias.schema,
             created=self.created.timestamp()
         )
 
@@ -160,8 +169,8 @@ class UserAlias(Base):
     )
 
     @property
-    def schema(self) -> schemas.UserAlias:
-        return schemas.UserAlias(
+    def schema(self) -> schemas.Alias:
+        return schemas.Alias(
             id=self.id,
             user_id=self.user_id,
             application=self.app.name,
