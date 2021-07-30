@@ -85,7 +85,9 @@ def delete_existing_user(
 @router.get(
     "/{user_id}",
     response_model=schemas.User,
-    description="Return the internal model of the user specified by its user ID."
+    responses={404: {}},
+    description="Return the internal model of the user specified by its user ID. "
+                "A 404 error will be returned in case the user ID is unknown."
 )
 def get_user_by_id(
         user_id: pydantic.NonNegativeInt,

@@ -32,5 +32,5 @@ class APIError(pydantic.BaseModel):
     status: Optional[pydantic.NonNegativeInt]
     request: str
     repeat: bool
-    message: Optional[str]
-    details: Optional[str]
+    message: str
+    details: str
