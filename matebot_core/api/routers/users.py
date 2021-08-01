@@ -45,7 +45,7 @@ def create_new_user(
     values["voucher_id"] = values["voucher"]
     del values["voucher"]
     model = models.User(**values)
-    return helpers.create_new_of_model(model, local, logger)
+    return helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
 
 @router.put(
