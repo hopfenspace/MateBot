@@ -1,0 +1,3 @@
+"""
+MateBot core unit tests
+"""
