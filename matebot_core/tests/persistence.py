@@ -7,6 +7,7 @@ import unittest
 
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.exc
 from sqlalchemy.engine import Engine as _Engine
 
 from ..persistence import models
@@ -98,6 +99,78 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
     """
     Database test cases checking restrictions on certain operations (constraints)
     """
+
+    def test_transaction_constraints(self):
+        # Missing all required fields
+        self.session.add(models.Transaction())
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Negative amount
+        self.session.add(models.Transaction(
+            sender_id=1,
+            receiver_id=2,
+            amount=-32,
+            reason="reason",
+            transaction_types_id=1
+        ))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Zero amount
+        self.session.add(models.Transaction(
+            sender_id=1,
+            receiver_id=2,
+            amount=0,
+            reason="reason",
+            transaction_types_id=1
+        ))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Sender equals receiver
+        self.session.add(models.Transaction(
+            sender_id=1,
+            receiver_id=1,
+            amount=1,
+            reason="reason",
+            transaction_types_id=1
+        ))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Non-unique transaction ID
+        self.session.add(models.Transaction(
+            id=1,
+            sender_id=1,
+            receiver_id=2,
+            amount=1,
+            transaction_types_id=1
+        ))
+        self.session.add(models.Transaction(
+            id=1,
+            sender_id=2,
+            receiver_id=1,
+            amount=1,
+            transaction_types_id=1
+        ))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine here
+        self.session.add(models.Transaction(
+            sender_id=1,
+            receiver_id=2,
+            amount=1,
+            transaction_types_id=1
+        ))
+        self.session.commit()
+        self.session.rollback()
 
 
 class DatabaseSchemaTests(_BaseDatabaseTests):
