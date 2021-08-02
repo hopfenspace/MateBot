@@ -129,6 +129,40 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         self.session.rollback()
 
+    def test_user_alias_constraints(self):
+        # Missing all required fields
+        self.session.add(models.UserAlias())
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine
+        self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=1, app_id=1))
+        self.session.commit()
+        self.session.rollback()
+
+        # Same alias in same application again
+        self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=6, app_id=1))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine
+        self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
+        self.session.commit()
+        self.session.rollback()
+
+        # Same user in same application again
+        self.session.add(models.UserAlias(app_user_id="app-alias5", user_id=2, app_id=1))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine
+        self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=6))
+        self.session.commit()
+        self.session.rollback()
+
     def test_transaction_constraints(self):
         # Missing all required fields
         self.session.add(models.Transaction())
