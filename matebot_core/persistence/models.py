@@ -83,6 +83,10 @@ class User(Base):
         backref=backref("voucher_user", remote_side=[id])
     )
 
+    __table_args__ = (
+        CheckConstraint("special == true"),
+    )
+
     @property
     def schema(self) -> schemas.User:
         return schemas.User(
@@ -162,6 +166,7 @@ class UserAlias(Base):
 
     __table_args__ = (
         UniqueConstraint("app_id", "app_user_id"),
+        UniqueConstraint("app_id", "user_id")
     )
 
     @property
