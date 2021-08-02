@@ -235,6 +235,54 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
         self.session.commit()
         self.session.rollback()
 
+    def test_vote_constraints(self):
+        # Missing required field 'ballot_id'
+        self.session.add(models.Vote(user_id=2, vote=0))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Missing required field 'user_id'
+        self.session.add(models.Vote(ballot_id=12, vote=-1))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine
+        ballot = models.Ballot(question="Why not?", restricted=True, active=True)
+        self.session.add(ballot)
+        self.session.commit()
+
+        # Too high 'vote' value
+        self.session.add(models.Vote(ballot=ballot, user_id=42, vote=2))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Too low 'vote' value
+        self.session.add(models.Vote(ballot=ballot, user_id=42, vote=-2))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Everything fine
+        v1 = models.Vote(ballot=ballot, user_id=22, vote=1)
+        v2 = models.Vote(ballot=ballot, user_id=6, vote=-1)
+        self.session.add_all([v1, v2])
+        self.session.commit()
+
+        # Second vote of same user in the same ballot with a different vote
+        self.session.add(models.Vote(ballot=ballot, user_id=6, vote=1))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Second vote of same user in the same ballot with the same vote
+        self.session.add(models.Vote(ballot=ballot, user_id=6, vote=-1))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
 
 class DatabaseSchemaTests(_BaseDatabaseTests):
     """
