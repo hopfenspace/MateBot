@@ -252,7 +252,7 @@ class Transaction(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("amount >= 0"),
+        CheckConstraint("amount > 0"),
         CheckConstraint("sender_id != receiver_id")
     )
 
