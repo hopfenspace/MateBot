@@ -4,6 +4,7 @@ MateBot database unit tests
 
 import datetime
 import unittest
+from typing import List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -38,21 +39,23 @@ class _BaseDatabaseTests(unittest.TestCase):
         self.session.close()
         self.engine.dispose()
 
+    @staticmethod
+    def get_sample_users() -> List[models.User]:
+        return [
+            models.User(name="user1", balance=-42, external=True),
+            models.User(name="user2", balance=51, external=False),
+            models.User(name="user3", external=True),
+            models.User(name="user4", balance=2, external=False),
+            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
+            models.User(external=False),
+            models.User(name="community", external=False, special=True, balance=2, permission=True)
+        ]
+
 
 class DatabaseUsabilityTests(_BaseDatabaseTests):
     """
     Database test cases checking the correct usability of the models
     """
-
-    @staticmethod
-    def get_sample_users():
-        user1 = models.User(name="user1", balance=-42, external=True)
-        user2 = models.User(name="user2", balance=51, external=False)
-        user3 = models.User(external=True)
-        user3.name = "user3"
-        user4 = models.User(name="user4", balance=2, external=False)
-        user5 = models.User(permission=False, active=False, external=False, voucher_id=2)
-        return [user1, user2, user3, user4, user5]
 
     def test_create_user_without_orm(self):
         self.session.execute(
@@ -74,7 +77,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertLessEqual((now - accessed) % 3600, 1)
 
     def test_create_users(self):
-        user1, user2, user3, user4, _ = self.get_sample_users()
+        user1, user2, user3, user4, _, _, _ = self.get_sample_users()
         self.session.add_all([user1, user2, user3])
         self.session.commit()
         self.session.add(user4)
@@ -89,6 +92,15 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertListEqual(self.session.get(models.User, 4).vouching_for, [])
         self.assertIsNone(self.session.get(models.User, 5))
 
+    def test_create_community_user(self):
+        community = self.get_sample_users()[-1]
+        self.session.add(community)
+        self.session.commit()
+
+        self.assertEqual(community.id, 1)
+        self.assertEqual(community.special, True)
+        self.assertEqual(community.active, True)
+
     def test_insert_all_sample_users(self):
         self.session.add_all(self.get_sample_users())
         self.session.commit()
@@ -99,6 +111,23 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
     """
     Database test cases checking restrictions on certain operations (constraints)
     """
+
+    def test_community_user_constraints(self):
+        self.session.add_all(self.get_sample_users())
+        community = self.get_sample_users()[-1]
+
+        # Non-unique special user flag
+        self.session.add(community)
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
+
+        # Forbidden special user flag 'false'
+        community.special = False
+        self.session.add(community)
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
 
     def test_transaction_constraints(self):
         # Missing all required fields
