@@ -36,7 +36,7 @@ def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     status_code=201,
     response_model=schemas.Alias,
-    responses={409: {"model": schemas.APIError}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     description="Create a new alias, failing for any existing alias of the same combination "
                 "of `app_user_id` and `application` ID. The `app_user_id` field should "
                 "reflect the unique internal username in the frontend application. A 409 "

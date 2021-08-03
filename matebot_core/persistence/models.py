@@ -164,6 +164,11 @@ class UserAlias(Base):
         nullable=False
     )
 
+    app = relationship(
+        "Application",
+        foreign_keys=[app_id]
+    )
+
     __table_args__ = (
         UniqueConstraint("app_id", "app_user_id"),
         UniqueConstraint("app_id", "user_id")
@@ -269,7 +274,7 @@ class Transaction(Base):
             receiver=self.receiver_id,
             amount=self.amount,
             reason=self.reason,
-            transaction_type=self.transaction_type.schema,
+            transaction_type=self.transaction_type.schema if self.transaction_type else None,
             timestamp=self.registered.timestamp()
         )
 

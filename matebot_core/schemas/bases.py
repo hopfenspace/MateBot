@@ -101,5 +101,5 @@ class Transaction(pydantic.BaseModel):
 class TransactionCreation(pydantic.BaseModel):
     sender: Union[pydantic.NonNegativeInt, Alias]
     receiver: Union[pydantic.NonNegativeInt, Alias]
-    amount: pydantic.NonNegativeInt
+    amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
