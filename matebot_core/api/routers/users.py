@@ -34,6 +34,7 @@ def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.User,
     description="Create a new \"empty\" user account with zero balance."
 )

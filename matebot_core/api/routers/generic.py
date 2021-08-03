@@ -35,8 +35,8 @@ def get_status(local: LocalRequestData = Depends(LocalRequestData)):
 @router.get(
     "/updates",
     response_model=schemas.Updates,
-    description="Return a collection of the current ETags of all available, important models to "
-                "determine whether any of them has changed in them meantime. This allows "
+    description="Return a collection of the current ETags of all available, important models "
+                "to determine whether any of them has changed in them meantime. This allows "
                 "user agents to implement polling. Of course, caching is required for that."
 )
 def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
