@@ -113,14 +113,3 @@ def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
     raise MissingImplementation("get_all_transactions_of_user")
 
 
-@router.get(
-    "/collective/{collective_id}",
-    response_model=List[schemas.Transaction],
-    responses={404: {"model": schemas.APIError}},
-    description="Return a list of all transactions associated with a specific collective "
-                "operation identified by the `collective_id`. The list may be empty if "
-                "the collective operation was cancelled or not submitted yet. "
-                "A 404 error will be returned if the collective ID is unknown."
-)
-def get_all_transactions_of_collective(collective_id: pydantic.NonNegativeInt):
-    raise MissingImplementation("get_all_transactions_of_collective")
