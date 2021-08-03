@@ -46,3 +46,17 @@ def add_new_application(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("add_new_application")
+
+
+@router.get(
+    "/{application_id}",
+    response_model=schemas.Application,
+    responses={404: {"model": schemas.APIError}},
+    description="Return the application model specified by its application ID. "
+                "A 404 error will be returned in case the ID is not found."
+)
+def get_application_by_id(
+        application_id: int,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    return helpers.get_one_of_model(application_id, models.Application, local)
