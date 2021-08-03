@@ -80,6 +80,8 @@ class APIException(HTTPException):
                     "context": str(exc.__context__),
                     "str": str(exc)
                 })
+            if "str" not in details:
+                details["str"] = str(exc)
 
             logger.error(
                 f"{type(exc).__name__}: {exc} @ '{request.method} "
