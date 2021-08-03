@@ -43,13 +43,7 @@ class Application(pydantic.BaseModel):
 
 class ApplicationCreation(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
-    auth_token: uuid.UUID
     community_user: AliasCreation
-
-
-class ApplicationUpdate(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    name: pydantic.constr(max_length=255)
 
 
 class User(pydantic.BaseModel):
