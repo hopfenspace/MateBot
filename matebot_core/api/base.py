@@ -144,6 +144,20 @@ class NotFound(APIException):
         )
 
 
+class Conflict(APIException):
+    """
+    Exception for invalid states, concurrent manipulations or other data clashes
+    """
+
+    def __init__(self, message: str, detail: Optional[str] = None, repeat: bool = False):
+        super().__init__(
+            status_code=409,
+            detail=detail,
+            repeat=repeat,
+            message=message
+        )
+
+
 class PreconditionFailed(APIException):
     """
     Exception when the precondition of a conditional request failed
@@ -154,7 +168,7 @@ class PreconditionFailed(APIException):
             status_code=412,
             detail=detail,
             repeat=False,
-            message=f"Precondition failed for resource '{str(resource)}'."
+            message=f"Precondition failed for resource {resource!r}."
         )
 
 

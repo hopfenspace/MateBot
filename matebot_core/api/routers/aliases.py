@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, NotFound, MissingImplementation
+from ..base import Conflict, NotFound, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -60,11 +60,9 @@ def create_new_alias(
         app_user_id=alias.app_user_id
     ).first()
     if existing_alias is not None:
-        raise APIException(
-            status_code=409,
-            detail=f"Alias: {existing_alias!r}",
-            repeat=False,
-            message=f"User alias can't be created since it already exists."
+        raise Conflict(
+            "User alias can't be created since it already exists.",
+            f"Alias: {existing_alias!r}"
         )
 
     model = models.UserAlias(
