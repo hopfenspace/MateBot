@@ -71,6 +71,7 @@ def create_new_of_model(
         logger: Optional[logging.Logger] = None,
         location_format: Optional[str] = None,
         content_location: bool = False,
+        more_models: Optional[List[models.Base]] = None,
         **kwargs
 ) -> pydantic.BaseModel:
     """
@@ -92,6 +93,7 @@ def create_new_of_model(
     :param location_format: optional format string to produce the ``Location`` header
     :param content_location: switch to enable adding the ``Content-Location`` header,
         too (only applicable if the ``Location`` header has been set before, not alone)
+    :param more_models: list of additional models to be committed in the same transaction
     :param kwargs: additional headers for the response
     :return: resulting object (as its schema's instance)
     :raises APIException: when the database operation went wrong (to report the problem)
@@ -102,9 +104,14 @@ def create_new_of_model(
 
     if logger is not None:
         logger.info(f"Adding new model {model!r}...")
+    if more_models is not None:
+        for m in more_models:
+            logger.debug(f"Additional model: {m!r}")
 
     try:
         local.session.add(model)
+        if more_models is not None:
+            local.session.add_all(more_models)
         local.session.commit()
     except sqlalchemy.exc.DBAPIError as exc:
         local.session.rollback()
