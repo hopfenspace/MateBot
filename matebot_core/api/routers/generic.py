@@ -24,22 +24,30 @@ router = APIRouter(
 
 @router.get(
     "/status",
-    response_model=schemas.Status,
-    description="Return some information about the current status "
-                "of the server, the database and whatsoever."
+    response_model=schemas.Status
 )
 def get_status(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return some information about the current status of the server, the database and whatsoever.
+    """
+
     raise MissingImplementation("get_status")
 
 
 @router.get(
     "/updates",
-    response_model=schemas.Updates,
-    description="Return a collection of the current ETags of all available, important models "
-                "to determine whether any of them has changed in them meantime. This allows "
-                "user agents to implement polling. Of course, caching is required for that."
+    response_model=schemas.Updates
 )
 def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return a collection of the current ETags of all important model collections.
+
+    This operation can be used to determine whether any of the available models
+    has changed in them meantime. This allows user agents to implement polling.
+    Of course, user-agent caching is required for that. An alternative way to
+    stay informed about updates are HTTP callbacks, which will be introduced later.
+    """
+
     def _get(model: Type[models.Base]) -> uuid.UUID:
         all_objects = [obj.schema for obj in local.session.query(model).all()]
         return uuid.UUID(local.entity.make_etag(all_objects, model.__name__))

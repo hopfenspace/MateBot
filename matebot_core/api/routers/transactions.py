@@ -25,10 +25,13 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=List[schemas.Transaction],
-    description="Return a list of all transactions in the system."
+    response_model=List[schemas.Transaction]
 )
 def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return a list of all transactions in the system.
+    """
+
     return helpers.get_all_of_model(models.Transaction, local)
 
 
@@ -36,18 +39,24 @@ def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     status_code=201,
     response_model=schemas.Transaction,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
-    description="Make a new transaction using the specified data. Note that transactions "
-                "can't be edited after being sent to this endpoint by design, so take care. "
-                "The frontend application might want to request explicit user approval. "
-                "A 404 error will be returned if the sender or receiver users can't be "
-                "determined. A 409 error will be returned if any supplied aliases are not "
-                "accurate (e.g. outdated), or when the sender equals the receiver."
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 def make_a_new_transaction(
         transaction: schemas.TransactionCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
+    """
+    Make a new transaction using the specified data and return it.
+
+    Note that transactions can't be edited after being sent to this
+    endpoint by design, so take care doing that. The frontend application
+    might want to request explicit user approval ahead of time.
+
+    A 404 error will be returned if the sender or receiver users can't be
+    determined. A 409 error will be returned if any supplied aliases are not
+    accurate (e.g. outdated), or when the sender equals the receiver.
+    """
+
     def _get_user(data, target: str) -> models.User:
         if isinstance(data, schemas.Alias):
             alias = local.session.get(models.UserAlias, data.id)
@@ -91,25 +100,33 @@ def make_a_new_transaction(
 @router.get(
     "/{transaction_id}",
     response_model=schemas.Transaction,
-    responses={404: {"model": schemas.APIError}},
-    description="Return details about a specific transaction identified by its "
-                "`transaction_id`. A 404 error will be returned if that ID is unknown."
+    responses={404: {"model": schemas.APIError}}
 )
 def get_transaction_by_id(
         transaction_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
+    """
+    Return details about a specific transaction identified by its transaction ID.
+
+    A 404 error will be returned if the `transaction_id` is unknown.
+    """
+
     return helpers.get_one_of_model(transaction_id, models.Transaction, local)
 
 
 @router.get(
     "/user/{user_id}",
     response_model=List[schemas.Transaction],
-    responses={404: {"model": schemas.APIError}},
-    description="Return a list of all transactions made by a specific user identified by "
-                "its `user_id`. A 404 error will be returned if the user ID is unknown."
+    responses={404: {"model": schemas.APIError}}
 )
 def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
+    """
+    Return a list of all transactions made by a specific user identified by its user ID.
+
+    Note that this list includes both sent and received transactions.
+
+    A 404 error will be returned if the user ID is unknown.
+    """
+
     raise MissingImplementation("get_all_transactions_of_user")
-
-
