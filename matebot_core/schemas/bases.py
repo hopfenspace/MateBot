@@ -5,7 +5,6 @@ This module contains schemas for users, their aliases,
 applications and the transactions between the users.
 """
 
-import uuid
 from typing import List, Optional, Union
 
 import pydantic
