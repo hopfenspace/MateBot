@@ -1,7 +1,5 @@
-python-telegram-bot==13.7
-tzlocal==2.1
-PyMySQL==1.0.2
-pytz==2020.1
 SQLAlchemy==1.4.20
 fastapi==0.66.0
 pydantic==1.8.2
+ujson==4.0.2
+uvicorn==0.14.0
