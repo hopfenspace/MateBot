@@ -41,13 +41,21 @@ The handling of incoming conditional requests is described as follows:
     2. and for other methods, respond with 412 (Precondition Failed)
 """
 
+import logging.config
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 from . import base
 from .routers import aliases, applications, ballots, communisms, generic, refunds, transactions, users, votes
 from .. import schemas
+from ..persistence import database
+from ..settings import Settings
 
+
+settings = Settings()
+logging.config.dictConfig(settings.logging.dict())
+database.init(settings.database.connection, settings.database.echo)
 
 app = FastAPI(
     title="MateBot core REST API",

@@ -83,7 +83,7 @@ class APIException(HTTPException):
             if "str" not in details:
                 details["str"] = str(exc)
 
-            logger.error(
+            logger.exception(
                 f"{type(exc).__name__}: {exc} @ '{request.method} "
                 f"{request.url.path}' (details: {details})"
             )
