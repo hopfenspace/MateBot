@@ -3,7 +3,7 @@ MateBot API dependency library
 """
 
 import logging
-from typing import Generator
+from typing import Generator, Optional
 
 import sqlalchemy.exc
 from fastapi import Depends, Request, Response
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from . import base, etag
 from ..persistence import database
+from ..settings import Settings
 
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,8 @@ class LocalRequestData:
         self.entity = etag.ETag(request)
         self.session = session
 
+        self._config: Optional[Settings] = None
+
     def attach_headers(self, model: base.ModelType, **kwargs) -> base.ModelType:
         """
         Attach the specified headers (excl. ETag) to the response and return the model
@@ -86,3 +89,9 @@ class LocalRequestData:
                 self.response.headers.append(k, kwargs[k])
         self.entity.add_header(self.response, model)
         return model
+
+    @property
+    def config(self) -> Settings:
+        if self._config is None:
+            self._config = Settings()
+        return self.config
