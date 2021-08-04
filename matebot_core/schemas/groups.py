@@ -68,7 +68,7 @@ class RefundCreation(pydantic.BaseModel):
 
 class RefundPatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    active: Optional[bool]
+    cancelled: bool = False
 
 
 class Communism(pydantic.BaseModel):

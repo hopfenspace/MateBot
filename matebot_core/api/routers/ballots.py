@@ -82,8 +82,12 @@ def close_ballot_by_id(
 
     If the ballot has already been closed, this operation will
     do nothing and silently return the unmodified model.
+    Note that if any refund makes use of this ballot, then this
+    refund will also be closed implicitly by closing its ballot.
+    This will also make its transaction(s), if the ballot was
+    successful. Take a look at `PATCH /refunds` for details.
 
     A 404 error will be returned if the ballot ID is not found.
     """
 
-    raise MissingImplementation("close_ballot")
+    raise MissingImplementation("close_ballot_by_id")

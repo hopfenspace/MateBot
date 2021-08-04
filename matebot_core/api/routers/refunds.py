@@ -53,6 +53,35 @@ def create_new_refund(
     raise MissingImplementation("create_new_refund")
 
 
+@router.patch(
+    "",
+    response_model=schemas.Refund,
+    responses={404: {"model": schemas.APIError}}
+)
+def close_refund_by_id(
+        refund: schemas.RefundPatch,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Close a refund, calculate the result of all votes and eventually pay back money.
+
+    If the refund or its ballot has already been closed, this
+    operation will do nothing and silently return the therefore
+    unmodified model. Note that closing the refund also closes its
+    associated ballot to finally calculate the result of all votes.
+    As transactions can't be edited after being created by design,
+    it doesn't matter if a user agent calls this endpoint once or a
+    thousand times. Note that the field `cancelled` can be set to
+    true in order to cancel the refund and therefore prevent any
+    further transactions based on this refund. Of course, the
+    ballot will be closed in order to prevent changes, too.
+
+    A 404 error will be returned if the refund ID is not found.
+    """
+
+    raise MissingImplementation("close_refund_by_id")
+
+
 @router.put(
     "",
     response_model=schemas.Refund,
@@ -112,24 +141,3 @@ def get_refunds_by_creator(
     """
 
     raise MissingImplementation("get_refunds_by_creator")
-
-
-@router.post(
-    "/{refund_id}/cancel",
-    response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
-)
-def cancel_existing_refund(
-        refund_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Cancel an existing refund operation.
-
-    A 409 error will be returned if this is attempted on a closed/inactive
-    refund operation. A 404 error will be returned if the specified `refund_id`
-    is not known. This operation closes the refund and prevents any further
-    changes. No transactions will be performed based on this refund anymore.
-    """
-
-    raise MissingImplementation("cancel_existing_refund")
