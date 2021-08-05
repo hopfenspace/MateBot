@@ -124,5 +124,5 @@ class ConsumableUpdate(pydantic.BaseModel):
     description: pydantic.constr(max_length=255) = ""
     price: pydantic.PositiveInt
     messages: List[pydantic.constr(max_length=255)]
-    symbol: pydantic.constr(min_length=1, max_length=1)
+    symbol: pydantic.constr(min_length=1, max_length=2)
     stock: pydantic.NonNegativeInt
