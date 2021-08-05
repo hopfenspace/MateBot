@@ -26,7 +26,7 @@ class Updates(pydantic.BaseModel):
 
 
 class VersionInfo(pydantic.BaseModel):
-    major: pydantic.PositiveInt
+    major: pydantic.NonNegativeInt
     minor: pydantic.NonNegativeInt
     micro: pydantic.NonNegativeInt
 
