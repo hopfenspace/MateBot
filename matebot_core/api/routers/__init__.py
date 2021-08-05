@@ -10,6 +10,7 @@ from .aliases import router as aliases_router
 from .applications import router as applications_router
 from .ballots import router as ballots_router
 from .communisms import router as communisms_router
+from .consumables import router as consumables_router
 from .generic import router as generic_router
 from .refunds import router as refunds_router
 from .transactions import router as transactions_router
@@ -23,6 +24,7 @@ all_routers = [
     applications_router,
     ballots_router,
     communisms_router,
+    consumables_router,
     refunds_router,
     transactions_router,
     users_router,
