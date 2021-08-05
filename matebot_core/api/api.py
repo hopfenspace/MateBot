@@ -48,7 +48,7 @@ from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 from . import base
 from .routers import all_routers
-from .. import schemas
+from .. import schemas, version
 from ..persistence import database
 from ..settings import Settings
 
@@ -59,7 +59,7 @@ database.init(settings.database.connection, settings.database.echo)
 
 app = FastAPI(
     title="MateBot core REST API",
-    version="0.3",
+    version=version.API_VERSION,
     description=__doc__,
     responses={422: {"model": schemas.APIError}}
 )
