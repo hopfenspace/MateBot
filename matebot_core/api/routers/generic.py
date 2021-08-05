@@ -57,6 +57,7 @@ def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
         applications=_get(models.Application),
         ballots=_get(models.Ballot),
         communisms=_get(models.Communism),
+        consumables=_get(models.Consumable),
         refunds=_get(models.Refund),
         transactions=_get(models.Transaction),
         users=_get(models.User),

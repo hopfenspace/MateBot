@@ -15,6 +15,7 @@ class Updates(pydantic.BaseModel):
     applications: uuid.UUID
     ballots: uuid.UUID
     communisms: uuid.UUID
+    consumables: uuid.UUID
     refunds: uuid.UUID
     transactions: uuid.UUID
     users: uuid.UUID
