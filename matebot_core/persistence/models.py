@@ -2,6 +2,7 @@
 MateBot core database models
 """
 
+import pydantic
 from sqlalchemy import (
     Boolean, DateTime, Integer, SmallInteger, String,
     CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
@@ -282,6 +283,94 @@ class Transaction(Base):
         return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
             self.id, self.sender_id, self.receiver_id, self.amount
         )
+
+
+class Consumable(Base):
+    __tablename__ = "consumables"
+
+    id = _make_id_column()
+
+    name = Column(
+        String(255),
+        unique=True
+    )
+    description = Column(
+        String(255),
+        nullable=False,
+        default=""
+    )
+    price = Column(
+        Integer,
+        nullable=False
+    )
+    symbol = Column(
+        String(15),
+        nullable=False
+    )
+    stock = Column(
+        Integer,
+        nullable=False
+    )
+    modified = Column(
+        DateTime,
+        server_onupdate=FetchedValue(),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    messages = relationship(
+        "ConsumableMessage",
+        back_populates="consumable"
+    )
+
+    __table_args__ = (
+        CheckConstraint("price > 0"),
+        CheckConstraint("stock >= 0")
+    )
+
+    @property
+    def schema(self) -> schemas.Consumable:
+        return schemas.Consumable(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            price=self.price,
+            messages=[msg.schema for msg in self.messages],
+            symbol=self.symbol,
+            stock=self.stock,
+            modified=self.modified.timestamp()
+        )
+
+    def __repr__(self) -> str:
+        return f"Consumable(id={self.id}, name={self.name}, price={self.price})"
+
+
+class ConsumableMessage(Base):
+    __tablename__ = "consumables_messages"
+
+    id = _make_id_column()
+
+    consumable_id = Column(
+        Integer,
+        ForeignKey("consumables.id"),
+        nullable=False
+    )
+    message = Column(
+        String(255),
+        nullable=False
+    )
+
+    consumable = relationship(
+        "Consumable",
+        back_populates="messages"
+    )
+
+    @property
+    def schema(self) -> pydantic.constr(max_length=255):
+        return self.message
+
+    def __repr__(self) -> str:
+        return f"ConsumableMessage(id={self.id}, message={self.message!r})"
 
 
 class Refund(Base):

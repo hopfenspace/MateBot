@@ -1,3 +1,3 @@
 """
-MateBot core persistence features
+MateBot core persistence (database) features
 """
