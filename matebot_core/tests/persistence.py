@@ -11,6 +11,7 @@ import sqlalchemy.orm
 import sqlalchemy.exc
 from sqlalchemy.engine import Engine as _Engine
 
+from .. import schemas
 from ..persistence import models
 
 
@@ -286,8 +287,36 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
 class DatabaseSchemaTests(_BaseDatabaseTests):
     """
-    Database test cases checking the returned schemas of the database models
+    Database test cases checking the usability of schemas together with the models
     """
+
+    def test_create_consumable(self):
+        incoming_consumable = schemas.ConsumableCreation(
+            name="Cola Mate",
+            price=100,
+            messages=["Together tastes better", "Taste the feeling", "Open happiness"],
+            symbol="\U0001F9C9",
+            stock=42
+        )
+
+        info = incoming_consumable.dict()
+        msgs = info.pop("messages")
+        model = models.Consumable(**info)
+        self.session.add(model)
+        self.session.commit()
+
+        for i, msg in enumerate(msgs):
+            msg_model = models.ConsumableMessage(message=msg)
+            msg_model.consumable = model
+            self.session.add(msg_model)
+            self.session.commit()
+            self.assertEqual(i+1, msg_model.id)
+            self.assertEqual(i+1, len(model.messages))
+
+        for k in incoming_consumable.dict():
+            self.assertEqual(getattr(incoming_consumable, k), getattr(model.schema, k))
+        self.assertTrue("id" in model.schema.dict())
+        self.assertTrue("modified" in model.schema.dict())
 
 
 def get_suite() -> unittest.TestSuite:
