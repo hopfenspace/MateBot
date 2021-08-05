@@ -4,8 +4,12 @@ MateBot core settings provider
 
 import os
 import sys
-import json
 from typing import Any, Dict, Tuple
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 import pydantic
 from pydantic.env_settings import SettingsSourceCallable as _SettingsSourceCallable
