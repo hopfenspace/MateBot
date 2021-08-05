@@ -13,6 +13,9 @@ a patch has optional fields only (except for the ID of the
 object which should be affected by the proposed changes). Any
 field of the original model that should not be affected by some
 proposed change can therefore just be omitted with a patch.
+
+This package also contains the ``config`` module, but it's not
+exported by default, since it's currently only used internally.
 """
 
 from .bases import *

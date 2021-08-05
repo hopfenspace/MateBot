@@ -96,3 +96,33 @@ class TransactionCreation(pydantic.BaseModel):
     receiver: Union[pydantic.NonNegativeInt, Alias]
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
+
+
+class Consumable(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    name: pydantic.constr(max_length=255)
+    description: pydantic.constr(max_length=255)
+    price: pydantic.PositiveInt
+    messages: List[pydantic.constr(max_length=255)]
+    symbol: pydantic.constr(min_length=1, max_length=1)
+    stock: pydantic.NonNegativeInt
+    modified: pydantic.NonNegativeInt
+
+
+class ConsumableCreation(pydantic.BaseModel):
+    name: pydantic.constr(max_length=255)
+    description: pydantic.constr(max_length=255) = ""
+    price: pydantic.PositiveInt
+    messages: List[pydantic.constr(max_length=255)]
+    symbol: pydantic.constr(min_length=1, max_length=1)
+    stock: pydantic.NonNegativeInt
+
+
+class ConsumableUpdate(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    name: pydantic.constr(max_length=255)
+    description: pydantic.constr(max_length=255) = ""
+    price: pydantic.PositiveInt
+    messages: List[pydantic.constr(max_length=255)]
+    symbol: pydantic.constr(min_length=1, max_length=1)
+    stock: pydantic.NonNegativeInt
