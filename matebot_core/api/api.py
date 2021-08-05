@@ -47,7 +47,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 from . import base
-from .routers import aliases, applications, ballots, communisms, generic, refunds, transactions, users, votes
+from .routers import all_routers
 from .. import schemas
 from ..persistence import database
 from ..settings import Settings
@@ -69,13 +69,5 @@ app.add_exception_handler(RequestValidationError, base.APIException.handle)
 app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
 app.add_exception_handler(Exception, base.APIException.handle)
 
-app.include_router(generic.router)
-
-app.include_router(aliases.router)
-app.include_router(applications.router)
-app.include_router(ballots.router)
-app.include_router(communisms.router)
-app.include_router(refunds.router)
-app.include_router(transactions.router)
-app.include_router(users.router)
-app.include_router(votes.router)
+for router in all_routers:
+    app.include_router(router)
