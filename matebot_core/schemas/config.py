@@ -12,6 +12,11 @@ class GeneralConfig(pydantic.BaseModel):
     max_consume: pydantic.conint(gt=2) = 10
 
 
+class DatabaseConfig(pydantic.BaseModel):
+    connection: str = "sqlite://"
+    echo: bool = True
+
+
 class CommunityConfig(pydantic.BaseModel):
     payment_consent: pydantic.PositiveInt = 2
     payment_denial: pydantic.PositiveInt = 2
@@ -37,13 +42,8 @@ class LoggingConfig(pydantic.BaseModel):
     }
 
 
-class DatabaseConfig(pydantic.BaseModel):
-    connection: str = "sqlite://"
-    echo: bool = True
-
-
 class CoreConfig(pydantic.BaseModel):
     general: GeneralConfig
+    database: DatabaseConfig
     community: CommunityConfig
     logging: LoggingConfig
-    database: DatabaseConfig

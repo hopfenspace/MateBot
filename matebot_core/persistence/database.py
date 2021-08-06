@@ -35,11 +35,19 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
 
     global _engine, _make_session
     if database_url.startswith("sqlite:"):
+        if ":memory:" in database_url or database_url == "sqlite://":
+            print(
+                "Using the in-memory sqlite3 may lead to later problems. "
+                "It's therefore recommended to create a persistent file.",
+                file=sys.stderr
+            )
+
         _engine = create_engine(
             database_url,
             echo=echo,
             connect_args={"check_same_thread": False}
         )
+
     else:
         _engine = create_engine(
             database_url,
