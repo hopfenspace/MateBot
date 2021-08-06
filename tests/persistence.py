@@ -11,8 +11,8 @@ import sqlalchemy.orm
 import sqlalchemy.exc
 from sqlalchemy.engine import Engine as _Engine
 
-from .. import schemas
-from ..persistence import models
+from matebot_core import schemas
+from matebot_core.persistence import models
 
 
 _DATABASE_URL = "sqlite://"
