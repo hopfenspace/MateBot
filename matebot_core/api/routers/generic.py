@@ -9,9 +9,8 @@ from typing import Type
 
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from ... import schemas, version
 from ...persistence import models
 
 
@@ -31,7 +30,19 @@ def get_status(local: LocalRequestData = Depends(LocalRequestData)):
     Return some information about the current status of the server, the database and whatsoever.
     """
 
-    raise MissingImplementation("get_status")
+    healthy = True  # TODO: implement some kind of health check here
+
+    return schemas.Status(
+        healthy=healthy,
+        api_version=schemas.VersionInfo(
+            major=version.API_VERSION.split(".")[0],
+            minor=version.API_VERSION.split(".")[1],
+            micro=0
+        ),
+        project_version=schemas.VersionInfo(**version.PROJECT_VERSION_INFO._asdict()),
+        localtime=datetime.datetime.now(),
+        timestamp=datetime.datetime.now().timestamp()
+    )
 
 
 @router.get(
