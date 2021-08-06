@@ -43,7 +43,8 @@ The handling of incoming conditional requests is described as follows:
 
 import logging.config
 
-from fastapi import FastAPI
+import fastapi.applications
+from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 from . import base
@@ -58,9 +59,11 @@ logging.config.dictConfig(settings.logging.dict())
 logging.getLogger(__name__).debug("Starting application...")
 database.init(settings.database.connection, settings.database.echo)
 
-app = FastAPI(
+app = fastapi.FastAPI(
     title="MateBot core REST API",
     version=version.API_VERSION,
+    docs_url=None,
+    redoc_url=None,
     description=__doc__,
     responses={422: {"model": schemas.APIError}}
 )
@@ -72,3 +75,38 @@ app.add_exception_handler(Exception, base.APIException.handle)
 
 for router in all_routers:
     app.include_router(router)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def get_root():
+    return fastapi.responses.RedirectResponse("/docs")
+
+
+@app.get("/redoc", include_in_schema=False)
+async def get_redoc():
+    return fastapi.applications.get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="/static/redoc.standalone.js",
+        redoc_favicon_url="/static/favicon.png",
+        with_google_fonts=False
+    )
+
+
+@app.get("/docs", include_in_schema=False)
+async def get_swagger_ui():
+    return fastapi.applications.get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
+        swagger_favicon_url="/static/favicon.png"
+    )
+
+
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+async def get_swagger_ui_redirect():
+    return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
