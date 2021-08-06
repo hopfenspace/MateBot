@@ -71,7 +71,7 @@ def run_server(args: argparse.Namespace):
         print("Do not start the server this way during production!", file=sys.stderr)
 
     uvicorn.run(
-        app,
+        "matebot_core.api.api:app" if args.reload else app,
         port=args.port,
         host=args.host,
         debug=args.debug,

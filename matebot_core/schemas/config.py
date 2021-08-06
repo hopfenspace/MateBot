@@ -27,18 +27,32 @@ class LoggingConfig(pydantic.BaseModel):
     version: pydantic.conint(ge=1, le=1) = 1
     disable_existing_loggers: bool = True
     incremental: bool = False
-    formatters: Dict[str, dict] = {}
-    loggers: Dict[str, dict] = {}
-    handlers: Dict[str, dict] = {
-        "console": {
+    formatters: Dict[str, Dict[str, str]] = {
+        "access": {
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s',
+        }
+    }
+    loggers: Dict[str, dict] = {
+        "uvicorn.access": {
+            "handlers": ["access"]
+        }
+    }
+    handlers: Dict[str, Dict[str, str]] = {
+        "default": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout"
+        },
+        "access": {
+            "formatter": "access",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
         }
     }
     root: dict = {
         "level": "DEBUG",
-        "handlers": ["console"]
+        "handlers": ["default"]
     }
 
 

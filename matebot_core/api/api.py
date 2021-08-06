@@ -55,6 +55,7 @@ from ..settings import Settings
 
 settings = Settings()
 logging.config.dictConfig(settings.logging.dict())
+logging.getLogger(__name__).debug("Starting application...")
 database.init(settings.database.connection, settings.database.echo)
 
 app = FastAPI(
