@@ -2,7 +2,6 @@
 MateBot core
 """
 
-from .version import __version__
-del version
-
-__all__ = ["api", "persistence", "schemas", "tests"]
+__all__ = ["api", "persistence", "schemas"]
+__version__ = "0.3"
+__api_version__ = "0.3"

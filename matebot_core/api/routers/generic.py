@@ -10,7 +10,7 @@ from typing import Type
 from fastapi import APIRouter, Depends
 
 from ..dependency import LocalRequestData
-from ... import schemas, version
+from ... import schemas, __version__, __api_version__
 from ...persistence import models
 
 
@@ -32,14 +32,24 @@ def get_status(local: LocalRequestData = Depends(LocalRequestData)):
 
     healthy = True  # TODO: implement some kind of health check here
 
+    api_version_list = __api_version__.split(".") + [0, 0]
+    api_version = schemas.VersionInfo(
+        major=api_version_list[0],
+        minor=api_version_list[1],
+        micro=api_version_list[2]
+    )
+
+    project_version_list = __version__.split(".") + [0, 0]
+    project_version = schemas.VersionInfo(
+        major=project_version_list[0],
+        minor=project_version_list[1],
+        micro=project_version_list[2]
+    )
+
     return schemas.Status(
         healthy=healthy,
-        api_version=schemas.VersionInfo(
-            major=version.API_VERSION.split(".")[0],
-            minor=version.API_VERSION.split(".")[1],
-            micro=0
-        ),
-        project_version=schemas.VersionInfo(**version.PROJECT_VERSION_INFO._asdict()),
+        api_version=api_version,
+        project_version=project_version,
         localtime=datetime.datetime.now(),
         timestamp=datetime.datetime.now().timestamp()
     )
