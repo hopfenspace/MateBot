@@ -23,8 +23,6 @@ class _BaseDatabaseTests(unittest.TestCase):
     session: sqlalchemy.orm.Session
 
     def setUp(self) -> None:
-        print("setUp", self)
-
         self.engine = sqlalchemy.create_engine(
             _DATABASE_URL,
             connect_args={"check_same_thread": False}
@@ -106,6 +104,42 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.session.add_all(self.get_sample_users())
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
+
+    def test_add_applications_and_aliases(self):
+        app1 = models.Application(name="app1")
+        app2 = models.Application(name="app2")
+        self.session.add_all([app1, app2])
+        self.session.commit()
+
+        self.assertEqual("app1", app1.name)
+        self.assertEqual("app2", app2.name)
+
+        community_user = self.get_sample_users()[-1]
+        self.session.add(community_user)
+        self.session.commit()
+
+        community_alias1 = models.UserAlias(
+            app_id=app1.id,
+            user_id=community_user.id,
+            app_user_id="community_alias1"
+        )
+        community_alias2 = models.UserAlias(
+            app_id=app2.id,
+            app_user_id="community_alias2"
+        )
+        community_alias2.user = community_user
+        self.session.add_all([community_alias1, community_alias2])
+        self.session.commit()
+
+        self.assertSetEqual(set(community_user.aliases), {community_alias1, community_alias2})
+
+        app1.community_user_alias = community_alias1
+        app2.community_user_alias = community_alias2
+        self.session.commit()
+
+        self.assertEqual(app1.community_user_alias_id, community_alias1.id)
+        self.assertEqual(app2.community_user_alias_id, community_alias2.id)
+        self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
 
 
 class DatabaseRestrictionTests(_BaseDatabaseTests):
