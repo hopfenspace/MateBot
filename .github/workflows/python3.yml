@@ -28,7 +28,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
     - name: Lint with PyLint
       run: |
-        python -c 'import subprocess; subprocess.run("pylint mate_bot/ -j 0".split(" "));'
+        python -c 'import subprocess; subprocess.run("pylint matebot_core/ -j 0".split(" "));'
     - name: Build docs using Sphinx
       run: |
         cd docs
