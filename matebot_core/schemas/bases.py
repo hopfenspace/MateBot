@@ -2,7 +2,8 @@
 MateBot schemas for the base system
 
 This module contains schemas for users, their aliases,
-applications and the transactions between the users.
+applications and the transactions between the users as
+well as the schemas needed for managing and consuming goods.
 """
 
 from typing import List, Optional, Union
@@ -126,3 +127,11 @@ class ConsumableUpdate(pydantic.BaseModel):
     messages: List[pydantic.constr(max_length=255)]
     symbol: pydantic.constr(min_length=1, max_length=2)
     stock: pydantic.NonNegativeInt
+
+
+class Consumption(pydantic.BaseModel):
+    user: pydantic.NonNegativeInt
+    amount: pydantic.PositiveInt
+    consumable_id: pydantic.NonNegativeInt
+    adjust_stock: bool = True
+    respect_stock: bool = True

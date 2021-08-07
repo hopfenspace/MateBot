@@ -130,3 +130,37 @@ def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
     """
 
     raise MissingImplementation("get_all_transactions_of_user")
+
+
+@router.post(
+    "/consume",
+    status_code=201,
+    response_model=schemas.Transaction,
+    responses={
+        400: {"model": schemas.APIError},
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError}
+    }
+)
+def consume_goods(
+        consumption: schemas.Consumption,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Let a user consume goods (in stock) which will be paid to the community.
+
+    Note that transactions can't be edited after being sent to this
+    endpoint by design, so take care doing that. The frontend application
+    might want to request explicit user approval ahead of time.
+
+    Using `adjust_stock=true` will be ignored when `respect_stock` is `false`.
+
+    A 400 error will be returned when the specified user who should consume
+    the good is the special community user. A 404 error will be returned
+    if the sender user or consumable isn't found. A 409 error will be returned
+    when the good is out of stock (this is already the case when there's
+    not enough available to fit the needs, e.g. requesting four items
+    where only two items are in stock would lead to such an error).
+    """
+
+    raise MissingImplementation("consume_goods")
