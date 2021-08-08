@@ -4,12 +4,13 @@ Generic helper library for the core REST API
 
 import sys
 import logging
-from typing import List, Optional, Type
+from typing import Iterable, List, Optional, Type
 
 import pydantic
 import sqlalchemy.exc
+import sqlalchemy.orm
 
-from .base import APIException, NotFound
+from .base import APIException, Conflict, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
 
@@ -136,11 +137,16 @@ def create_new_of_model(
     :raises APIException: when the database operation went wrong (to report the problem)
     """
 
+    if logger is None:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"No logger specified for function call with args: {model, more_models}"
+        )
+
     local.entity.model_name = type(model).__name__
     local.entity.compare(None)
 
-    if logger is not None:
-        logger.info(f"Adding new model {model!r}...")
+    logger.info(f"Adding new model {model!r}...")
     if more_models is not None:
         for m in more_models:
             logger.debug(f"Additional model: {m!r}")
@@ -160,3 +166,68 @@ def create_new_of_model(
         if content_location:
             headers["Content-Location"] = headers["Location"]
     return local.attach_headers(model.schema, **headers)
+
+
+def delete_one_of_model(
+        instance_id: pydantic.NonNegativeInt,
+        model: Type[models.Base],
+        local: LocalRequestData,
+        schema: Optional[pydantic.BaseModel] = None,
+        logger: Optional[logging.Logger] = None,
+        additional_attributes: Optional[List[str]] = None
+):
+    """
+    Delete the identified instance of a model from the database
+
+    :param instance_id: unique identifier of the instance to be deleted
+    :param model: class of the SQLAlchemy model
+    :param local: contextual local data
+    :param schema: optional supplied schema of the request to validate the client's state
+    :param logger: optional logger that should be used for INFO and ERROR messages
+    :param additional_attributes: optional list of further attributes
+        whose contained objects should be deleted (usually used to
+        decouple related objects, e.g. in One-to-Many relations)
+    :raises NotFound: when the specified ID can't be found for the given model
+    :raises Conflict: when the given schema does not conform to the current state of the object
+    """
+
+    if logger is None:
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"No logger specified for function call with args: {instance_id, model, schema}"
+        )
+
+    obj = local.session.get(model, instance_id)
+    cls_name = type(schema).__name__
+    if obj is None:
+        raise NotFound(f"{cls_name} ID {instance_id!r}")
+    if schema is not None and obj.schema != schema:
+        raise Conflict(
+            f"Invalid state of the {cls_name}. Query the {cls_name} to update.",
+            f"current={obj.schema!r}, requested={schema!r}"
+        )
+
+    try:
+        if additional_attributes is None:
+            additional_attributes = []
+        for attr in additional_attributes:
+            referenced_object = getattr(obj, attr, None)
+
+            if referenced_object is None:
+                logger.warning(f"Object {obj!r} has no attribute {attr!r}")
+            elif isinstance(referenced_object, models.Base):
+                local.session.delete(referenced_object)
+            elif not isinstance(referenced_object, Iterable):
+                logger.error(f"{referenced_object!r} is no valid model for deletion!")
+            else:
+                for single_object in referenced_object:
+                    if isinstance(single_object, models.Base):
+                        local.session.delete(single_object)
+                    else:
+                        logger.error(f"{single_object!r} is no valid model for deletion!")
+
+        local.session.delete(obj)
+        local.session.commit()
+
+    except sqlalchemy.exc.DBAPIError as exc:
+        raise _handle_db_exception(local.session, exc, logger) from exc
