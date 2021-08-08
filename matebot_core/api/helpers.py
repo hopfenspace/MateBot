@@ -2,6 +2,7 @@
 Generic helper library for the core REST API
 """
 
+import sys
 import logging
 from typing import List, Optional, Type
 
@@ -11,6 +12,42 @@ import sqlalchemy.exc
 from .base import APIException, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
+
+
+def _handle_db_exception(
+        session: sqlalchemy.orm.Session,
+        exc: sqlalchemy.exc.DBAPIError,
+        logger: logging.Logger,
+        repeat: bool = False
+) -> APIException:
+    """
+    Handle DBAPIError exceptions by creating a ``APIError`` instance out of it
+
+    :param session: sqlalchemy session instance which will be rolled back
+    :param exc: instance of the currently handled exception
+    :param logger: logger to be used for error reporting and traceback printing
+    :param repeat: value directly passed trough the ``APIError`` constructor
+    :return: instance of APIException, which should be raised in a ``raise from`` clause
+    :raises RuntimeError: when the exception doesn't equal the one found in ``sys.exc_info()``
+    :raises TypeError: when an existing exception is no instance of class ``DBAPIError``
+    """
+
+    if sys.exc_info()[1] is None or sys.exc_info()[1] != exc:
+        raise RuntimeError(f"Called {_handle_db_exception!r} in wrong exception handler!")
+    if not isinstance(exc, sqlalchemy.exc.DBAPIError):
+        raise TypeError(f"Expected instance of DBAPIError, found {type(exc)}") from exc
+
+    session.rollback()
+
+    details = exc.statement.replace("\n", "")
+    logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}", exc_info=exc)
+
+    return APIException(
+        status_code=400,
+        detail=f"Problem arguments: {', '.join(exc.args)!r}",
+        repeat=repeat,
+        message=f"Database error: {type(exc).__name__!r}"
+    )
 
 
 def get_one_of_model(
@@ -113,19 +150,9 @@ def create_new_of_model(
         if more_models is not None:
             local.session.add_all(more_models)
         local.session.commit()
+
     except sqlalchemy.exc.DBAPIError as exc:
-        local.session.rollback()
-
-        if logger is not None:
-            details = exc.statement.replace("\n", "")
-            logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}")
-
-        raise APIException(
-            status_code=400,
-            detail=f"Problem arguments: {', '.join(exc.args)!r}",
-            repeat=False,
-            message=f"Database error: {type(exc).__name__!r}"
-        ) from exc
+        raise _handle_db_exception(local.session, exc, logger) from exc
 
     headers = kwargs
     if location_format is not None:
