@@ -200,7 +200,7 @@ def delete_one_of_model(
     obj = local.session.get(model, instance_id)
     cls_name = type(schema).__name__
     if obj is None:
-        raise NotFound(f"{cls_name} ID {instance_id!r}")
+        raise NotFound(f"{model.__name__} ID {instance_id!r}")
     if schema is not None and obj.schema != schema:
         raise Conflict(
             f"Invalid state of the {cls_name}. Query the {cls_name} to update.",

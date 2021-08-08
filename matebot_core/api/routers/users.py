@@ -49,8 +49,7 @@ def create_new_user(
     """
 
     values = user.dict()
-    values["voucher_id"] = values["voucher"]
-    del values["voucher"]
+    values["voucher_id"] = values.pop("voucher")
     model = models.User(**values)
     return helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
