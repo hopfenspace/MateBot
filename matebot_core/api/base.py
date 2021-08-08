@@ -89,6 +89,7 @@ class APIException(HTTPException):
             )
             return JSONResponse(jsonable_encoder(schemas.APIError(
                 status=status_code,
+                method=request.method,
                 request=request.url.path,
                 repeat=False,
                 message=exc.__class__.__name__,
@@ -111,6 +112,7 @@ class APIException(HTTPException):
         )
         return JSONResponse(jsonable_encoder(schemas.APIError(
             status=status_code,
+            method=request.method,
             request=request.url.path,
             repeat=repeat,
             message=message,

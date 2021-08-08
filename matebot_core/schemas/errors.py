@@ -7,6 +7,9 @@ from typing import Optional
 import pydantic
 
 
+_HTTP_METHOD_REGEX = r"^GET$|HEAD$|POST$|PUT$|PATCH$|DELETE$|OPTIONS$|TRACE$|CONNECT$"
+
+
 class APIError(pydantic.BaseModel):
     """
     APIError: shared model for all types of API failures
@@ -20,7 +23,8 @@ class APIError(pydantic.BaseModel):
     The field `error` should always contain a true boolean value for
     backward compatibility. The field `status` contains the HTTP status code
     of the response, if possible. The field `request` contains the request
-    path without query parameters or fragments. The field `repeat` determines
+    path without query parameters or fragments, while the `method` field
+    holds the request method (e.g. `GET`). The field `repeat` determines
     whether executing the exact same request again may be successful instead.
     The field `message` contains a short human-readable informational message
     about the problem, but may not be totally adequate or user-friendly. The
@@ -30,6 +34,7 @@ class APIError(pydantic.BaseModel):
 
     error: bool = True
     status: Optional[pydantic.NonNegativeInt]
+    method: pydantic.constr(regex=_HTTP_METHOD_REGEX)
     request: str
     repeat: bool
     message: str
