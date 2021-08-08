@@ -106,6 +106,32 @@ def update_existing_alias(
     raise MissingImplementation("update_existing_alias")
 
 
+@router.delete(
+    "",
+    status_code=204,
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+)
+def delete_existing_alias(
+        alias: schemas.Alias,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Delete an existing alias model.
+
+    A 404 error will be returned if the requested `id` doesn't exist.
+    A 409 error will be returned if the object is not up-to-date, which
+    means that the user agent needs to get the object before proceeding.
+    """
+
+    helpers.delete_one_of_model(
+        alias.id,
+        models.UserAlias,
+        local,
+        alias,
+        logger
+    )
+
+
 @router.get(
     "/{alias_id}",
     response_model=schemas.Alias,
@@ -122,24 +148,6 @@ def get_alias_by_id(
     """
 
     return helpers.get_one_of_model(alias_id, models.UserAlias, local)
-
-
-@router.delete(
-    "/{alias_id}",
-    status_code=204,
-    responses={404: {"model": schemas.APIError}}
-)
-def delete_existing_alias(
-        alias_id: int,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Delete an existing alias model identified by the `alias_id`.
-
-    A 404 error will be returned for unknown `alias_id` values.
-    """
-
-    raise MissingImplementation("delete_existing_alias")
 
 
 @router.get(
