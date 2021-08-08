@@ -9,13 +9,15 @@ various problems and to introduce proper authentication or user handling.
 The API tries to always return JSON-encoded data to any kind of request,
 if return data is necessary for that response, which is not the case for
 redirects, for example. The only exception is 500 (Internal Server Error),
-where no assumptions of the returned values can be made. Most of the errors
-returned by the API use the `APIError` model to represent their data.
-The only known exception at the moment are 404 (Not Found) and 405 (Method
-Not Allowed), which are not considered as API problems, since the API is
-properly documented for that. This allows user agents to make certain
-assumptions about the returned response, if the returned status code
-equals the expected status code for that operation, usually 200 (OK).
+where no assumptions of the returned values can be made, even though even
+those responses _should_ use the schema of the `APIError`, which is used
+by all error responses issued by this API. This allows user agents to make
+certain assumptions about the returned response, if the returned status
+code equals the expected status code for that operation, usually 200 (OK).
+Note that the Unprocessable Entity (422) error response means a problem in
+the implementation in the user agent -- clients should never see any data
+of the Unprocessable Entity responses, since the `details` field may
+contain arbitrary data which is usually not user-friendly.
 
 This API supports conditional HTTP requests and will enforce them for
 various types of request that change a resource's state. Any resource
@@ -101,7 +103,6 @@ if static_docs:
             with_google_fonts=False
         )
 
-
     @app.get("/docs", include_in_schema=False)
     async def get_swagger_ui():
         return fastapi.applications.get_swagger_ui_html(
@@ -112,7 +113,6 @@ if static_docs:
             swagger_css_url="/static/swagger-ui.css",
             swagger_favicon_url="/static/favicon.png"
         )
-
 
     @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
     async def get_swagger_ui_redirect():
