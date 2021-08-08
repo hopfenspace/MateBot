@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -51,7 +51,17 @@ def create_new_consumable(
     A 409 error will be returned when the name has already been taken.
     """
 
-    raise MissingImplementation("create_new_consumable")
+    values = consumable.dict()
+    if local.session.query(models.Consumable).filter_by(name=values["name"]).all():
+        raise Conflict(
+            "Consumable can't be created since one with that name already exists.",
+            f"Rejected consumable name: {values['name']!r}"
+        )
+
+    raw_messages = values.pop("messages")
+    model = models.Consumable(**values)
+    messages = [models.ConsumableMessage(message=msg, consumable=model) for msg in raw_messages]
+    return helpers.create_new_of_model(model, local, logger, "/consumables/{}", True, messages)
 
 
 @router.put(
