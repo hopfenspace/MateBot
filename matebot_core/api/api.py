@@ -66,7 +66,8 @@ from ..settings import Settings
 def create_app(
         settings: Optional[Settings] = None,
         configure_logging: bool = True,
-        configure_database: bool = True
+        configure_database: bool = True,
+        configure_static_docs: bool = True
 ) -> fastapi.FastAPI:
     """
     Create a new ``FastAPI`` instance using the specified settings and switches
@@ -74,6 +75,12 @@ def create_app(
     This function is conveniently used to allow overwriting the settings
     before launching the application as well as to allow multiple ``FastAPI``
     instances in one program, which in turn makes unit testing much easier.
+
+    :param settings: optional Settings instance (would be created if not present)
+    :param configure_logging: switch whether to configure logging
+    :param configure_database: switch whether to configure the database
+    :param configure_static_docs: switch whether to configure static assets for docs
+    :return: new ``FastAPI`` instance
     """
 
     if settings is None:
@@ -107,7 +114,7 @@ def create_app(
     async def get_root():
         return fastapi.responses.RedirectResponse("/docs")
 
-    if static_docs:
+    if static_docs and configure_static_docs:
         app.mount("/static", StaticFiles(directory="static"), name="static")
 
         @app.get("/redoc", include_in_schema=False)
