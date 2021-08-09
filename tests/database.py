@@ -31,6 +31,8 @@ def get_database_url(
     permissions to create, write and remove that file. If the ``OVERWRITE_DB_URL``
     global variable has been set, it will be preferred over any sqlite3
     database file to allow customization and testing other database providers.
+    Since just about any URL could be given in that variable, there is no
+    possibility to perform clean-up actions after every unit test in this case.
     Note that this function returns a in-memory sqlite3 database on failure.
 
     :param file_location: optional preferred location of the database file

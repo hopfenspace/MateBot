@@ -20,6 +20,10 @@ class _BaseAPITests(unittest.TestCase):
     server_port: int
     server_thread: threading.Thread
 
+    @property
+    def server(self) -> str:
+        return f"http://127.0.0.1:{self.server_port}/"
+
     def setUp(self) -> None:
         self.server_port = random.randint(10000, 64000)
         db_url, cleanup = database.get_database_url()
