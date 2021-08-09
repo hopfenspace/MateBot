@@ -4,7 +4,7 @@ Generic helper library for the core REST API
 
 import sys
 import logging
-from typing import Iterable, List, Optional, Type
+from typing import List, Optional, Type
 
 import pydantic
 import sqlalchemy.exc
@@ -173,8 +173,7 @@ def delete_one_of_model(
         model: Type[models.Base],
         local: LocalRequestData,
         schema: Optional[pydantic.BaseModel] = None,
-        logger: Optional[logging.Logger] = None,
-        additional_attributes: Optional[List[str]] = None
+        logger: Optional[logging.Logger] = None
 ):
     """
     Delete the identified instance of a model from the database
@@ -184,9 +183,6 @@ def delete_one_of_model(
     :param local: contextual local data
     :param schema: optional supplied schema of the request to validate the client's state
     :param logger: optional logger that should be used for INFO and ERROR messages
-    :param additional_attributes: optional list of further attributes
-        whose contained objects should be deleted (usually used to
-        decouple related objects, e.g. in One-to-Many relations)
     :raises NotFound: when the specified ID can't be found for the given model
     :raises Conflict: when the given schema does not conform to the current state of the object
     """
@@ -208,24 +204,6 @@ def delete_one_of_model(
         )
 
     try:
-        if additional_attributes is None:
-            additional_attributes = []
-        for attr in additional_attributes:
-            referenced_object = getattr(obj, attr, None)
-
-            if referenced_object is None:
-                logger.warning(f"Object {obj!r} has no attribute {attr!r}")
-            elif isinstance(referenced_object, models.Base):
-                local.session.delete(referenced_object)
-            elif not isinstance(referenced_object, Iterable):
-                logger.error(f"{referenced_object!r} is no valid model for deletion!")
-            else:
-                for single_object in referenced_object:
-                    if isinstance(single_object, models.Base):
-                        local.session.delete(single_object)
-                    else:
-                        logger.error(f"{single_object!r} is no valid model for deletion!")
-
         local.session.delete(obj)
         local.session.commit()
 

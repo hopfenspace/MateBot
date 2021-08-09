@@ -105,8 +105,7 @@ def delete_existing_consumable(
         models.Consumable,
         local,
         consumable,
-        logger,
-        ["messages"]
+        logger
     )
 
 
