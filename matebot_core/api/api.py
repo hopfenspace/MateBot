@@ -96,8 +96,8 @@ def create_app(
     app = fastapi.FastAPI(
         title="MateBot core REST API",
         version=__api_version__,
-        docs_url=None,
-        redoc_url=None,
+        docs_url=None if static_docs and configure_static_docs else "/docs",
+        redoc_url=None if static_docs and configure_static_docs else "/redoc",
         description=__doc__,
         responses={422: {"model": schemas.APIError}}
     )
