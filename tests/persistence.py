@@ -100,10 +100,14 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(community.special, True)
         self.assertEqual(community.active, True)
 
-    def test_insert_all_sample_users(self):
+    def test_insert_and_delete_all_sample_users(self):
         self.session.add_all(self.get_sample_users())
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
+
+        self.session.query(models.User).delete()
+        self.session.commit()
+        self.assertEqual(0, len(self.session.query(models.User).all()))
 
     def test_add_applications_and_aliases(self):
         app1 = models.Application(name="app1")
