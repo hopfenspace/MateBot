@@ -57,6 +57,7 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
 def _get_default_config() -> Dict[str, Any]:
     return config.CoreConfig(
         general=config.GeneralConfig(),
+        server=config.ServerConfig(),
         community=config.CommunityConfig(),
         logging=config.LoggingConfig(),
         database=config.DatabaseConfig()

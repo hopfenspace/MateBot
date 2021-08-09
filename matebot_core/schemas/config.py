@@ -12,6 +12,11 @@ class GeneralConfig(pydantic.BaseModel):
     max_consume: pydantic.conint(gt=2) = 10
 
 
+class ServerConfig(pydantic.BaseModel):
+    host: str = "127.0.0.1"
+    port: pydantic.conint(gt=0, lt=65536) = 8000
+
+
 class DatabaseConfig(pydantic.BaseModel):
     connection: str = "sqlite://"
     echo: bool = True
@@ -58,6 +63,7 @@ class LoggingConfig(pydantic.BaseModel):
 
 class CoreConfig(pydantic.BaseModel):
     general: GeneralConfig
+    server: ServerConfig
     database: DatabaseConfig
     community: CommunityConfig
     logging: LoggingConfig
