@@ -320,7 +320,8 @@ class Consumable(Base):
 
     messages = relationship(
         "ConsumableMessage",
-        back_populates="consumable"
+        back_populates="consumable",
+        cascade="all,delete"
     )
 
     __table_args__ = (
@@ -352,7 +353,7 @@ class ConsumableMessage(Base):
 
     consumable_id = Column(
         Integer,
-        ForeignKey("consumables.id"),
+        ForeignKey("consumables.id", ondelete="CASCADE"),
         nullable=False
     )
     message = Column(

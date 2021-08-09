@@ -141,6 +141,32 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(app2.community_user_alias_id, community_alias2.id)
         self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
 
+    def test_delete_consumable_with_messages_cascading(self):
+        consumable = models.Consumable(
+            name="Mate",
+            description="everyone hates Mate",
+            price=9000,
+            symbol="X",
+            stock=42
+        )
+        self.session.add(consumable)
+        self.session.commit()
+        self.assertIs(self.session.query(models.Consumable).first(), consumable)
+        self.assertEqual(1, len(self.session.query(models.Consumable).all()))
+
+        self.session.add_all([
+            models.ConsumableMessage(message="A", consumable_id=consumable.id),
+            models.ConsumableMessage(message="B", consumable_id=consumable.id),
+            models.ConsumableMessage(message="C", consumable_id=consumable.id),
+        ])
+        self.session.commit()
+        self.assertEqual(3, len(self.session.query(models.ConsumableMessage).all()))
+
+        self.session.delete(consumable)
+        self.session.commit()
+        self.assertEqual(0, len(self.session.query(models.Consumable).all()))
+        self.assertEqual(0, len(self.session.query(models.ConsumableMessage).all()))
+
 
 class DatabaseRestrictionTests(_BaseDatabaseTests):
     """
