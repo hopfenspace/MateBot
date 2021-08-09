@@ -5,7 +5,7 @@ import argparse
 
 import uvicorn
 
-from matebot_core.api.api import app
+from matebot_core.api.api import create_app
 
 
 def _get_parser(program: str) -> argparse.ArgumentParser:
@@ -71,7 +71,7 @@ def run_server(args: argparse.Namespace):
         print("Do not start the server this way during production!", file=sys.stderr)
 
     uvicorn.run(
-        "matebot_core.api.api:app" if args.reload else app,
+        "matebot_core.api:api.app" if args.reload else create_app(),
         port=args.port,
         host=args.host,
         debug=args.debug,

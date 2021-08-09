@@ -44,6 +44,7 @@ The handling of incoming conditional requests is described as follows:
 """
 
 import logging.config
+from typing import Optional
 
 import fastapi.applications
 from fastapi.staticfiles import StaticFiles
@@ -62,58 +63,76 @@ from ..persistence import database
 from ..settings import Settings
 
 
-settings = Settings()
-logging.config.dictConfig(settings.logging.dict())
-logging.getLogger(__name__).debug("Starting application...")
-database.init(settings.database.connection, settings.database.echo)
+def create_app(
+        settings: Optional[Settings] = None,
+        configure_logging: bool = True,
+        configure_database: bool = True
+) -> fastapi.FastAPI:
+    """
+    Create a new ``FastAPI`` instance using the specified settings and switches
 
-app = fastapi.FastAPI(
-    title="MateBot core REST API",
-    version=__api_version__,
-    docs_url=None,
-    redoc_url=None,
-    description=__doc__,
-    responses={422: {"model": schemas.APIError}}
-)
+    This function is conveniently used to allow overwriting the settings
+    before launching the application as well as to allow multiple ``FastAPI``
+    instances in one program, which in turn makes unit testing much easier.
+    """
 
-app.add_exception_handler(base.APIException, base.APIException.handle)
-app.add_exception_handler(RequestValidationError, base.APIException.handle)
-app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
-app.add_exception_handler(Exception, base.APIException.handle)
+    if settings is None:
+        settings = Settings()
 
-for router in all_routers:
-    app.include_router(router)
+    if configure_logging:
+        logging.config.dictConfig(settings.logging.dict())
+    logging.getLogger(__name__).debug("Starting application...")
 
+    if configure_database:
+        database.init(settings.database.connection, settings.database.echo)
 
-@app.get("/", include_in_schema=False)
-async def get_root():
-    return fastapi.responses.RedirectResponse("/docs")
+    app = fastapi.FastAPI(
+        title="MateBot core REST API",
+        version=__api_version__,
+        docs_url=None,
+        redoc_url=None,
+        description=__doc__,
+        responses={422: {"model": schemas.APIError}}
+    )
 
+    app.add_exception_handler(base.APIException, base.APIException.handle)
+    app.add_exception_handler(RequestValidationError, base.APIException.handle)
+    app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
+    app.add_exception_handler(Exception, base.APIException.handle)
 
-if static_docs:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    for router in all_routers:
+        app.include_router(router)
 
-    @app.get("/redoc", include_in_schema=False)
-    async def get_redoc():
-        return fastapi.applications.get_redoc_html(
-            openapi_url=app.openapi_url,
-            title=app.title + " - ReDoc",
-            redoc_js_url="/static/redoc.standalone.js",
-            redoc_favicon_url="/static/favicon.png",
-            with_google_fonts=False
-        )
+    @app.get("/", include_in_schema=False)
+    async def get_root():
+        return fastapi.responses.RedirectResponse("/docs")
 
-    @app.get("/docs", include_in_schema=False)
-    async def get_swagger_ui():
-        return fastapi.applications.get_swagger_ui_html(
-            openapi_url=app.openapi_url,
-            title=app.title + " - Swagger UI",
-            oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
-            swagger_js_url="/static/swagger-ui-bundle.js",
-            swagger_css_url="/static/swagger-ui.css",
-            swagger_favicon_url="/static/favicon.png"
-        )
+    if static_docs:
+        app.mount("/static", StaticFiles(directory="static"), name="static")
 
-    @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
-    async def get_swagger_ui_redirect():
-        return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
+        @app.get("/redoc", include_in_schema=False)
+        async def get_redoc():
+            return fastapi.applications.get_redoc_html(
+                openapi_url=app.openapi_url,
+                title=app.title + " - ReDoc",
+                redoc_js_url="/static/redoc.standalone.js",
+                redoc_favicon_url="/static/favicon.png",
+                with_google_fonts=False
+            )
+
+        @app.get("/docs", include_in_schema=False)
+        async def get_swagger_ui():
+            return fastapi.applications.get_swagger_ui_html(
+                openapi_url=app.openapi_url,
+                title=app.title + " - Swagger UI",
+                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+                swagger_js_url="/static/swagger-ui-bundle.js",
+                swagger_css_url="/static/swagger-ui.css",
+                swagger_favicon_url="/static/favicon.png"
+            )
+
+        @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+        async def get_swagger_ui_redirect():
+            return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
+
+    return app
