@@ -2,51 +2,56 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
-import os
-import sys
+import random
 import unittest
-from typing import Optional
+import threading
+from typing import Callable, ClassVar, List
 
+import uvicorn
 
-# The placeholders will be filled by the port and PID or the database file location
-_DATABASE_FILE_FORMAT: str = "/tmp/api_unittest_{}_{}.db"
-_DATABASE_URL_FORMAT: str = "sqlite:///{}"
-_DATABASE_FALLBACK_URL: str = "sqlite://"
+from matebot_core import settings as _settings
+from matebot_core.api.api import create_app
 
-# If you want to manually overwrite the database location (and therefore
-# allow other databases than sqlite, then you want to set this variable)
-_DATABASE_OVERWRITE_URL: Optional[str] = None
-
-
-def _get_database_url(port: int, pid: int) -> str:
-    """
-    Create a database URL using a sqlite3 database which was confirmed to be accessible
-    """
-
-    if _DATABASE_OVERWRITE_URL is not None:
-        return _DATABASE_OVERWRITE_URL
-
-    db_location = _DATABASE_FILE_FORMAT.format(port, pid)
-    try:
-        open(db_location, "wb").close()
-        os.remove(db_location)
-        db_url = _DATABASE_URL_FORMAT.format(db_location)
-
-    except OSError as exc:
-        db_url = _DATABASE_FALLBACK_URL
-        print(
-            exc,
-            "Falling back to in-memory database. This is not recommended!",
-            sep="\n",
-            file=sys.stderr
-        )
-
-    return db_url
+from . import database
 
 
 class _BaseAPITests(unittest.TestCase):
+    cleanup_actions: ClassVar[List[Callable[[], None]]] = []
     server_port: int
     server_thread: threading.Thread
+
+    def setUp(self) -> None:
+        self.server_port = random.randint(10000, 64000)
+        db_url, cleanup = database.get_database_url()
+        type(self).cleanup_actions.append(cleanup)
+
+        settings = _settings.Settings()
+        settings.database.connection = db_url
+
+        app = create_app(
+            settings=settings,
+            configure_logging=False,
+            configure_static_docs=False
+        )
+
+        def run_server():
+            uvicorn.run(
+                app,  # noqa
+                port=self.server_port,
+                host="127.0.0.1",
+                debug=True,
+                workers=1,
+                log_level="debug",
+                access_log=True
+            )
+
+        self.server_thread = threading.Thread(target=run_server, daemon=True)
+        self.server_thread.start()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        for f in cls.cleanup_actions:
+            f()
 
 
 class WorkingAPITests(_BaseAPITests):
