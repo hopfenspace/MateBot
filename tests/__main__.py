@@ -11,6 +11,6 @@ if __name__ == '__main__':
 
     class MainProgram(unittest.TestProgram):
         def createTests(self, from_discovery=False, loader=None):
-            self.test = get_suite()
+            self.test = get_suite()  # noqa
 
     MainProgram()
