@@ -136,3 +136,42 @@ def create_app(
             return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
 
     return app
+
+
+class APIWrapper:
+    """
+    Wrapper class around the FastAPI main object, accessible via the ``app`` property
+
+    There should be only one global instance of this object, which should only
+    export its functionality to hold the ``app`` property. This wrapper can be
+    used to allow easy command-line usage via ``uvicorn`` calls. Example:
+
+    .. code-block::
+
+        uvicorn matebot_core.api:api.app
+    """
+
+    def __init__(self):
+        self._app: Optional[fastapi.FastAPI] = None
+
+    def get_app(self) -> fastapi.FastAPI:
+        return self.app
+
+    def set_app(self, application: fastapi.FastAPI):
+        if not isinstance(application, fastapi.FastAPI):
+            raise TypeError
+        self._app = application
+
+    @property
+    def app(self) -> fastapi.FastAPI:
+        """
+        Return the ``app`` instance (or create it with default settings if it doesn't exist)
+        """
+
+        if self._app is not None:
+            return self._app
+        self._app = create_app()
+        return self._app
+
+
+api = APIWrapper()
