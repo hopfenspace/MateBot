@@ -54,7 +54,7 @@ def get_database_url(
         open(file_location, "wb").close()
         os.remove(file_location)
         db_url = _DATABASE_URL_FORMAT.format(file_location)
-        return db_url, lambda: os.remove(file_location)
+        return db_url, lambda: os.path.exists(file_location) and os.remove(file_location)
 
     except OSError as exc:
         if log_errors:
