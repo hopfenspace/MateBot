@@ -600,7 +600,7 @@ class Communism(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("amount <= 1"),
+        CheckConstraint("amount >= 1"),
     )
 
     @property
