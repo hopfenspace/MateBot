@@ -1,6 +1,7 @@
 aiofiles==0.7.0
-SQLAlchemy==1.4.20
 fastapi==0.66.0
 pydantic==1.8.2
+requests==2.26.0
+SQLAlchemy==1.4.20
 ujson==4.0.2
 uvicorn==0.14.0

@@ -8,6 +8,7 @@ import threading
 from typing import Callable, ClassVar, List
 
 import uvicorn
+import requests
 
 from matebot_core import settings as _settings
 from matebot_core.api.api import create_app
@@ -51,6 +52,15 @@ class _BaseAPITests(unittest.TestCase):
 
         self.server_thread = threading.Thread(target=run_server, daemon=True)
         self.server_thread.start()
+
+        def wait_for_server():
+            try:
+                requests.get(self.server)
+            except requests.exceptions.ConnectionError:
+                self.server_thread.join(0.05)
+                wait_for_server()
+
+        wait_for_server()
 
     @classmethod
     def tearDownClass(cls) -> None:
