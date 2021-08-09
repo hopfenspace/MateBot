@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import sys
+import logging
 import argparse
 
 import uvicorn
 
+from matebot_core import settings as _settings
 from matebot_core.api.api import create_app
 
 
@@ -17,21 +19,24 @@ def _get_parser(program: str) -> argparse.ArgumentParser:
     parser.add_argument(
         "--host",
         type=str,
-        default="127.0.0.1",
         metavar="host",
-        help="Bind TCP socket to this host"
+        help="Bind TCP socket to this host (overwrite config)"
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
         metavar="port",
-        help="Bind TCP socket to this port"
+        help="Bind TCP socket to this port (overwrite config)"
     )
     parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug mode"
+    )
+    parser.add_argument(
+        "--echo",
+        action="store_true",
+        help="Enable echoing of database actions (overwrite config)"
     )
     parser.add_argument(
         "--reload",
@@ -70,10 +75,24 @@ def run_server(args: argparse.Namespace):
     if args.debug:
         print("Do not start the server this way during production!", file=sys.stderr)
 
+    settings = _settings.Settings()
+    if args.echo:
+        settings.database.echo = args.echo
+
+    port = args.port
+    if port is None:
+        port = settings.server.port
+    host = args.host
+    if host is None:
+        host = settings.server.host
+
+    app = create_app(settings=settings)
+
+    logging.getLogger(__name__).info(f"Server at host {host} port {port}")
     uvicorn.run(
-        "matebot_core.api:api.app" if args.reload else create_app(),
-        port=args.port,
-        host=args.host,
+        "matebot_core.api:api.app" if args.reload else app,
+        port=port,
+        host=host,
         debug=args.debug,
         reload=args.reload,
         workers=args.workers,
