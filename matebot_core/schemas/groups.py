@@ -5,11 +5,11 @@ This module contains schemas for ballots and its
 votes as well as communisms and refunds.
 """
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional
 
 import pydantic
 
-from .bases import Alias as _Alias, Transaction as _Transaction
+from .bases import Transaction as _Transaction
 
 
 class Vote(pydantic.BaseModel):
@@ -79,7 +79,7 @@ class Communism(pydantic.BaseModel):
     active: bool
     accepted: Optional[bool]
     externals: pydantic.NonNegativeInt
-    participants: List[pydantic.NonNegativeInt]
+    participants: Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt]
     transactions: Optional[List[_Transaction]]
     timestamp: Optional[pydantic.NonNegativeInt]
 
@@ -90,7 +90,7 @@ class CommunismCreation(pydantic.BaseModel):
     creator: pydantic.NonNegativeInt
     active: bool = True
     externals: pydantic.NonNegativeInt = 0
-    participants: List[Union[pydantic.NonNegativeInt, _Alias]] = []
+    participants: Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt] = {}
 
 
 class CommunismPatch(pydantic.BaseModel):
@@ -98,4 +98,4 @@ class CommunismPatch(pydantic.BaseModel):
     active: Optional[bool]
     accepted: Optional[bool]
     externals: Optional[pydantic.NonNegativeInt]
-    participants: Optional[List[Union[pydantic.NonNegativeInt, _Alias]]]
+    participants: Optional[Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt]]

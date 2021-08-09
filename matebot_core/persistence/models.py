@@ -612,7 +612,7 @@ class Communism(Base):
             creator=self.creator_id,
             active=self.active,
             externals=self.externals,
-            participants=[user.users_id for user in self.participants]
+            participants={u.users_id: u.quantity for u in self.participants}
         )
 
     def __repr__(self) -> str:
@@ -629,14 +629,22 @@ class CommunismUsers(Base):
         ForeignKey("communisms.id", ondelete="CASCADE"),
         nullable=False
     )
-
     user_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
+    quantity = Column(
+        Integer,
+        nullable=False
+    )
 
     user = relationship("User", backref="communisms")
 
+    __table_args = (
+        CheckConstraint("quantity >= 0"),
+        UniqueConstraint("user_id", "communism_id"),
+    )
+
     def __repr__(self) -> str:
-        return f"CommunismUsers(id={self.id}, user={self.user})"
+        return f"CommunismUsers(id={self.id}, user={self.user}, quantity={self.quantity})"
