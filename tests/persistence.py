@@ -4,7 +4,7 @@ MateBot database unit tests
 
 import datetime
 import unittest
-from typing import List
+from typing import Callable, List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -14,19 +14,21 @@ from sqlalchemy.engine import Engine as _Engine
 from matebot_core import schemas
 from matebot_core.persistence import models
 
-
-_DATABASE_URL = "sqlite://"
+from . import database
 
 
 class _BaseDatabaseTests(unittest.TestCase):
+    database_url: str
+    cleanup_database: Callable[[], None]
     engine: _Engine
     session: sqlalchemy.orm.Session
 
     def setUp(self) -> None:
-        self.engine = sqlalchemy.create_engine(
-            _DATABASE_URL,
-            connect_args={"check_same_thread": False}
-        )
+        self.database_url, self.cleanup_database = database.get_database_url()
+        opts = {}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
         self.session = sqlalchemy.orm.sessionmaker(
             autocommit=False,
             autoflush=False,
@@ -37,6 +39,7 @@ class _BaseDatabaseTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.session.close()
         self.engine.dispose()
+        self.cleanup_database()
 
     @staticmethod
     def get_sample_users() -> List[models.User]:
