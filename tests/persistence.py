@@ -109,6 +109,36 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.session.commit()
         self.assertEqual(0, len(self.session.query(models.User).all()))
 
+    def test_create_aliases_and_delete_on_cascade(self):
+        self.session.add_all(self.get_sample_users())
+        self.session.commit()
+        self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
+
+        app1 = models.Application(name="app1")
+        app2 = models.Application(name="app2")
+        self.session.add_all([app1, app2])
+        self.session.commit()
+
+        user1 = self.session.query(models.User).get(3)
+        user2 = self.session.query(models.User).get(5)
+        alias1 = models.UserAlias(app_user_id="alias1", app_id=app1.id, user_id=3)
+        alias2 = models.UserAlias(app_user_id="alias2", app_id=app2.id)
+        alias2.user = user2
+
+        self.session.add_all([alias1, alias2])
+        self.session.commit()
+        self.assertEqual(2, len(self.session.query(models.UserAlias).all()))
+
+        self.session.delete(user1)
+        self.session.commit()
+        self.assertIsNone(self.session.query(models.UserAlias).get(alias1.id))
+        self.assertEqual(1, len(self.session.query(models.UserAlias).all()))
+
+        self.session.delete(user2)
+        self.session.commit()
+        self.assertIsNone(self.session.query(models.UserAlias).get(alias2.id))
+        self.assertEqual(0, len(self.session.query(models.UserAlias).all()))
+
     def test_add_applications_and_aliases(self):
         app1 = models.Application(name="app1")
         app2 = models.Application(name="app2")
