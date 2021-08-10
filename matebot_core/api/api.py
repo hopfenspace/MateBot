@@ -47,13 +47,13 @@ import logging.config
 from typing import Optional
 
 import fastapi.applications
-from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 try:
-    import aiofiles
+    from fastapi.staticfiles import StaticFiles
     static_docs = True
 except ImportError:
+    StaticFiles = None
     static_docs = False
 
 from . import base
@@ -114,7 +114,7 @@ def create_app(
     async def get_root():
         return fastapi.responses.RedirectResponse("/docs")
 
-    if static_docs and configure_static_docs:
+    if static_docs and configure_static_docs and StaticFiles is not None:
         app.mount("/static", StaticFiles(directory="static"), name="static")
 
         @app.get("/redoc", include_in_schema=False)
