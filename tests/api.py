@@ -69,7 +69,24 @@ class _BaseAPITests(unittest.TestCase):
 
 
 class WorkingAPITests(_BaseAPITests):
-    pass
+    def test_basic_endpoints_and_redirects_to_docs(self):
+        response = requests.get(self.server, allow_redirects=False)
+        self.assertEqual(self.server, response.url)
+        self.assertEqual(307, response.status_code)
+        self.assertEqual("/docs", response.headers.get("Location"))
+
+        response_root = requests.get(self.server)
+        self.assertEqual(self.server + "docs", response_root.url)
+        self.assertEqual(200, response_root.status_code)
+        self.assertEqual(1, len(response_root.history))
+
+        response_docs = requests.get(self.server + "docs")
+        self.assertEqual(200, response_docs.status_code)
+        self.assertEqual(response_docs.content, response_root.content)
+
+        response_openapi = requests.get(self.server + "openapi.json")
+        self.assertEqual(200, response_openapi.status_code)
+        self.assertEqual("application/json", response_openapi.headers.get("Content-Type"))
 
 
 class FailingAPITests(_BaseAPITests):
