@@ -14,20 +14,6 @@ amount of predefined but modifiable consumables with different stocks.
 - Python >= 3.7
 - pip >= 18
 
-### Installing the basic version
-
-```shell
-python3 -m venv venv
-venv/bin/python3 -m pip install matebot_core
-```
-
-### Installing the full version
-
-```shell
-python3 -m venv venv
-venv/bin/python3 -m pip install matebot_core[full]
-```
-
 ### Installation, configuration, execution
 
 1. Create a new directory which should be your working directory.
