@@ -10,6 +10,9 @@ import pydantic
 class GeneralConfig(pydantic.BaseModel):
     max_amount: pydantic.conint(gt=100) = 10000
     max_consume: pydantic.conint(gt=2) = 10
+    payment_consent: pydantic.PositiveInt = 2
+    payment_denial: pydantic.PositiveInt = 2
+    max_vouched: pydantic.PositiveInt = 3
 
 
 class ServerConfig(pydantic.BaseModel):
@@ -20,12 +23,6 @@ class ServerConfig(pydantic.BaseModel):
 class DatabaseConfig(pydantic.BaseModel):
     connection: str = "sqlite://"
     echo: bool = True
-
-
-class CommunityConfig(pydantic.BaseModel):
-    payment_consent: pydantic.PositiveInt = 2
-    payment_denial: pydantic.PositiveInt = 2
-    max_vouched: pydantic.PositiveInt = 3
 
 
 class LoggingConfig(pydantic.BaseModel):
@@ -65,5 +62,4 @@ class CoreConfig(pydantic.BaseModel):
     general: GeneralConfig
     server: ServerConfig
     database: DatabaseConfig
-    community: CommunityConfig
     logging: LoggingConfig

@@ -41,6 +41,12 @@ def _read_config_from_json_source(_: pydantic.BaseSettings) -> Dict[str, Any]:
 class Settings(pydantic.BaseSettings, config.CoreConfig):
     """
     MateBot core settings
+
+    Do not change most of the settings at runtime, since this might lead to unspecified
+    behavior. Always restart the server after changing the config file. But note that
+    there are some parts (especially the server config and the database config), which
+    might get overwritten during initialization (via command-line arguments) or during
+    unit testing (where e.g. some server settings will be ignored completely).
     """
 
     class Config:
@@ -58,7 +64,6 @@ def _get_default_config() -> Dict[str, Any]:
     return config.CoreConfig(
         general=config.GeneralConfig(),
         server=config.ServerConfig(),
-        community=config.CommunityConfig(),
         logging=config.LoggingConfig(),
         database=config.DatabaseConfig()
     ).dict()
