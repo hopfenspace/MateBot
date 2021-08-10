@@ -94,4 +94,4 @@ class LocalRequestData:
     def config(self) -> Settings:
         if self._config is None:
             self._config = Settings()
-        return self.config
+        return self._config
