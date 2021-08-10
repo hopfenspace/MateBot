@@ -2,6 +2,7 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
+import os
 import random
 import unittest
 import threading
@@ -11,6 +12,7 @@ import uvicorn
 import requests
 
 from matebot_core import settings as _settings
+from matebot_core.schemas import config as _config
 from matebot_core.api.api import create_app
 
 from . import database
@@ -30,8 +32,13 @@ class _BaseAPITests(unittest.TestCase):
         db_url, cleanup = database.get_database_url()
         type(self).cleanup_actions.append(cleanup)
 
+        config = _config.CoreConfig(**_settings._get_default_config())
+        config.database.connection = db_url
+        config.server.port = self.server_port
+        with open("config.json", "w") as f:
+            print("f", f.write(config.json()))
+
         settings = _settings.Settings()
-        settings.database.connection = db_url
 
         app = create_app(
             settings=settings,
@@ -61,6 +68,10 @@ class _BaseAPITests(unittest.TestCase):
                 wait_for_server()
 
         wait_for_server()
+
+    def tearDown(self) -> None:
+        if os.path.exists("config.json"):
+            os.remove("config.json")
 
     @classmethod
     def tearDownClass(cls) -> None:
