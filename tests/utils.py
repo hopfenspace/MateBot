@@ -1,12 +1,13 @@
 """
-Helper functions to interact with databases during MateBot unit testing
+Helper functions to make writing unit tests for the MateBot core easier
 """
 
 import os
 import sys
 import random
 import string
-from typing import Callable, Optional
+import unittest
+from typing import Callable, List, Optional
 
 
 # The placeholders will be filled by the PID and a random nonce or the database file location
@@ -66,3 +67,23 @@ def get_database_url(
             )
 
     return _DATABASE_FALLBACK_URL, lambda: None
+
+
+class BaseTest(unittest.TestCase):
+    """
+    A base class for unit tests which introduces simple setup and teardown of unit tests
+    """
+
+    database_url: str
+    cleanup_actions: List[Callable[[], None]]
+
+    def setUp(self) -> None:
+        if not hasattr(self, "cleanup_actions"):
+            self.cleanup_actions = []
+
+        self.database_url, cleanup_db = get_database_url()
+        self.cleanup_actions.append(cleanup_db)
+
+    def tearDown(self) -> None:
+        for f in self.cleanup_actions:
+            f()

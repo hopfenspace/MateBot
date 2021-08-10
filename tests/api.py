@@ -6,7 +6,6 @@ import os
 import random
 import unittest
 import threading
-from typing import Callable, ClassVar, List
 
 import uvicorn
 import requests
@@ -15,11 +14,10 @@ from matebot_core import settings as _settings
 from matebot_core.schemas import config as _config
 from matebot_core.api.api import create_app
 
-from . import database
+from . import utils
 
 
-class _BaseAPITests(unittest.TestCase):
-    cleanup_actions: ClassVar[List[Callable[[], None]]] = []
+class _BaseAPITests(utils.BaseTest):
     server_port: int
     server_thread: threading.Thread
 
@@ -28,20 +26,21 @@ class _BaseAPITests(unittest.TestCase):
         return f"http://127.0.0.1:{self.server_port}/"
 
     def setUp(self) -> None:
+        super().setUp()
         self.server_port = random.randint(10000, 64000)
-        db_url, cleanup = database.get_database_url()
-        type(self).cleanup_actions.append(cleanup)
 
         config = _config.CoreConfig(**_settings._get_default_config())
-        config.database.connection = db_url
+        config.database.echo = False
+        config.database.connection = self.database_url
         config.server.port = self.server_port
         with open("config.json", "w") as f:
-            print("f", f.write(config.json()))
-
-        settings = _settings.Settings()
+            f.write(config.json())
+        self.cleanup_actions.append(
+            lambda: os.path.exists("config.json") and os.remove("config.json")
+        )
 
         app = create_app(
-            settings=settings,
+            settings=_settings.Settings(),
             configure_logging=False,
             configure_static_docs=False
         )
@@ -68,15 +67,6 @@ class _BaseAPITests(unittest.TestCase):
                 wait_for_server()
 
         wait_for_server()
-
-    def tearDown(self) -> None:
-        if os.path.exists("config.json"):
-            os.remove("config.json")
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        for f in cls.cleanup_actions:
-            f()
 
 
 class WorkingAPITests(_BaseAPITests):
