@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends
 from ..dependency import LocalRequestData
 from ... import schemas, __version__, __api_version__
 from ...persistence import models
+from ...schemas import config
 
 
 logger = logging.getLogger(__name__)
@@ -85,3 +86,15 @@ def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
         votes=_get(models.Vote),
         timestamp=datetime.datetime.now().timestamp()
     )
+
+
+@router.get(
+    "/settings",
+    response_model=config.GeneralConfig
+)
+def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return the important MateBot core settings which directly affect the handling of requests.
+    """
+
+    return local.config.general
