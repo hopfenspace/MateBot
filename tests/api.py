@@ -30,7 +30,7 @@ class _BaseAPITests(utils.BaseTest):
     def assertQuery(
             self,
             endpoint: Tuple[str, str],
-            status_code: int,
+            status_code: Union[int, Iterable[int]] = 200,
             json: Optional[Union[dict, pydantic.BaseModel]] = None,
             headers: Optional[dict] = None,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
@@ -48,7 +48,7 @@ class _BaseAPITests(utils.BaseTest):
         thereof (in the later case, the values will be compared to the response, too).
 
         :param endpoint: tuple of the method and the path of that endpoint
-        :param status_code: asserted status code of the final server's response
+        :param status_code: asserted status code(s) of the final server's response
         :param json: optional dictionary or model holding the request data
         :param headers: optional set of headers to sent in the request
         :param r_headers optional set of headers which are asserted in the response
@@ -58,7 +58,7 @@ class _BaseAPITests(utils.BaseTest):
         """
 
         method, path = endpoint
-        if path[1].startswith("/"):
+        if path.startswith("/"):
             path = path[1:]
         if isinstance(json, pydantic.BaseModel):
             json = json.dict()
@@ -71,7 +71,11 @@ class _BaseAPITests(utils.BaseTest):
             **kwargs
         )
 
-        self.assertEqual(status_code, response.status_code)
+        if isinstance(status_code, int):
+            self.assertEqual(status_code, response.status_code)
+        elif isinstance(status_code, Iterable):
+            self.assertTrue(response.status_code in status_code)
+
         if r_headers is not None:
             for k in (r_headers if isinstance(r_headers, Iterable) else r_headers.keys()):
                 self.assertIsNotNone(response.headers.get(k))
@@ -132,23 +136,20 @@ class _BaseAPITests(utils.BaseTest):
 
 class WorkingAPITests(_BaseAPITests):
     def test_basic_endpoints_and_redirects_to_docs(self):
-        response = requests.get(self.server, allow_redirects=False)
-        self.assertEqual(self.server, response.url)
-        self.assertEqual(307, response.status_code)
-        self.assertEqual("/docs", response.headers.get("Location"))
+        self.assertQuery(
+            ("GET", "/"),
+            [302, 303, 307],
+            r_headers={"Location": "/docs"},
+            allow_redirects=False
+        )
 
-        response_root = requests.get(self.server)
-        self.assertEqual(self.server + "docs", response_root.url)
-        self.assertEqual(200, response_root.status_code)
-        self.assertEqual(1, len(response_root.history))
-
-        response_docs = requests.get(self.server + "docs")
-        self.assertEqual(200, response_docs.status_code)
-        self.assertEqual(response_docs.content, response_root.content)
-
-        response_openapi = requests.get(self.server + "openapi.json")
-        self.assertEqual(200, response_openapi.status_code)
-        self.assertEqual("application/json", response_openapi.headers.get("Content-Type"))
+        self.assertEqual(self.server + "docs", self.assertQuery(("GET", "/")).url)
+        self.assertEqual(1, len(self.assertQuery(("GET", "/")).history))
+        self.assertEqual(
+            self.assertQuery(("GET", "/")).content,
+            self.assertQuery(("GET", "/docs")).content
+        )
+        self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
 
 class FailingAPITests(_BaseAPITests):
