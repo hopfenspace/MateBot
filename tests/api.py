@@ -6,8 +6,10 @@ import os
 import random
 import unittest
 import threading
+from typing import Iterable, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
+import pydantic
 import requests
 
 from matebot_core import settings as _settings
@@ -24,6 +26,65 @@ class _BaseAPITests(utils.BaseTest):
     @property
     def server(self) -> str:
         return f"http://127.0.0.1:{self.server_port}/"
+
+    def assertQuery(
+            self,
+            endpoint: Tuple[str, str],
+            status_code: int,
+            json: Optional[Union[dict, pydantic.BaseModel]] = None,
+            headers: Optional[dict] = None,
+            r_headers: Optional[Union[Mapping, Iterable]] = None,
+            r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
+            **kwargs
+    ) -> requests.Response:
+        """
+        Do a query to the specified endpoint and return the response
+
+        Besides also carrying the optional JSON data, headers and other keyword arguments,
+        this function asserts that the response has the specified status code. Furthermore,
+        the optional asserted response headers and asserted response schema can be used,
+        where the headers are either an iterable to only assert certain keys or a mapping
+        to also assert values, and the schema is either a schema class or an instance
+        thereof (in the later case, the values will be compared to the response, too).
+
+        :param endpoint: tuple of the method and the path of that endpoint
+        :param status_code: asserted status code of the final server's response
+        :param json: optional dictionary or model holding the request data
+        :param headers: optional set of headers to sent in the request
+        :param r_headers optional set of headers which are asserted in the response
+        :param r_schema: optional class or instance of a response schema to be asserted
+        :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
+        :return: response to the requested resource
+        """
+
+        method, path = endpoint
+        if path[1].startswith("/"):
+            path = path[1:]
+        if isinstance(json, pydantic.BaseModel):
+            json = json.dict()
+
+        response = requests.request(
+            method.upper(),
+            self.server + path,
+            json=json,
+            headers=headers,
+            **kwargs
+        )
+
+        self.assertEqual(status_code, response.status_code)
+        if r_headers is not None:
+            for k in (r_headers if isinstance(r_headers, Iterable) else r_headers.keys()):
+                self.assertIsNotNone(response.headers.get(k))
+                if isinstance(r_headers, Mapping):
+                    self.assertEqual(r_headers[k], response.headers.get(k))
+
+        if r_schema and isinstance(r_schema, pydantic.BaseModel):
+            r_model = type(r_schema)(**response.json())
+            self.assertEqual(r_schema, r_model)
+        elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
+            self.assertTrue(r_schema(**response.json()))
+
+        return response
 
     def setUp(self) -> None:
         super().setUp()
