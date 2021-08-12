@@ -43,6 +43,7 @@ The handling of incoming conditional requests is described as follows:
     2. and for other methods, respond with 412 (Precondition Failed)
 """
 
+import os
 import logging.config
 from typing import Optional
 
@@ -61,6 +62,7 @@ from .routers import all_routers
 from .. import schemas, __api_version__
 from ..persistence import database
 from ..settings import Settings
+from .. import __file__ as _package_init_path
 
 
 def create_app(
@@ -88,7 +90,30 @@ def create_app(
 
     if configure_logging:
         logging.config.dictConfig(settings.logging.dict())
-    logging.getLogger(__name__).debug("Starting application...")
+    logger = logging.getLogger(__name__)
+    logger.debug("Starting application...")
+
+    def check_static_configuration() -> Optional[str]:
+        """
+        Check for the existence of all required static files and return the static dir on success
+        """
+
+        static_dir = os.path.join(os.path.split(os.path.abspath(_package_init_path))[0], "static")
+        static_files = [
+            "redoc.standalone.js",
+            "swagger-ui.css",
+            "swagger-ui-bundle.js"
+        ]
+
+        if os.path.exists(static_dir):
+            for static_file in static_files:
+                if not os.path.exists(os.path.join(static_dir, static_file)):
+                    logger.error(f"File not found: {os.path.join(static_dir, static_file)!r}")
+                    return None
+            return static_dir
+        else:
+            logger.error(f"Static directory {static_dir!r} not found!")
+        return None
 
     if configure_database:
         database.init(settings.database.connection, settings.database.echo)
@@ -114,8 +139,8 @@ def create_app(
     async def get_root():
         return fastapi.responses.RedirectResponse("/docs")
 
-    if static_docs and configure_static_docs and StaticFiles is not None:
-        app.mount("/static", StaticFiles(directory="static"), name="static")
+    if static_docs and configure_static_docs and StaticFiles and check_static_configuration():
+        app.mount("/static", StaticFiles(directory=check_static_configuration()), name="static")
 
         @app.get("/redoc", include_in_schema=False)
         async def get_redoc():
@@ -141,6 +166,9 @@ def create_app(
         @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
         async def get_swagger_ui_redirect():
             return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
+
+    elif static_docs and configure_static_docs and StaticFiles:
+        logger.warning("Configuring static files failed since some resources were not found.")
 
     return app
 
