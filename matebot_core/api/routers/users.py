@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -77,7 +77,11 @@ def update_existing_user(
 @router.delete(
     "",
     status_code=204,
-    responses={409: {"model": schemas.APIError}}
+    responses={
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError},
+        412: {"model": schemas.APIError}
+    }
 )
 def delete_existing_user(
         user: schemas.User,
@@ -86,14 +90,47 @@ def delete_existing_user(
     """
     Delete an existing user model.
 
-    A 409 error will be returned if the balance of the user is not zero or
-    if there are any open refund requests or communisms that were either
-    created by that user or which this user participates in. This operation
-    will also delete any user aliases, but no user history or transactions.
-    This operation requires a valid header for conditional requests.
+    This operation will delete the user aliases, but no user history or transactions.
+
+    A 404 error will be returned if the user's `id` doesn't exist.
+    A 409 error will be returned if the balance of the user is not zero
+    or if there are any open refund requests or communisms that were
+    either created by that user or which this user participates in.
+    A 412 error will be returned if the conditional request fails.
     """
 
-    raise MissingImplementation("delete_existing_user")
+    def hook(model, *args):
+        if model.balance != 0:
+            raise Conflict(f"Balance of {user.name} is not zero. Can't delete user.", str(user))
+
+        active_created_refunds = local.session.query(models.Refund).filter_by(
+            active=True, creator_id=model.id
+        ).all()
+        if active_created_refunds:
+            raise Conflict(
+                f"User {user.name} has at least one active refund requests. Can't delete user.",
+                str(active_created_refunds)
+            )
+
+        active_created_communisms = local.session.query(models.Communism).filter_by(
+            active=True, creator_id=model.id
+        ).all()
+        if active_created_communisms:
+            raise Conflict(
+                f"User {user.name} has created at least one active communism. Can't delete user.",
+                str(active_created_communisms)
+            )
+
+        raise MissingImplementation("delete_existing_user_hook_check_communism_participants")
+
+    return helpers.delete_one_of_model(
+        user.id,
+        models.User,
+        local,
+        schema=user,
+        logger=logger,
+        hook_func=hook
+    )
 
 
 @router.get(
