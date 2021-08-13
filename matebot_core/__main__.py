@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import os
 import sys
+import getpass
 import logging
 import argparse
 
@@ -8,6 +10,54 @@ import uvicorn
 
 from matebot_core import settings as _settings
 from matebot_core.api.api import create_app
+
+
+def _handle_systemd() -> int:
+    python_executable = sys.executable
+    if sys.executable is None or sys.executable == "":
+        python_executable = "python3"
+        print(
+            "Revise the 'ExecStart' parameter, since the Python "
+            "interpreter path could not be determined reliably.",
+            file=sys.stderr
+        )
+
+    if not os.path.exists("matebot_core"):
+        print("Path 'matebot_core' not found!", file=sys.stderr)
+        return 1
+
+    content = f"""[Unit]
+Description=MateBot core REST API server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart={python_executable} -m matebot_core
+User={getpass.getuser()}
+WorkingDirectory={os.path.abspath(".")}
+Restart=always
+SyslogIdentifier=matebot
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+    service_file_path = os.path.join(os.path.abspath("."), "matebot_core.service")
+    if os.path.exists(service_file_path):
+        print(f"File {service_file_path!r} already exists. Aborting!", file=sys.stderr)
+        return 1
+
+    with open(service_file_path, "w") as f:
+        f.write(content)
+
+    print(
+        f"Successfully created the new file {service_file_path!r}. Now, create a "
+        f"symlink from /lib/systemd/system/ to that file. Then use 'systemctl "
+        f"daemon-reload' and enable your new service. Check that it works afterwards."
+    )
+
+    return 0
 
 
 def _get_parser(program: str) -> argparse.ArgumentParser:
@@ -67,11 +117,19 @@ def _get_parser(program: str) -> argparse.ArgumentParser:
         metavar="p",
         help="Sub-mount the application below the given path"
     )
+    parser.add_argument(
+        "--systemd",
+        action="store_true",
+        help="Configure the systemd service and exit"
+    )
 
     return parser
 
 
 def run_server(args: argparse.Namespace):
+    if args.systemd:
+        exit(_handle_systemd())
+
     if args.debug:
         print("Do not start the server this way during production!", file=sys.stderr)
 
