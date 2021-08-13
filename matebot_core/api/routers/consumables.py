@@ -86,7 +86,11 @@ def update_existing_consumable(
 @router.delete(
     "",
     status_code=204,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError},
+        412: {"model": schemas.APIError}
+    }
 )
 def delete_existing_consumable(
         consumable: schemas.Consumable,
@@ -98,14 +102,15 @@ def delete_existing_consumable(
     A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
+    A 412 error will be returned if the conditional request fails.
     """
 
     helpers.delete_one_of_model(
         consumable.id,
         models.Consumable,
         local,
-        consumable,
-        logger
+        schema=consumable,
+        logger=logger
     )
 
 
