@@ -37,7 +37,7 @@ ExecStart={python_executable} -m matebot_core
 User={getpass.getuser()}
 WorkingDirectory={os.path.abspath(".")}
 Restart=always
-SyslogIdentifier=matebot
+SyslogIdentifier=matebot_core
 
 [Install]
 WantedBy=multi-user.target
