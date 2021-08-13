@@ -31,6 +31,7 @@ setuptools.setup(
     description="MateBot core API",
     long_description=get_content("README.md"),
     long_description_content_type="text/markdown",
+    licsense="GLPv3",
     install_requires=[
         "fastapi>=0.66",
         "pydantic>=1.8",
