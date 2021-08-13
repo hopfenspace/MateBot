@@ -4,7 +4,7 @@ Generic helper library for the core REST API
 
 import sys
 import logging
-from typing import List, Optional, Type
+from typing import Any, Callable, List, Optional, Type
 
 import pydantic
 import sqlalchemy.exc
@@ -172,8 +172,10 @@ def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
         local: LocalRequestData,
+        require_conditional_header: bool = True,
         schema: Optional[pydantic.BaseModel] = None,
-        logger: Optional[logging.Logger] = None
+        logger: Optional[logging.Logger] = None,
+        hook_func: Optional[Callable[[models.Base, LocalRequestData, logging.Logger], Any]] = None
 ):
     """
     Delete the identified instance of a model from the database
@@ -181,10 +183,17 @@ def delete_one_of_model(
     :param instance_id: unique identifier of the instance to be deleted
     :param model: class of the SQLAlchemy model
     :param local: contextual local data
+    :param require_conditional_header: force the user agent to provide a valid conditional request
+        header before proceeding with the action, otherwise abort further operation
     :param schema: optional supplied schema of the request to validate the client's state
     :param logger: optional logger that should be used for INFO and ERROR messages
+    :param hook_func: optional callable which will be called after all previous checks
+        on the request, the instance, the model and the schema have succeeded (this
+        callable should not return anything, but may raise appropriate HTTP exceptions);
+        it's recommended that this function uses local values from the definition namespace
     :raises NotFound: when the specified ID can't be found for the given model
     :raises Conflict: when the given schema does not conform to the current state of the object
+    :raises PreconditionFailed: if no valid conditional request header has been set
     """
 
     if logger is None:
@@ -197,11 +206,19 @@ def delete_one_of_model(
     cls_name = type(schema).__name__
     if obj is None:
         raise NotFound(f"{model.__name__} ID {instance_id!r}")
+
+    if require_conditional_header:
+        local.entity.model_name = models.User.__name__
+        local.entity.compare(obj.schema)
+
     if schema is not None and obj.schema != schema:
         raise Conflict(
             f"Invalid state of the {cls_name}. Query the {cls_name} to update.",
             f"current={obj.schema!r}, requested={schema!r}"
         )
+
+    if hook_func is not None and isinstance(hook_func, Callable):
+        hook_func(obj, local, logger)
 
     try:
         local.session.delete(obj)
