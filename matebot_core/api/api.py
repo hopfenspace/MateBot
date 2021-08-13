@@ -93,28 +93,6 @@ def create_app(
     logger = logging.getLogger(__name__)
     logger.debug("Starting application...")
 
-    def check_static_configuration() -> Optional[str]:
-        """
-        Check for the existence of all required static files and return the static dir on success
-        """
-
-        static_dir = os.path.join(os.path.split(os.path.abspath(_package_init_path))[0], "static")
-        static_files = [
-            "redoc.standalone.js",
-            "swagger-ui.css",
-            "swagger-ui-bundle.js"
-        ]
-
-        if os.path.exists(static_dir):
-            for static_file in static_files:
-                if not os.path.exists(os.path.join(static_dir, static_file)):
-                    logger.error(f"File not found: {os.path.join(static_dir, static_file)!r}")
-                    return None
-            return static_dir
-        else:
-            logger.error(f"Static directory {static_dir!r} not found!")
-        return None
-
     if configure_database:
         database.init(settings.database.connection, settings.database.echo)
 
@@ -139,8 +117,18 @@ def create_app(
     async def get_root():
         return fastapi.responses.RedirectResponse("/docs")
 
-    if static_docs and configure_static_docs and StaticFiles and check_static_configuration():
-        app.mount("/static", StaticFiles(directory=check_static_configuration()), name="static")
+    static_dirs = [
+        static_directory for static_directory in [
+            os.path.join(os.path.abspath("."), "static"),
+            os.path.join(os.path.split(os.path.abspath(_package_init_path))[0], "static")
+        ]
+        if os.path.exists(static_directory)
+    ]
+    if len(static_dirs) > 1:
+        logger.warning("More than one static directory found! Though unexpected, it may be fine.")
+
+    if static_docs and configure_static_docs and StaticFiles and len(static_dirs) > 0:
+        app.mount("/static", StaticFiles(directory=static_dirs[0]), name="static")
 
         @app.get("/redoc", include_in_schema=False)
         async def get_redoc():
@@ -169,6 +157,8 @@ def create_app(
 
     elif static_docs and configure_static_docs and StaticFiles:
         logger.warning("Configuring static files failed since some resources were not found.")
+    elif configure_static_docs and not static_docs:
+        logger.error("Configuring static files was not possible due to unmet dependencies!")
 
     return app
 
