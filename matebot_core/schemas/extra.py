@@ -8,6 +8,7 @@ import sys
 import time
 import uuid
 import datetime
+from typing import Optional
 
 import pydantic
 
@@ -44,3 +45,18 @@ class Status(pydantic.BaseModel):
     timezone: str = time.localtime().tm_zone
     localtime: datetime.datetime
     timestamp: pydantic.NonNegativeInt
+
+
+class Callback(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    base: pydantic.HttpUrl
+    app: Optional[pydantic.NonNegativeInt]
+    username: Optional[pydantic.constr(max_length=255)]
+    password: Optional[pydantic.constr(max_length=255)]
+
+
+class CallbackCreation(pydantic.BaseModel):
+    base: pydantic.HttpUrl
+    app: Optional[pydantic.NonNegativeInt]
+    username: Optional[pydantic.constr(max_length=255)]
+    password: Optional[pydantic.constr(max_length=255)]
