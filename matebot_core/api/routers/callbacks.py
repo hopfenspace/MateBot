@@ -3,8 +3,13 @@ MateBot router for the callback API and for /callbacks requests
 """
 
 import logging
+from typing import List
 
 from fastapi import APIRouter, Depends
+
+from ..base import MissingImplementation
+from ..dependency import LocalRequestData
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -81,3 +86,84 @@ router = APIRouter(
     prefix="/callbacks",
     tags=["Callbacks"]
 )
+
+
+@router.get(
+    "",
+    response_model=List[schemas.Callback],
+    callbacks=callback_router.routes
+)
+def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return a list of all currently registered (and therefore enabled) callback APIs.
+    """
+
+    raise MissingImplementation("get_all_callbacks")
+
+
+@router.post(
+    "",
+    status_code=201,
+    response_model=schemas.Callback,
+    responses={409: {"model": schemas.APIError}},
+    callbacks=callback_router.routes
+)
+def create_new_callback(
+        callback: schemas.CallbackCreation,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Add a new callback API which should implement all required endpoints.
+
+    A 409 error will be returned when the exact same base URL has already been
+    registered or when one application already has a registered callback.
+    """
+
+    raise MissingImplementation("create_new_callback")
+
+
+@router.put(
+    "",
+    response_model=schemas.Callback,
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
+    callbacks=callback_router.routes
+)
+def update_existing_callback(
+        callback: schemas.Callback,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Update an existing callback model identified by its ``id``.
+
+    A 404 error will be returned if the callback's ``id`` doesn't exist.
+    A 409 error will be returned when the exact same base URL has already been
+    registered or when one application already has a registered callback.
+    """
+
+    raise MissingImplementation("update_existing_callback")
+
+
+@router.delete(
+    "",
+    status_code=204,
+    responses={
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError},
+        412: {"model": schemas.APIError}
+    },
+    callbacks=callback_router.routes
+)
+def delete_existing_callback(
+        callback: schemas.Callback,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Delete an existing callback model.
+
+    A 404 error will be returned if the requested ``id`` doesn't exist.
+    A 409 error will be returned if the object is not up-to-date, which
+    means that the user agent needs to get the object before proceeding.
+    A 412 error will be returned if the conditional request fails.
+    """
+
+    raise MissingImplementation("delete_existing_callback")
