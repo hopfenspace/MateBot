@@ -49,14 +49,14 @@ class Status(pydantic.BaseModel):
 
 class Callback(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    base: pydantic.HttpUrl
+    base: pydantic.stricturl(max_length=255, allowed_schemes={"http", "https"})
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
 
 
 class CallbackCreation(pydantic.BaseModel):
-    base: pydantic.HttpUrl
+    base: pydantic.stricturl(max_length=255, allowed_schemes={"http", "https"})
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
