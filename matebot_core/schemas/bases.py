@@ -27,13 +27,6 @@ class AliasCreation(pydantic.BaseModel):
     app_user_id: pydantic.constr(max_length=255)
 
 
-class AliasUpdate(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    user_id: pydantic.NonNegativeInt
-    application: pydantic.constr(max_length=255)
-    app_user_id: pydantic.constr(max_length=255)
-
-
 class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)

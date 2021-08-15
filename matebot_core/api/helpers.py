@@ -51,7 +51,7 @@ def _handle_db_exception(
     )
 
 
-def return_one_of_model(
+def return_one(
         object_id: int,
         model: Type[models.Base],
         session: sqlalchemy.orm.Session
@@ -72,7 +72,7 @@ def return_one_of_model(
     return obj
 
 
-def return_unique_of_model(
+def return_unique(
         model: Type[models.Base],
         session: sqlalchemy.orm.Session,
         **kwargs
@@ -116,7 +116,7 @@ def get_one_of_model(
     :raises NotFound: when the specified object ID returned no result
     """
 
-    obj = return_one_of_model(object_id, model, local.session)
+    obj = return_one(object_id, model, local.session)
     schema = obj.schema
     local.entity.model_name = model.__name__
     local.entity.compare(schema)
@@ -252,7 +252,7 @@ def delete_one_of_model(
         )
 
     cls_name = type(schema).__name__
-    obj = return_one_of_model(instance_id, model, local.session)
+    obj = return_one(instance_id, model, local.session)
 
     if require_conditional_header:
         local.entity.model_name = models.User.__name__
