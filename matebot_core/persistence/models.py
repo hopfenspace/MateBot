@@ -648,3 +648,44 @@ class CommunismUsers(Base):
 
     def __repr__(self) -> str:
         return f"CommunismUsers(id={self.id}, user={self.user}, quantity={self.quantity})"
+
+
+class Callback(Base):
+    __tablename__ = "callbacks"
+
+    id = _make_id_column()
+
+    base = Column(
+        String(255),
+        unique=False,
+        nullable=False
+    )
+    app_id = Column(
+        Integer,
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=True,
+        unique=True
+    )
+    username = Column(
+        String(255),
+        nullable=True
+    )
+    password = Column(
+        String(255),
+        nullable=True
+    )
+
+    app = relationship("Application", backref="callback")
+
+    @property
+    def schema(self) -> schemas.Callback:
+        return schemas.Callback(
+            id=self.id,
+            base=self.base,
+            app=self.app_id,
+            username=self.username,
+            password=self.password
+        )
+
+    def __repr__(self) -> str:
+        return f"Callback(id={self.id}, base={self.base}, app_id={self.app_id})"
