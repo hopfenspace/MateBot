@@ -51,6 +51,51 @@ def _handle_db_exception(
     )
 
 
+def return_one_of_model(
+        object_id: int,
+        model: Type[models.Base],
+        session: sqlalchemy.orm.Session
+) -> models.Base:
+    """
+    Return the object of a given model that's identified by its object ID
+
+    :param object_id: internal ID (primary key in the database) of the model
+    :param model: class of a SQLAlchemy model
+    :param session: database session which should be used to perform the query
+    :return: resulting entity as SQLAlchemy model
+    :raises NotFound: when the specified object ID returned no result
+    """
+
+    obj = session.get(model, object_id)
+    if obj is None:
+        raise NotFound(f"{model.__name__} ID {object_id!r}")
+    return obj
+
+
+def return_unique_of_model(
+        model: Type[models.Base],
+        session: sqlalchemy.orm.Session,
+        **kwargs
+) -> models.Base:
+    """
+    Return the unique object of a given model, filtered by the keyword arguments
+
+    :param model: class of a SQLAlchemy model
+    :param session: database session which should be used to perform the query
+    :param kwargs: mandatory filter arguments for the database query
+    :return: resulting single, unique entity
+    :raises NotFound: when the query returned no result or more than one result
+    """
+
+    all_objects = session.query(model).filter_by(**kwargs).all()
+    if len(all_objects) == 1:
+        return all_objects[0]
+    raise NotFound(
+        f"Unique {model.__name__} instance",
+        detail=f"kwargs={kwargs!s}, hits={len(all_objects)}"
+    )
+
+
 def get_one_of_model(
         object_id: int,
         model: Type[models.Base],
@@ -67,13 +112,11 @@ def get_one_of_model(
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
     :param headers: additional headers for the response
-    :return: resulting list of entities
+    :return: resulting entity as pydantic schema instance
     :raises NotFound: when the specified object ID returned no result
     """
 
-    obj = local.session.get(model, object_id)
-    if obj is None:
-        raise NotFound(f"{model.__name__} ID {object_id!r}")
+    obj = return_one_of_model(object_id, model, local.session)
     schema = obj.schema
     local.entity.model_name = model.__name__
     local.entity.compare(schema)
@@ -208,10 +251,8 @@ def delete_one_of_model(
             f"No logger specified for function call with args: {instance_id, model, schema}"
         )
 
-    obj = local.session.get(model, instance_id)
     cls_name = type(schema).__name__
-    if obj is None:
-        raise NotFound(f"{model.__name__} ID {instance_id!r}")
+    obj = return_one_of_model(instance_id, model, local.session)
 
     if require_conditional_header:
         local.entity.model_name = models.User.__name__
