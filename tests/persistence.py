@@ -175,6 +175,41 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(app2.community_user_alias_id, community_alias2.id)
         self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
 
+    def test_applications_and_callbacks(self):
+        app1 = models.Application(name="app1")
+        self.session.add(app1)
+        self.session.commit()
+
+        self.assertTrue(isinstance(app1.callbacks, list))
+        self.assertEqual([], app1.callbacks)
+
+        callback = models.Callback(base="http://example.com", app_id=app1.id)
+        self.session.add(callback)
+        self.session.commit()
+
+        self.assertTrue(isinstance(app1.callbacks, list))
+        self.assertEqual(1, len(app1.callbacks))
+        self.assertEqual(callback, app1.callbacks[0])
+
+        self.session.delete(callback)
+        self.session.commit()
+
+        self.assertTrue(isinstance(app1.callbacks, list))
+        self.assertEqual([], app1.callbacks)
+
+        app2 = models.Application(name="app2")
+        self.session.add(app2)
+        self.session.commit()
+
+        callback = models.Callback(base="http://example.net", app_id=app2.id)
+        self.session.add(callback)
+        self.session.commit()
+
+        self.session.delete(app2)
+        self.session.commit()
+
+        self.assertEqual(0, len(self.session.query(models.Callback).all()))
+
     def test_communisms(self):
         self.session.add_all(self.get_sample_users())
         self.session.commit()

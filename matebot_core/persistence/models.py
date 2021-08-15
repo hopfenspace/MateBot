@@ -675,7 +675,7 @@ class Callback(Base):
         nullable=True
     )
 
-    app = relationship("Application", backref="callback")
+    app = relationship("Application", backref="callbacks")
 
     @property
     def schema(self) -> schemas.Callback:
