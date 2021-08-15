@@ -131,6 +131,7 @@ class Application(Base):
         "UserAlias",
         foreign_keys=[community_user_alias_id]
     )
+    callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
 
     @property
     def schema(self) -> schemas.Application:
@@ -675,7 +676,7 @@ class Callback(Base):
         nullable=True
     )
 
-    app = relationship("Application", backref="callbacks")
+    app = relationship("Application", back_populates="callbacks")
 
     @property
     def schema(self) -> schemas.Callback:
