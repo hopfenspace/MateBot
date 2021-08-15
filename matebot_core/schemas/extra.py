@@ -13,6 +13,9 @@ from typing import Optional
 import pydantic
 
 
+_URL_SCHEMES = {"http", "https"}
+
+
 class Updates(pydantic.BaseModel):
     aliases: uuid.UUID
     applications: uuid.UUID
@@ -49,14 +52,14 @@ class Status(pydantic.BaseModel):
 
 class Callback(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    base: pydantic.stricturl(max_length=255, allowed_schemes={"http", "https"})
+    base: pydantic.stricturl(max_length=255, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
 
 
 class CallbackCreation(pydantic.BaseModel):
-    base: pydantic.stricturl(max_length=255, allowed_schemes={"http", "https"})
+    base: pydantic.stricturl(max_length=255, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
