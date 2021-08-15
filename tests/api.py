@@ -117,8 +117,8 @@ class _BaseAPITests(utils.BaseTest):
                 host="127.0.0.1",
                 debug=True,
                 workers=1,
-                log_level="debug",
-                access_log=True
+                log_level="error",
+                access_log=False
             )
 
         self.server_thread = threading.Thread(target=run_server, daemon=True)
