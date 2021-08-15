@@ -55,7 +55,7 @@ def get_one_of_model(
         object_id: int,
         model: Type[models.Base],
         local: LocalRequestData,
-        **kwargs
+        headers: Optional[dict] = None
 ) -> pydantic.BaseModel:
     """
     Get the object of a given model that's identified by its object ID
@@ -66,7 +66,7 @@ def get_one_of_model(
     :param object_id: internal ID (primary key in the database) of the model
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
-    :param kwargs: additional headers for the response
+    :param headers: additional headers for the response
     :return: resulting list of entities
     :raises NotFound: when the specified object ID returned no result
     """
@@ -77,12 +77,15 @@ def get_one_of_model(
     schema = obj.schema
     local.entity.model_name = model.__name__
     local.entity.compare(schema)
-    return local.attach_headers(schema, **kwargs)
+    if headers and isinstance(headers, dict):
+        return local.attach_headers(schema, **headers)
+    return local.attach_headers(schema)
 
 
 def get_all_of_model(
         model: Type[models.Base],
         local: LocalRequestData,
+        headers: Optional[dict] = None,
         **kwargs
 ) -> List[pydantic.BaseModel]:
     """
@@ -93,14 +96,17 @@ def get_all_of_model(
 
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
-    :param kwargs: additional headers for the response
+    :param headers: additional headers for the response
+    :param kwargs: additional filter arguments for the database query
     :return: resulting list of entities
     """
 
-    all_schemas = [obj.schema for obj in local.session.query(model).all()]
+    all_schemas = [obj.schema for obj in local.session.query(model).filter_by(**kwargs).all()]
     local.entity.model_name = model.__name__
     local.entity.compare(all_schemas)
-    return local.attach_headers(all_schemas, **kwargs)
+    if headers and isinstance(headers, dict):
+        return local.attach_headers(all_schemas, **headers)
+    return local.attach_headers(all_schemas)
 
 
 def create_new_of_model(

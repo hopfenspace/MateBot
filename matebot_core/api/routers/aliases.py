@@ -170,4 +170,7 @@ def get_aliases_by_application_name(
     A 404 error will be returned for unknown `application` arguments.
     """
 
-    raise MissingImplementation("get_aliases_by_application_name")
+    app = local.session.query(models.Application).filter_by(name=application).first()
+    if app is None:
+        raise NotFound(f"Application name {application!r}")
+    return helpers.get_all_of_model(models.UserAlias, local, app_id=app.id)
