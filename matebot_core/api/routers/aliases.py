@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, NotFound, MissingImplementation
+from ..base import Conflict, NotFound
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -55,13 +55,8 @@ def create_new_alias(
     A 409 error will be returned when the combination of those already exists.
     """
 
-    user = local.session.get(models.User, alias.user_id)
-    if user is None:
-        raise NotFound(f"User ID {alias.user_id!r}")
-
-    application = local.session.query(models.Application).filter_by(name=alias.application).first()
-    if application is None:
-        raise NotFound(f"Application {alias.application!r}")
+    user = helpers.return_one(alias.user_id, models.User, local.session)
+    application = helpers.return_unique(models.Application, local.session, name=alias.application)
 
     existing_alias = local.session.query(models.UserAlias).filter_by(
         app_id=application.id,
@@ -103,7 +98,17 @@ def update_existing_alias(
     and `application` already exists with another alias.
     """
 
-    raise MissingImplementation("update_existing_alias")
+    alias_model = helpers.return_one(alias.id, models.UserAlias, local.session)
+    user = helpers.return_one(alias.user_id, models.User, local.session)
+    application = helpers.return_unique(models.Application, local.session, name=alias.application)
+
+    alias_model.user_id = user.id
+    alias_model.app_id = application.id
+    alias_model.app_user_id = alias.app_user_id
+
+    local.session.add(alias_model)
+    local.session.commit()
+    return helpers.get_one_of_model(alias.id, models.UserAlias, local)
 
 
 @router.delete(
