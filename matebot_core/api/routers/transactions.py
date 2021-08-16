@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, NotFound, MissingImplementation
+from ..base import APIException, Conflict, NotFound, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -21,6 +21,34 @@ router = APIRouter(
     prefix="/transactions",
     tags=["Transactions"]
 )
+
+
+def _make_transaction(
+        sender: models.User,
+        receiver: models.User,
+        amount: int,
+        reason: str,
+        local: LocalRequestData,
+        more_models: List[models.Base] = None
+) -> pydantic.BaseModel:
+    if more_models is None:
+        more_models = []
+    if not isinstance(more_models, list):
+        raise TypeError
+
+    logger.info(
+        f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}."
+    )
+
+    model = models.Transaction(
+        sender_id=sender.id,
+        receiver_id=receiver.id,
+        amount=amount,
+        reason=reason
+    )
+    sender.balance -= amount
+    receiver.balance += amount
+    return helpers.create_new_of_model(model, local, logger, more_models=more_models.extend([sender, receiver]))
 
 
 @router.get(
@@ -81,20 +109,7 @@ def make_a_new_transaction(
     sender = _get_user(transaction.sender, "sender")
     receiver = _get_user(transaction.receiver, "receiver")
 
-    logger.debug(
-        f"Incoming transaction from {sender} to {receiver} "
-        f"about {transaction.amount!r} for {transaction.reason!r}"
-    )
-
-    model = models.Transaction(
-        sender_id=sender.id,
-        receiver_id=receiver.id,
-        amount=transaction.amount,
-        reason=transaction.reason
-    )
-    sender.balance -= transaction.amount
-    receiver.balance += transaction.amount
-    return helpers.create_new_of_model(model, local, logger, more_models=[sender, receiver])
+    return _make_transaction(sender, receiver, transaction.amount, transaction.reason, local)
 
 
 @router.get(
@@ -154,6 +169,9 @@ def consume_goods(
     might want to request explicit user approval ahead of time.
 
     Using `adjust_stock=true` will be ignored when `respect_stock` is `false`.
+    Note that its the client's duty to select the appropriate response to
+    the successful consumption, since one consumable type may have any number
+    of consumable messages which may be used as a reply template to the user.
 
     A 400 error will be returned when the specified user who should consume
     the good is the special community user. A 404 error will be returned
@@ -163,4 +181,30 @@ def consume_goods(
     where only two items are in stock would lead to such an error).
     """
 
-    raise MissingImplementation("consume_goods")
+    user = helpers.return_one(consumption.user, models.User, local.session)
+    consumable: models.Consumable = helpers.return_one(consumption.consumable_id, models.Consumable, local.session)
+
+    if user.special:
+        raise APIException(
+            status_code=400,
+            message="The special community user can't consume goods.",
+            detail=str(user.schema)
+        )
+
+    wastage = 0
+    if consumption.respect_stock:
+        if consumable.stock < consumption.amount:
+            raise Conflict(
+                f"Not enough {consumable.name} in stock to consume the goods.",
+                f"requested={consumption.amount}, stock={consumable.stock}",
+                repeat=True
+            )
+        if consumption.adjust_stock:
+            wastage = consumption.amount
+
+    community = helpers.return_unique(models.User, local.session, special=True)
+
+    reason = f"consume: {consumption.amount}x {consumable.name}"
+    total = consumable.price * consumption.amount
+    consumable.stock -= wastage
+    return _make_transaction(user, community, total, reason, local, [consumable])
