@@ -101,9 +101,15 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(community.active, True)
 
     def test_insert_and_delete_all_sample_users(self):
+        self.assertEqual([], self.session.query(models.User).filter_by(special=True).all())
+
         self.session.add_all(self.get_sample_users())
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
+        self.assertEqual(
+            [self.session.get(models.User, len(self.get_sample_users()))],
+            self.session.query(models.User).filter_by(special=True).all()
+        )
 
         self.session.query(models.User).delete()
         self.session.commit()
