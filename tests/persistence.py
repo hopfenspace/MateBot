@@ -38,6 +38,9 @@ class _BaseDatabaseTests(utils.BaseTest):
         self.cleanup_actions.insert(0, self.engine.dispose)
         self.cleanup_actions.insert(0, self.session.close)
 
+        if not self.database_url.startswith("sqlite:"):
+            self.cleanup_actions.insert(0, lambda: models.Base.metadata.drop_all(bind=self.engine))
+
     @staticmethod
     def get_sample_users() -> List[models.User]:
         return [

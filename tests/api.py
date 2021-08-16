@@ -11,15 +11,19 @@ from typing import Iterable, Mapping, Optional, Tuple, Type, Union
 import uvicorn
 import pydantic
 import requests
+import sqlalchemy
+from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import settings as _settings
 from matebot_core.schemas import config as _config
+from matebot_core.persistence import models
 from matebot_core.api.api import create_app
 
 from . import utils
 
 
 class _BaseAPITests(utils.BaseTest):
+    engine: _Engine
     server_port: int
     server_thread: threading.Thread
 
@@ -93,6 +97,13 @@ class _BaseAPITests(utils.BaseTest):
     def setUp(self) -> None:
         super().setUp()
         self.server_port = random.randint(10000, 64000)
+
+        opts = {}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
+        if not self.database_url.startswith("sqlite:"):
+            self.cleanup_actions.insert(0, lambda: models.Base.metadata.drop_all(bind=self.engine))
 
         config = _config.CoreConfig(**_settings._get_default_config())
         config.database.echo = False
