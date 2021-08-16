@@ -85,7 +85,7 @@ class User(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("special == true"),
+        CheckConstraint("special != false"),
     )
 
     @property
