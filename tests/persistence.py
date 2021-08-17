@@ -14,7 +14,7 @@ from sqlalchemy.engine import Engine as _Engine
 from matebot_core import schemas
 from matebot_core.persistence import models
 
-from . import utils
+from . import conf, utils
 
 
 class _BaseDatabaseTests(utils.BaseTest):
@@ -23,8 +23,7 @@ class _BaseDatabaseTests(utils.BaseTest):
 
     def setUp(self) -> None:
         super().setUp()
-
-        opts = {}
+        opts = {"echo": conf.SQLALCHEMY_ECHOING}
         if self.database_url.startswith("sqlite:"):
             opts = {"connect_args": {"check_same_thread": False}}
         self.engine = sqlalchemy.create_engine(self.database_url, **opts)
@@ -35,11 +34,10 @@ class _BaseDatabaseTests(utils.BaseTest):
         )()
         models.Base.metadata.create_all(bind=self.engine)
 
-        self.cleanup_actions.insert(0, self.engine.dispose)
-        self.cleanup_actions.insert(0, self.session.close)
-
-        if not self.database_url.startswith("sqlite:"):
-            self.cleanup_actions.insert(0, lambda: models.Base.metadata.drop_all(bind=self.engine))
+    def tearDown(self) -> None:
+        self.session.close()
+        self.engine.dispose()
+        super().tearDown()
 
     @staticmethod
     def get_sample_users() -> List[models.User]:

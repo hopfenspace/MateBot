@@ -11,19 +11,15 @@ from typing import Iterable, Mapping, Optional, Tuple, Type, Union
 import uvicorn
 import pydantic
 import requests
-import sqlalchemy
-from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import settings as _settings
 from matebot_core.schemas import config as _config
-from matebot_core.persistence import models
 from matebot_core.api.api import create_app
 
-from . import utils
+from . import conf, utils
 
 
 class _BaseAPITests(utils.BaseTest):
-    engine: _Engine
     server_port: int
     server_thread: threading.Thread
 
@@ -98,22 +94,12 @@ class _BaseAPITests(utils.BaseTest):
         super().setUp()
         self.server_port = random.randint(10000, 64000)
 
-        opts = {}
-        if self.database_url.startswith("sqlite:"):
-            opts = {"connect_args": {"check_same_thread": False}}
-        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
-        if not self.database_url.startswith("sqlite:"):
-            self.cleanup_actions.insert(0, lambda: models.Base.metadata.drop_all(bind=self.engine))
-
         config = _config.CoreConfig(**_settings._get_default_config())
-        config.database.echo = False
+        config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
         with open("config.json", "w") as f:
             f.write(config.json())
-        self.cleanup_actions.append(
-            lambda: os.path.exists("config.json") and os.remove("config.json")
-        )
 
         app = create_app(
             settings=_settings.Settings(),
@@ -143,6 +129,11 @@ class _BaseAPITests(utils.BaseTest):
                 wait_for_server()
 
         wait_for_server()
+
+    def tearDown(self) -> None:
+        if os.path.exists("config.json"):
+            os.remove("config.json")
+        super().tearDown()
 
 
 class WorkingAPITests(_BaseAPITests):
