@@ -7,83 +7,70 @@ import sys
 import random
 import string
 import unittest
-from typing import Callable, List, Optional
+import subprocess
+from typing import Optional
 
-
-# The placeholders will be filled by the PID and a random nonce or the database file location
-_DATABASE_DEFAULT_FILE_FORMAT: str = "/tmp/unittest_{}_{}.db"
-_DATABASE_URL_FORMAT: str = "sqlite:///{}"
-_DATABASE_FALLBACK_URL: str = "sqlite://"
-
-# If you want to manually overwrite the database location (and therefore
-# allow other databases than sqlite), then you want to set this variable
-OVERWRITE_DB_URL: Optional[str] = None
-
-
-def get_database_url(
-        file_location: Optional[str] = None,
-        log_errors: bool = True
-) -> (str, Callable[[], None]):
-    """
-    Create a database URL using a sqlite3 database which was confirmed to be accessible
-
-    This function receives a file location which will be the preferred location
-    of the sqlite3 database. It will be checked that the current user has the
-    permissions to create, write and remove that file. If the ``OVERWRITE_DB_URL``
-    global variable has been set, it will be preferred over any sqlite3
-    database file to allow customization and testing other database providers.
-    Since just about any URL could be given in that variable, there is no
-    possibility to perform clean-up actions after every unit test in this case.
-    Note that this function returns a in-memory sqlite3 database on failure.
-
-    :param file_location: optional preferred location of the database file
-    :param log_errors: switch to enable error logging to sys.stderr
-    :return: tuple of the database string and a cleanup function which
-        should be called after all database operations were finished
-    """
-
-    if OVERWRITE_DB_URL is not None:
-        return OVERWRITE_DB_URL, lambda: None
-
-    if file_location is None:
-        file_location = _DATABASE_DEFAULT_FILE_FORMAT.format(
-            os.getpid(),
-            "".join([random.choice(string.ascii_lowercase) for _ in range(6)])
-        )
-
-    try:
-        open(file_location, "wb").close()
-        os.remove(file_location)
-        db_url = _DATABASE_URL_FORMAT.format(file_location)
-        return db_url, lambda: os.path.exists(file_location) and os.remove(file_location)
-
-    except OSError as exc:
-        if log_errors:
-            print(
-                exc,
-                "Falling back to in-memory database. This is not recommended!",
-                sep="\n",
-                file=sys.stderr
-            )
-
-    return _DATABASE_FALLBACK_URL, lambda: None
+from . import conf
 
 
 class BaseTest(unittest.TestCase):
     """
     A base class for unit tests which introduces simple setup and teardown of unit tests
+
+    If a subclass needs special setup or teardown functionality, it **MUST**
+    call the superclasses setup and teardown methods: the superclass setup
+    method at the beginning of the subclass setup method, the superclass
+    teardown method at the end of the subclass teardown method.
     """
 
     database_url: str
-    cleanup_actions: List[Callable[[], None]]
+    _database_file: Optional[str] = None
 
     def setUp(self) -> None:
-        if not hasattr(self, "cleanup_actions"):
-            self.cleanup_actions = []
+        if conf.DATABASE_URL is not None:
+            self.database_url = conf.DATABASE_URL
+            for k in ["COMMAND_INITIALIZE_DATABASE", "COMMAND_CLEANUP_DATABASE"]:
+                if not hasattr(conf, k):
+                    print(
+                        f"Mandatory config variable {k!r} not found in config file!",
+                        file=sys.stderr
+                    )
+                    sys.exit(1)
+                if getattr(conf, k) is None:
+                    print(
+                        f"{k!r} has not been set (value: None)! This config value "
+                        "is mandatory for non-default databases. Any unittest may fail. "
+                        "But if you really need no script(s), set it to an empty list.",
+                        file=sys.stderr
+                    )
+                    sys.exit(1)
 
-        self.database_url, cleanup_db = get_database_url()
-        self.cleanup_actions.append(cleanup_db)
+            if conf.COMMAND_INITIALIZE_DATABASE:
+                subprocess.run(conf.COMMAND_INITIALIZE_DATABASE)
+
+        else:
+            self._database_file = conf.DATABASE_DEFAULT_FILE_FORMAT.format(
+                os.getpid(),
+                "".join([random.choice(string.ascii_lowercase) for _ in range(6)])
+            )
+
+            try:
+                open(self._database_file, "wb").close()
+                os.remove(self._database_file)
+                self.database_url = conf.DATABASE_URL_FORMAT.format(self._database_file)
+
+            except OSError as exc:
+                self.database_url = conf.DATABASE_FALLBACK_URL
+                self._database_file = None
+                print(
+                    f"{exc}: Falling back to in-memory database. This is not recommended!",
+                    file=sys.stderr
+                )
 
     def tearDown(self) -> None:
-        for f in self.cleanup_actions:
-            f()
+        if conf.DATABASE_URL is not None and conf.COMMAND_CLEANUP_DATABASE:
+            subprocess.run(conf.COMMAND_CLEANUP_DATABASE)
+
+        elif self.database_url != conf.DATABASE_FALLBACK_URL and self._database_file:
+            if os.path.exists(self._database_file):
+                os.remove(self._database_file)

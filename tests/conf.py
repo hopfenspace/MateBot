@@ -2,12 +2,12 @@
 Data definitions used for unit testing
 """
 
-from typing import Optional
+from typing import List, Optional
 
 # Set the database URL to be used (default: None) which will be
 # passed to SQLAlchemy, so make sure it's understood by SQLAlchemy
 # (using None enables the sqlite database instead, see below)
-USE_DATABASE_URL: Optional[str] = None
+DATABASE_URL: Optional[str] = None
 
 # Default file format for halfway persistent sqlite database files,
 # which will be removed after the unittests have completed (the
@@ -31,11 +31,13 @@ SQLALCHEMY_ECHOING: bool = False
 # this field, while nothing will be done when not set (default: None)
 # Note: This command will be executed during setup stage of every single unit
 # test! Also note that the argument of this field will be used by `subprocess.run`!
-COMMAND_INITIALIZE_DATABASE: Optional[str] = None
+# The command won't be executed if a temporary or in-memory sqlite database was used.
+COMMAND_INITIALIZE_DATABASE: Optional[List[str]] = None
 
 # Command (or path to a script file) that can be used to properly cleanup the
 # target database so that it can be initialized with the above command or script
 # afterwards again, e.g. a script to drop the whole database and/or user (default: None)
 # Note: This command will be executed during teardown stage of every single unit
 # test! Also note that the argument of this field will be used by `subprocess.run`!
-COMMAND_CLEANUP_DATABASE: Optional[str] = None
+# The command won't be executed if a temporary or in-memory sqlite database was used.
+COMMAND_CLEANUP_DATABASE: Optional[List[str]] = None
