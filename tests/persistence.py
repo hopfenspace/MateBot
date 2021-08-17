@@ -341,6 +341,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
         self.session.rollback()
 
         # Forbidden special user flag 'false'
+        community = self.get_sample_users()[-1]
         community.special = False
         self.session.add(community)
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
@@ -354,9 +355,13 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         self.session.rollback()
 
-        # Everything fine
+        # Missing user, if foreign key constraints are enforced
         self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=1, app_id=1))
-        self.session.commit()
+        try:
+            self.session.commit()
+        except sqlalchemy.exc.DatabaseError:
+            if self.database_type != utils.DatabaseType.MYSQL:
+                self.fail()
         self.session.rollback()
 
         # Same alias in same application again
@@ -366,6 +371,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
         self.session.rollback()
 
         # Everything fine
+        self.session.add_all(self.get_sample_users())
         self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
         self.session.commit()
         self.session.rollback()
@@ -382,6 +388,9 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
         self.session.rollback()
 
     def test_transaction_constraints(self):
+        self.session.add_all(self.get_sample_users())
+        self.session.commit()
+
         # Missing all required fields
         self.session.add(models.Transaction())
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
