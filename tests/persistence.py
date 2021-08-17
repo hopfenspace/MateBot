@@ -336,21 +336,21 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Non-unique special user flag
         self.session.add(community)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Forbidden special user flag 'false'
         community.special = False
         self.session.add(community)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
     def test_user_alias_constraints(self):
         # Missing all required fields
         self.session.add(models.UserAlias())
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -361,7 +361,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Same alias in same application again
         self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=6, app_id=1))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -372,7 +372,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Same user in same application again
         self.session.add(models.UserAlias(app_user_id="app-alias5", user_id=2, app_id=1))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -384,7 +384,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
     def test_transaction_constraints(self):
         # Missing all required fields
         self.session.add(models.Transaction())
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -396,7 +396,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             reason="reason",
             transaction_types_id=1
         ))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -408,7 +408,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             reason="reason",
             transaction_types_id=1
         ))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -420,7 +420,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             reason="reason",
             transaction_types_id=1
         ))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -439,7 +439,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             amount=1,
             transaction_types_id=1
         ))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -456,13 +456,13 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
     def test_vote_constraints(self):
         # Missing required field 'ballot_id'
         self.session.add(models.Vote(user_id=2, vote=0))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Missing required field 'user_id'
         self.session.add(models.Vote(ballot_id=12, vote=-1))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -473,13 +473,13 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Too high 'vote' value
         self.session.add(models.Vote(ballot=ballot, user_id=42, vote=2))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Too low 'vote' value
         self.session.add(models.Vote(ballot=ballot, user_id=42, vote=-2))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
@@ -491,13 +491,13 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Second vote of same user in the same ballot with a different vote
         self.session.add(models.Vote(ballot=ballot, user_id=6, vote=1))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Second vote of same user in the same ballot with the same vote
         self.session.add(models.Vote(ballot=ballot, user_id=6, vote=-1))
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
