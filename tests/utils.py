@@ -4,6 +4,7 @@ Helper functions to make writing unit tests for the MateBot core easier
 
 import os
 import sys
+import enum
 import random
 import string
 import unittest
@@ -11,6 +12,15 @@ import subprocess
 from typing import Optional
 
 from . import conf
+
+
+class DatabaseType(enum.IntEnum):
+    """
+    Enum to simply determine which database is currently in use
+    """
+
+    SQLITE = enum.auto()
+    MYSQL = enum.auto()
 
 
 class BaseTest(unittest.TestCase):
@@ -23,7 +33,8 @@ class BaseTest(unittest.TestCase):
     teardown method at the end of the subclass teardown method.
     """
 
-    database_url: str
+    database_url: Optional[str] = None
+    database_type: Optional[DatabaseType] = None
     _database_file: Optional[str] = None
 
     def setUp(self) -> None:
@@ -66,6 +77,23 @@ class BaseTest(unittest.TestCase):
                     f"{exc}: Falling back to in-memory database. This is not recommended!",
                     file=sys.stderr
                 )
+
+        if self.database_url.startswith("sqlite"):
+            self.database_type = DatabaseType.SQLITE
+        elif self.database_url.startswith("mysql"):
+            self.database_type = DatabaseType.MYSQL
+        elif self.database_url.startswith("mariadb"):
+            self.database_type = DatabaseType.MYSQL
+            print(
+                f"The database URL {self.database_url!r} uses MariaDB scheme. "
+                f"This may lead to problems. Use the plain MySQL scheme instead.",
+                file=sys.stderr
+            )
+        else:
+            print(
+                f"Unknown scheme in URL {self.database_url!r}. Unittests may fail later.",
+                file=sys.stderr
+            )
 
     def tearDown(self) -> None:
         if conf.DATABASE_URL is not None and conf.COMMAND_CLEANUP_DATABASE:
