@@ -112,6 +112,8 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
             self.session.query(models.User).filter_by(special=True).all()
         )
 
+        self.session.query(models.User).filter_by(name="user5").delete()
+        self.assertEqual(len(self.get_sample_users())-1, len(self.session.query(models.User).all()))
         self.session.query(models.User).delete()
         self.session.commit()
         self.assertEqual(0, len(self.session.query(models.User).all()))
@@ -374,8 +376,8 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         except sqlalchemy.exc.DatabaseError:
             if self.database_type != utils.DatabaseType.MYSQL:
-                self.fail()
-        self.session.rollback()
+                raise
+            self.session.rollback()
 
         # Same alias in same application again
         self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=6, app_id=1))
@@ -385,9 +387,10 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Everything fine
         self.session.add_all(self.get_sample_users())
+        self.session.add(models.Application(name="app"))
+        self.session.commit()
         self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
         self.session.commit()
-        self.session.rollback()
 
         # Same user in same application again
         self.session.add(models.UserAlias(app_user_id="app-alias5", user_id=2, app_id=1))
