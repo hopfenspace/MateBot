@@ -221,16 +221,14 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.session.add_all(self.get_sample_users())
         self.session.commit()
 
-        communism = models.Communism(
-            amount=42,
-            creator_id=1,
-            externals=1
-        )
+        # Adding a communism
+        communism = models.Communism(amount=42, creator_id=1, externals=1)
         self.session.add(communism)
         self.session.commit()
         self.assertIsNotNone(communism.creator)
         self.assertIs(communism, self.session.query(models.Communism).first())
 
+        # Adding communism participants
         self.session.add_all([
             models.CommunismUsers(communism_id=communism.id, user_id=1, quantity=1),
             models.CommunismUsers(communism_id=communism.id, user_id=2, quantity=2),
@@ -240,6 +238,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(6, sum([u.quantity for u in communism.participants]))
         self.assertEqual(3, len(self.session.query(models.CommunismUsers).all()))
 
+        # Adding yet another communism participant
         new_participant = models.CommunismUsers(user_id=4, quantity=4)
         communism.participants.append(new_participant)
         self.session.commit()
@@ -249,31 +248,41 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(4, new_participant.id)
         self.assertIs(new_participant.user, self.session.query(models.User).get(4))
 
-        lonely_participant = models.CommunismUsers(communism_id=2, user_id=3, quantity=3)
-        self.session.add(lonely_participant)
-        self.session.commit()
-        self.assertEqual(5, len(self.session.query(models.CommunismUsers).all()))
+        # Participant without communism
+        self.session.add(models.CommunismUsers(communism_id=22, user_id=3, quantity=3))
+        try:
+            self.session.commit()
+            self.assertEqual(5, len(self.session.query(models.CommunismUsers).all()))
+        except sqlalchemy.exc.DatabaseError:
+            if self.database_type != utils.DatabaseType.MYSQL:
+                raise
+            self.session.rollback()
         self.assertEqual(4, len(self.session.query(models.Communism).get(1).participants))
-        self.assertIs(lonely_participant.user, self.session.query(models.User).get(3))
 
+        # Modifying the external count of a communism
         self.assertEqual(1, self.session.query(models.Communism).get(1).externals)
         communism.externals += 1
         self.session.commit()
         self.assertEqual(2, self.session.query(models.Communism).get(1).externals)
 
+        # Deleting a communism
         self.session.delete(communism)
         self.session.commit()
-        self.assertEqual(1, len(self.session.query(models.CommunismUsers).all()))
+        if self.database_type != utils.DatabaseType.MYSQL:
+            self.assertEqual(1, len(self.session.query(models.CommunismUsers).all()))
+        else:
+            self.assertEqual(0, len(self.session.query(models.CommunismUsers).all()))
         self.assertIsNone(self.session.query(models.Communism).get(1))
         self.assertListEqual([], self.session.query(models.Communism).all())
-        self.assertEqual(5, lonely_participant.id)
 
+        # Ensure that some error happens when accessing a deleted instance
         try:
             self.assertIsNotNone(repr(communism.participants))
             self.fail()
         except sqlalchemy.orm.exc.DetachedInstanceError as exc:
             self.assertTrue(exc)
 
+        # Ensure that adding an already deleted instance is not possible
         try:
             self.session.add(communism)
             self.session.commit()
@@ -282,6 +291,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
             self.assertTrue(exc)
             self.session.rollback()
 
+        # Create a new communism which replaces the old one's ID on sqlite database backend
         new_communism = models.Communism(
             active=False,
             amount=6,
@@ -290,13 +300,16 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         )
         self.session.add(new_communism)
         self.session.commit()
-        self.assertEqual(1, new_communism.id)
-        self.assertEqual(communism.id, new_communism.id)
+        if self.database_type == utils.DatabaseType.SQLITE:
+            self.assertEqual(1, new_communism.id)
+        else:
+            self.assertEqual(2, new_communism.id)
         self.assertIsNotNone(new_communism.creator)
 
-        new_communism.creator_id = 42
-        self.session.commit()
-        self.assertIsNone(new_communism.creator)
+        if self.database_type == utils.DatabaseType.SQLITE:
+            new_communism.creator_id = 42
+            self.session.commit()
+            self.assertIsNone(new_communism.creator)
 
     def test_delete_consumable_with_messages_cascading(self):
         consumable = models.Consumable(
