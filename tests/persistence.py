@@ -382,9 +382,14 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         self.session.rollback()
 
-        # Everything fine
+        # Missing application, if foreign key constraints are enforced
         self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=6))
-        self.session.commit()
+        try:
+            self.session.commit()
+        except sqlalchemy.exc.DatabaseError:
+            if self.database_type != utils.DatabaseType.MYSQL:
+                raise
+            self.session.rollback()
         self.session.rollback()
 
     def test_transaction_constraints(self):
@@ -452,15 +457,16 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         self.session.rollback()
 
-        # Everything fine here
-        self.session.add(models.Transaction(
-            sender_id=1,
-            receiver_id=2,
-            amount=1,
-            transaction_types_id=1
-        ))
-        self.session.commit()
-        self.session.rollback()
+        # Failing foreign key constraint due to unknown transaction type
+        if self.database_type == utils.DatabaseType.MYSQL:
+            self.session.add(models.Transaction(
+                sender_id=1,
+                receiver_id=2,
+                amount=1,
+                transaction_types_id=1
+            ))
+            with self.assertRaises(sqlalchemy.exc.DatabaseError):
+                self.session.commit()
 
     def test_vote_constraints(self):
         # Missing required field 'ballot_id'
@@ -492,20 +498,29 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
             self.session.commit()
         self.session.rollback()
 
+        # Failing foreign key constraint due to unknown user
+        if self.database_type == utils.DatabaseType.MYSQL:
+            with self.assertRaises(sqlalchemy.exc.DatabaseError):
+                self.session.add(models.Vote(ballot=ballot, user_id=42, vote=1))
+                self.session.commit()
+            self.session.rollback()
+
         # Everything fine
-        v1 = models.Vote(ballot=ballot, user_id=22, vote=1)
-        v2 = models.Vote(ballot=ballot, user_id=6, vote=-1)
+        self.session.add_all(self.get_sample_users())
+        self.session.commit()
+        v1 = models.Vote(ballot=ballot, user_id=2, vote=1)
+        v2 = models.Vote(ballot=ballot, user_id=4, vote=-1)
         self.session.add_all([v1, v2])
         self.session.commit()
 
         # Second vote of same user in the same ballot with a different vote
-        self.session.add(models.Vote(ballot=ballot, user_id=6, vote=1))
+        self.session.add(models.Vote(ballot=ballot, user_id=4, vote=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Second vote of same user in the same ballot with the same vote
-        self.session.add(models.Vote(ballot=ballot, user_id=6, vote=-1))
+        self.session.add(models.Vote(ballot=ballot, user_id=4, vote=-1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
