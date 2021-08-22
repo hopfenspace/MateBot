@@ -47,6 +47,13 @@ jobs:
     - name: Install the package and execute it once
       run: |
         cd dist/
-        python3 -m pip install matebot_core-*.tar.gz
-        python3 -m matebot_core || echo "OK"
-        rm config.json
+        python3 -m venv venv
+        venv/bin/python3 -m pip install matebot_core-*.tar.gz
+        mkdir cwd/ && cd cwd/
+        venv/bin/python3 -m matebot_core || echo "OK"
+        sed -i 's/sqlite:\\\/\\\//sqlite:\/\//g' config.json
+        sed -i 's/sqlite:\/\//sqlite:\/\/\/test.db/g' config.json
+        venv/bin/python3 -m matebot_core &
+        sleep 1
+        curl http://localhost:8000/
+        wget http://localhost:8000/openapi.json --debug
