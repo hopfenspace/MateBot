@@ -72,7 +72,7 @@ jobs:
         sed -i 's/sqlite:\\\/\\\//sqlite:\/\//g' config.json
         sed -i 's/sqlite:\/\//sqlite:\/\/\/test.db/g' config.json
         ../venv/bin/python3 -m matebot_core &
-        sleep 1
+        sleep 3
         curl http://localhost:8000/
         wget http://localhost:8000/openapi.json --debug
     - name: Read the MySQL client log file
