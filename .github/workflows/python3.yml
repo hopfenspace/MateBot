@@ -45,6 +45,16 @@ jobs:
     - name: Run matebot_core unittests with temporary sqlite3
       run: |
         python3 -m unittest tests -v
+    - name: Run matebot_core unittests with MySQL and pymysql
+      run: |
+        echo 'COMMAND_INITIALIZE_DATABASE = ["/bin/bash", "db_setup.sh"]' >> tests/conf.py
+        echo 'COMMAND_CLEANUP_DATABASE = ["/bin/bash", "db_teardown.sh"]' >> tests/conf.py
+        echo -e '\nDATABASE_URL = "mysql+pymysql://matebot_core_user:matebot_core_password@localhost/matebot_core_unittests?charset=utf8mb4"' >> tests/conf.py
+        python3 -m unittest tests -v
+    - name: Run matebot_core unittests with MySQL and MySQLdb
+      run: |
+        echo -e '\nDATABASE_URL = "mysql+mysqldb://matebot_core_user:matebot_core_password@localhost/matebot_core_unittests?charset=utf8mb4"' >> tests/conf.py
+        python3 -m unittest tests -v
     - name: Run matebot_core once
       run: |
         python3 -m matebot_core || echo "OK"
@@ -65,3 +75,6 @@ jobs:
         sleep 1
         curl http://localhost:8000/
         wget http://localhost:8000/openapi.json --debug
+    - name: Read the MySQL client log file
+      run: |
+        if [ -f mysql.log ]; then cat mysql.log; fi
