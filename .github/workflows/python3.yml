@@ -24,6 +24,12 @@ jobs:
         pip install flake8 pytest pylint build pymysql mysqlclient cryptography
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         sudo systemctl start mysql.service
+        mysql -e "CREATE USER matebot_core_user IDENTIFIED BY 'matebot_core_password';" -u root -p"root" -v
+        echo '#!/bin/bash' >> db_setup.sh
+        echo 'mysql -e "CREATE DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
+        echo 'mysql -e "GRANT ALL PRIVILEGES ON matebot_core_unittests.* TO matebot_core_user;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
+        echo '#!/bin/bash' >> db_teardown.sh
+        echo 'mysql -e "DROP DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_teardown.sh
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
