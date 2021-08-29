@@ -3,9 +3,11 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import os
+import errno
 import random
 import unittest
 import threading
+import http.server
 from typing import Iterable, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
@@ -158,9 +160,46 @@ class FailingAPITests(_BaseAPITests):
     pass
 
 
+class APICallbackTests(_BaseAPITests):
+    callback_server: Optional[http.server.HTTPServer] = None
+    callback_server_port: Optional[int] = None
+    callback_server_thread: Optional[threading.Thread] = None
+
+    class CallbackHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            pass
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        while True:
+            try:
+                self.callback_server_port = random.randint(10000, 64000)
+                self.callback_server = http.server.HTTPServer(
+                    ("127.0.0.1", self.callback_server_port),
+                    self.CallbackHandler
+                )
+            except OSError as exc:
+                if exc.errno == errno.EADDRINUSE:
+                    continue
+                raise
+            else:
+                break
+
+        self.callback_server_thread = threading.Thread(
+            target=self.callback_server.serve_forever,
+            daemon=True
+        )
+        self.callback_server_thread.start()
+
+    def tearDown(self) -> None:
+        self.callback_server.shutdown()
+        super().tearDown()
+
+
 def get_suite() -> unittest.TestSuite:
     suite = unittest.TestSuite()
-    for cls in [WorkingAPITests, FailingAPITests]:
+    for cls in [WorkingAPITests, FailingAPITests, APICallbackTests]:
         for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
             suite.addTest(cls(fixture))
     return suite
