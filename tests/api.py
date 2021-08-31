@@ -5,9 +5,9 @@ MateBot unit tests for the whole API in certain user actions
 import os
 import errno
 import random
-import unittest
 import threading
 import http.server
+import unittest as _unittest
 from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
@@ -21,13 +21,13 @@ from matebot_core.api.api import create_app
 from . import conf, utils
 
 
-suite = unittest.TestSuite()
+api_suite = _unittest.TestSuite()
 
 
 def _tested(cls: Type):
-    global suite
+    global api_suite
     for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        suite.addTest(cls(fixture))
+        api_suite.addTest(cls(fixture))
     return cls
 
 
@@ -211,4 +211,4 @@ class APICallbackTests(_BaseAPITests):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _unittest.main()

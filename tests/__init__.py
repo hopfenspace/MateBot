@@ -3,9 +3,8 @@ MateBot core unit tests
 """
 
 import unittest
-from . import api, persistence
-from .api import suite as api_suite
-from .persistence import suite as persistence_suite
+from .api import *
+from .persistence import *
 
 
 def get_suite() -> unittest.TestSuite:

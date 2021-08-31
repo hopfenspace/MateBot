@@ -3,7 +3,7 @@ MateBot database unit tests
 """
 
 import datetime
-import unittest
+import unittest as _unittest
 from typing import List, Type
 
 import sqlalchemy
@@ -17,13 +17,13 @@ from matebot_core.persistence import models
 from . import conf, utils
 
 
-suite = unittest.TestSuite()
+persistence_suite = _unittest.TestSuite()
 
 
 def _tested(cls: Type):
-    global suite
+    global persistence_suite
     for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        suite.addTest(cls(fixture))
+        persistence_suite.addTest(cls(fixture))
     return cls
 
 
@@ -590,4 +590,4 @@ class DatabaseSchemaTests(_BaseDatabaseTests):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    _unittest.main()
