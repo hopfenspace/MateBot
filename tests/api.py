@@ -8,7 +8,7 @@ import random
 import unittest
 import threading
 import http.server
-from typing import Iterable, Mapping, Optional, Tuple, Type, Union
+from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
 import pydantic
@@ -19,6 +19,16 @@ from matebot_core.schemas import config as _config
 from matebot_core.api.api import create_app
 
 from . import conf, utils
+
+
+suite = unittest.TestSuite()
+
+
+def _tested(cls: Type):
+    global suite
+    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
+        suite.addTest(cls(fixture))
+    return cls
 
 
 class _BaseAPITests(utils.BaseTest):
@@ -138,6 +148,7 @@ class _BaseAPITests(utils.BaseTest):
         super().tearDown()
 
 
+@_tested
 class WorkingAPITests(_BaseAPITests):
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertQuery(
@@ -156,10 +167,12 @@ class WorkingAPITests(_BaseAPITests):
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
 
+@_tested
 class FailingAPITests(_BaseAPITests):
     pass
 
 
+@_tested
 class APICallbackTests(_BaseAPITests):
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
@@ -195,14 +208,6 @@ class APICallbackTests(_BaseAPITests):
     def tearDown(self) -> None:
         self.callback_server.shutdown()
         super().tearDown()
-
-
-def get_suite() -> unittest.TestSuite:
-    suite = unittest.TestSuite()
-    for cls in [WorkingAPITests, FailingAPITests, APICallbackTests]:
-        for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-            suite.addTest(cls(fixture))
-    return suite
 
 
 if __name__ == '__main__':

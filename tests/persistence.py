@@ -4,7 +4,7 @@ MateBot database unit tests
 
 import datetime
 import unittest
-from typing import List
+from typing import List, Type
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -15,6 +15,16 @@ from matebot_core import schemas
 from matebot_core.persistence import models
 
 from . import conf, utils
+
+
+suite = unittest.TestSuite()
+
+
+def _tested(cls: Type):
+    global suite
+    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
+        suite.addTest(cls(fixture))
+    return cls
 
 
 class _BaseDatabaseTests(utils.BaseTest):
@@ -52,6 +62,7 @@ class _BaseDatabaseTests(utils.BaseTest):
         ]
 
 
+@_tested
 class DatabaseUsabilityTests(_BaseDatabaseTests):
     """
     Database test cases checking the correct usability of the models
@@ -340,6 +351,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(0, len(self.session.query(models.ConsumableMessage).all()))
 
 
+@_tested
 class DatabaseRestrictionTests(_BaseDatabaseTests):
     """
     Database test cases checking restrictions on certain operations (constraints)
@@ -542,6 +554,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
         self.session.rollback()
 
 
+@_tested
 class DatabaseSchemaTests(_BaseDatabaseTests):
     """
     Database test cases checking the usability of schemas together with the models
@@ -574,14 +587,6 @@ class DatabaseSchemaTests(_BaseDatabaseTests):
             self.assertEqual(getattr(incoming_consumable, k), getattr(model.schema, k))
         self.assertTrue("id" in model.schema.dict())
         self.assertTrue("modified" in model.schema.dict())
-
-
-def get_suite() -> unittest.TestSuite:
-    suite = unittest.TestSuite()
-    for cls in [DatabaseUsabilityTests, DatabaseRestrictionTests, DatabaseSchemaTests]:
-        for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-            suite.addTest(cls(fixture))
-    return suite
 
 
 if __name__ == '__main__':
