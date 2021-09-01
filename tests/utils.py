@@ -7,11 +7,14 @@ import sys
 import enum
 import random
 import string
+import tempfile
 import unittest
 import subprocess
-from typing import Optional
+from typing import Dict, Optional
 
 from . import conf
+
+from matebot_core import settings
 
 
 class DatabaseType(enum.IntEnum):
@@ -36,8 +39,17 @@ class BaseTest(unittest.TestCase):
     database_url: Optional[str] = None
     database_type: Optional[DatabaseType] = None
     _database_file: Optional[str] = None
+    _config_backup: Optional[Dict[str, tempfile.TemporaryFile]] = None
 
     def setUp(self) -> None:
+        if self._config_backup is None:
+            self._config_backup = {}
+        for p in settings.CONFIG_PATHS:
+            if os.path.exists(p):
+                self._config_backup[p] = tempfile.TemporaryFile()
+                with open(p, "rb") as f:
+                    self._config_backup[p].write(f.read())
+
         if conf.DATABASE_URL is not None:
             self.database_url = conf.DATABASE_URL
             for k in ["COMMAND_INITIALIZE_DATABASE", "COMMAND_CLEANUP_DATABASE"]:
@@ -102,3 +114,10 @@ class BaseTest(unittest.TestCase):
         elif self.database_url != conf.DATABASE_FALLBACK_URL and self._database_file:
             if os.path.exists(self._database_file):
                 os.remove(self._database_file)
+
+        if self._config_backup is not None:
+            for p in self._config_backup:
+                with open(p, "wb") as f:
+                    self._config_backup[p].seek(0)
+                    f.write(self._config_backup[p].read())
+                self._config_backup[p].close()
