@@ -245,14 +245,15 @@ class WorkingAPITests(_BaseAPITests):
             ("GET", "/"),
             [302, 303, 307],
             r_headers={"Location": "/docs"},
-            allow_redirects=False
+            allow_redirects=False,
+            r_is_json=False
         )
 
-        self.assertEqual(self.server + "docs", self.assertQuery(("GET", "/")).url)
-        self.assertEqual(1, len(self.assertQuery(("GET", "/")).history))
+        self.assertEqual(self.server + "docs", self.assertQuery(("GET", "/"), r_is_json=False).url)
+        self.assertEqual(1, len(self.assertQuery(("GET", "/"), r_is_json=False).history))
         self.assertEqual(
-            self.assertQuery(("GET", "/")).content,
-            self.assertQuery(("GET", "/docs")).content
+            self.assertQuery(("GET", "/"), r_is_json=False).content,
+            self.assertQuery(("GET", "/docs"), r_is_json=False).content
         )
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
