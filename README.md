@@ -1,5 +1,9 @@
 # MateBot core REST API
 
+<p align="center">
+   <img width="120px" src="https://raw.githubusercontent.com/hopfenspace/MateBot/dev/static/img/matebot_alpha_1024.png" alt="MateBot core REST API logo" />
+</p>
+
 The API provided in this package allows clients to handle a diverse user base,
 where every user has any number of associated aliases but one shared balance.
 It can be sent to other users, shared in bills or refunded by the community
