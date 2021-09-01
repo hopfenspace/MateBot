@@ -182,12 +182,12 @@ class APICallbackTests(_BaseAPITests):
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
         request_list: List[Tuple[str, str]]
 
-        def do_GET(self) -> None:
+        def do_GET(self) -> None:  # noqa
             self.send_response(200)
             self.end_headers()
             self.request_list.append((self.command, self.path))
 
-        def log_message(self, format: str, *args: Any) -> None:
+        def log_message(self, fmt: str, *args: Any) -> None:
             pass
 
     def setUp(self) -> None:
