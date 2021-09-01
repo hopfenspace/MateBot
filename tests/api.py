@@ -259,16 +259,16 @@ class FailingAPITests(_BaseAPITests):
 class APICallbackTests(_BaseAPITests):
     def test_callback_testing(self):
         self.assertListEqual([], self.callback_request_list)
-        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        requests.get(f"{self.callback_server_uri}refresh")
         self.assertListEqual([("GET", "/refresh")], self.callback_request_list)
-        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
-        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
-        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        requests.get(f"{self.callback_server_uri}refresh")
+        requests.get(f"{self.callback_server_uri}refresh")
+        requests.get(f"{self.callback_server_uri}refresh")
         self.assertTrue(all(map(lambda x: x == ("GET", "/refresh"), self.callback_request_list)))
 
-        requests.get(f"http://localhost:{self.callback_server_port}/create/ballot/7")
-        requests.get(f"http://localhost:{self.callback_server_port}/update/user/3")
-        requests.get(f"http://localhost:{self.callback_server_port}/delete/vote/1")
+        requests.get(f"{self.callback_server_uri}create/ballot/7")
+        requests.get(f"{self.callback_server_uri}update/user/3")
+        requests.get(f"{self.callback_server_uri}delete/vote/1")
         self.assertListEqual(
             [("GET", "/create/ballot/7"), ("GET", "/update/user/3"), ("GET", "/delete/vote/1")],
             self.callback_request_list[-3:]
