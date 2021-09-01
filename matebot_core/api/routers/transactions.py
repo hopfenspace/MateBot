@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 
-def _make_transaction(
+async def _make_transaction(
         sender: models.User,
         receiver: models.User,
         amount: int,
@@ -48,7 +48,12 @@ def _make_transaction(
     )
     sender.balance -= amount
     receiver.balance += amount
-    return helpers.create_new_of_model(model, local, logger, more_models=more_models.extend([sender, receiver]))
+    return await helpers.create_new_of_model(
+        model,
+        local,
+        logger,
+        more_models=more_models.extend([sender, receiver])
+    )
 
 
 @router.get(
@@ -60,7 +65,7 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     Return a list of all transactions in the system.
     """
 
-    return helpers.get_all_of_model(models.Transaction, local)
+    return await helpers.get_all_of_model(models.Transaction, local)
 
 
 @router.post(
@@ -109,7 +114,7 @@ async def make_a_new_transaction(
     sender = _get_user(transaction.sender, "sender")
     receiver = _get_user(transaction.receiver, "receiver")
 
-    return _make_transaction(sender, receiver, transaction.amount, transaction.reason, local)
+    return await _make_transaction(sender, receiver, transaction.amount, transaction.reason, local)
 
 
 @router.get(
@@ -127,7 +132,7 @@ async def get_transaction_by_id(
     A 404 error will be returned if the `transaction_id` is unknown.
     """
 
-    return helpers.get_one_of_model(transaction_id, models.Transaction, local)
+    return await helpers.get_one_of_model(transaction_id, models.Transaction, local)
 
 
 @router.get(
@@ -181,8 +186,12 @@ async def consume_goods(
     where only two items are in stock would lead to such an error).
     """
 
-    user = helpers.return_one(consumption.user, models.User, local.session)
-    consumable: models.Consumable = helpers.return_one(consumption.consumable_id, models.Consumable, local.session)
+    user = await helpers.return_one(consumption.user, models.User, local.session)
+    consumable: models.Consumable = await helpers.return_one(
+        consumption.consumable_id,
+        models.Consumable,
+        local.session
+    )
 
     if user.special:
         raise APIException(
@@ -202,7 +211,7 @@ async def consume_goods(
         if consumption.adjust_stock:
             wastage = consumption.amount
 
-    community = helpers.return_unique(models.User, local.session, special=True)
+    community = await helpers.return_unique(models.User, local.session, special=True)
 
     reason = f"consume: {consumption.amount}x {consumable.name}"
     total = consumable.price * consumption.amount

@@ -32,7 +32,7 @@ async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     Return a list of all ballots with all associated data, including the votes.
     """
 
-    return helpers.get_all_of_model(models.Ballot, local)
+    return await helpers.get_all_of_model(models.Ballot, local)
 
 
 @router.post(
@@ -65,7 +65,7 @@ async def get_ballot_by_id(
     A 404 error will be returned in case the ballot ID is unknown.
     """
 
-    return helpers.get_one_of_model(ballot_id, models.Ballot, local)
+    return await helpers.get_one_of_model(ballot_id, models.Ballot, local)
 
 
 @router.patch(

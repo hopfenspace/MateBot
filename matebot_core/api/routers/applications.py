@@ -31,7 +31,7 @@ async def get_all_applications(local: LocalRequestData = Depends(LocalRequestDat
     Return a list of all known applications.
     """
 
-    return helpers.get_all_of_model(models.Application, local)
+    return await helpers.get_all_of_model(models.Application, local)
 
 
 @router.post(
@@ -71,4 +71,4 @@ async def get_application_by_id(
     A 404 error will be returned in case the ID is not found.
     """
 
-    return helpers.get_one_of_model(application_id, models.Application, local)
+    return await helpers.get_one_of_model(application_id, models.Application, local)

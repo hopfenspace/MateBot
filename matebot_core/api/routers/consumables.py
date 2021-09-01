@@ -32,7 +32,7 @@ async def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData
     Return a list of all current consumables.
     """
 
-    return helpers.get_all_of_model(models.Consumable, local)
+    return await helpers.get_all_of_model(models.Consumable, local)
 
 
 @router.post(
@@ -61,7 +61,7 @@ async def create_new_consumable(
     raw_messages = values.pop("messages")
     model = models.Consumable(**values)
     messages = [models.ConsumableMessage(message=msg, consumable=model) for msg in raw_messages]
-    return helpers.create_new_of_model(model, local, logger, "/consumables/{}", True, messages)
+    return await helpers.create_new_of_model(model, local, logger, "/consumables/{}", True, messages)
 
 
 @router.put(
@@ -105,7 +105,7 @@ async def delete_existing_consumable(
     A 412 error will be returned if the conditional request fails.
     """
 
-    helpers.delete_one_of_model(
+    await helpers.delete_one_of_model(
         consumable.id,
         models.Consumable,
         local,
@@ -129,4 +129,4 @@ async def get_consumable_by_id(
     A 404 error will be returned in case the consumable ID is unknown.
     """
 
-    return helpers.get_one_of_model(consumable_id, models.Consumable, local)
+    return await helpers.get_one_of_model(consumable_id, models.Consumable, local)

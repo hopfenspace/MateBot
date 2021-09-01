@@ -32,7 +32,7 @@ async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     Return a list of all known refunds.
     """
 
-    return helpers.get_all_of_model(models.Refund, local)
+    return await helpers.get_all_of_model(models.Refund, local)
 
 
 @router.post(
@@ -97,7 +97,7 @@ async def get_refund_by_id(
     A 404 error will be returned if the specified refund ID was not found.
     """
 
-    return helpers.get_one_of_model(refund_id, models.Refund, local)
+    return await helpers.get_one_of_model(refund_id, models.Refund, local)
 
 
 @router.get(

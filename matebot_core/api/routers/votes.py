@@ -32,7 +32,7 @@ async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     Return a list of all known votes.
     """
 
-    return helpers.get_all_of_model(models.Vote, local)
+    return await helpers.get_all_of_model(models.Vote, local)
 
 
 @router.post(
@@ -122,4 +122,4 @@ async def get_vote_by_id(
     A 404 error will be returned if that ID is unknown.
     """
 
-    return helpers.get_one_of_model(vote_id, models.Vote, local)
+    return await helpers.get_one_of_model(vote_id, models.Vote, local)

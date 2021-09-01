@@ -15,7 +15,7 @@ from .dependency import LocalRequestData
 from ..persistence import models
 
 
-def _handle_db_exception(
+async def _handle_db_exception(
         session: sqlalchemy.orm.Session,
         exc: sqlalchemy.exc.DBAPIError,
         logger: logging.Logger,
@@ -51,7 +51,7 @@ def _handle_db_exception(
     )
 
 
-def return_one(
+async def return_one(
         object_id: int,
         model: Type[models.Base],
         session: sqlalchemy.orm.Session
@@ -72,7 +72,7 @@ def return_one(
     return obj
 
 
-def return_unique(
+async def return_unique(
         model: Type[models.Base],
         session: sqlalchemy.orm.Session,
         **kwargs
@@ -96,7 +96,7 @@ def return_unique(
     )
 
 
-def get_one_of_model(
+async def get_one_of_model(
         object_id: int,
         model: Type[models.Base],
         local: LocalRequestData,
@@ -116,7 +116,7 @@ def get_one_of_model(
     :raises NotFound: when the specified object ID returned no result
     """
 
-    obj = return_one(object_id, model, local.session)
+    obj = await return_one(object_id, model, local.session)
     schema = obj.schema
     local.entity.model_name = model.__name__
     local.entity.compare(schema)
@@ -125,7 +125,7 @@ def get_one_of_model(
     return local.attach_headers(schema)
 
 
-def get_all_of_model(
+async def get_all_of_model(
         model: Type[models.Base],
         local: LocalRequestData,
         headers: Optional[dict] = None,
@@ -152,7 +152,7 @@ def get_all_of_model(
     return local.attach_headers(all_schemas)
 
 
-def create_new_of_model(
+async def create_new_of_model(
         model: models.Base,
         local: LocalRequestData,
         logger: Optional[logging.Logger] = None,
@@ -207,7 +207,7 @@ def create_new_of_model(
         local.session.commit()
 
     except sqlalchemy.exc.DBAPIError as exc:
-        raise _handle_db_exception(local.session, exc, logger) from exc
+        raise await _handle_db_exception(local.session, exc, logger) from exc
 
     headers = kwargs
     if location_format is not None:
@@ -217,7 +217,7 @@ def create_new_of_model(
     return local.attach_headers(model.schema, **headers)
 
 
-def delete_one_of_model(
+async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
         local: LocalRequestData,
@@ -252,7 +252,7 @@ def delete_one_of_model(
         )
 
     cls_name = type(schema).__name__
-    obj = return_one(instance_id, model, local.session)
+    obj = await return_one(instance_id, model, local.session)
 
     if require_conditional_header:
         local.entity.model_name = models.User.__name__
@@ -272,4 +272,4 @@ def delete_one_of_model(
         local.session.commit()
 
     except sqlalchemy.exc.DBAPIError as exc:
-        raise _handle_db_exception(local.session, exc, logger) from exc
+        raise await _handle_db_exception(local.session, exc, logger) from exc

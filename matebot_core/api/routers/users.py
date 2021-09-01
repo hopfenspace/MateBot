@@ -32,7 +32,7 @@ async def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     Return a list of all internal user models with their aliases.
     """
 
-    return helpers.get_all_of_model(models.User, local)
+    return await helpers.get_all_of_model(models.User, local)
 
 
 @router.post(
@@ -51,7 +51,7 @@ async def create_new_user(
     values = user.dict()
     values["voucher_id"] = values.pop("voucher")
     model = models.User(**values)
-    return helpers.create_new_of_model(model, local, logger, "/users/{}", True)
+    return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
 
 @router.put(
@@ -123,7 +123,7 @@ async def delete_existing_user(
 
         raise MissingImplementation("delete_existing_user_hook_check_communism_participants")
 
-    return helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         user.id,
         models.User,
         local,
@@ -148,7 +148,7 @@ async def get_user_by_id(
     A 404 error will be returned in case the user ID is unknown.
     """
 
-    return helpers.get_one_of_model(user_id, models.User, local)
+    return await helpers.get_one_of_model(user_id, models.User, local)
 
 
 @router.delete(

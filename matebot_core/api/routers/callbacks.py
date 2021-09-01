@@ -98,7 +98,7 @@ async def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData))
     Return a list of all currently registered (and therefore enabled) callback APIs.
     """
 
-    raise MissingImplementation("get_all_callbacks")
+    return await helpers.get_all_of_model(models.Callback, local)
 
 
 @router.post(

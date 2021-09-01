@@ -32,7 +32,7 @@ async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)
     Return a list of all communisms in the system.
     """
 
-    return helpers.get_all_of_model(models.Communism, local)
+    return await helpers.get_all_of_model(models.Communism, local)
 
 
 @router.post(
@@ -94,7 +94,7 @@ async def get_communism_by_id(
     A 404 error will be returned if the specified ID was not found.
     """
 
-    return helpers.get_one_of_model(communism_id, models.Communism, local)
+    return await helpers.get_one_of_model(communism_id, models.Communism, local)
 
 
 @router.get(

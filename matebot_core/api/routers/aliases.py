@@ -32,7 +32,7 @@ async def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestDa
     Return a list of all known user aliases of all applications.
     """
 
-    return helpers.get_all_of_model(models.UserAlias, local)
+    return await helpers.get_all_of_model(models.UserAlias, local)
 
 
 @router.post(
@@ -55,8 +55,12 @@ async def create_new_alias(
     A 409 error will be returned when the combination of those already exists.
     """
 
-    user = helpers.return_one(alias.user_id, models.User, local.session)
-    application = helpers.return_unique(models.Application, local.session, name=alias.application)
+    user = await helpers.return_one(alias.user_id, models.User, local.session)
+    application = await helpers.return_unique(
+        models.Application,
+        local.session,
+        name=alias.application
+    )
 
     existing_alias = local.session.query(models.UserAlias).filter_by(
         app_id=application.id,
@@ -73,7 +77,7 @@ async def create_new_alias(
         app_id=application.id,
         app_user_id=alias.app_user_id
     )
-    return helpers.create_new_of_model(model, local, logger)
+    return await helpers.create_new_of_model(model, local, logger)
 
 
 @router.put(
@@ -98,9 +102,13 @@ async def update_existing_alias(
     and `application` already exists with another alias.
     """
 
-    alias_model = helpers.return_one(alias.id, models.UserAlias, local.session)
-    user = helpers.return_one(alias.user_id, models.User, local.session)
-    application = helpers.return_unique(models.Application, local.session, name=alias.application)
+    alias_model = await helpers.return_one(alias.id, models.UserAlias, local.session)
+    user = await helpers.return_one(alias.user_id, models.User, local.session)
+    application = await helpers.return_unique(
+        models.Application,
+        local.session,
+        name=alias.application
+    )
 
     alias_model.user_id = user.id
     alias_model.app_id = application.id
@@ -133,7 +141,7 @@ async def delete_existing_alias(
     A 412 error will be returned if the conditional request fails.
     """
 
-    helpers.delete_one_of_model(
+    await helpers.delete_one_of_model(
         alias.id,
         models.UserAlias,
         local,
@@ -157,7 +165,7 @@ async def get_alias_by_id(
     A 404 error will be returned in case the alias ID is unknown.
     """
 
-    return helpers.get_one_of_model(alias_id, models.UserAlias, local)
+    return await helpers.get_one_of_model(alias_id, models.UserAlias, local)
 
 
 @router.get(
@@ -178,4 +186,4 @@ async def get_aliases_by_application_name(
     app = local.session.query(models.Application).filter_by(name=application).first()
     if app is None:
         raise NotFound(f"Application name {application!r}")
-    return helpers.get_all_of_model(models.UserAlias, local, app_id=app.id)
+    return await helpers.get_all_of_model(models.UserAlias, local, app_id=app.id)
