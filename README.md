@@ -33,7 +33,9 @@ amount of predefined but modifiable consumables with different stocks.
    ```
 5. Edit the newly created config file `config.json`. Important parts
    are the server and database settings, but you may want to change
-   the general or logging settings as well.
+   the general or logging settings as well. You should always use
+   a persistent database, even if it's a sqlite database, since the
+   in-memory sqlite database is currently not working properly.
 
 ### Executing
 
