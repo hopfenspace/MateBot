@@ -26,7 +26,7 @@ router = APIRouter(
     "/status",
     response_model=schemas.Status
 )
-def get_status(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_status(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return some information about the current status of the server, the database and whatsoever.
     """
@@ -60,7 +60,7 @@ def get_status(local: LocalRequestData = Depends(LocalRequestData)):
     "/updates",
     response_model=schemas.Updates
 )
-def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a collection of the current ETags of all important model collections.
 
@@ -92,7 +92,7 @@ def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
     "/settings",
     response_model=config.GeneralConfig
 )
-def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return the important MateBot core settings which directly affect the handling of requests.
     """

@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Consumable]
 )
-def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all current consumables.
     """
@@ -41,7 +41,7 @@ def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Consumable,
     responses={409: {"model": schemas.APIError}}
 )
-def create_new_consumable(
+async def create_new_consumable(
         consumable: schemas.ConsumableCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -69,7 +69,7 @@ def create_new_consumable(
     response_model=schemas.Consumable,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def update_existing_consumable(
+async def update_existing_consumable(
         consumable: schemas.ConsumableUpdate,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -92,7 +92,7 @@ def update_existing_consumable(
         412: {"model": schemas.APIError}
     }
 )
-def delete_existing_consumable(
+async def delete_existing_consumable(
         consumable: schemas.Consumable,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -119,7 +119,7 @@ def delete_existing_consumable(
     response_model=schemas.Consumable,
     responses={404: {"model": schemas.APIError}}
 )
-def get_consumable_by_id(
+async def get_consumable_by_id(
         consumable_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

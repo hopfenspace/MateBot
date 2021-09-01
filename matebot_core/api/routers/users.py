@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.User]
 )
-def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all internal user models with their aliases.
     """
@@ -40,7 +40,7 @@ def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     status_code=201,
     response_model=schemas.User
 )
-def create_new_user(
+async def create_new_user(
         user: schemas.UserCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -59,7 +59,7 @@ def create_new_user(
     response_model=schemas.User,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def update_existing_user(
+async def update_existing_user(
         user: schemas.User,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -83,7 +83,7 @@ def update_existing_user(
         412: {"model": schemas.APIError}
     }
 )
-def delete_existing_user(
+async def delete_existing_user(
         user: schemas.User,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -138,7 +138,7 @@ def delete_existing_user(
     response_model=schemas.User,
     responses={404: {"model": schemas.APIError}}
 )
-def get_user_by_id(
+async def get_user_by_id(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -156,7 +156,7 @@ def get_user_by_id(
     status_code=204,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def delete_existing_user_by_id(
+async def delete_existing_user_by_id(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

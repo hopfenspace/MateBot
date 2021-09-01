@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Refund]
 )
-def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known refunds.
     """
@@ -40,7 +40,7 @@ def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
-def create_new_refund(
+async def create_new_refund(
         refund: schemas.RefundCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -58,7 +58,7 @@ def create_new_refund(
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
-def close_refund_by_id(
+async def close_refund_by_id(
         refund: schemas.RefundPatch,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -87,7 +87,7 @@ def close_refund_by_id(
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
-def get_refund_by_id(
+async def get_refund_by_id(
         refund_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -105,7 +105,7 @@ def get_refund_by_id(
     response_model=List[schemas.Refund],
     responses={404: {"model": schemas.APIError}}
 )
-def get_refunds_by_creator(
+async def get_refunds_by_creator(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

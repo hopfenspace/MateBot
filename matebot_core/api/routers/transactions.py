@@ -55,7 +55,7 @@ def _make_transaction(
     "",
     response_model=List[schemas.Transaction]
 )
-def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all transactions in the system.
     """
@@ -69,7 +69,7 @@ def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def make_a_new_transaction(
+async def make_a_new_transaction(
         transaction: schemas.TransactionCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -117,7 +117,7 @@ def make_a_new_transaction(
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}}
 )
-def get_transaction_by_id(
+async def get_transaction_by_id(
         transaction_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -135,7 +135,7 @@ def get_transaction_by_id(
     response_model=List[schemas.Transaction],
     responses={404: {"model": schemas.APIError}}
 )
-def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
+async def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
     """
     Return a list of all transactions made by a specific user identified by its user ID.
 
@@ -157,7 +157,7 @@ def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
         409: {"model": schemas.APIError}
     }
 )
-def consume_goods(
+async def consume_goods(
         consumption: schemas.Consumption,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

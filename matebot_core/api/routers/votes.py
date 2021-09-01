@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Vote]
 )
-def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known votes.
     """
@@ -40,7 +40,7 @@ def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Vote,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def add_new_vote(
+async def add_new_vote(
         vote: schemas.VoteCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -64,7 +64,7 @@ def add_new_vote(
         409: {"model": schemas.APIError}
     }
 )
-def change_existing_vote(
+async def change_existing_vote(
         vote: schemas.Vote,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -91,7 +91,7 @@ def change_existing_vote(
         409: {"model": schemas.APIError}
     }
 )
-def delete_existing_vote(
+async def delete_existing_vote(
         vote: schemas.Vote,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -112,7 +112,7 @@ def delete_existing_vote(
     response_model=schemas.Vote,
     responses={404: {"model": schemas.APIError}}
 )
-def get_vote_by_id(
+async def get_vote_by_id(
         vote_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

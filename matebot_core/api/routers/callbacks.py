@@ -93,7 +93,7 @@ router = APIRouter(
     response_model=List[schemas.Callback],
     callbacks=callback_router.routes
 )
-def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all currently registered (and therefore enabled) callback APIs.
     """
@@ -108,7 +108,7 @@ def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData)):
     responses={409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
-def create_new_callback(
+async def create_new_callback(
         callback: schemas.CallbackCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -128,7 +128,7 @@ def create_new_callback(
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
-def update_existing_callback(
+async def update_existing_callback(
         callback: schemas.Callback,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -153,7 +153,7 @@ def update_existing_callback(
     },
     callbacks=callback_router.routes
 )
-def delete_existing_callback(
+async def delete_existing_callback(
         callback: schemas.Callback,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

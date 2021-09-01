@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Communism]
 )
-def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all communisms in the system.
     """
@@ -40,7 +40,7 @@ def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}}
 )
-def create_new_communism(
+async def create_new_communism(
         communism: schemas.CommunismCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -58,7 +58,7 @@ def create_new_communism(
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-def update_existing_communism(
+async def update_existing_communism(
         communism: schemas.CommunismPatch,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -84,7 +84,7 @@ def update_existing_communism(
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}}
 )
-def get_communism_by_id(
+async def get_communism_by_id(
         communism_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -102,7 +102,7 @@ def get_communism_by_id(
     response_model=List[schemas.Communism],
     responses={404: {"model": schemas.APIError}}
 )
-def get_communisms_by_creator(
+async def get_communisms_by_creator(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -120,7 +120,7 @@ def get_communisms_by_creator(
     response_model=List[schemas.Communism],
     responses={404: {"model": schemas.APIError}}
 )
-def get_communisms_by_participant(
+async def get_communisms_by_participant(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

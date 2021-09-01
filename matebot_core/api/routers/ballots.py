@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Ballot]
 )
-def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all ballots with all associated data, including the votes.
     """
@@ -39,7 +39,7 @@ def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     response_model=schemas.Ballot
 )
-def add_new_ballot(
+async def add_new_ballot(
         ballot: schemas.BallotCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -55,7 +55,7 @@ def add_new_ballot(
     response_model=schemas.Ballot,
     responses={404: {"model": schemas.APIError}}
 )
-def get_ballot_by_id(
+async def get_ballot_by_id(
         ballot_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -73,7 +73,7 @@ def get_ballot_by_id(
     response_model=schemas.Ballot,
     responses={404: {"model": schemas.APIError}}
 )
-def close_ballot_by_id(
+async def close_ballot_by_id(
         ballot_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

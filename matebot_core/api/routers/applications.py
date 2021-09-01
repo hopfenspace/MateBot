@@ -26,7 +26,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Application]
 )
-def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known applications.
     """
@@ -39,7 +39,7 @@ def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Application,
     responses={409: {"model": schemas.APIError}}
 )
-def add_new_application(
+async def add_new_application(
         application: schemas.ApplicationCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -61,7 +61,7 @@ def add_new_application(
     response_model=schemas.Application,
     responses={404: {"model": schemas.APIError}}
 )
-def get_application_by_id(
+async def get_application_by_id(
         application_id: int,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
