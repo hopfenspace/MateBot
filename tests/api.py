@@ -72,6 +72,8 @@ class _BaseAPITests(utils.BaseTest):
             headers: Optional[dict] = None,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
+            recent_callbacks: Optional[List[Tuple[str, str]]] = None,
+            total_callbacks: Optional[int] = None,
             **kwargs
     ) -> requests.Response:
         """
@@ -90,6 +92,11 @@ class _BaseAPITests(utils.BaseTest):
         :param headers: optional set of headers to sent in the request
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
+        :param recent_callbacks: optional list of the most recent ("rightmost") callbacks
+            that arrived at the local callback HTTP server (which only works when its
+            callback server URI has been registered in the API during the same unit test)
+        :param total_callbacks: optional number of total callback requests the local
+            callback server should have received during the whole unit test execution
         :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
         :return: response to the requested resource
         """
@@ -124,6 +131,15 @@ class _BaseAPITests(utils.BaseTest):
             self.assertEqual(r_schema, r_model, response.json())
         elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
             self.assertTrue(r_schema(**response.json()), response.json())
+
+        if recent_callbacks is not None:
+            self.assertGreaterEqual(len(self.callback_request_list), len(recent_callbacks))
+            self.assertListEqual(
+                recent_callbacks,
+                self.callback_request_list[-len(recent_callbacks):]
+            )
+        if total_callbacks is not None:
+            self.assertEqual(total_callbacks, len(self.callback_request_list))
 
         return response
 
