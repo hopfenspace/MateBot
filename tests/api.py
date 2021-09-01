@@ -3,6 +3,7 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import os
+import sys
 import errno
 import random
 import threading
@@ -32,12 +33,36 @@ def _tested(cls: Type):
 
 
 class _BaseAPITests(utils.BaseTest):
-    server_port: int
-    server_thread: threading.Thread
+    server_port: Optional[int] = None
+    server_thread: Optional[threading.Thread] = None
+
+    callback_server: Optional[http.server.HTTPServer] = None
+    callback_server_port: Optional[int] = None
+    callback_server_thread: Optional[threading.Thread] = None
+    callback_request_list: List[Tuple[str, str]] = []
+
+    class CallbackHandler(http.server.BaseHTTPRequestHandler):
+        request_list: List[Tuple[str, str]]
+
+        def do_HEAD(self) -> None:  # noqa
+            self.send_response(200)
+            self.end_headers()
+
+        def do_GET(self) -> None:  # noqa
+            self.send_response(200)
+            self.end_headers()
+            self.request_list.append((self.command, self.path))
+
+        def log_message(self, fmt: str, *args: Any) -> None:
+            pass
 
     @property
     def server(self) -> str:
         return f"http://127.0.0.1:{self.server_port}/"
+
+    @property
+    def callback_server_uri(self) -> str:
+        return f"http://127.0.0.1:{self.callback_server_port}/"
 
     def assertQuery(
             self,
@@ -102,10 +127,7 @@ class _BaseAPITests(utils.BaseTest):
 
         return response
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.server_port = random.randint(10000, 64000)
-
+    def _run_api_server(self):
         config = _config.CoreConfig(**_settings._get_default_config())
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
@@ -119,7 +141,8 @@ class _BaseAPITests(utils.BaseTest):
             configure_static_docs=False
         )
 
-        def run_server():
+        self.server_port = random.randint(10000, 64000)
+        try:
             uvicorn.run(
                 app,  # noqa
                 port=self.server_port,
@@ -129,20 +152,64 @@ class _BaseAPITests(utils.BaseTest):
                 log_level="error",
                 access_log=False
             )
+        except SystemExit:
+            print(
+                f"Is the API server port {self.server_port} already "
+                f"occupied? Re-run the unittests for better results.",
+                file=sys.stderr
+            )
+            raise
 
-        self.server_thread = threading.Thread(target=run_server, daemon=True)
+    def _run_callback_server(self):
+        self.callback_request_list = []
+        self.CallbackHandler.request_list = self.callback_request_list
+        self.callback_server_port = random.randint(10000, 64000)
+
+        try:
+            self.callback_server = http.server.HTTPServer(
+                ("127.0.0.1", self.callback_server_port),
+                self.CallbackHandler
+            )
+        except OSError as exc:
+            if exc.errno == errno.EADDRINUSE:
+                print(
+                    f"Is the callback server port {self.callback_server_port} already "
+                    f"occupied? Re-run the unittests for better results.",
+                    file=sys.stderr
+                )
+            raise
+
+        self.callback_server.serve_forever()
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.server_port = random.randint(10000, 64000)
+
+        self.callback_server_thread = threading.Thread(
+            target=self._run_callback_server,
+            daemon=True
+        )
+        self.callback_server_thread.start()
+
+        self.server_thread = threading.Thread(target=self._run_api_server, daemon=True)
         self.server_thread.start()
 
-        def wait_for_server():
+        def wait_for_servers():
+            try:
+                requests.head(self.callback_server_uri)
+            except requests.exceptions.ConnectionError:
+                self.callback_server_thread.join(0.05)
+                wait_for_servers()
             try:
                 requests.get(self.server)
             except requests.exceptions.ConnectionError:
                 self.server_thread.join(0.05)
-                wait_for_server()
+                wait_for_servers()
 
-        wait_for_server()
+        wait_for_servers()
 
     def tearDown(self) -> None:
+        self.callback_server.shutdown()
         if os.path.exists("config.json"):
             os.remove("config.json")
         super().tearDown()
@@ -174,47 +241,6 @@ class FailingAPITests(_BaseAPITests):
 
 @_tested
 class APICallbackTests(_BaseAPITests):
-    callback_server: Optional[http.server.HTTPServer] = None
-    callback_server_port: Optional[int] = None
-    callback_server_thread: Optional[threading.Thread] = None
-    callback_request_list: List[Tuple[str, str]] = []
-
-    class CallbackHandler(http.server.BaseHTTPRequestHandler):
-        request_list: List[Tuple[str, str]]
-
-        def do_GET(self) -> None:  # noqa
-            self.send_response(200)
-            self.end_headers()
-            self.request_list.append((self.command, self.path))
-
-        def log_message(self, fmt: str, *args: Any) -> None:
-            pass
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.callback_request_list = []
-        self.CallbackHandler.request_list = self.callback_request_list
-
-        while True:
-            try:
-                self.callback_server_port = random.randint(10000, 64000)
-                self.callback_server = http.server.HTTPServer(
-                    ("127.0.0.1", self.callback_server_port),
-                    self.CallbackHandler
-                )
-            except OSError as exc:
-                if exc.errno == errno.EADDRINUSE:
-                    continue
-                raise
-            else:
-                break
-
-        self.callback_server_thread = threading.Thread(
-            target=self.callback_server.serve_forever,
-            daemon=True
-        )
-        self.callback_server_thread.start()
-
     def test_callback_testing(self):
         self.assertListEqual([], self.callback_request_list)
         requests.get(f"http://localhost:{self.callback_server_port}/refresh")
@@ -232,10 +258,6 @@ class APICallbackTests(_BaseAPITests):
             self.callback_request_list[-3:]
         )
         self.assertTrue(all(map(lambda x: x[0] == "GET", self.callback_request_list)))
-
-    def tearDown(self) -> None:
-        self.callback_server.shutdown()
-        super().tearDown()
 
 
 if __name__ == '__main__':
