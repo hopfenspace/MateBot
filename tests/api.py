@@ -84,21 +84,21 @@ class _BaseAPITests(utils.BaseTest):
         )
 
         if isinstance(status_code, int):
-            self.assertEqual(status_code, response.status_code)
+            self.assertEqual(status_code, response.status_code, response.text)
         elif isinstance(status_code, Iterable):
-            self.assertTrue(response.status_code in status_code)
+            self.assertTrue(response.status_code in status_code, response.text)
 
         if r_headers is not None:
             for k in (r_headers if isinstance(r_headers, Iterable) else r_headers.keys()):
-                self.assertIsNotNone(response.headers.get(k))
+                self.assertIsNotNone(response.headers.get(k), response.headers)
                 if isinstance(r_headers, Mapping):
-                    self.assertEqual(r_headers[k], response.headers.get(k))
+                    self.assertEqual(r_headers[k], response.headers.get(k), response.headers)
 
         if r_schema and isinstance(r_schema, pydantic.BaseModel):
             r_model = type(r_schema)(**response.json())
-            self.assertEqual(r_schema, r_model)
+            self.assertEqual(r_schema, r_model, response.json())
         elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
-            self.assertTrue(r_schema(**response.json()))
+            self.assertTrue(r_schema(**response.json()), response.json())
 
         return response
 
