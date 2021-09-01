@@ -8,7 +8,7 @@ import random
 import threading
 import http.server
 import unittest as _unittest
-from typing import Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
 import pydantic
@@ -177,13 +177,23 @@ class APICallbackTests(_BaseAPITests):
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
     callback_server_thread: Optional[threading.Thread] = None
+    callback_request_list: List[Tuple[str, str]] = []
 
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
+        request_list: List[Tuple[str, str]]
+
         def do_GET(self) -> None:
+            self.send_response(200)
+            self.end_headers()
+            self.request_list.append((self.command, self.path))
+
+        def log_message(self, format: str, *args: Any) -> None:
             pass
 
     def setUp(self) -> None:
         super().setUp()
+        self.callback_request_list = []
+        self.CallbackHandler.request_list = self.callback_request_list
 
         while True:
             try:
@@ -204,6 +214,24 @@ class APICallbackTests(_BaseAPITests):
             daemon=True
         )
         self.callback_server_thread.start()
+
+    def test_callback_testing(self):
+        self.assertListEqual([], self.callback_request_list)
+        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        self.assertListEqual([("GET", "/refresh")], self.callback_request_list)
+        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        requests.get(f"http://localhost:{self.callback_server_port}/refresh")
+        self.assertTrue(all(map(lambda x: x == ("GET", "/refresh"), self.callback_request_list)))
+
+        requests.get(f"http://localhost:{self.callback_server_port}/create/ballot/7")
+        requests.get(f"http://localhost:{self.callback_server_port}/update/user/3")
+        requests.get(f"http://localhost:{self.callback_server_port}/delete/vote/1")
+        self.assertListEqual(
+            [("GET", "/create/ballot/7"), ("GET", "/update/user/3"), ("GET", "/delete/vote/1")],
+            self.callback_request_list[-3:]
+        )
+        self.assertTrue(all(map(lambda x: x[0] == "GET", self.callback_request_list)))
 
     def tearDown(self) -> None:
         self.callback_server.shutdown()
