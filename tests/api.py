@@ -15,8 +15,7 @@ import uvicorn
 import pydantic
 import requests
 
-from matebot_core import settings as _settings
-from matebot_core.schemas import config as _config
+from matebot_core import schemas as _schemas, settings as _settings
 from matebot_core.api.api import create_app
 
 from . import conf, utils
@@ -70,6 +69,7 @@ class _BaseAPITests(utils.BaseTest):
             status_code: Union[int, Iterable[int]] = 200,
             json: Optional[Union[dict, pydantic.BaseModel]] = None,
             headers: Optional[dict] = None,
+            r_is_json: bool = True,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
@@ -90,6 +90,7 @@ class _BaseAPITests(utils.BaseTest):
         :param status_code: asserted status code(s) of the final server's response
         :param json: optional dictionary or model holding the request data
         :param headers: optional set of headers to sent in the request
+        :param r_is_json: switch to check that the response contains JSON data
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
         :param recent_callbacks: optional list of the most recent ("rightmost") callbacks
@@ -126,6 +127,12 @@ class _BaseAPITests(utils.BaseTest):
                 if isinstance(r_headers, Mapping):
                     self.assertEqual(r_headers[k], response.headers.get(k), response.headers)
 
+        if r_is_json:
+            try:
+                self.assertIsNotNone(response.json())
+            except ValueError:
+                self.fail(("No JSON content detected", response.headers, response.text))
+
         if r_schema and isinstance(r_schema, pydantic.BaseModel):
             r_model = type(r_schema)(**response.json())
             self.assertEqual(r_schema, r_model, response.json())
@@ -144,7 +151,7 @@ class _BaseAPITests(utils.BaseTest):
         return response
 
     def _run_api_server(self):
-        config = _config.CoreConfig(**_settings._get_default_config())
+        config = _schemas.config.CoreConfig(**_settings._get_default_config())
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
