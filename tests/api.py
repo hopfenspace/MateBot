@@ -257,6 +257,29 @@ class WorkingAPITests(_BaseAPITests):
         )
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
+    def test_users(self):
+        self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
+
+        users = []
+        for i in range(10):
+            user = self.assertQuery(
+                ("POST", "/users"),
+                201,
+                json={"name": f"user{i+1}", "permission": True, "external": False},
+                r_schema=_schemas.User,
+                total_callbacks=0
+            ).json()
+            self.assertEqual(i+1, user["id"])
+            self.assertEqual(
+                user,
+                self.assertQuery(("GET", f"/users/{i+1}"), 200, r_schema=_schemas.User).json()
+            )
+            users.append(user)
+            self.assertEqual(
+                users,
+                self.assertQuery(("GET", "/users"), 200).json()
+            )
+
 
 @_tested
 class FailingAPITests(_BaseAPITests):
