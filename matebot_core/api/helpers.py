@@ -3,6 +3,7 @@ Generic helper library for the core REST API
 """
 
 import sys
+import asyncio
 import logging
 from typing import Any, Callable, List, Optional, Type
 
@@ -12,6 +13,7 @@ import sqlalchemy.orm
 
 from .base import APIException, Conflict, NotFound
 from .dependency import LocalRequestData
+from .notifier import Callback
 from ..persistence import models
 
 
@@ -162,7 +164,7 @@ async def create_new_of_model(
         **kwargs
 ) -> pydantic.BaseModel:
     """
-    Create a new model's entry in the database
+    Create a new model's entry in the database (triggering callbacks)
 
     This method will also take care of handling any conditional request headers
     and setting the correct ``ETag`` header (besides the others) in the response.
@@ -209,6 +211,7 @@ async def create_new_of_model(
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc
 
+    await Callback.created(type(model).__name__.lower(), model.id, logger, local.session)
     headers = kwargs
     if location_format is not None:
         headers["Location"] = location_format.format(model.id)
@@ -227,7 +230,7 @@ async def delete_one_of_model(
         hook_func: Optional[Callable[[models.Base, LocalRequestData, logging.Logger], Any]] = None
 ):
     """
-    Delete the identified instance of a model from the database
+    Delete the identified instance of a model from the database (triggering callbacks)
 
     :param instance_id: unique identifier of the instance to be deleted
     :param model: class of the SQLAlchemy model
@@ -265,11 +268,15 @@ async def delete_one_of_model(
         )
 
     if hook_func is not None and isinstance(hook_func, Callable):
-        hook_func(obj, local, logger)
+        if asyncio.iscoroutinefunction(hook_func):
+            await hook_func(obj, local, logger)
+        else:
+            hook_func(obj, local, logger)
 
     try:
         local.session.delete(obj)
         local.session.commit()
+        await Callback.deleted(type(model).__name__.lower(), model.id, logger, local.session)
 
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc
