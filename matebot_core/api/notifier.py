@@ -20,8 +20,8 @@ class Callback:
 
     @classmethod
     def _init(cls):
-        if cls.session is None:
-            cls.session = aiohttp.ClientSession()
+        if cls.client_session is None:
+            cls.client_session = aiohttp.ClientSession()
 
     @classmethod
     async def _shutdown(cls):
