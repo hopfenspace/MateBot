@@ -14,14 +14,12 @@ from ..persistence import database
 from ..settings import Settings
 
 
-logger = logging.getLogger(__name__)
-
-
 def _get_session() -> Generator[Session, None, bool]:
     """
     Return a generator to handle database sessions gracefully
     """
 
+    logger = logging.getLogger(__name__)
     session = database.get_new_session()
     try:
         yield session
