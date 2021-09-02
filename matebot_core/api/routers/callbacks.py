@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
+from .. import helpers
+from ...persistence import models
 from ... import schemas
 
 
@@ -105,7 +107,7 @@ async def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData))
     "",
     status_code=201,
     response_model=schemas.Callback,
-    responses={409: {"model": schemas.APIError}},
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 async def create_new_callback(
@@ -115,8 +117,9 @@ async def create_new_callback(
     """
     Add a new callback API which should implement all required endpoints.
 
-    A 409 error will be returned when the exact same base URL has already been
-    registered or when one application already has a registered callback.
+    A 404 error will be returned if the `app_id` is not known.
+    A 409 error will be returned when the exact same base URL
+    has already been registered for any application.
     """
 
     raise MissingImplementation("create_new_callback")
