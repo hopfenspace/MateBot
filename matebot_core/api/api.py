@@ -57,7 +57,7 @@ except ImportError:
     StaticFiles = None
     static_docs = False
 
-from . import base
+from . import base, versioning
 from .routers import all_routers
 from .. import schemas, __version__
 from ..persistence import database
@@ -96,7 +96,7 @@ def create_app(
     if configure_database:
         database.init(settings.database.connection, settings.database.echo)
 
-    app = fastapi.FastAPI(
+    app = versioning.VersionedFastAPI(
         title="MateBot core REST API",
         version=__version__,
         docs_url=None if static_docs and configure_static_docs else "/docs",
@@ -109,9 +109,6 @@ def create_app(
     app.add_exception_handler(RequestValidationError, base.APIException.handle)
     app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
     app.add_exception_handler(Exception, base.APIException.handle)
-
-    for router in all_routers:
-        app.include_router(router)
 
     @app.get("/", include_in_schema=False)
     async def get_root():
@@ -160,6 +157,10 @@ def create_app(
     elif configure_static_docs and not static_docs:
         logger.error("Configuring static files was not possible due to unmet dependencies!")
 
+    for router in all_routers:
+        app.add_router(router)
+
+    app.finish()
     return app
 
 
