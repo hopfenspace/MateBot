@@ -24,9 +24,10 @@ class Callback:
             cls.client_session = aiohttp.ClientSession()
 
     @classmethod
-    async def _shutdown(cls):
+    async def shutdown(cls):
         if cls.client_session is not None:
             await cls.client_session.close()
+            cls.client_session = None
 
     @classmethod
     async def _get(cls, paths: List[str], session: sqlalchemy.orm.Session, logger: logging.Logger):

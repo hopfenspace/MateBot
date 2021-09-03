@@ -57,7 +57,7 @@ except ImportError:
     StaticFiles = None
     static_docs = False
 
-from . import base
+from . import base, notifier
 from .routers import all_routers
 from .. import schemas, __api_version__
 from ..persistence import database
@@ -102,7 +102,8 @@ def create_app(
         docs_url=None if static_docs and configure_static_docs else "/docs",
         redoc_url=None if static_docs and configure_static_docs else "/redoc",
         description=__doc__,
-        responses={422: {"model": schemas.APIError}}
+        responses={422: {"model": schemas.APIError}},
+        on_shutdown=[notifier.Callback.shutdown]
     )
 
     app.add_exception_handler(base.APIException, base.APIException.handle)
