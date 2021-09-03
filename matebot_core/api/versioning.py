@@ -56,10 +56,18 @@ class VersionedFastAPI(fastapi.FastAPI):
 
     def finish(self):
         for api_version in self._apis:
+            prefix = self._version_format.format(api_version)
+            api_tag = f"Version {api_version}"
             finish = getattr(self._apis[api_version], "finish", None)
             if finish and isinstance(finish, Callable):
                 finish()
-            self.mount(self._version_format.format(api_version), self._apis[api_version])
+            self.mount(prefix, self._apis[api_version])
+
+            @self.get(f"{prefix}/openapi.json", name="Get Specifications", tags=[api_tag])
+            @self.get(f"{prefix}/docs", name="Use Swagger User Interface", tags=[api_tag])
+            @self.get(f"{prefix}/redoc", name="Use ReDoc User Interface", tags=[api_tag])
+            async def noop() -> None:
+                pass
 
     def add_router(self, router: fastapi.APIRouter, **kwargs):
         max_version = max(self._apis.keys())
