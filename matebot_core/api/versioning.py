@@ -5,7 +5,7 @@ MateBot API library to provide multiple versions of the API endpoints
 import logging
 from typing import Callable, Dict, List, Optional
 
-from fastapi import FastAPI, APIRouter
+import fastapi
 
 
 VERSION_ANNOTATION_NAME = "_api_versions"
@@ -18,6 +18,7 @@ def version(version_annotation: int) -> Callable[[Callable], Callable]:
         annotated_versions.append(version_annotation)
         setattr(func, VERSION_ANNOTATION_NAME, annotated_versions)
         return func
+
     return decorator
 
 
@@ -26,6 +27,7 @@ def versions(version_annotations: List[int]) -> Callable[[Callable], Callable]:
         assert not hasattr(func, VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
         setattr(func, VERSION_ANNOTATION_NAME, version_annotations)
         return func
+
     return decorator
 
 
@@ -33,13 +35,14 @@ def min_version(version_annotation: int) -> Callable[[Callable], Callable]:
     def decorator(func: Callable) -> Callable:
         setattr(func, MINIMAL_VERSION_ANNOTATION_NAME, version_annotation)
         return func
+
     return decorator
 
 
-class VersionedFastAPI(FastAPI):
+class VersionedFastAPI(fastapi.FastAPI):
     def __init__(
             self,
-            apis: Dict[int, FastAPI],
+            apis: Dict[int, fastapi.FastAPI],
             *args,
             version_format: str = "/v{}",
             logger: Optional[logging.Logger] = None,
@@ -58,12 +61,12 @@ class VersionedFastAPI(FastAPI):
                 finish()
             self.mount(self._version_format.format(api_version), self._apis[api_version])
 
-    def add_router(self, router: APIRouter, **kwargs):
+    def add_router(self, router: fastapi.APIRouter, **kwargs):
         max_version = max(self._apis.keys())
         for api_version in self._apis:
             filtered_routes = []
             for route in router.routes:
-                if not isinstance(route, routing.APIRoute):
+                if not isinstance(route, fastapi.routing.APIRoute):
                     self._logger.error(
                         f"Route {route!r} (type {type(route)!r}) is no 'APIRoute' instance! "
                         "Further operation might work properly, but is not guaranteed to."
@@ -100,7 +103,7 @@ class VersionedFastAPI(FastAPI):
 
             kwargs.pop("prefix", None)
             self._apis[api_version].include_router(
-                APIRouter(
+                fastapi.APIRouter(
                     prefix="",
                     default_response_class=router.default_response_class,
                     routes=filtered_routes,
