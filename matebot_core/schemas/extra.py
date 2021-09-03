@@ -38,7 +38,7 @@ class VersionInfo(pydantic.BaseModel):
 class Status(pydantic.BaseModel):
     healthy: bool
     startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
-    api_version: VersionInfo
+    api_version: pydantic.PositiveInt
     project_version: VersionInfo
     python_version: VersionInfo = VersionInfo(
         major=sys.version_info.major,
