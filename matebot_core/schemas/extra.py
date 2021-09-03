@@ -16,6 +16,11 @@ import pydantic
 _URL_SCHEMES = {"http", "https"}
 
 
+class LatestVersion(pydantic.BaseModel):
+    version: pydantic.PositiveInt
+    prefix: pydantic.constr(min_length=2)
+
+
 class Updates(pydantic.BaseModel):
     aliases: uuid.UUID
     applications: uuid.UUID

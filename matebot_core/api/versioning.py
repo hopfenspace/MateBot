@@ -7,6 +7,8 @@ from typing import Callable, Dict, List, Optional
 
 import fastapi
 
+from .. import schemas
+
 
 VERSION_ANNOTATION_NAME = "_api_versions"
 MINIMAL_VERSION_ANNOTATION_NAME = "_minimal_api_version"
@@ -68,6 +70,13 @@ class VersionedFastAPI(fastapi.FastAPI):
             @self.get(f"{prefix}/redoc", name="Use ReDoc User Interface", tags=[api_tag])
             async def noop() -> None:
                 pass
+
+        @self.get("/latest", response_model=schemas.LatestVersion, tags=["Miscellaneous"])
+        async def get_latest_api_version():
+            return schemas.LatestVersion(
+                version=max(self._apis.keys()),
+                prefix=self._version_format.format(max(self._apis.keys()))
+            )
 
     def add_router(self, router: fastapi.APIRouter, **kwargs):
         max_version = max(self._apis.keys())
