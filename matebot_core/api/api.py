@@ -78,9 +78,11 @@ def _make_app(
         app.mount("/static", StaticFiles(directory=static_directory), name="static")
 
         @app.get("/redoc", include_in_schema=False)
-        async def get_redoc():
+        async def get_redoc(request: fastapi.Request):
+            root_path = request.scope.get("root_path", "").rstrip("/")
+            openapi_url = root_path + app.openapi_url
             return fastapi.applications.get_redoc_html(
-                openapi_url=app.openapi_url,
+                openapi_url=openapi_url,
                 title=app.title + " - ReDoc",
                 redoc_js_url="/static/redoc.standalone.js",
                 redoc_favicon_url="/static/img/favicon.ico",
@@ -88,19 +90,25 @@ def _make_app(
             )
 
         @app.get("/docs", include_in_schema=False)
-        async def get_swagger_ui():
+        async def get_swagger_ui(request: fastapi.Request):
+            root_path = request.scope.get("root_path", "").rstrip("/")
+            openapi_url = root_path + app.openapi_url
+            oauth2_redirect_url = app.swagger_ui_oauth2_redirect_url
+            if oauth2_redirect_url:
+                oauth2_redirect_url = root_path + oauth2_redirect_url
             return fastapi.applications.get_swagger_ui_html(
-                openapi_url=app.openapi_url,
+                openapi_url=openapi_url,
                 title=app.title + " - Swagger UI",
-                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+                oauth2_redirect_url=oauth2_redirect_url,
                 swagger_js_url="/static/swagger-ui-bundle.js",
                 swagger_css_url="/static/swagger-ui.css",
                 swagger_favicon_url="/static/img/favicon.ico"
             )
 
-        @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
-        async def get_swagger_ui_redirect():
-            return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
+        if app.swagger_ui_oauth2_redirect_url:
+            @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+            async def get_swagger_ui_redirect():
+                return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
 
     return app
 
