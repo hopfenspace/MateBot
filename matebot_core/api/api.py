@@ -59,7 +59,7 @@ except ImportError:
 
 from . import base
 from .routers import all_routers
-from .. import schemas, __api_version__
+from .. import schemas, __version__
 from ..persistence import database
 from ..settings import Settings
 from .. import __file__ as _package_init_path
@@ -98,7 +98,7 @@ def create_app(
 
     app = fastapi.FastAPI(
         title="MateBot core REST API",
-        version=__api_version__,
+        version=__version__,
         docs_url=None if static_docs and configure_static_docs else "/docs",
         redoc_url=None if static_docs and configure_static_docs else "/redoc",
         description=__doc__,
