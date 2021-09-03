@@ -32,6 +32,9 @@ def _tested(cls: Type):
 
 
 class _BaseAPITests(utils.BaseTest):
+    api_version_format: str = "/v{}"
+    _latest_api_version: Optional[int] = None
+
     server_port: Optional[int] = None
     server_thread: Optional[threading.Thread] = None
 
@@ -63,9 +66,16 @@ class _BaseAPITests(utils.BaseTest):
     def callback_server_uri(self) -> str:
         return f"http://127.0.0.1:{self.callback_server_port}/"
 
+    @property
+    def latest_api_version(self) -> int:
+        if not self._latest_api_version:
+            response = requests.get(self.server + "latest")
+            self._latest_api_version = int(response.json()["version"])
+        return self._latest_api_version
+
     def assertQuery(
             self,
-            endpoint: Tuple[str, str],
+            endpoint: Union[Tuple[str, str], Tuple[str, str, int]],
             status_code: Union[int, Iterable[int]] = 200,
             json: Optional[Union[dict, pydantic.BaseModel]] = None,
             headers: Optional[dict] = None,
@@ -74,6 +84,7 @@ class _BaseAPITests(utils.BaseTest):
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
             total_callbacks: Optional[int] = None,
+            no_version: bool = False,
             **kwargs
     ) -> requests.Response:
         """
@@ -86,7 +97,8 @@ class _BaseAPITests(utils.BaseTest):
         to also assert values, and the schema is either a schema class or an instance
         thereof (in the later case, the values will be compared to the response, too).
 
-        :param endpoint: tuple of the method and the path of that endpoint
+        :param endpoint: tuple of the method, the path of the endpoint and the
+            optional API version (uses the latest version if omitted by default)
         :param status_code: asserted status code(s) of the final server's response
         :param json: optional dictionary or model holding the request data
         :param headers: optional set of headers to sent in the request
@@ -98,19 +110,30 @@ class _BaseAPITests(utils.BaseTest):
             callback server URI has been registered in the API during the same unit test)
         :param total_callbacks: optional number of total callback requests the local
             callback server should have received during the whole unit test execution
+        :param no_version: don't add the latest version to the two-element endpoint definition
         :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
         :return: response to the requested resource
         """
 
-        method, path = endpoint
+        if len(endpoint) == 3:
+            method, path, api_version = endpoint
+        else:
+            method, path = endpoint
+            api_version = self.latest_api_version
+
         if path.startswith("/"):
             path = path[1:]
         if isinstance(json, pydantic.BaseModel):
             json = json.dict()
 
+        prefix = self.api_version_format.format(api_version)
+        if prefix.startswith("/"):
+            prefix = prefix[1:]
+        if no_version:
+            prefix = ""
         response = requests.request(
             method.upper(),
-            self.server + path,
+            self.server + prefix + path,
             json=json,
             headers=headers,
             **kwargs
