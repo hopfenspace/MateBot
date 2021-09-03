@@ -18,7 +18,8 @@ class VersionedFastAPI(FastAPI):
                 finish()
             self.mount(self._version_fmt.format(k), self._versions[k])
 
-    def add_router(self, router: routing.APIRouter, **kwargs):
+    def add_router(self, router: APIRouter, **kwargs):
         for k in self._versions:
-            self._versions[k].include_router(router, prefix=self._version_fmt.format(k), **kwargs)
+            prefix = self._version_fmt.format(k) + kwargs.pop("prefix", "")
+            self._versions[k].include_router(router, prefix=prefix, **kwargs)
 
