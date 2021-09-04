@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.User]
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all internal user models with their aliases.
@@ -41,7 +41,7 @@ async def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
     status_code=201,
     response_model=schemas.User
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def create_new_user(
         user: schemas.UserCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -61,7 +61,7 @@ async def create_new_user(
     response_model=schemas.User,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def update_existing_user(
         user: schemas.User,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -86,7 +86,7 @@ async def update_existing_user(
         412: {"model": schemas.APIError}
     }
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def delete_existing_user(
         user: schemas.User,
         local: LocalRequestData = Depends(LocalRequestData)

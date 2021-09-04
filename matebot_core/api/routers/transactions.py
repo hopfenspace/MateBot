@@ -60,7 +60,7 @@ async def _make_transaction(
     "",
     response_model=List[schemas.Transaction]
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all transactions in the system.
@@ -75,7 +75,7 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def make_a_new_transaction(
         transaction: schemas.TransactionCreation,
         local: LocalRequestData = Depends(LocalRequestData)

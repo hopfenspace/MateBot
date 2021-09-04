@@ -3,7 +3,7 @@ MateBot API library to provide multiple versions of the API endpoints
 """
 
 import logging
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, Iterable, Optional
 
 import fastapi
 
@@ -14,21 +14,21 @@ VERSION_ANNOTATION_NAME = "_api_versions"
 MINIMAL_VERSION_ANNOTATION_NAME = "_minimal_api_version"
 
 
-def versions(annotations: Union[int, List[int]], *more_annotations: int) -> Callable[[Callable], Callable]:
-    version_annotations = annotations if isinstance(annotations, list) else [annotations]
-    version_annotations.extend(more_annotations)
+def versions(*annotations: int, minimal: Optional[int] = None) -> Callable[[Callable], Callable]:
+    if not all(map(lambda x: isinstance(x, int), annotations)):
+        raise TypeError(f"Not all annotations are integers: {annotations!r}")
+    if minimal and not isinstance(minimal, int):
+        raise TypeError(f"Expected int, got {type(minimal)!r}")
+    if annotations and minimal:
+        raise RuntimeError("Can't use explicit versions and minimal versions at the same time")
 
     def decorator(func: Callable) -> Callable:
         assert not hasattr(func, VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
-        setattr(func, VERSION_ANNOTATION_NAME, version_annotations)
-        return func
-
-    return decorator
-
-
-def min_version(version_annotation: int) -> Callable[[Callable], Callable]:
-    def decorator(func: Callable) -> Callable:
-        setattr(func, MINIMAL_VERSION_ANNOTATION_NAME, version_annotation)
+        assert not hasattr(func, MINIMAL_VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
+        if annotations:
+            setattr(func, VERSION_ANNOTATION_NAME, annotations)
+        if minimal:
+            setattr(func, MINIMAL_VERSION_ANNOTATION_NAME, minimal)
         return func
 
     return decorator
@@ -95,7 +95,7 @@ class VersionedFastAPI(fastapi.FastAPI):
 
                 has_explicit_versions = hasattr(endpoint, VERSION_ANNOTATION_NAME)
                 explicit_versions = getattr(endpoint, VERSION_ANNOTATION_NAME, [])
-                if not isinstance(explicit_versions, list):
+                if not isinstance(explicit_versions, Iterable):
                     self._logger.error(f"Version annotation {explicit_versions!r} is no list!")
                     continue
                 if not all(map(lambda v: isinstance(v, int), explicit_versions)):

@@ -88,7 +88,7 @@ async def get_updates(local: LocalRequestData = Depends(LocalRequestData)):
     "/settings",
     response_model=config.GeneralConfig
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return the important MateBot core settings which directly affect the handling of requests.

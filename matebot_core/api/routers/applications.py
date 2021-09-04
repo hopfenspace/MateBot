@@ -26,7 +26,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Application]
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known applications.
@@ -40,7 +40,7 @@ async def get_all_applications(local: LocalRequestData = Depends(LocalRequestDat
     response_model=schemas.Application,
     responses={409: {"model": schemas.APIError}}
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def add_new_application(
         application: schemas.ApplicationCreation,
         local: LocalRequestData = Depends(LocalRequestData)

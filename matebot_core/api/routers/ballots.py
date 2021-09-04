@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Ballot]
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all ballots with all associated data, including the votes.
@@ -40,7 +40,7 @@ async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     response_model=schemas.Ballot
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def add_new_ballot(
         ballot: schemas.BallotCreation,
         local: LocalRequestData = Depends(LocalRequestData)

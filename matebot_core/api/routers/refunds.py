@@ -27,7 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Refund]
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known refunds.
@@ -41,7 +41,7 @@ async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def create_new_refund(
         refund: schemas.RefundCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -60,7 +60,7 @@ async def create_new_refund(
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
-@versioning.min_version(1)
+@versioning.versions(minimal=1)
 async def close_refund_by_id(
         refund: schemas.RefundPatch,
         local: LocalRequestData = Depends(LocalRequestData)
