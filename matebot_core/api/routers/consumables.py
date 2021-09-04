@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import Conflict, MissingImplementation
 from ..dependency import LocalRequestData
-from .. import helpers
+from .. import helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -27,6 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Consumable]
 )
+@versioning.min_version(1)
 async def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all current consumables.
@@ -41,6 +42,7 @@ async def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData
     response_model=schemas.Consumable,
     responses={409: {"model": schemas.APIError}}
 )
+@versioning.min_version(1)
 async def create_new_consumable(
         consumable: schemas.ConsumableCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -69,6 +71,7 @@ async def create_new_consumable(
     response_model=schemas.Consumable,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.min_version(1)
 async def update_existing_consumable(
         consumable: schemas.ConsumableUpdate,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -92,6 +95,7 @@ async def update_existing_consumable(
         412: {"model": schemas.APIError}
     }
 )
+@versioning.min_version(1)
 async def delete_existing_consumable(
         consumable: schemas.Consumable,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -119,6 +123,7 @@ async def delete_existing_consumable(
     response_model=schemas.Consumable,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_consumable_by_id(
         consumable_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)

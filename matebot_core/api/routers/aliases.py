@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import Conflict, NotFound
 from ..dependency import LocalRequestData
-from .. import helpers
+from .. import helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -27,6 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Alias]
 )
+@versioning.min_version(1)
 async def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known user aliases of all applications.
@@ -41,6 +42,7 @@ async def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestDa
     response_model=schemas.Alias,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.min_version(1)
 async def create_new_alias(
         alias: schemas.AliasCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -85,6 +87,7 @@ async def create_new_alias(
     response_model=schemas.Alias,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.min_version(1)
 async def update_existing_alias(
         alias: schemas.Alias,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -128,6 +131,7 @@ async def update_existing_alias(
         412: {"model": schemas.APIError}
     }
 )
+@versioning.min_version(1)
 async def delete_existing_alias(
         alias: schemas.Alias,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -155,6 +159,7 @@ async def delete_existing_alias(
     response_model=schemas.Alias,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_alias_by_id(
         alias_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -173,6 +178,7 @@ async def get_alias_by_id(
     response_model=List[schemas.Alias],
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_aliases_by_application_name(
         application: pydantic.constr(max_length=255),
         local: LocalRequestData = Depends(LocalRequestData)

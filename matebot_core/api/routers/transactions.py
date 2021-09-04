@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import APIException, Conflict, NotFound, MissingImplementation
 from ..dependency import LocalRequestData
-from .. import helpers
+from .. import helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -60,6 +60,7 @@ async def _make_transaction(
     "",
     response_model=List[schemas.Transaction]
 )
+@versioning.min_version(1)
 async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all transactions in the system.
@@ -74,6 +75,7 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.min_version(1)
 async def make_a_new_transaction(
         transaction: schemas.TransactionCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -122,6 +124,7 @@ async def make_a_new_transaction(
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_transaction_by_id(
         transaction_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -140,6 +143,7 @@ async def get_transaction_by_id(
     response_model=List[schemas.Transaction],
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
     """
     Return a list of all transactions made by a specific user identified by its user ID.
@@ -162,6 +166,7 @@ async def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
         409: {"model": schemas.APIError}
     }
 )
+@versioning.versions(1)
 async def consume_goods(
         consumption: schemas.Consumption,
         local: LocalRequestData = Depends(LocalRequestData)

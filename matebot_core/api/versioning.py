@@ -102,6 +102,12 @@ class VersionedFastAPI(fastapi.FastAPI):
                     self._logger.error(f"Not all versions in {explicit_versions!r} are integers!")
                     continue
 
+                if not has_min_tag and not has_explicit_versions:
+                    self._logger.warning(
+                        f"Route {route!r} has no supported annotated version! It will "
+                        f"therefore be only supported on API version {max_version} by default."
+                    )
+
                 if (
                     (has_min_tag and not has_explicit_versions and min_tag <= api_version)
                     or
