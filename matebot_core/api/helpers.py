@@ -211,7 +211,13 @@ async def create_new_of_model(
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc
 
-    await Callback.created(type(model).__name__.lower(), model.id, logger, local.session)
+    local.tasks.add_task(
+        Callback.created,
+        type(model).__name__.lower(),
+        model.id,
+        logger,
+        local.session
+    )
     headers = kwargs
     if location_format is not None:
         headers["Location"] = location_format.format(model.id)
@@ -276,7 +282,13 @@ async def delete_one_of_model(
     try:
         local.session.delete(obj)
         local.session.commit()
-        await Callback.deleted(type(model).__name__.lower(), model.id, logger, local.session)
+        local.tasks.add_task(
+            Callback.deleted,
+            type(model).__name__.lower(),
+            model.id,
+            logger,
+            local.session
+        )
 
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc

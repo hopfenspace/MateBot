@@ -6,7 +6,7 @@ import logging
 from typing import Generator, Optional
 
 import sqlalchemy.exc
-from fastapi import Depends, Request, Response
+from fastapi import BackgroundTasks, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from . import base, etag
@@ -67,10 +67,12 @@ class LocalRequestData:
             self,
             request: Request,
             response: Response,
-            session: Session = Depends(_get_session)
+            tasks: BackgroundTasks,
+            session: Session = Depends(_get_session),
     ):
         self.request = request
         self.response = response
+        self.tasks = tasks
         self.headers = request.headers
         self.entity = etag.ETag(request)
         self.session = session
