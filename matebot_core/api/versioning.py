@@ -3,7 +3,7 @@ MateBot API library to provide multiple versions of the API endpoints
 """
 
 import logging
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 import fastapi
 
@@ -14,17 +14,10 @@ VERSION_ANNOTATION_NAME = "_api_versions"
 MINIMAL_VERSION_ANNOTATION_NAME = "_minimal_api_version"
 
 
-def version(version_annotation: int) -> Callable[[Callable], Callable]:
-    def decorator(func: Callable) -> Callable:
-        annotated_versions = getattr(func, VERSION_ANNOTATION_NAME, [])
-        annotated_versions.append(version_annotation)
-        setattr(func, VERSION_ANNOTATION_NAME, annotated_versions)
-        return func
+def versions(annotations: Union[int, List[int]], *more_annotations: int) -> Callable[[Callable], Callable]:
+    version_annotations = annotations if isinstance(annotations, list) else [annotations]
+    version_annotations.extend(more_annotations)
 
-    return decorator
-
-
-def versions(version_annotations: List[int]) -> Callable[[Callable], Callable]:
     def decorator(func: Callable) -> Callable:
         assert not hasattr(func, VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
         setattr(func, VERSION_ANNOTATION_NAME, version_annotations)
