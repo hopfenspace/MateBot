@@ -114,8 +114,7 @@ async def update_existing_alias(
     alias_model.app_id = application.id
     alias_model.app_user_id = alias.app_user_id
 
-    local.session.add(alias_model)
-    local.session.commit()
+    await helpers.update_model(alias_model, local, logger)
     return helpers.get_one_of_model(alias.id, models.UserAlias, local)
 
 
