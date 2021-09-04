@@ -277,8 +277,8 @@ class WorkingAPITests(_BaseAPITests):
         self.assertEqual(self.server + "docs", self.assertQuery(("GET", "/"), r_is_json=False).url)
         self.assertEqual(1, len(self.assertQuery(("GET", "/"), r_is_json=False).history))
         self.assertEqual(
-            self.assertQuery(("GET", "/"), r_is_json=False).content,
-            self.assertQuery(("GET", "/docs"), r_is_json=False).content
+            self.assertQuery(("GET", "/"), r_is_json=False, no_version=True).content,
+            self.assertQuery(("GET", "/docs"), r_is_json=False, no_version=True).content
         )
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
