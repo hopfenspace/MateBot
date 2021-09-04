@@ -131,6 +131,8 @@ class _BaseAPITests(utils.BaseTest):
             prefix = prefix[1:]
         if no_version:
             prefix = ""
+        elif not prefix.endswith("/"):
+            prefix += "/"
         response = requests.request(
             method.upper(),
             self.server + prefix + path,
