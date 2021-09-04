@@ -11,24 +11,38 @@ from .. import schemas
 
 
 VERSION_ANNOTATION_NAME = "_api_versions"
+MAXIMAL_VERSION_ANNOTATION_NAME = "_maximal_api_version"
 MINIMAL_VERSION_ANNOTATION_NAME = "_minimal_api_version"
 
 
-def versions(*annotations: int, minimal: Optional[int] = None) -> Callable[[Callable], Callable]:
+def versions(
+        *annotations: int,
+        minimal: Optional[int] = None,
+        maximal: Optional[int] = None
+) -> Callable[[Callable], Callable]:
     if not all(map(lambda x: isinstance(x, int), annotations)):
         raise TypeError(f"Not all annotations are integers: {annotations!r}")
-    if minimal and not isinstance(minimal, int):
-        raise TypeError(f"Expected int, got {type(minimal)!r}")
-    if annotations and minimal:
-        raise RuntimeError("Can't use explicit versions and minimal versions at the same time")
+    if minimal:
+        if not isinstance(minimal, int):
+            raise TypeError(f"Expected int, got {type(minimal)!r}")
+        if any(map(lambda x: x < minimal, annotations)):
+            raise ValueError("Can't accept annotations smaller than the minimal version")
+    if maximal:
+        if not isinstance(maximal, int):
+            raise TypeError(f"Expected int, got {type(minimal)!r}")
+        if any(map(lambda x: x > maximal, annotations)):
+            raise ValueError("Can't accept annotations bigger than the maximal version")
 
     def decorator(func: Callable) -> Callable:
         assert not hasattr(func, VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
         assert not hasattr(func, MINIMAL_VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
+        assert not hasattr(func, MAXIMAL_VERSION_ANNOTATION_NAME), "'versions' can't be used twice"
         if annotations:
             setattr(func, VERSION_ANNOTATION_NAME, annotations)
         if minimal:
             setattr(func, MINIMAL_VERSION_ANNOTATION_NAME, minimal)
+        if maximal:
+            setattr(func, MAXIMAL_VERSION_ANNOTATION_NAME, maximal)
         return func
 
     return decorator
@@ -41,6 +55,8 @@ class VersionedFastAPI(fastapi.FastAPI):
             *args,
             version_format: str = "/v{}",
             logger: Optional[logging.Logger] = None,
+            absolute_minimal_version: int = 0,
+            absolute_maximal_version: Optional[int] = None,
             **kwargs
     ):
         assert version_format.count("{}") == 1, "Version format string must contain '{}' once"
@@ -48,6 +64,8 @@ class VersionedFastAPI(fastapi.FastAPI):
         self._apis = apis
         self._version_format = version_format
         self._logger = logger or logging.getLogger(__name__)
+        self._abs_min = absolute_minimal_version
+        self._abs_max = absolute_maximal_version or max(apis.keys())
 
     def finish(self):
         for api_version in self._apis:
@@ -72,7 +90,6 @@ class VersionedFastAPI(fastapi.FastAPI):
             )
 
     def add_router(self, router: fastapi.APIRouter, **kwargs):
-        max_version = max(self._apis.keys())
         for api_version in self._apis:
             filtered_routes = []
             for route in router.routes:
@@ -87,35 +104,32 @@ class VersionedFastAPI(fastapi.FastAPI):
                     self._logger.error(f"Route {route!r} has no attribute 'endpoint'! Skipping.")
                     continue
 
-                has_min_tag = hasattr(endpoint, MINIMAL_VERSION_ANNOTATION_NAME)
-                min_tag = getattr(endpoint, MINIMAL_VERSION_ANNOTATION_NAME, max_version)
-                if not isinstance(min_tag, int):
-                    self._logger.error(f"Min version annotation {min_tag!r} is no integer!")
-                    continue
+                min_version = getattr(endpoint, MINIMAL_VERSION_ANNOTATION_NAME, self._abs_min)
+                if not isinstance(min_version, int):
+                    raise TypeError(f"Min version annotation {min_version!r} is no integer!")
+                max_version = getattr(endpoint, MAXIMAL_VERSION_ANNOTATION_NAME, self._abs_max)
+                if not isinstance(max_version, int):
+                    raise TypeError(f"Max version annotation {max_version!r} is no integer!")
 
-                has_explicit_versions = hasattr(endpoint, VERSION_ANNOTATION_NAME)
                 explicit_versions = getattr(endpoint, VERSION_ANNOTATION_NAME, [])
                 if not isinstance(explicit_versions, Iterable):
-                    self._logger.error(f"Version annotation {explicit_versions!r} is no list!")
-                    continue
+                    raise TypeError(f"Version annotation {explicit_versions!r} is not iterable!")
                 if not all(map(lambda v: isinstance(v, int), explicit_versions)):
-                    self._logger.error(f"Not all versions in {explicit_versions!r} are integers!")
-                    continue
+                    raise TypeError(f"Not all versions in {explicit_versions!r} are integers!")
 
-                if not has_min_tag and not has_explicit_versions:
+                if not any([
+                    hasattr(endpoint, VERSION_ANNOTATION_NAME),
+                    hasattr(endpoint, MINIMAL_VERSION_ANNOTATION_NAME),
+                    hasattr(endpoint, MAXIMAL_VERSION_ANNOTATION_NAME)
+                ]):
                     self._logger.warning(
                         f"Route {route!r} has no supported annotated version! It will "
-                        f"therefore be only supported on API version {max_version} by default."
+                        f"therefore only be supported on API version {max_version} by default."
                     )
 
-                if (
-                    (has_min_tag and not has_explicit_versions and min_tag <= api_version)
-                    or
-                    (not has_min_tag and has_explicit_versions and api_version in explicit_versions)
-                    or
-                    (not has_min_tag and not has_explicit_versions and api_version == max_version)
-                ):
-                    filtered_routes.append(route)
+                if min_version <= api_version <= max_version:
+                    if not explicit_versions or api_version in explicit_versions:
+                        filtered_routes.append(route)
 
             kwargs.pop("prefix", None)
             self._apis[api_version].include_router(
