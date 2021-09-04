@@ -71,11 +71,11 @@ class VersionedFastAPI(fastapi.FastAPI):
             async def noop() -> None:
                 pass
 
-        @self.get("/latest", response_model=schemas.LatestVersion, tags=["Miscellaneous"])
-        async def get_latest_api_version():
-            return schemas.LatestVersion(
-                version=max(self._apis.keys()),
-                prefix=self._version_format.format(max(self._apis.keys()))
+        @self.get("/versions", response_model=schemas.Versions, tags=["Miscellaneous"])
+        async def get_version_info():
+            return schemas.Versions(
+                latest=max(self._apis.keys()),
+                versions=[{"version": v, "prefix": self._version_format.format(v)} for v in self._apis.keys()]
             )
 
     def add_router(self, router: fastapi.APIRouter, **kwargs):

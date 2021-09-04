@@ -8,7 +8,7 @@ import sys
 import time
 import uuid
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 import pydantic
 
@@ -16,9 +16,13 @@ import pydantic
 _URL_SCHEMES = {"http", "https"}
 
 
-class LatestVersion(pydantic.BaseModel):
-    version: pydantic.PositiveInt
-    prefix: pydantic.constr(min_length=2)
+class Versions(pydantic.BaseModel):
+    class Version(pydantic.BaseModel):
+        version: pydantic.PositiveInt
+        prefix: pydantic.constr(min_length=2)
+
+    latest: pydantic.PositiveInt
+    versions: List[Version]
 
 
 class Updates(pydantic.BaseModel):
