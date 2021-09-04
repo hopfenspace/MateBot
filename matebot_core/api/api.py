@@ -72,7 +72,7 @@ def _make_app(
     if root_redirect:
         @app.get("/", include_in_schema=False)
         async def redirect_root():
-            return fastapi.responses.RedirectResponse("/docs")
+            return fastapi.responses.RedirectResponse("./docs")
 
     if static_directory:
         app.mount("/static", StaticFiles(directory=static_directory), name="static")
