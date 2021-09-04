@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict, NotFound, MissingImplementation
+from ..base import APIException, Conflict, NotFound
 from ..dependency import LocalRequestData
 from .. import helpers
 from ...persistence import models
@@ -136,20 +136,41 @@ async def get_transaction_by_id(
 
 
 @router.get(
-    "/user/{user_id}",
+    "/sender/{user_id}",
     response_model=List[schemas.Transaction],
     responses={404: {"model": schemas.APIError}}
 )
-async def get_all_transactions_of_user(user_id: pydantic.NonNegativeInt):
+async def get_all_transactions_of_sender(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all transactions made by a specific user identified by its user ID.
-
-    Note that this list includes both sent and received transactions.
+    Return a list of all transactions sent by a specific user identified by its user ID.
 
     A 404 error will be returned if the user ID is unknown.
     """
 
-    raise MissingImplementation("get_all_transactions_of_user")
+    user = await helpers.return_one(user_id, models.User, local.session)
+    return await helpers.get_all_of_model(models.Transaction, local, sender=user)
+
+
+@router.get(
+    "/receiver/{user_id}",
+    response_model=List[schemas.Transaction],
+    responses={404: {"model": schemas.APIError}}
+)
+async def get_all_transactions_of_receiver(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Return a list of all transactions received by a specific user identified by its user ID.
+
+    A 404 error will be returned if the user ID is unknown.
+    """
+
+    user = await helpers.return_one(user_id, models.User, local.session)
+    return await helpers.get_all_of_model(models.Transaction, local, receiver=user)
 
 
 @router.post(
