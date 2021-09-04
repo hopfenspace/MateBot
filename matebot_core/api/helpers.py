@@ -17,6 +17,20 @@ from .notifier import Callback
 from ..persistence import models
 
 
+def _enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
+    """
+    Enforce availability of a working logger
+    """
+
+    if logger is not None and isinstance(logger, logging.Logger):
+        return logger
+    elif logger is not None:
+        raise TypeError(f"Expected 'logging.Logger', got {type(logger)}")
+    log = logging.getLogger(__name__)
+    log.warning("No logger specified for function call; using defaults.")
+    return log
+
+
 async def _handle_db_exception(
         session: sqlalchemy.orm.Session,
         exc: sqlalchemy.exc.DBAPIError,
@@ -43,6 +57,7 @@ async def _handle_db_exception(
     session.rollback()
 
     details = exc.statement.replace("\n", "")
+    logger = _enforce_logger(logger)
     logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}", exc_info=exc)
 
     return APIException(
@@ -188,12 +203,7 @@ async def create_new_of_model(
     :raises APIException: when the database operation went wrong (to report the problem)
     """
 
-    if logger is None:
-        logger = logging.getLogger(__name__)
-        logger.warning(
-            f"No logger specified for function call with args: {model, more_models}"
-        )
-
+    logger = _enforce_logger(logger)
     local.entity.model_name = type(model).__name__
     local.entity.compare(None)
 
@@ -254,12 +264,7 @@ async def delete_one_of_model(
     :raises PreconditionFailed: if no valid conditional request header has been set
     """
 
-    if logger is None:
-        logger = logging.getLogger(__name__)
-        logger.warning(
-            f"No logger specified for function call with args: {instance_id, model, schema}"
-        )
-
+    logger = _enforce_logger(logger)
     cls_name = type(schema).__name__
     obj = await return_one(instance_id, model, local.session)
 
