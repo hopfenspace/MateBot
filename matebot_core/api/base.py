@@ -108,7 +108,7 @@ class APIException(HTTPException):
 
         logger.debug(
             f"{type(exc).__name__}: {message} @ '{request.method} "
-            f"{request.url.path}' (details: {exc.detail}"
+            f"{request.url.path}' (details: {exc.detail})"
         )
         return JSONResponse(jsonable_encoder(schemas.APIError(
             status=status_code,
