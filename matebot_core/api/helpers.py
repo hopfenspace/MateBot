@@ -236,6 +236,37 @@ async def create_new_of_model(
     return local.attach_headers(model.schema, **headers)
 
 
+async def update_model(
+        model: models.Base,
+        local: LocalRequestData,
+        logger: Optional[logging.Logger] = None
+):
+    """
+    Add the model to a database transaction and commit it (triggering callbacks)
+
+    :param model: instance of the updated SQLAlchemy model
+    :param local: contextual local data
+    :param logger: optional logger that should be used for INFO and ERROR messages
+    """
+
+    logger = _enforce_logger(logger)
+    logger.debug(f"Updating model {model!r}...")
+
+    try:
+        local.session.add(model)
+        local.session.commit()
+        local.tasks.add_task(
+            Callback.updated,
+            type(model).__name__.lower(),
+            model.id,
+            logger,
+            local.session
+        )
+
+    except sqlalchemy.exc.DBAPIError as exc:
+        raise await _handle_db_exception(local.session, exc, logger) from exc
+
+
 async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
@@ -268,6 +299,7 @@ async def delete_one_of_model(
     cls_name = type(schema).__name__
     obj = await return_one(instance_id, model, local.session)
 
+    logger.info(f"Deleting model {model!r}...")
     if require_conditional_header:
         local.entity.model_name = models.User.__name__
         local.entity.compare(obj.schema)
@@ -284,6 +316,7 @@ async def delete_one_of_model(
         else:
             hook_func(obj, local, logger)
 
+    logger.debug("Checks passed, deleting...")
     try:
         local.session.delete(obj)
         local.session.commit()
