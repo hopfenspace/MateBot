@@ -69,8 +69,8 @@ class _BaseAPITests(utils.BaseTest):
     @property
     def latest_api_version(self) -> int:
         if not self._latest_api_version:
-            response = requests.get(self.server + "latest")
-            self._latest_api_version = int(response.json()["version"])
+            response = requests.get(self.server + "versions")
+            self._latest_api_version = int(response.json()["latest"])
         return self._latest_api_version
 
     def assertQuery(
@@ -266,15 +266,13 @@ class _BaseAPITests(utils.BaseTest):
 @_tested
 class WorkingAPITests(_BaseAPITests):
     def test_basic_endpoints_and_redirects_to_docs(self):
-        self.assertQuery(
+        self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
             [302, 303, 307],
-            r_headers={"Location": "/docs"},
             allow_redirects=False,
             r_is_json=False
-        )
+        ).headers.get("Location"))
 
-        self.assertEqual(self.server + "docs", self.assertQuery(("GET", "/"), r_is_json=False).url)
         self.assertEqual(1, len(self.assertQuery(("GET", "/"), r_is_json=False).history))
         self.assertEqual(
             self.assertQuery(("GET", "/"), r_is_json=False, no_version=True).content,
