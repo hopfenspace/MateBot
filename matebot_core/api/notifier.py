@@ -38,11 +38,18 @@ class Callback:
                 p = p[1:]
             for client in clients:
                 url = client.base + ("/" if not client.base.endswith("/") else "") + p
-                response = await cls.client_session.get(url)
-                if response.status != 200:
+                try:
+                    response = await cls.client_session.get(url)
+                    if response.status != 200:
+                        logger.info(
+                            f"Callback for {getattr(client.app, 'name', '<unknown app>')!r} "
+                            f"at {url!r} failed with response code {response.status!r}."
+                        )
+                except aiohttp.ClientConnectionError as exc:
                     logger.info(
-                        f"Callback for {getattr(client.app, 'name')!r} at {url!r} "
-                        f"failed with response code {response.status!r}."
+                        f"{type(exc).__name__} during callback request for "
+                        f"{getattr(client.app, 'name', '<unknown app>')!r} "
+                        f"at {url!r}: {', '.join(map(repr, exc.args))}"
                     )
 
     @classmethod
