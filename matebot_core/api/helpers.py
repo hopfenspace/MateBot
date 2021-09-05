@@ -68,6 +68,25 @@ async def _handle_db_exception(
     )
 
 
+async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
+    """
+    Expect to find no values in the dataset that match the keyword args for that model
+
+    :param model: class of a SQLAlchemy model
+    :param session: database session which should be used to perform the query
+    :param kwargs: mandatory filter arguments for the database query
+    :return: None
+    :raises Conflict: when at least one entity was returned by the database query
+    """
+
+    matches = session.query(model).filter_by(**kwargs).all()
+    if len(matches) > 0:
+        raise Conflict(
+            f"A model {model.__name__!r} already exists with that specs.",
+            f"{', '.join(f'{k}={kwargs[k]!r}' for k in kwargs)}"
+        )
+
+
 async def return_one(
         object_id: int,
         model: Type[models.Base],

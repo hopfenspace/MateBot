@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, MissingImplementation, NotFound
+from ..base import MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -127,9 +127,7 @@ async def create_new_callback(
     if callback.app is not None:
         await helpers.return_one(callback.app, models.Application, local.session)
     uri = callback.base + ("/" if not callback.base.endswith("/") else "")
-    matches = local.session.query(models.Callback).filter_by(base=uri).all()
-    if len(matches) > 0:
-        raise Conflict(f"URI {uri!r} has already been registered as a callback.")
+    await helpers.expect_none(models.Callback, local.session, base=uri)
 
     model = models.Callback(
         base=uri,
