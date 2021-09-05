@@ -138,7 +138,7 @@ class Application(Base):
         return schemas.Application(
             id=self.id,
             name=self.name,
-            community_user=self.community_user_alias.schema,
+            community_user=self.community_user_alias.schema if self.community_user_alias else None,
             created=self.created.timestamp()
         )
 
