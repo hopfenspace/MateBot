@@ -66,8 +66,12 @@ class VersionedFastAPI(fastapi.FastAPI):
         self._logger = logger or logging.getLogger(__name__)
         self._abs_min = absolute_minimal_version
         self._abs_max = absolute_maximal_version or max(apis.keys())
+        self._finished = False
 
-    def finish(self):
+    def finish(self, versions_endpoint: bool = True):
+        if self._finished:
+            return
+
         for api_version in self._apis:
             prefix = self._version_format.format(api_version)
             api_tag = f"Version {api_version}"
@@ -82,14 +86,23 @@ class VersionedFastAPI(fastapi.FastAPI):
             async def noop() -> None:
                 pass
 
-        @self.get("/versions", response_model=schemas.Versions, tags=["Miscellaneous"])
-        async def get_version_info():
-            return schemas.Versions(
-                latest=max(self._apis.keys()),
-                versions=[{"version": v, "prefix": self._version_format.format(v)} for v in self._apis.keys()]
-            )
+        if versions_endpoint:
+            @self.get("/versions", response_model=schemas.Versions, tags=["Miscellaneous"])
+            async def get_version_info():
+                return schemas.Versions(
+                    latest=max(self._apis.keys()),
+                    versions=[
+                        {"version": v, "prefix": self._version_format.format(v)}
+                        for v in self._apis.keys()
+                    ]
+                )
+
+        self._finished = True
 
     def add_router(self, router: fastapi.APIRouter, **kwargs):
+        if self._finished:
+            raise RuntimeError("Can't add new routers after the API has been finally built")
+
         for api_version in self._apis:
             filtered_routes = []
             for route in router.routes:
