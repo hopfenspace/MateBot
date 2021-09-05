@@ -440,7 +440,9 @@ class Refund(Base):
             creator=self.creator_id,
             active=self.active,
             allowed=self.ballot.result,
-            ballot=self.ballot_id
+            ballot=self.ballot_id,
+            created=self.created.timestamp(),
+            accessed=self.accessed.timestamp()
         )
 
     def __repr__(self) -> str:

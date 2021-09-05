@@ -56,7 +56,8 @@ class Refund(pydantic.BaseModel):
     allowed: Optional[bool]
     ballot: pydantic.NonNegativeInt
     transactions: Optional[List[_Transaction]]
-    timestamp: Optional[pydantic.NonNegativeInt]
+    created: Optional[pydantic.NonNegativeInt]
+    accessed: Optional[pydantic.NonNegativeInt]
 
 
 class RefundCreation(pydantic.BaseModel):
