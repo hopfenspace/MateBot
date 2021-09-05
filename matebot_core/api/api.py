@@ -19,7 +19,7 @@ try:
 except ImportError:
     StaticFiles = None
 
-from . import api_v1, base, versioning
+from . import api_v1, base, notifier, versioning
 from .routers import all_routers
 from .. import schemas, __version__
 from ..persistence import database
@@ -170,13 +170,15 @@ def create_app(
             1: _make_app(
                 title="MateBot core REST API v1",
                 version="1.0",
-                description=api_v1.__doc__
+                description=api_v1.__doc__,
+                static_directory=static_directory
             )
         },
         logger=logger,
         license_info=LICENSE_INFO,
         static_directory=static_directory,
         responses={422: {"model": schemas.APIError}},
+        on_shutdown=[lambda: logger.info("Shutting down..."), notifier.Callback.shutdown],
         api_class=versioning.VersionedFastAPI
     )
 
