@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from .. import helpers
+from .. import helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -27,6 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Ballot]
 )
+@versioning.versions(minimal=1)
 async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all ballots with all associated data, including the votes.
@@ -39,6 +40,7 @@ async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     response_model=schemas.Ballot
 )
+@versioning.versions(minimal=1)
 async def add_new_ballot(
         ballot: schemas.BallotCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -55,6 +57,7 @@ async def add_new_ballot(
     response_model=schemas.Ballot,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_ballot_by_id(
         ballot_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -73,6 +76,7 @@ async def get_ballot_by_id(
     response_model=schemas.Ballot,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def close_ballot_by_id(
         ballot_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)

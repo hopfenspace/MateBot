@@ -8,12 +8,21 @@ import sys
 import time
 import uuid
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 import pydantic
 
 
 _URL_SCHEMES = {"http", "https"}
+
+
+class Versions(pydantic.BaseModel):
+    class Version(pydantic.BaseModel):
+        version: pydantic.PositiveInt
+        prefix: pydantic.constr(min_length=2)
+
+    latest: pydantic.PositiveInt
+    versions: List[Version]
 
 
 class Updates(pydantic.BaseModel):
@@ -38,7 +47,7 @@ class VersionInfo(pydantic.BaseModel):
 class Status(pydantic.BaseModel):
     healthy: bool
     startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
-    api_version: VersionInfo
+    api_version: pydantic.PositiveInt
     project_version: VersionInfo
     python_version: VersionInfo = VersionInfo(
         major=sys.version_info.major,

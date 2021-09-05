@@ -1,68 +1,116 @@
 """
-MateBot core REST API definitions
+Combined MateBot core REST API definitions
 
-This API provides no multi-level security model with different privileges.
-It's an all-or-nothing API, so take care when deploying it. It's
-recommended to put a reverse proxy in front of this API to prevent
-various problems and to introduce proper authentication or user handling.
-
-The API tries to always return JSON-encoded data to any kind of request,
-if return data is necessary for that response, which is not the case for
-redirects, for example. The only exception is 500 (Internal Server Error),
-where no assumptions of the returned values can be made, even though even
-those responses _should_ use the schema of the `APIError`, which is used
-by all error responses issued by this API. This allows user agents to make
-certain assumptions about the returned response, if the returned status
-code equals the expected status code for that operation, usually 200 (OK).
-Note that the Unprocessable Entity (422) error response means a problem in
-the implementation in the user agent -- clients should never see any data
-of the Unprocessable Entity responses, since the `details` field may
-contain arbitrary data which is usually not user-friendly.
-
-This API supports conditional HTTP requests and will enforce them for
-various types of request that change a resource's state. Any resource
-delivered or created by a request will carry the `ETag` header
-set properly (exceptions are any kind of error response or those
-tagged 'generic'). This allows the API to effectively prevent race
-conditions when multiple clients want to update the same resource
-using `PUT`. Take a look into RFC 7232 for more information. Note
-that the `If-Match` header field is the only one used by this API.
-
-The handling of incoming conditional requests is described as follows:
-
-1. Calculate the current `ETag` of the local resource in question
-2. In case the `If-Match` header field contains the special value `*` ...
-    1. and the previous step returned no valid `ETag`, because the resource
-       in question doesn't exist yet, respond with 412 (Precondition Failed)
-    2. and the resource in question exists, perform the operation as usual
-3. In case the `If-Match` header field contains that tag ...
-    1. and the method is `GET`, respond with 304 (Not Modified)
-    2. and for other methods, perform the operation as usual
-4. Otherwise ...
-    1. and the method is `GET` or `POST`, perform the operation as usual
-    2. and for other methods, respond with 412 (Precondition Failed)
+This API may provide multiple versions of certain endpoints.
+Take a look into the different API definitions to see which
+functionality they provide. Take a look into the changelogs
+for more information about the breaking changes between versions.
 """
 
 import os
 import logging.config
-from typing import Optional
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 import fastapi.applications
 from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 
 try:
     from fastapi.staticfiles import StaticFiles
-    static_docs = True
 except ImportError:
     StaticFiles = None
-    static_docs = False
 
-from . import base, notifier
+from . import api_v1, base, versioning
 from .routers import all_routers
-from .. import schemas, __api_version__
+from .. import schemas, __version__
 from ..persistence import database
 from ..settings import Settings
 from .. import __file__ as _package_init_path
+
+
+DEFAULT_EXCEPTION_HANDLERS = {
+    base.APIException: base.APIException.handle,
+    RequestValidationError: base.APIException.handle,
+    StarletteHTTPException: base.APIException.handle,
+    Exception: base.APIException.handle
+}
+
+LICENSE_INFO = {
+    "name": "GNU General Public License v3",
+    "url": "https://www.gnu.org/licenses/gpl-3.0.html"
+}
+
+
+def _make_app(
+        title: str,
+        version: str,
+        description: str,
+        license_info: Optional[Dict[str, str]] = None,
+        static_directory: Optional[str] = None,
+        exception_handlers: Optional[Dict[Exception, Callable]] = None,
+        root_redirect: bool = True,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
+        api_class: Optional[Type[fastapi.FastAPI]] = None,
+        **kwargs
+) -> fastapi.FastAPI:
+    if api_class is None:
+        api_class = fastapi.FastAPI
+    app = api_class(
+        title=title,
+        version=version,
+        description=description,
+        license_info=license_info or LICENSE_INFO,
+        docs_url=None if static_directory else "/docs",
+        redoc_url=None if static_directory else "/redoc",
+        responses=responses or {422: {"model": schemas.APIError}},
+        **kwargs
+    )
+
+    handlers = exception_handlers or DEFAULT_EXCEPTION_HANDLERS
+    for exc in handlers:
+        app.add_exception_handler(exc, handlers[exc])
+
+    if root_redirect:
+        @app.get("/", include_in_schema=False)
+        async def redirect_root():
+            return fastapi.responses.RedirectResponse("./docs")
+
+    if static_directory:
+        app.mount("/static", StaticFiles(directory=static_directory), name="static")
+
+        @app.get("/redoc", include_in_schema=False)
+        async def get_redoc(request: fastapi.Request):
+            root_path = request.scope.get("root_path", "").rstrip("/")
+            openapi_url = root_path + app.openapi_url
+            return fastapi.applications.get_redoc_html(
+                openapi_url=openapi_url,
+                title=app.title + " - ReDoc",
+                redoc_js_url="/static/redoc.standalone.js",
+                redoc_favicon_url="/static/img/favicon.ico",
+                with_google_fonts=False
+            )
+
+        @app.get("/docs", include_in_schema=False)
+        async def get_swagger_ui(request: fastapi.Request):
+            root_path = request.scope.get("root_path", "").rstrip("/")
+            openapi_url = root_path + app.openapi_url
+            oauth2_redirect_url = app.swagger_ui_oauth2_redirect_url
+            if oauth2_redirect_url:
+                oauth2_redirect_url = root_path + oauth2_redirect_url
+            return fastapi.applications.get_swagger_ui_html(
+                openapi_url=openapi_url,
+                title=app.title + " - Swagger UI",
+                oauth2_redirect_url=oauth2_redirect_url,
+                swagger_js_url="/static/swagger-ui-bundle.js",
+                swagger_css_url="/static/swagger-ui.css",
+                swagger_favicon_url="/static/img/favicon.ico"
+            )
+
+        if app.swagger_ui_oauth2_redirect_url:
+            @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+            async def get_swagger_ui_redirect():
+                return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
+
+    return app
 
 
 def create_app(
@@ -96,28 +144,6 @@ def create_app(
     if configure_database:
         database.init(settings.database.connection, settings.database.echo)
 
-    app = fastapi.FastAPI(
-        title="MateBot core REST API",
-        version=__api_version__,
-        docs_url=None if static_docs and configure_static_docs else "/docs",
-        redoc_url=None if static_docs and configure_static_docs else "/redoc",
-        description=__doc__,
-        responses={422: {"model": schemas.APIError}},
-        on_shutdown=[notifier.Callback.shutdown]
-    )
-
-    app.add_exception_handler(base.APIException, base.APIException.handle)
-    app.add_exception_handler(RequestValidationError, base.APIException.handle)
-    app.add_exception_handler(StarletteHTTPException, base.APIException.handle)
-    app.add_exception_handler(Exception, base.APIException.handle)
-
-    for router in all_routers:
-        app.include_router(router)
-
-    @app.get("/", include_in_schema=False)
-    async def get_root():
-        return fastapi.responses.RedirectResponse("/docs")
-
     static_dirs = [
         static_directory for static_directory in [
             os.path.join(os.path.abspath("."), "static"),
@@ -128,39 +154,37 @@ def create_app(
     if len(static_dirs) > 1:
         logger.warning("More than one static directory found! Though unexpected, it may be fine.")
 
-    if static_docs and configure_static_docs and StaticFiles and len(static_dirs) > 0:
-        app.mount("/static", StaticFiles(directory=static_dirs[0]), name="static")
-
-        @app.get("/redoc", include_in_schema=False)
-        async def get_redoc():
-            return fastapi.applications.get_redoc_html(
-                openapi_url=app.openapi_url,
-                title=app.title + " - ReDoc",
-                redoc_js_url="/static/redoc.standalone.js",
-                redoc_favicon_url="/static/img/favicon.ico",
-                with_google_fonts=False
-            )
-
-        @app.get("/docs", include_in_schema=False)
-        async def get_swagger_ui():
-            return fastapi.applications.get_swagger_ui_html(
-                openapi_url=app.openapi_url,
-                title=app.title + " - Swagger UI",
-                oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
-                swagger_js_url="/static/swagger-ui-bundle.js",
-                swagger_css_url="/static/swagger-ui.css",
-                swagger_favicon_url="/static/img/favicon.ico"
-            )
-
-        @app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
-        async def get_swagger_ui_redirect():
-            return fastapi.applications.get_swagger_ui_oauth2_redirect_html()
-
-    elif static_docs and configure_static_docs and StaticFiles:
+    static_directory = None
+    if configure_static_docs and StaticFiles and len(static_dirs) == 0:
         logger.warning("Configuring static files failed since some resources were not found.")
-    elif configure_static_docs and not static_docs:
+    elif configure_static_docs and not StaticFiles:
         logger.error("Configuring static files was not possible due to unmet dependencies!")
+    else:
+        static_directory = static_dirs[0]
 
+    app = _make_app(
+        title="MateBot core REST API",
+        version=__version__,
+        description=__doc__,
+        apis={
+            1: _make_app(
+                title="MateBot core REST API v1",
+                version="1.0",
+                description=api_v1.__doc__
+            )
+        },
+        logger=logger,
+        license_info=LICENSE_INFO,
+        static_directory=static_directory,
+        responses={422: {"model": schemas.APIError}},
+        api_class=versioning.VersionedFastAPI
+    )
+
+    assert isinstance(app, versioning.VersionedFastAPI), "'VersionedFastAPI' instance required"
+    for router in all_routers:
+        app.add_router(router)
+
+    app.finish()
     return app
 
 

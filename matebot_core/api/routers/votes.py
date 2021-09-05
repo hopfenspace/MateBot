@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from .. import helpers
+from .. import helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -27,6 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Vote]
 )
+@versioning.versions(minimal=1)
 async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all known votes.
@@ -40,6 +41,7 @@ async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.Vote,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.versions(minimal=1)
 async def add_new_vote(
         vote: schemas.VoteCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -64,6 +66,7 @@ async def add_new_vote(
         409: {"model": schemas.APIError}
     }
 )
+@versioning.versions(minimal=1)
 async def change_existing_vote(
         vote: schemas.Vote,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -91,6 +94,7 @@ async def change_existing_vote(
         409: {"model": schemas.APIError}
     }
 )
+@versioning.versions(minimal=1)
 async def delete_existing_vote(
         vote: schemas.Vote,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -112,6 +116,7 @@ async def delete_existing_vote(
     response_model=schemas.Vote,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_vote_by_id(
         vote_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)

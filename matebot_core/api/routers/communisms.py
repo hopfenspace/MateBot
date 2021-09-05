@@ -8,11 +8,11 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from .. import helpers
 from ..base import MissingImplementation
 from ..dependency import LocalRequestData
-from ... import schemas
+from .. import helpers, versioning
 from ...persistence import models
+from ... import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,7 @@ router = APIRouter(
     "",
     response_model=List[schemas.Communism]
 )
+@versioning.versions(minimal=1)
 async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all communisms in the system.
@@ -40,6 +41,7 @@ async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(minimal=1)
 async def create_new_communism(
         communism: schemas.CommunismCreation,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -58,6 +60,7 @@ async def create_new_communism(
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
+@versioning.versions(minimal=1)
 async def update_existing_communism(
         communism: schemas.CommunismPatch,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -84,6 +87,7 @@ async def update_existing_communism(
     response_model=schemas.Communism,
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_communism_by_id(
         communism_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -102,6 +106,7 @@ async def get_communism_by_id(
     response_model=List[schemas.Communism],
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_communisms_by_creator(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -120,6 +125,7 @@ async def get_communisms_by_creator(
     response_model=List[schemas.Communism],
     responses={404: {"model": schemas.APIError}}
 )
+@versioning.versions(1)
 async def get_communisms_by_participant(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
