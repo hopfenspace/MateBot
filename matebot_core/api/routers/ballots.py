@@ -49,7 +49,14 @@ async def add_new_ballot(
     Add a new ballot based on the given data and create a new ID for it.
     """
 
-    raise MissingImplementation("add_new_ballot")
+    return await helpers.create_new_of_model(
+        models.Ballot(
+            question=ballot.question,
+            restricted=ballot.restricted
+        ),
+        local,
+        logger
+    )
 
 
 @router.get(
