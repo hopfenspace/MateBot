@@ -52,7 +52,21 @@ async def create_new_refund(
     A 404 error will be returned if the user ID of the `creator` is unknown.
     """
 
-    raise MissingImplementation("create_new_refund")
+    creator = await helpers.return_one(refund.creator, models.User, local.session)
+    return await helpers.create_new_of_model(
+        models.Refund(
+            amount=refund.amount,
+            description=refund.description,
+            creator=creator,
+            active=refund.active,
+            ballot=models.Ballot(
+                question=f"Accept refund request for {refund.description!r}?",
+                restricted=True
+            )
+        ),
+        local,
+        logger
+    )
 
 
 @router.patch(
