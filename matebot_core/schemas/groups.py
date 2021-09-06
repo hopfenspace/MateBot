@@ -5,7 +5,7 @@ This module contains schemas for ballots and its
 votes as well as communisms and refunds.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pydantic
 
@@ -72,10 +72,9 @@ class RefundPatch(pydantic.BaseModel):
     cancelled: bool = False
 
 
-class CommunismUser(pydantic.BaseModel):
-    communism_id: pydantic.NonNegativeInt
+class CommunismUserBinding(pydantic.BaseModel):
+    user: pydantic.NonNegativeInt
     quantity: pydantic.NonNegativeInt
-    user: _User
 
 
 class Communism(pydantic.BaseModel):
@@ -86,7 +85,7 @@ class Communism(pydantic.BaseModel):
     active: bool
     accepted: Optional[bool]
     externals: pydantic.NonNegativeInt
-    participants: List[CommunismUser]
+    participants: List[CommunismUserBinding]
     transactions: Optional[List[_Transaction]]
     timestamp: Optional[pydantic.NonNegativeInt]
 
@@ -97,7 +96,7 @@ class CommunismCreation(pydantic.BaseModel):
     creator: pydantic.NonNegativeInt
     active: bool = True
     externals: pydantic.NonNegativeInt = 0
-    participants: Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt] = {}
+    participants: List[CommunismUserBinding] = []
 
 
 class CommunismPatch(pydantic.BaseModel):
@@ -105,4 +104,10 @@ class CommunismPatch(pydantic.BaseModel):
     active: Optional[bool]
     accepted: Optional[bool]
     externals: Optional[pydantic.NonNegativeInt]
-    participants: Optional[Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt]]
+    participants: Optional[List[CommunismUserBinding]]
+
+
+class CommunismUser(pydantic.BaseModel):
+    communism: Communism
+    user: _User
+    quantity: pydantic.NonNegativeInt

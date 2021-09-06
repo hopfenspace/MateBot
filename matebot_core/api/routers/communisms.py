@@ -138,5 +138,5 @@ async def get_communisms_by_participant(
     """
 
     user = await helpers.return_one(user_id, models.User, local.session)
-    memberships = await helpers.return_all(models.Communism, local.session, user=user)
+    memberships = await helpers.return_all(models.CommunismUsers, local.session, user=user)
     return [membership.communism.schema for membership in memberships]

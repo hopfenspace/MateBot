@@ -615,7 +615,10 @@ class Communism(Base):
             creator=self.creator_id,
             active=self.active,
             externals=self.externals,
-            participants=[p.schema for p in self.participants]
+            participants=[
+                schemas.CommunismUserBinding(user=p.user_id, quantity=p.quantity)
+                for p in self.participants
+            ]
         )
 
     def __repr__(self) -> str:
@@ -652,7 +655,7 @@ class CommunismUsers(Base):
     @property
     def schema(self) -> schemas.CommunismUser:
         return schemas.CommunismUser(
-            communism_id=self.communism_id,
+            communism=self.communism.schema,
             user=self.user.schema,
             quantity=self.quantity
         )
