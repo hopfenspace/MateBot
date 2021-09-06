@@ -329,12 +329,12 @@ async def delete_one_of_model(
     """
 
     logger = _enforce_logger(logger)
-    cls_name = type(schema).__name__
+    cls_name = model.__name__
     obj = await return_one(instance_id, model, local.session)
 
-    logger.info(f"Deleting model {model!r}...")
+    logger.info(f"Deleting model {obj!r}...")
     if require_conditional_header:
-        local.entity.model_name = models.User.__name__
+        local.entity.model_name = cls_name
         local.entity.compare(obj.schema)
 
     if schema is not None and obj.schema != schema:
@@ -353,13 +353,13 @@ async def delete_one_of_model(
     try:
         local.session.delete(obj)
         local.session.commit()
-        local.tasks.add_task(
-            Callback.deleted,
-            type(model).__name__.lower(),
-            model.id,
-            logger,
-            local.session
-        )
-
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc
+
+    local.tasks.add_task(
+        Callback.deleted,
+        cls_name.lower(),
+        instance_id,
+        logger,
+        local.session
+    )
