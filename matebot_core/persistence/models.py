@@ -120,7 +120,7 @@ class Application(Base):
     community_user_alias_id = Column(
         Integer,
         ForeignKey("aliases.id"),
-        nullable=False
+        nullable=True
     )
     created = Column(
         DateTime,
