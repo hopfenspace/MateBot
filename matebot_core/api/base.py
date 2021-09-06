@@ -176,6 +176,20 @@ class PreconditionFailed(APIException):
         )
 
 
+class InternalServerException(APIException):
+    """
+    Exception for problems within the server implementation
+    """
+
+    def __init__(self, message: str, detail: Optional[str] = None, repeat: bool = False):
+        super().__init__(
+            status_code=500,
+            detail=detail,
+            repeat=repeat,
+            message=message
+        )
+
+
 class MissingImplementation(APIException):
     """
     Exception raised if a path operation doesn't implement a required feature to work
