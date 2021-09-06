@@ -68,6 +68,29 @@ async def _handle_db_exception(
     )
 
 
+async def _commit(
+        session: sqlalchemy.orm.Session,
+        *objects: models.Base,
+        logger: Optional[logging.Logger] = None
+) -> bool:
+    """
+    Add all specified objects to the database session and commit it
+
+    :param session: database session which should be used for committing the data
+    :param objects: collection of models that should be added to the database transaction
+    :param logger: optional logger (which will be enforced when omitted)
+    :return: True in case everything went smoothly
+    :raises APIException: in case something went wrong
+    """
+
+    try:
+        session.add_all(objects)
+        session.commit()
+    except sqlalchemy.exc.DBAPIError as exc:
+        raise await _handle_db_exception(session, exc, _enforce_logger(logger)) from exc
+    return True
+
+
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
     """
     Expect to find no values in the dataset that match the keyword args for that model
@@ -285,11 +308,7 @@ async def update_model(
     logger = _enforce_logger(logger)
     logger.info(f"Updating model {model!r}...")
 
-    try:
-        local.session.add(model)
-        local.session.commit()
-    except sqlalchemy.exc.DBAPIError as exc:
-        raise await _handle_db_exception(local.session, exc, logger) from exc
+    await _commit(local.session, model, logger=logger)
 
     local.tasks.add_task(
         Callback.updated,
@@ -336,11 +355,7 @@ async def patch_model(
     for k in kwargs:
         setattr(obj, k, kwargs[k])
 
-    try:
-        local.session.add(obj)
-        local.session.commit()
-    except sqlalchemy.exc.DBAPIError as exc:
-        raise await _handle_db_exception(local.session, exc, logger) from exc
+    await _commit(local.session, obj, logger=logger)
 
     local.tasks.add_task(
         Callback.updated,
