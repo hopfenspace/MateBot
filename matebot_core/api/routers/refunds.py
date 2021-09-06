@@ -134,4 +134,5 @@ async def get_refunds_by_creator(
     A 404 error will be returned if the user ID is unknown.
     """
 
-    raise MissingImplementation("get_refunds_by_creator")
+    await helpers.return_one(user_id, models.User, local.session)
+    return await helpers.get_all_of_model(models.Refund, local, creator_id=user_id)
