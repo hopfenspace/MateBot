@@ -571,7 +571,7 @@ class Communism(Base):
     )
     description = Column(
         String(255),
-        nullable=True
+        nullable=False
     )
     externals = Column(
         Integer,
@@ -615,7 +615,7 @@ class Communism(Base):
             creator=self.creator_id,
             active=self.active,
             externals=self.externals,
-            participants={u.users_id: u.quantity for u in self.participants}
+            participants=[p.schema for p in self.participants]
         )
 
     def __repr__(self) -> str:
@@ -648,6 +648,14 @@ class CommunismUsers(Base):
         CheckConstraint("quantity >= 0"),
         UniqueConstraint("user_id", "communism_id"),
     )
+
+    @property
+    def schema(self) -> schemas.CommunismUser:
+        return schemas.CommunismUser(
+            communism_id=self.communism_id,
+            user=self.user.schema,
+            quantity=self.quantity
+        )
 
     def __repr__(self) -> str:
         return f"CommunismUsers(id={self.id}, user={self.user}, quantity={self.quantity})"

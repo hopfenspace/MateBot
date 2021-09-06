@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 import pydantic
 
-from .bases import Transaction as _Transaction
+from .bases import Transaction as _Transaction, User as _User
 
 
 class Vote(pydantic.BaseModel):
@@ -72,6 +72,12 @@ class RefundPatch(pydantic.BaseModel):
     cancelled: bool = False
 
 
+class CommunismUser(pydantic.BaseModel):
+    communism_id: pydantic.NonNegativeInt
+    quantity: pydantic.NonNegativeInt
+    user: _User
+
+
 class Communism(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
@@ -80,7 +86,7 @@ class Communism(pydantic.BaseModel):
     active: bool
     accepted: Optional[bool]
     externals: pydantic.NonNegativeInt
-    participants: Dict[pydantic.NonNegativeInt, pydantic.NonNegativeInt]
+    participants: List[CommunismUser]
     transactions: Optional[List[_Transaction]]
     timestamp: Optional[pydantic.NonNegativeInt]
 

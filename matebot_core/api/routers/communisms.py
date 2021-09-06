@@ -117,7 +117,8 @@ async def get_communisms_by_creator(
     A 404 error will be returned if the user ID is unknown.
     """
 
-    raise MissingImplementation("get_communisms_by_creator")
+    user = await helpers.return_one(user_id, models.User, local.session)
+    return await helpers.get_all_of_model(models.Communism, local, creator=user)
 
 
 @router.get(
@@ -136,4 +137,6 @@ async def get_communisms_by_participant(
     A 404 error will be returned if the user ID is unknown.
     """
 
-    raise MissingImplementation("get_communisms_by_participant")
+    user = await helpers.return_one(user_id, models.User, local.session)
+    memberships = local.session.query(models.CommunismUsers).filter_by(user=user).all()
+    return [membership.communism.schema for membership in memberships]
