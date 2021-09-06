@@ -179,6 +179,23 @@ async def return_one(
     return obj
 
 
+async def return_all(
+        model: Type[models.Base],
+        session: sqlalchemy.orm.Session,
+        **kwargs
+) -> List[models.Base]:
+    """
+    Return all objects of a given model that's identified by its object ID
+
+    :param model: class of a SQLAlchemy model
+    :param session: database session which should be used to perform the query
+    :param kwargs: additional filter arguments for the database query
+    :return: resulting list of entities
+    """
+
+    return session.query(model).filter_by(**kwargs).all()
+
+
 async def return_unique(
         model: Type[models.Base],
         session: sqlalchemy.orm.Session,
@@ -251,7 +268,7 @@ async def get_all_of_model(
     :return: resulting list of entities
     """
 
-    all_schemas = [obj.schema for obj in local.session.query(model).filter_by(**kwargs).all()]
+    all_schemas = [obj.schema for obj in await return_all(model, local.session, **kwargs)]
     local.entity.model_name = model.__name__
     local.entity.compare(all_schemas)
     if headers and isinstance(headers, dict):
