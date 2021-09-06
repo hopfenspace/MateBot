@@ -120,7 +120,7 @@ class Application(Base):
     community_user_alias_id = Column(
         Integer,
         ForeignKey("aliases.id"),
-        nullable=True
+        nullable=False
     )
     created = Column(
         DateTime,
@@ -138,7 +138,7 @@ class Application(Base):
         return schemas.Application(
             id=self.id,
             name=self.name,
-            community_user=self.community_user_alias.schema if self.community_user_alias else None,
+            community_user=getattr(self.community_user_alias, "schema", None),
             created=self.created.timestamp()
         )
 
