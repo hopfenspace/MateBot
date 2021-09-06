@@ -195,6 +195,7 @@ async def create_new_of_model(
         location_format: Optional[str] = None,
         content_location: bool = False,
         more_models: Optional[List[models.Base]] = None,
+        hook_func: Optional[Callable[[models.Base, LocalRequestData, logging.Logger], Any]] = None,
         **kwargs
 ) -> pydantic.BaseModel:
     """
@@ -217,6 +218,10 @@ async def create_new_of_model(
     :param content_location: switch to enable adding the ``Content-Location`` header,
         too (only applicable if the ``Location`` header has been set before, not alone)
     :param more_models: list of additional models to be committed in the same transaction
+    :param hook_func: optional callable which will be called after the model(s) has/have
+        been added and committed successfully but right before the triggers get activated;
+        it's recommended that this function uses local values from the definition namespace
+        (changing the model and committing data is possible in the hook function, too)
     :param kwargs: additional headers for the response
     :return: resulting object (as its schema's instance)
     :raises APIException: when the database operation went wrong (to report the problem)
@@ -239,6 +244,15 @@ async def create_new_of_model(
 
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(local.session, exc, logger) from exc
+
+    if hook_func is not None and isinstance(hook_func, Callable):
+        try:
+            if asyncio.iscoroutinefunction(hook_func):
+                await hook_func(model, local, logger)
+            else:
+                hook_func(model, local, logger)
+        except sqlalchemy.exc.DBAPIError as exc:
+            raise await _handle_db_exception(local.session, exc, logger) from exc
 
     local.tasks.add_task(
         Callback.created,
