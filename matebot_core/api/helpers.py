@@ -17,6 +17,9 @@ from .notifier import Callback
 from ..persistence import models
 
 
+HookType = Callable[[models.Base, LocalRequestData, logging.Logger], Any]
+
+
 def _enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
     """
     Enforce availability of a working logger
@@ -89,6 +92,34 @@ async def _commit(
     except sqlalchemy.exc.DBAPIError as exc:
         raise await _handle_db_exception(session, exc, _enforce_logger(logger)) from exc
     return True
+
+
+async def _call_hook(
+        hook_func: HookType,
+        model: models.Base,
+        local: LocalRequestData,
+        logger: logging.Logger
+) -> Any:
+    """
+    Call the specified hook function with the supplied three arguments
+    """
+
+    if hook_func is not None and isinstance(hook_func, Callable):
+        try:
+            if asyncio.iscoroutinefunction(hook_func):
+                return await hook_func(model, local, logger)
+            else:
+                return hook_func(model, local, logger)
+        except sqlalchemy.exc.DBAPIError as exc:
+            raise await _handle_db_exception(local.session, exc, logger) from exc
+        except TypeError as exc:
+            logger.exception(f"Broken hook function {hook_func} raised: {exc} (TypeError)")
+            raise
+        except APIException as exc:
+            logger.exception(f"APIException: {exc!r} during hook {hook_func}")
+            raise
+    elif hook_func is not None:
+        raise TypeError(f"{hook_func!r} object is not callable")
 
 
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
