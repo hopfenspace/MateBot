@@ -34,9 +34,15 @@ class Application(pydantic.BaseModel):
     created: pydantic.NonNegativeInt
 
 
+class ApplicationAliasCreation(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
+    application: Optional[pydantic.constr(max_length=255)]
+    app_user_id: pydantic.constr(max_length=255)
+
+
 class ApplicationCreation(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
-    community_user: AliasCreation
+    community_user: ApplicationAliasCreation
 
 
 class User(pydantic.BaseModel):

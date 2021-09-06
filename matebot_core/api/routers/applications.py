@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -37,8 +37,9 @@ async def get_all_applications(local: LocalRequestData = Depends(LocalRequestDat
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.Application,
-    responses={409: {"model": schemas.APIError}}
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def add_new_application(
@@ -52,10 +53,36 @@ async def add_new_application(
     binding to the "banking user" for the newly created application. This
     special user will be used to e.g. pay refunds to individual users.
 
-    A 409 error will be returned if the application name is already taken.
+    A 404 error will be returned if the `user_id` of the community user is not known.
+    A 409 error will be returned if the application name is already taken or
+    if the optional application name doesn't match the community user's app name.
     """
 
-    raise MissingImplementation("add_new_application")
+    if application.community_user.application is not None:
+        if application.name != application.community_user.application:
+            raise Conflict("Application name doesn't match alias app name!")
+
+    await helpers.expect_none(models.Application, local.session, name=application.name)
+    user = await helpers.return_one(application.community_user.user_id, models.User, local.session)
+    app = models.Application(name=application.name)
+    alias = models.UserAlias(
+        user_id=user.id,
+        app_user_id=application.community_user.app_user_id,
+        app=app
+    )
+
+    def hook(*args):
+        app.community_user_alias = alias
+        local.session.add(app)
+        local.session.commit()
+
+    return await helpers.create_new_of_model(
+        app,
+        local,
+        logger,
+        more_models=[alias],
+        hook_func=hook
+    )
 
 
 @router.get(
