@@ -5,7 +5,7 @@ ETag helper library for the core REST API
 import uuid
 import hashlib
 import logging
-import collections
+import collections.abc
 from typing import Any, Optional
 
 try:
@@ -127,7 +127,7 @@ class ETag:
         weak = False
         if isinstance(obj, pydantic.BaseModel):
             representation = obj.dict()
-        elif isinstance(obj, collections.Sequence):
+        elif isinstance(obj, collections.abc.Sequence):
             if any(map(lambda x: not isinstance(x, pydantic.BaseModel), obj)):
                 logger.warning(f"Not all elements of the sequence of length {len(obj)} are models")
                 representation = jsonable_encoder(obj)
