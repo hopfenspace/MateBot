@@ -235,7 +235,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.session.commit()
 
         # Adding a communism
-        communism = models.Communism(amount=42, creator_id=1, externals=1)
+        communism = models.Communism(amount=42, creator_id=1, externals=1, description="")
         self.session.add(communism)
         self.session.commit()
         self.assertIsNotNone(communism.creator)
