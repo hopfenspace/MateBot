@@ -32,6 +32,7 @@ class Operations(enum.Enum):
 
 class ReturnType(enum.Enum):
     NONE = enum.auto()
+    MODEL = enum.auto()
     SCHEMA = enum.auto()
     SCHEMA_WITH_TAG = enum.auto()
     SCHEMA_WITH_ALL_HEADERS = enum.auto()
@@ -137,6 +138,24 @@ async def _call_hook(
             raise
     elif hook_func is not None:
         raise TypeError(f"{hook_func!r} object is not callable")
+
+
+def _return_expected(
+        returns: ReturnType,
+        model: models.Base,
+        local: LocalRequestData,
+        headers: Dict[str, Any]
+) -> Optional[pydantic.BaseModel]:
+    if returns == ReturnType.NONE:
+        return
+    elif returns == ReturnType.MODEL:
+        return model
+    elif returns == ReturnType.SCHEMA:
+        return model.schema
+    elif returns == ReturnType.SCHEMA_WITH_TAG:
+        return local.attach_headers(model.schema)
+    elif returns == ReturnType.SCHEMA_WITH_ALL_HEADERS:
+        return local.attach_headers(model.schema, **headers)
 
 
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
@@ -338,21 +357,13 @@ async def _handle_data_changes(
             local.session
         )
 
-    # Quit early when no schema or ETag header is needed
-    if returns == ReturnType.NONE:
-        return
-    if returns == ReturnType.SCHEMA:
-        return model.schema
-    if returns == ReturnType.SCHEMA_WITH_TAG:
-        return local.attach_headers(model.schema)
-
-    # Add the specified headers to the resulting response
+    # Add the specified headers to the resulting response (even if they are omitted)
     headers = extra_headers.copy()
     if location_format is not None:
         headers["Location"] = location_format.format(model.id)
         if content_location:
             headers["Content-Location"] = headers["Location"]
-    return local.attach_headers(model.schema, **headers)
+    return _return_expected(returns, model, local, headers)
 
 
 async def create_new_of_model(
