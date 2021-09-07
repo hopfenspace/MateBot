@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import APIException, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -38,8 +38,9 @@ async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.Communism,
-    responses={404: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}, 404: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_communism(
@@ -49,10 +50,39 @@ async def create_new_communism(
     """
     Create a new communism based on the specified data.
 
-    A 404 error will be returned if the user ID of the `creator` is unknown.
+    A 400 error will be returned if any participant was mentioned
+    more than one time.A 404 error will be returned if the user ID
+    of the `creator` or any mentioned participant is unknown.
     """
 
-    raise MissingImplementation("create_new_communism")
+    creator = await helpers.return_one(communism.creator, models.User, local.session)
+    if len(communism.participants) != len({
+        p.user: await helpers.return_one(p.user, models.User, local.session)
+        for p in communism.participants
+    }):
+        raise APIException(
+            status_code=400,
+            message="At least one user was mentioned more than once in the communism member list",
+            detail=str(communism.participants)
+        )
+
+    model = models.Communism(
+        amount=communism.amount,
+        description=communism.description,
+        creator=creator,
+        active=communism.active,
+        externals=communism.externals,
+        participants=[]
+    )
+
+    async def hook(*args):
+        local.session.add_all([
+            models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
+            for p in communism.participants
+        ])
+        local.session.commit()
+
+    return await helpers.create_new_of_model(model, local, logger, hook_func=hook)
 
 
 @router.patch(
