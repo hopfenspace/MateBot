@@ -51,7 +51,7 @@ async def create_new_communism(
     Create a new communism based on the specified data.
 
     A 400 error will be returned if any participant was mentioned
-    more than one time.A 404 error will be returned if the user ID
+    more than one time. A 404 error will be returned if the user ID
     of the `creator` or any mentioned participant is unknown.
     """
 

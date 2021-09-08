@@ -60,7 +60,7 @@ class Callback:
     async def created(
             cls,
             model_name: str,
-            model_id: str,
+            model_id: int,
             logger: logging.Logger,
             session: sqlalchemy.orm.Session
     ):
@@ -70,7 +70,7 @@ class Callback:
     async def updated(
             cls,
             model_name: str,
-            model_id: str,
+            model_id: int,
             logger: logging.Logger,
             session: sqlalchemy.orm.Session
     ):
@@ -80,7 +80,7 @@ class Callback:
     async def deleted(
             cls,
             model_name: str,
-            model_id: str,
+            model_id: int,
             logger: logging.Logger,
             session: sqlalchemy.orm.Session
     ):

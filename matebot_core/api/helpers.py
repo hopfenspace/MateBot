@@ -125,8 +125,10 @@ async def _call_hook(
     if hook_func is not None and isinstance(hook_func, Callable):
         try:
             if asyncio.iscoroutinefunction(hook_func):
+                logger.debug(f"Calling hook coroutine {hook_func} with {model} ...")
                 return await hook_func(model, local, logger)
             else:
+                logger.debug(f"Calling hook function {hook_func} with {model} ...")
                 return hook_func(model, local, logger)
         except sqlalchemy.exc.DBAPIError as exc:
             raise await _handle_db_exception(local.session, exc, logger) from exc
@@ -532,7 +534,7 @@ async def delete_one_of_model(
         require_conditional_header: bool = True,
         schema: Optional[pydantic.BaseModel] = None,
         logger: Optional[logging.Logger] = None,
-        hook_func: Optional[Callable[[models.Base, LocalRequestData, logging.Logger], Any]] = None
+        hook_func: Optional[HookType] = None
 ):
     """
     Delete the identified instance of a model from the database (triggering callbacks)
@@ -568,12 +570,7 @@ async def delete_one_of_model(
             f"current={obj.schema!r}, requested={schema!r}"
         )
 
-    if hook_func is not None and isinstance(hook_func, Callable):
-        if asyncio.iscoroutinefunction(hook_func):
-            await hook_func(obj, local, logger)
-        else:
-            hook_func(obj, local, logger)
-
+    await _call_hook(hook_func, obj, local, logger)
     logger.debug("Checks passed, deleting...")
     try:
         local.session.delete(obj)
