@@ -452,7 +452,9 @@ async def create_new_of_model(
 async def update_model(
         model: models.Base,
         local: LocalRequestData,
-        logger: Optional[logging.Logger] = None
+        logger: Optional[logging.Logger] = None,
+        returns: ReturnType = ReturnType.NONE,
+        require_conditional_header_compared_to_schema: Optional[pydantic.BaseModel] = None
 ):
     """
     Add the model to a database transaction and commit it (triggering callbacks)
@@ -460,11 +462,18 @@ async def update_model(
     :param model: instance of the updated SQLAlchemy model
     :param local: contextual local data
     :param logger: optional logger that should be used for INFO and ERROR messages
+    :param returns: determine the return value and its annotations (of this function)
+    :param require_conditional_header_compared_to_schema: optional schema that's used
+        to compare the conditional request header before proceeding with the action
+        (omit the schema to avoid the check for a valid conditional header field)
     """
 
     logger = _enforce_logger(logger)
-    logger.info(f"Updating model {model!r}...")
+    if require_conditional_header_compared_to_schema is not None:
+        local.entity.model_name = type(model).__name__
+        local.entity.compare(require_conditional_header_compared_to_schema)
 
+    logger.info(f"Updating model {model!r}...")
     await _commit(local.session, model, logger=logger)
 
     local.tasks.add_task(
@@ -474,6 +483,8 @@ async def update_model(
         logger,
         local.session
     )
+
+    return _return_expected(returns, model, local, {})
 
 
 async def patch_model(
