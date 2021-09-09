@@ -5,6 +5,7 @@ Helper functions to make writing unit tests for the MateBot core easier
 import os
 import sys
 import enum
+import time
 import errno
 import random
 import string
@@ -263,6 +264,10 @@ class BaseAPITests(BaseTest):
             self.assertEqual(r_schema, r_model, response.json())
         elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
             self.assertTrue(r_schema(**response.json()), response.json())
+
+        # TODO: fix the race condition between the callback server and the test method
+        if recent_callbacks or total_callbacks:
+            time.sleep(0.15)
 
         if recent_callbacks is not None:
             self.assertGreaterEqual(len(self.callback_request_list), len(recent_callbacks))
