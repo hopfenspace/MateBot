@@ -19,7 +19,7 @@ try:
 except ImportError:
     StaticFiles = None
 
-from . import api_v1, base, notifier, versioning
+from . import api_v1, base, versioning
 from .routers import all_routers
 from .. import schemas, __version__
 from ..persistence import database
@@ -178,7 +178,7 @@ def create_app(
         license_info=LICENSE_INFO,
         static_directory=static_directory,
         responses={422: {"model": schemas.APIError}},
-        on_shutdown=[lambda: logger.info("Shutting down..."), notifier.Callback.shutdown],
+        on_shutdown=[lambda: logger.info("Shutting down...")],
         api_class=versioning.VersionedFastAPI
     )
 

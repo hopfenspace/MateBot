@@ -356,7 +356,7 @@ async def _handle_data_changes(
             model_type.__name__.lower(),
             model_id,
             logger,
-            local.session
+            await return_all(models.Callback, local.session)
         )
 
     # Add the specified headers to the resulting response (even if they are omitted)
@@ -439,7 +439,7 @@ async def create_new_of_model(
         type(model).__name__.lower(),
         model.id,
         logger,
-        local.session
+        await return_all(models.Callback, local.session)
     )
     headers = kwargs
     if location_format is not None:
@@ -481,7 +481,7 @@ async def update_model(
         type(model).__name__.lower(),
         model.id,
         logger,
-        local.session
+        await return_all(models.Callback, local.session)
     )
 
     return _return_expected(returns, model, local, {})
@@ -530,7 +530,7 @@ async def patch_model(
         type(model).__name__.lower(),
         model.id,
         logger,
-        local.session
+        await return_all(models.Callback, local.session)
     )
 
     if not return_schema:
@@ -594,5 +594,5 @@ async def delete_one_of_model(
         cls_name.lower(),
         instance_id,
         logger,
-        local.session
+        await return_all(models.Callback, local.session)
     )
