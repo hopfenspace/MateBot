@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, MissingImplementation
+from ..base import APIException, Conflict, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -88,7 +88,11 @@ async def create_new_communism(
 @router.patch(
     "",
     response_model=schemas.Communism,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={
+        400: {"model": schemas.APIError},
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError}
+    }
 )
 @versioning.versions(minimal=1)
 async def update_existing_communism(
@@ -98,18 +102,51 @@ async def update_existing_communism(
     """
     Change certain pieces of mutable information about an already existing communism.
 
-    The mechanism of setting `active` to `false` is used to accept or close communisms.
-    The fields `externals` and `participants` will be used as-is to update the
-    internal state of the communism (which will be returned afterwards). Note that
-    duplicate entries in the `participants` list will just be silently ignored.
+    The fields `externals` and `participants` will be used as-is to overwrite
+    the internal state of the communism (which will be returned afterwards).
 
-    A 404 error will be returned if the communism ID was not found.
-    A 409 error will be returned if a closed communism was altered
-    or if the field `active` was set to `false` without also
-    setting the field `accepted` to a non-null value.
+    A 400 error will be returned if any participant was mentioned more
+    than one time. A 404 error will be returned if the communism ID was
+    not found or if the user ID of any mentioned participant is unknown.
+    A 409 error will be returned if a closed communism was altered.
     """
 
-    raise MissingImplementation("update_existing_communism")
+    model = await helpers.return_one(communism.id, models.Communism, local.session)
+    schema = model.schema
+
+    if communism.participants is not None and len(communism.participants) != len({
+        p.user: await helpers.return_one(p.user, models.User, local.session)
+        for p in communism.participants
+    }):
+        raise APIException(
+            status_code=400,
+            message="At least one user was mentioned more than once in the communism member list",
+            detail=str(communism.participants)
+        )
+
+    if not model.active:
+        raise Conflict("Patching an already closed communism is illegal", detail=str(communism))
+
+    if communism.externals is not None:
+        model.externals = communism.externals
+
+    if communism.participants is not None:
+        for p in model.participants:
+            local.session.delete(p)
+        model.participants = [
+            models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
+            for p in communism.participants
+        ]
+
+    if communism.close is not None and communism.close:
+        raise MissingImplementation("update_existing_communism_patch_close_communism")
+
+    return await helpers.update_model(
+        model,
+        local,
+        logger,
+        require_conditional_header_compared_to_schema=schema
+    )
 
 
 @router.get(

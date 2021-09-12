@@ -101,8 +101,7 @@ class CommunismCreation(pydantic.BaseModel):
 
 class CommunismPatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    active: Optional[bool]
-    accepted: Optional[bool]
+    close: Optional[bool]
     externals: Optional[pydantic.NonNegativeInt]
     participants: Optional[List[CommunismUserBinding]]
 
