@@ -88,6 +88,29 @@ class APICallbackTests(utils.BaseAPITests):
         )
         self.assertTrue(all(map(lambda x: x[0] == "GET", self.callback_request_list)))
 
+    def test_callback_helper(self):
+        self.assertListEqual([], self.callback_request_list)
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")],
+            total_callbacks=2
+        )
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": "http://localhost:64000"},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/2")],
+            total_callbacks=4
+        )
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            404,
+            json={"base": "http://localhost:65000", "app": 1},
+            total_callbacks=4
+        )
+
 
 if __name__ == '__main__':
     _unittest.main()
