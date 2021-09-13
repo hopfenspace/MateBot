@@ -65,7 +65,40 @@ class WorkingAPITests(utils.BaseAPITests):
 
 @_tested
 class FailingAPITests(utils.BaseAPITests):
-    pass
+    def test_communism_schema_checks(self):
+        sample_data = [
+            {},
+            {
+                "amount": 0,
+                "description": "description",
+                "creator": 1
+            },
+            {
+                "amount": -42,
+                "description": "description",
+                "creator": 1
+            },
+            {
+                "amount": 1,
+                "description": "description",
+                "creator": -4
+            },
+            {
+                "amount": 1,
+                "creator": 1
+            },
+            {
+                "amount": 1,
+                "description": "description"
+            }
+        ]
+
+        for entry in sample_data:
+            self.assertQuery(
+                ("POST", "/communisms"),
+                422,
+                json=entry
+            )
 
 
 @_tested
