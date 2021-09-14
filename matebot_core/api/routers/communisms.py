@@ -145,7 +145,8 @@ async def update_existing_communism(
         model,
         local,
         logger,
-        require_conditional_header_compared_to_schema=schema
+        require_conditional_header_compared_to_schema=schema,
+        returns=helpers.ReturnType.SCHEMA_WITH_ALL_HEADERS
     )
 
 
