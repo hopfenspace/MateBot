@@ -27,7 +27,7 @@ def _read_config_from_json_source(_: pydantic.BaseSettings) -> Dict[str, Any]:
                 return json.load(file)
     else:
         with open(CONFIG_PATHS[0], "w") as f:
-            json.dump(_get_default_config(), f, indent=4)
+            json.dump(get_default_config(), f, indent=4)
         print(
             f"No config file found! A basic 'config.json' file has been created for "
             f"your project in {os.path.abspath(os.path.join('.', CONFIG_PATHS[0]))!r}. "
@@ -60,7 +60,7 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
             return _read_config_from_json_source, init_settings, env_settings, file_secret_settings
 
 
-def _get_default_config() -> Dict[str, Any]:
+def get_default_config() -> Dict[str, Any]:
     return config.CoreConfig(
         general=config.GeneralConfig(),
         server=config.ServerConfig(),
