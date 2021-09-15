@@ -184,8 +184,9 @@ class BaseAPITests(BaseTest):
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
             skip_callbacks: Optional[int] = None,
+            skip_callback_timeout: float = 0.0,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
-            callback_timeout: Optional[float] = 0.5,
+            callback_timeout: float = 0.5,
             no_version: bool = False,
             **kwargs
     ) -> requests.Response:
@@ -209,6 +210,7 @@ class BaseAPITests(BaseTest):
         :param r_schema: optional class or instance of a response schema to be asserted
         :param skip_callbacks: optional number of callback requests that will be dropped and
             not checked in the recent callback check later (no problem if the number is too high)
+        :param skip_callback_timeout: maximal waiting time for the skip operation
         :param recent_callbacks: optional list of the most recent ("rightmost") callbacks
             that arrived at the local callback HTTP server (which only works when its
             callback server URI has been registered in the API during the same unit test)
@@ -217,6 +219,14 @@ class BaseAPITests(BaseTest):
         :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
         :return: response to the requested resource
         """
+
+        if skip_callbacks is not None:
+            while skip_callbacks > 0:
+                try:
+                    skip_callbacks -= 1
+                    self.callback_request_list.get(timeout=skip_callback_timeout)
+                except queue.Empty:
+                    pass
 
         if len(endpoint) == 3:
             method, path, api_version = endpoint
@@ -266,13 +276,6 @@ class BaseAPITests(BaseTest):
             self.assertEqual(r_schema, r_model, response.json())
         elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
             self.assertTrue(r_schema(**response.json()), response.json())
-
-        if skip_callbacks is not None:
-            while skip_callbacks > 0:
-                try:
-                    self.callback_request_list.get(timeout=0)
-                except queue.Empty:
-                    skip_callbacks -= 1
 
         if recent_callbacks is not None:
             while recent_callbacks:

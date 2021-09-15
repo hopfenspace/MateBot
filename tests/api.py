@@ -331,7 +331,8 @@ class APICallbackTests(utils.BaseAPITests):
             201,
             json={"base": "http://localhost:64000"},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/2")],
-            skip_callbacks=1
+            skip_callbacks=1,
+            skip_callback_timeout=0.2
         )
         self.assertQuery(
             ("POST", "/callbacks"),
