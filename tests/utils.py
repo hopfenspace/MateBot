@@ -5,8 +5,8 @@ Helper functions to make writing unit tests for the MateBot core easier
 import os
 import sys
 import enum
-import time
 import errno
+import queue
 import random
 import string
 import tempfile
@@ -142,10 +142,10 @@ class BaseAPITests(BaseTest):
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
     callback_server_thread: Optional[threading.Thread] = None
-    callback_request_list: List[Tuple[str, str]] = []
+    callback_request_list: "queue.Queue[Tuple[str, str]]" = queue.Queue()
 
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
-        request_list: List[Tuple[str, str]]
+        request_list: "queue.Queue[Tuple[str, str]]"
 
         def do_HEAD(self) -> None:  # noqa
             self.send_response(200)
@@ -154,7 +154,7 @@ class BaseAPITests(BaseTest):
         def do_GET(self) -> None:  # noqa
             self.send_response(200)
             self.end_headers()
-            self.request_list.append((self.command, self.path))
+            self.request_list.put((self.command, self.path))
 
         def log_message(self, fmt: str, *args: Any) -> None:
             pass
@@ -183,8 +183,9 @@ class BaseAPITests(BaseTest):
             r_is_json: bool = True,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
+            skip_callbacks: Optional[int] = None,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
-            total_callbacks: Optional[int] = None,
+            callback_timeout: Optional[float] = 0.5,
             no_version: bool = False,
             **kwargs
     ) -> requests.Response:
@@ -206,11 +207,12 @@ class BaseAPITests(BaseTest):
         :param r_is_json: switch to check that the response contains JSON data
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
+        :param skip_callbacks: optional number of callback requests that will be dropped and
+            not checked in the recent callback check later (no problem if the number is too high)
         :param recent_callbacks: optional list of the most recent ("rightmost") callbacks
             that arrived at the local callback HTTP server (which only works when its
             callback server URI has been registered in the API during the same unit test)
-        :param total_callbacks: optional number of total callback requests the local
-            callback server should have received during the whole unit test execution
+        :param callback_timeout: maximal waiting time until a callback request arrived
         :param no_version: don't add the latest version to the two-element endpoint definition
         :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
         :return: response to the requested resource
@@ -265,18 +267,19 @@ class BaseAPITests(BaseTest):
         elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
             self.assertTrue(r_schema(**response.json()), response.json())
 
-        # TODO: fix the race condition between the callback server and the test method
-        if recent_callbacks or total_callbacks:
-            time.sleep(0.15)
+        if skip_callbacks is not None:
+            while skip_callbacks > 0:
+                try:
+                    self.callback_request_list.get(timeout=0)
+                except queue.Empty:
+                    skip_callbacks -= 1
 
         if recent_callbacks is not None:
-            self.assertGreaterEqual(len(self.callback_request_list), len(recent_callbacks))
-            self.assertListEqual(
-                recent_callbacks,
-                self.callback_request_list[-len(recent_callbacks):]
-            )
-        if total_callbacks is not None:
-            self.assertEqual(total_callbacks, len(self.callback_request_list))
+            while recent_callbacks:
+                self.assertEqual(
+                    recent_callbacks.pop(0),
+                    self.callback_request_list.get(timeout=callback_timeout)
+                )
 
         return response
 
@@ -314,7 +317,6 @@ class BaseAPITests(BaseTest):
             raise
 
     def _run_callback_server(self):
-        self.callback_request_list = []
         self.CallbackHandler.request_list = self.callback_request_list
         self.callback_server_port = random.randint(10000, 64000)
 
