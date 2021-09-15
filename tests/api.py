@@ -2,6 +2,7 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
+import uuid
 import unittest as _unittest
 from typing import Type
 
@@ -61,6 +62,200 @@ class WorkingAPITests(utils.BaseAPITests):
                 users,
                 self.assertQuery(("GET", "/users"), 200).json()
             )
+
+    def test_communisms(self):
+        self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
+
+        # Creating some working sample data for the unit test
+        sample_data = [
+            {
+                "amount": 1,
+                "description": "description1",
+                "creator": 1,
+                "active": True,
+                "externals": 0,
+                "participants": []
+            },
+            {
+                "amount": 42,
+                "description": "description2",
+                "creator": 1,
+                "active": True,
+                "externals": 2,
+                "participants": [
+                    {
+                        "user": 1,
+                        "quantity": 1
+                    },
+                    {
+                        "user": 2,
+                        "quantity": 2
+                    }
+                ]
+            },
+            {
+                "amount": 100,
+                "description": "description3",
+                "creator": 2
+            }
+        ]
+
+        # Adding the callback server for testing
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": f"http://localhost:{self.callback_server_port}/"}
+        )
+
+        # User referenced by 'creator' doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/communisms"),
+            404,
+            json=sample_data[0]
+        )
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user1", "permission": True, "external": False},
+            r_schema=_schemas.User
+        )
+
+        # Create and get the first communism object
+        communism1 = self.assertQuery(
+            ("POST", "/communisms"),
+            201,
+            json=sample_data[0],
+            r_schema=_schemas.Communism,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/1")]
+        ).json()
+        self.assertQuery(
+            ("GET", "/communisms/1"),
+            200,
+            r_schema=_schemas.Communism(**communism1)
+        ).json()
+
+        # User referenced by participant 2 doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/communisms"),
+            404,
+            json=sample_data[1]
+        ).json()
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user2", "permission": True, "external": False},
+            r_schema=_schemas.User
+        )
+
+        # Create and get the second communism object
+        response2 = self.assertQuery(
+            ("POST", "/communisms"),
+            201,
+            json=sample_data[1],
+            r_schema=_schemas.Communism,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/2")]
+        )
+        communism2 = response2.json()
+        self.assertQuery(
+            ("GET", "/communisms/2"),
+            200,
+            r_schema=_schemas.Communism(**communism2)
+        ).json()
+
+        # Create and get the third communism object
+        response3 = self.assertQuery(
+            ("POST", "/communisms"),
+            201,
+            json=sample_data[2],
+            r_schema=_schemas.Communism,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/3")]
+        )
+        communism3 = response3.json()
+        self.assertQuery(
+            ("GET", "/communisms/3"),
+            200,
+            r_schema=_schemas.Communism(**communism3)
+        ).json()
+
+        # Omit the If-Match header entirely even though enforced
+        self.assertQuery(
+            ("PATCH", "/communisms"),
+            412,
+            json={"id": 2}
+        )
+
+        # Try updating with a wrong If-Match header (which should fail)
+        self.assertQuery(
+            ("PATCH", "/communisms"),
+            412,
+            json={"id": 2},
+            headers={"If-Match": "Definitively-Wrong"}
+        )
+        self.assertQuery(
+            ("PATCH", "/communisms"),
+            412,
+            json={"id": 2},
+            headers={"If-Match": str(uuid.uuid4())}
+        )
+
+        # Do an empty patch operation (that shouldn't change anything)
+        self.assertQuery(
+            ("PATCH", "/communisms"),
+            200,
+            json={"id": 2},
+            headers={"If-Match": response2.headers.get("ETag")},
+            r_schema=communism2,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
+        )
+
+        # Add new users to the third communism
+        response3_patched = self.assertQuery(
+            ("PATCH", "/communisms"),
+            200,
+            json={
+                "id": 3,
+                "participants": [
+                    {"user": 1, "quantity": 10},
+                    {"user": 2, "quantity": 20}
+                ]
+            },
+            r_schema=_schemas.Communism,
+            headers={"If-Match": response3.headers.get("ETag")},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+        )
+        communism3_patched = response3_patched.json()
+        communism3["participants"] = [
+            _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
+            _schemas.CommunismUserBinding(user=2, quantity=20).dict()
+        ]
+        self.assertEqual(communism3_patched, communism3)
+        self.assertQuery(
+            ("GET", "/communisms/3"),
+            200,
+            r_schema=communism3_patched
+        )
+
+        # Do not allow to delete the first communism
+        self.assertQuery(
+            ("DELETE", "/communisms"),
+            [400, 405]
+        )
+
+        # Forbid to update a communism if a user is mentioned twice or more
+        self.assertQuery(
+            ("PATCH", "/communisms"),
+            400,
+            json={
+                "id": 3,
+                "participants": [
+                    {"user": 1, "quantity": 10},
+                    {"user": 1, "quantity": 10},
+                    {"user": 1, "quantity": 10},
+                    {"user": 2, "quantity": 20}
+                ]
+            },
+            headers={"If-Match": response3_patched.headers.get("ETag")}
+        )
 
 
 @_tested
