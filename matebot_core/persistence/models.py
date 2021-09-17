@@ -28,61 +28,18 @@ class User(Base):
     __tablename__ = "users"
 
     id = _make_id_column()
+    name = Column(String(255), nullable=True)
+    balance = Column(Integer, nullable=False, default=0)
+    permission = Column(Boolean, nullable=False, default=False)
+    active = Column(Boolean, nullable=False, default=True)
+    special = Column(Boolean, nullable=True, default=None, unique=True)
+    external = Column(Boolean, nullable=False)
+    voucher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created = Column(DateTime, server_default=func.now())
+    accessed = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
 
-    name = Column(
-        String(255),
-        nullable=True
-    )
-    balance = Column(
-        Integer,
-        nullable=False,
-        default=0
-    )
-    permission = Column(
-        Boolean,
-        nullable=False,
-        default=False
-    )
-    active = Column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
-    special = Column(
-        Boolean,
-        nullable=True,
-        default=None,
-        unique=True
-    )
-    external = Column(
-        Boolean,
-        nullable=False
-    )
-    voucher_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=True
-    )
-    created = Column(
-        DateTime,
-        server_default=func.now()
-    )
-    accessed = Column(
-        DateTime,
-        server_onupdate=FetchedValue(),
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-
-    aliases = relationship(
-        "UserAlias",
-        cascade="all,delete",
-        backref="user"
-    )
-    vouching_for = relationship(
-        "User",
-        backref=backref("voucher_user", remote_side=[id])
-    )
+    aliases = relationship("UserAlias", cascade="all,delete", backref="user")
+    vouching_for = relationship("User", backref=backref("voucher_user", remote_side=[id]))
 
     __table_args__ = (
         CheckConstraint("special != false"),
@@ -111,26 +68,11 @@ class Application(Base):
     __tablename__ = "applications"
 
     id = _make_id_column()
+    name = Column(String(255), unique=True, nullable=False)
+    community_user_alias_id = Column(Integer, ForeignKey("aliases.id"), nullable=True)
+    created = Column(DateTime, server_default=func.now())
 
-    name = Column(
-        String(255),
-        unique=True,
-        nullable=False
-    )
-    community_user_alias_id = Column(
-        Integer,
-        ForeignKey("aliases.id"),
-        nullable=True
-    )
-    created = Column(
-        DateTime,
-        server_default=func.now()
-    )
-
-    community_user_alias = relationship(
-        "UserAlias",
-        foreign_keys=[community_user_alias_id]
-    )
+    community_user_alias = relationship("UserAlias", foreign_keys=[community_user_alias_id])
     callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
 
     @property
@@ -150,26 +92,11 @@ class UserAlias(Base):
     __tablename__ = "aliases"
 
     id = _make_id_column()
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
+    app_user_id = Column(String(255), nullable=False)
 
-    user_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    app_id = Column(
-        Integer,
-        ForeignKey("applications.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    app_user_id = Column(
-        String(255),
-        nullable=False
-    )
-
-    app = relationship(
-        "Application",
-        foreign_keys=[app_id]
-    )
+    app = relationship("Application", foreign_keys=[app_id])
 
     __table_args__ = (
         UniqueConstraint("app_id", "app_user_id"),
@@ -195,12 +122,7 @@ class TransactionType(Base):
     __tablename__ = "transaction_types"
 
     id = _make_id_column()
-
-    name = Column(
-        String(255),
-        unique=True,
-        nullable=False
-    )
+    name = Column(String(255), unique=True, nullable=False)
 
     @property
     def schema(self) -> schemas.TransactionType:
@@ -220,48 +142,16 @@ class Transaction(Base):
     __tablename__ = "transactions"
 
     id = _make_id_column()
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount = Column(Integer, nullable=False)
+    reason = Column(String(255), nullable=True)
+    registered = Column(DateTime, nullable=False, server_default=func.now())
+    transaction_types_id = Column(Integer, ForeignKey("transaction_types.id"), nullable=True)
 
-    sender_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False
-    )
-    receiver_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False
-    )
-    amount = Column(
-        Integer,
-        nullable=False
-    )
-    reason = Column(
-        String(255),
-        nullable=True
-    )
-    registered = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now()
-    )
-    transaction_types_id = Column(
-        Integer,
-        ForeignKey("transaction_types.id"),
-        nullable=True
-    )
-
-    sender = relationship(
-        "User",
-        foreign_keys=[sender_id]
-    )
-    receiver = relationship(
-        "User",
-        foreign_keys=[receiver_id]
-    )
-    transaction_type = relationship(
-        "TransactionType",
-        backref="transactions"
-    )
+    sender = relationship("User", foreign_keys=[sender_id])
+    receiver = relationship("User", foreign_keys=[receiver_id])
+    transaction_type = relationship("TransactionType", backref="transactions")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -290,40 +180,14 @@ class Consumable(Base):
     __tablename__ = "consumables"
 
     id = _make_id_column()
+    name = Column(String(255), unique=True)
+    description = Column(String(255), nullable=False, default="")
+    price = Column(Integer, nullable=False)
+    symbol = Column(String(15), nullable=False)
+    stock = Column(Integer, nullable=False)
+    modified = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
 
-    name = Column(
-        String(255),
-        unique=True
-    )
-    description = Column(
-        String(255),
-        nullable=False,
-        default=""
-    )
-    price = Column(
-        Integer,
-        nullable=False
-    )
-    symbol = Column(
-        String(15),
-        nullable=False
-    )
-    stock = Column(
-        Integer,
-        nullable=False
-    )
-    modified = Column(
-        DateTime,
-        server_onupdate=FetchedValue(),
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-
-    messages = relationship(
-        "ConsumableMessage",
-        back_populates="consumable",
-        cascade="all,delete"
-    )
+    messages = relationship("ConsumableMessage", back_populates="consumable", cascade="all,delete")
 
     __table_args__ = (
         CheckConstraint("price > 0"),
@@ -351,21 +215,10 @@ class ConsumableMessage(Base):
     __tablename__ = "consumables_messages"
 
     id = _make_id_column()
+    consumable_id = Column(Integer, ForeignKey("consumables.id", ondelete="CASCADE"), nullable=False)
+    message = Column(String(255), nullable=False)
 
-    consumable_id = Column(
-        Integer,
-        ForeignKey("consumables.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    message = Column(
-        String(255),
-        nullable=False
-    )
-
-    consumable = relationship(
-        "Consumable",
-        back_populates="messages"
-    )
+    consumable = relationship("Consumable", back_populates="messages")
 
     @property
     def schema(self) -> pydantic.constr(max_length=255):
@@ -379,51 +232,16 @@ class Refund(Base):
     __tablename__ = "refunds"
 
     id = _make_id_column()
+    amount = Column(Integer, nullable=False)
+    description = Column(String(255), nullable=True)
+    active = Column(Boolean, nullable=False, default=True)
+    created = Column(DateTime, nullable=False, server_default=func.now())
+    accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
+    ballot_id = Column(Integer, ForeignKey("ballots.id"), nullable=False)
 
-    amount = Column(
-        Integer,
-        nullable=False
-    )
-    description = Column(
-        String(255),
-        nullable=True
-    )
-    active = Column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
-    created = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now()
-    )
-    accessed = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-    creator_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False
-    )
-    transaction_id = Column(
-        Integer,
-        ForeignKey("transactions.id"),
-        nullable=True
-    )
-    ballot_id = Column(
-        Integer,
-        ForeignKey("ballots.id"),
-        nullable=False
-    )
-
-    creator = relationship(
-        "User",
-        backref="refunds"
-    )
+    creator = relationship("User", backref="refunds")
     transaction = relationship("Transaction")
     ballot = relationship("Ballot")
 
@@ -455,30 +273,11 @@ class Ballot(Base):
     __tablename__ = "ballots"
 
     id = _make_id_column()
-
-    question = Column(
-        String(255),
-        nullable=False
-    )
-    restricted = Column(
-        Boolean,
-        nullable=False
-    )
-    active = Column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
-    result = Column(
-        Integer,
-        nullable=True,
-        default=None
-    )
-    closed = Column(
-        DateTime,
-        nullable=True,
-        default=None
-    )
+    question = Column(String(255), nullable=False)
+    restricted = Column(Boolean, nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
+    result = Column(Integer, nullable=True, default=None)
+    closed = Column(DateTime, nullable=True, default=None)
 
     @property
     def schema(self) -> schemas.Ballot:
@@ -502,36 +301,13 @@ class Vote(Base):
     __tablename__ = "votes"
 
     id = _make_id_column()
+    ballot_id = Column(Integer, ForeignKey("ballots.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    vote = Column(SmallInteger, nullable=False)
+    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    ballot_id = Column(
-        Integer,
-        ForeignKey("ballots.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    user_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False
-    )
-    vote = Column(
-        SmallInteger,
-        nullable=False
-    )
-    modified = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-
-    ballot = relationship(
-        "Ballot",
-        backref="votes"
-    )
-    user = relationship(
-        "User",
-        backref="votes"
-    )
+    ballot = relationship("Ballot", backref="votes")
+    user = relationship("User", backref="votes")
 
     __table_args__ = (
         CheckConstraint("vote <= 1"),
@@ -559,48 +335,16 @@ class Communism(Base):
     __tablename__ = "communisms"
 
     id = _make_id_column()
-
-    active = Column(
-        Boolean,
-        nullable=False,
-        default=True
-    )
-    amount = Column(
-        Integer,
-        nullable=False
-    )
-    description = Column(
-        String(255),
-        nullable=False
-    )
-    externals = Column(
-        Integer,
-        nullable=False,
-        default=0
-    )
-    created = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now()
-    )
-    accessed = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-    creator_id = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False
-    )
+    active = Column(Boolean, nullable=False, default=True)
+    amount = Column(Integer, nullable=False)
+    description = Column(String(255), nullable=False)
+    externals = Column(Integer, nullable=False, default=0)
+    created = Column(DateTime, nullable=False, server_default=func.now())
+    accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     creator = relationship("User")
-    participants = relationship(
-        "CommunismUsers",
-        cascade="all,delete",
-        backref="communism"
-    )
+    participants = relationship("CommunismUsers", cascade="all,delete", backref="communism")
 
     __table_args__ = (
         CheckConstraint("amount >= 1"),
@@ -629,21 +373,9 @@ class CommunismUsers(Base):
     __tablename__ = "communisms_users"
 
     id = _make_id_column()
-
-    communism_id = Column(
-        Integer,
-        ForeignKey("communisms.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    user_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False
-    )
-    quantity = Column(
-        Integer,
-        nullable=False
-    )
+    communism_id = Column(Integer, ForeignKey("communisms.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    quantity = Column(Integer, nullable=False)
 
     user = relationship("User", backref="communisms")
 
@@ -668,27 +400,10 @@ class Callback(Base):
     __tablename__ = "callbacks"
 
     id = _make_id_column()
-
-    base = Column(
-        String(255),
-        unique=False,
-        nullable=False
-    )
-    app_id = Column(
-        Integer,
-        ForeignKey("applications.id", ondelete="CASCADE"),
-        nullable=True,
-        unique=True
-    )
-    username = Column(
-        String(255),
-        nullable=True
-    )
-    password = Column(
-        String(255),
-        nullable=True
-    )
-
+    base = Column(String(255), unique=False, nullable=False)
+    app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
+    username = Column(String(255), nullable=True)
+    password = Column(String(255), nullable=True)
     app = relationship("Application", back_populates="callbacks")
 
     @property
