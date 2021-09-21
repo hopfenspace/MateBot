@@ -287,7 +287,7 @@ class BaseAPITests(BaseTest):
         return response
 
     def _run_api_server(self):
-        config = _schemas.config.CoreConfig(**_settings._get_default_config())
+        config = _schemas.config.CoreConfig(**_settings.get_default_config())
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
