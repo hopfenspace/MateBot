@@ -3,6 +3,7 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import uuid
+import datetime
 import unittest as _unittest
 from typing import Type
 
@@ -93,14 +94,16 @@ class WorkingAPITests(utils.BaseAPITests):
             404,
             json={"user_id": 1, "ballot_id": 1, "vote": 1}
         )
-        ballot1 = self.assertQuery(
-            ("POST", "/ballots"),
-            201,
-            json={"question": "Is this a question?", "restricted": False},
-            r_schema=_schemas.Ballot,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
-        ).json()
-        self.assertEqual(ballot1["question"], "Is this a question?")
+        self.assertEqual(
+            self.assertQuery(
+                ("POST", "/ballots"),
+                201,
+                json={"question": "Is this a question?", "restricted": False},
+                r_schema=_schemas.Ballot,
+                recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
+            ).json()["question"],
+            "Is this a question?"
+        )
 
         # Add another ballot to be sure
         ballot2 = self.assertQuery(
@@ -119,14 +122,57 @@ class WorkingAPITests(utils.BaseAPITests):
             json={"user_id": 1, "ballot_id": 1, "vote": 1},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/1")]
-        ).json()
-        self.assertEqual(vote1["vote"], 1)
+        )
+        self.assertEqual(vote1.json()["vote"], 1)
         for v in [1, 0, -1]:
             self.assertQuery(
                 ("POST", "/votes"),
                 409,
                 json={"user_id": 1, "ballot_id": 1, "vote": v}
             )
+
+        # Update the vote to become negative
+        vote1 = self.assertQuery(
+            ("PATCH", "/votes"),
+            200,
+            json={"id": 1, "vote": -1},
+            headers={"If-Match": vote1.headers.get("ETag")},
+            r_schema=_schemas.Vote,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/vote/1")]
+        ).json()
+        self.assertEqual(vote1["vote"], -1)
+
+        # Add another user for testing a second voting user
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user2", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
+        )
+        vote2 = self.assertQuery(
+            ("POST", "/votes"),
+            201,
+            json={"user_id": 2, "ballot_id": 1, "vote": -1},
+            r_schema=_schemas.Vote,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/2")]
+        ).json()
+
+        # Don't allow to change a vote of a restricted ballot
+        vote3 = self.assertQuery(
+            ("POST", "/votes"),
+            201,
+            json={"user_id": 2, "ballot_id": 2, "vote": -1},
+            r_schema=_schemas.Vote,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/3")]
+        )
+        self.assertQuery(
+            ("PATCH", "/votes"),
+            409,
+            json={"id": 3, "vote": 1},
+            headers={"If-Match": vote3.headers.get("ETag")}
+        )
+        vote3 = vote3.json()
 
         # Close the ballot, then try closing it again
         ballot1_etag = self.assertQuery(
@@ -150,18 +196,11 @@ class WorkingAPITests(utils.BaseAPITests):
             headers={"If-Match": ballot1_closed_response.headers.get("ETag")},
             r_schema=_schemas.Ballot(**ballot1)
         )
-        self.assertEqual(ballot1["result"], 1)
-        self.assertIsInstance(ballot1["closed"], int)
-        self.assertEqual(ballot1["votes"], [vote1])
+        self.assertEqual(ballot1["result"], -2)
+        self.assertGreaterEqual(ballot1["closed"], int(datetime.datetime.now().timestamp()) - 1)
+        self.assertEqual(ballot1["votes"], [vote1, vote2])
 
-        # Try adding new votes with a new user to the closed ballot
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"name": "user2", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
-        ).json()
+        # Try adding new votes with another user to the closed ballot
         self.assertQuery(
             ("POST", "/votes"),
             409,
