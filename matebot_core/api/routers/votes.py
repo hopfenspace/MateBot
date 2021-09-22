@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, MissingImplementation, ReturnType
+from ..base import Conflict, ReturnType
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -108,12 +108,8 @@ async def change_existing_vote(
 
 @router.delete(
     "",
-    status_code=201,
-    responses={
-        403: {"model": schemas.APIError},
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError}
-    }
+    status_code=204,
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_vote(
@@ -121,15 +117,21 @@ async def delete_existing_vote(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Delete an existing vote identified by its `id`.
+    Delete an existing vote model.
 
-    A 409 error will be returned if the combination of `user_id` and `ballot_id`
-    doesn't match the specified `id`. A 404 error will be returned if the vote
-    ID is unknown. A 403 error will be returned if the ballot is restricted, i.e.
-    votes can't be removed from the ongoing ballot as soon as they have been created.
+    A 404 error will be returned if the vote can't be found. A 409 error
+    will be returned if the ballot is restricted, i.e. votes can't be
+    removed from the ongoing ballot as soon as they have been created,
+    or if the ballot has already been closed and the result was determined.
     """
 
-    raise MissingImplementation("delete_existing_vote")
+    def hook(model: models.Vote, *args):
+        if model.ballot.restricted:
+            raise Conflict("Deleting the vote of a restricted ballot is illegal", str(model.ballot))
+        if model.ballot.closed or not model.ballot.active:
+            raise Conflict("Deleting the vote of a closed ballot is illegal", str(model.ballot))
+
+    await helpers.delete_one_of_model(vote.id, models.Vote, local, logger=logger, hook_func=hook)
 
 
 @router.get(
