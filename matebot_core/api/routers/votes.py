@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, MissingImplementation
+from ..base import Conflict, MissingImplementation, ReturnType
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -92,6 +92,9 @@ async def change_existing_vote(
     """
 
     model = await helpers.return_one(vote.id, models.Vote, local.session)
+    local.entity.model_name = type(model).__name__
+    local.entity.compare(model.schema)
+
     if model.ballot.restricted:
         raise Conflict("Updating the vote of a restricted ballot is illegal", str(model.ballot))
 
@@ -100,7 +103,7 @@ async def change_existing_vote(
         return local.attach_headers(model.schema)
 
     model.vote = vote.vote
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, ReturnType.SCHEMA_WITH_TAG)
 
 
 @router.delete(
