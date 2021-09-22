@@ -129,20 +129,30 @@ class WorkingAPITests(utils.BaseAPITests):
             )
 
         # Close the ballot, then try closing it again
-        ballot1_closed = self.assertQuery(
-            ("PATCH", "/ballots/1"),
+        ballot1_etag = self.assertQuery(
+            ("GET", "/ballots/1"),
             200,
+            r_schema=_schemas.Ballot
+        ).headers.get("ETag")
+        ballot1_closed_response = self.assertQuery(
+            ("PATCH", "/ballots"),
+            200,
+            json={"id": 1},
             r_schema=_schemas.Ballot,
+            headers={"If-Match": ballot1_etag},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
-        ).json()
-        self.assertQuery(
-            ("PATCH", "/ballots/1"),
-            200,
-            r_schema=_schemas.Ballot(**ballot1_closed)
         )
-        self.assertEqual(ballot1_closed["result"], 1)
-        self.assertIsInstance(ballot1_closed["closed"], int)
-        self.assertEqual(ballot1_closed["votes"], [vote1])
+        ballot1 = ballot1_closed_response.json()
+        self.assertQuery(
+            ("PATCH", "/ballots"),
+            200,
+            json={"id": 1},
+            headers={"If-Match": ballot1_closed_response.headers.get("ETag")},
+            r_schema=_schemas.Ballot(**ballot1)
+        )
+        self.assertEqual(ballot1["result"], 1)
+        self.assertIsInstance(ballot1["closed"], int)
+        self.assertEqual(ballot1["votes"], [vote1])
 
         # Try adding new votes with a new user to the closed ballot
         self.assertQuery(
@@ -168,8 +178,9 @@ class WorkingAPITests(utils.BaseAPITests):
             ).json()["active"]
         )
         ballot3_closed = self.assertQuery(
-            ("PATCH", "/ballots/3"),
+            ("PATCH", "/ballots"),
             200,
+            json={"id": 3},
             r_schema=_schemas.Ballot
         ).json()
         self.assertEqual(ballot3_closed["result"], 0)
