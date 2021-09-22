@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -38,6 +38,7 @@ async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.Vote,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
@@ -54,7 +55,23 @@ async def add_new_vote(
     closed or the user has already voted in the ballot (use `PUT` to change votes).
     """
 
-    raise MissingImplementation("add_new_vote")
+    user = await helpers.return_one(vote.user_id, models.User, local.session)
+    ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
+
+    if ballot.closed is not None:
+        raise Conflict("Adding votes to already closed ballots is illegal")
+    if await helpers.return_all(models.Vote, local.session, ballot=ballot, user=user):
+        raise Conflict(
+            f"User {user.name!r} has already voted in this ballot",
+            str({"user": user, "ballot": ballot})
+        )
+
+    model = models.Vote(
+        user=user,
+        ballot=ballot,
+        vote=vote.vote
+    )
+    return await helpers.create_new_of_model(model, local, logger)
 
 
 @router.put(
