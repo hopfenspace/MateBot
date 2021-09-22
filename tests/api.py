@@ -168,11 +168,15 @@ class WorkingAPITests(utils.BaseAPITests):
         )
         self.assertQuery(
             ("PATCH", "/votes"),
+            412,
+            json={"id": 3, "vote": 1}
+        )
+        self.assertQuery(
+            ("PATCH", "/votes"),
             409,
             json={"id": 3, "vote": 1},
             headers={"If-Match": vote3.headers.get("ETag")}
         )
-        vote3 = vote3.json()
 
         # Close the ballot, then try closing it again
         ballot1_etag = self.assertQuery(
