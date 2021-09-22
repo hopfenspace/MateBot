@@ -2,6 +2,7 @@
 MateBot REST API base library
 """
 
+import enum
 import time
 import uuid
 import random
@@ -24,6 +25,22 @@ runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lowe
 runtime_uuid = uuid.UUID(runtime_key)
 
 ModelType = Union[pydantic.BaseModel, List[pydantic.BaseModel]]
+
+
+@enum.unique
+class Operations(enum.Enum):
+    CREATE = "Creating"
+    UPDATE = "Updating"
+    PATCH = "Patching"
+    DELETE = "Deleting"
+
+
+class ReturnType(enum.Enum):
+    NONE = enum.auto()
+    MODEL = enum.auto()
+    SCHEMA = enum.auto()
+    SCHEMA_WITH_TAG = enum.auto()
+    SCHEMA_WITH_ALL_HEADERS = enum.auto()
 
 
 class APIException(HTTPException):

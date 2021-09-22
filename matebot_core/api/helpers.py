@@ -3,7 +3,6 @@ Generic helper library for the core REST API
 """
 
 import sys
-import enum
 import asyncio
 import logging
 from typing import Any, Callable, Dict, List, Optional, Type
@@ -12,7 +11,7 @@ import pydantic
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from .base import APIException, Conflict, InternalServerException, NotFound
+from .base import APIException, Conflict, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
 from .notifier import Callback
 from ..persistence import models
@@ -20,22 +19,6 @@ from ..persistence import models
 
 _CallbackType = Callable[[str, str, logging.Logger, sqlalchemy.orm.Session], None]
 HookType = Callable[[models.Base, LocalRequestData, logging.Logger], Any]
-
-
-@enum.unique
-class Operations(enum.Enum):
-    CREATE = "Creating"
-    UPDATE = "Updating"
-    PATCH = "Patching"
-    DELETE = "Deleting"
-
-
-class ReturnType(enum.Enum):
-    NONE = enum.auto()
-    MODEL = enum.auto()
-    SCHEMA = enum.auto()
-    SCHEMA_WITH_TAG = enum.auto()
-    SCHEMA_WITH_ALL_HEADERS = enum.auto()
 
 
 def _enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
