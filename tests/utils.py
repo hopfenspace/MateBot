@@ -342,6 +342,7 @@ class BaseAPITests(BaseTest):
     def setUp(self) -> None:
         super().setUp()
         self.server_port = random.randint(10000, 64000)
+        self.callback_request_list = queue.Queue()
 
         self.callback_server_thread = threading.Thread(
             target=self._run_callback_server,
