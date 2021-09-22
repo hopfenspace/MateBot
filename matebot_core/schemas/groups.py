@@ -47,6 +47,10 @@ class BallotCreation(pydantic.BaseModel):
     restricted: bool
 
 
+class BallotPatch(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+
+
 class Refund(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
