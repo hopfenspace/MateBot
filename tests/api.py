@@ -3,6 +3,7 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import uuid
+import datetime
 import unittest as _unittest
 from typing import Type
 
@@ -61,6 +62,120 @@ class WorkingAPITests(utils.BaseAPITests):
                 users,
                 self.assertQuery(("GET", "/users"), 200, skip_callbacks=2).json()
             )
+
+    def test_ballots_and_votes(self):
+        self.assertListEqual([], self.assertQuery(("GET", "/ballots"), 200).json())
+
+        # Adding the callback server for testing
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+        )
+
+        # User referenced by 'user_id' doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/votes"),
+            404,
+            json={"user_id": 1, "ballot_id": 1, "vote": 1}
+        )
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user1", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/1")]
+        ).json()
+
+        # Ballot referenced by 'ballot_id' doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/votes"),
+            404,
+            json={"user_id": 1, "ballot_id": 1, "vote": 1}
+        )
+        ballot1 = self.assertQuery(
+            ("POST", "/ballots"),
+            201,
+            json={"question": "Is this a question?", "restricted": False},
+            r_schema=_schemas.Ballot,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
+        ).json()
+        self.assertEqual(ballot1.question, "Is this a question?")
+
+        # Add another ballot to be sure
+        ballot2 = self.assertQuery(
+            ("POST", "/ballots"),
+            201,
+            json={"question": "Are you sure?", "restricted": True},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/2")]
+        ).json()
+
+        # Add the vote once, but not twice, even not with another vote
+        vote1 = self.assertQuery(
+            ("POST", "/votes"),
+            201,
+            json={"user_id": 1, "ballot_id": 1, "vote": 1},
+            r_schema=_schemas.Vote,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/1")]
+        ).json()
+        self.assertEqual(vote1.vote, 1)
+        for v in [1, 0, -1]:
+            self.assertQuery(
+                ("POST", "/votes"),
+                409,
+                json={"user_id": 1, "ballot_id": 1, "vote": v}
+            )
+
+        # Close the ballot, then try closing it again
+        ballot1_closed = self.assertQuery(
+            ("PATCH", "/ballots/1"),
+            200,
+            r_schema=_schemas.Ballot,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
+        ).json()
+        self.assertQuery(
+            ("PATCH", "/ballots/1"),
+            200,
+            r_schema=_schemas.Ballot(**ballot1_closed)
+        )
+        self.assertEqual(ballot1_closed.result, 1)
+        self.assertIsInstance(ballot1_closed.closed, datetime.datetime)
+        self.assertEqual(ballot1_closed.votes, [vote1])
+
+        # Try adding new votes with a new user to the closed ballot
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user2", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
+        ).json()
+        self.assertQuery(
+            ("POST", "/votes"),
+            409,
+            json={"user_id": 2, "ballot_id": 1, "vote": -1}
+        )
+
+        # Open a new ballot and close it immediately
+        self.assertEqual(
+            True,
+            self.assertQuery(
+                ("POST", "/ballots"),
+                201,
+                json={"question": "Why did you even open this ballot?", "restricted": True},
+                r_schema=_schemas.Ballot
+            ).json().active
+        )
+        ballot3_closed = self.assertQuery(
+            ("PATCH", "/ballots/3"),
+            200,
+            r_schema=_schemas.Ballot
+        ).json()
+        self.assertEqual(ballot3_closed.result, 0)
+        self.assertEqual(ballot3_closed.active, False)
+        self.assertEqual(ballot3_closed.restricted, True)
+        self.assertEqual(ballot3_closed.votes, [])
 
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
