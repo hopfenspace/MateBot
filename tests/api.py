@@ -3,7 +3,6 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import uuid
-import datetime
 import unittest as _unittest
 from typing import Type
 
@@ -101,7 +100,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Ballot,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
         ).json()
-        self.assertEqual(ballot1.question, "Is this a question?")
+        self.assertEqual(ballot1["question"], "Is this a question?")
 
         # Add another ballot to be sure
         ballot2 = self.assertQuery(
@@ -110,6 +109,8 @@ class WorkingAPITests(utils.BaseAPITests):
             json={"question": "Are you sure?", "restricted": True},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/2")]
         ).json()
+        self.assertEqual(ballot2["votes"], [])
+        self.assertEqual(ballot2["restricted"], True)
 
         # Add the vote once, but not twice, even not with another vote
         vote1 = self.assertQuery(
@@ -119,7 +120,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/1")]
         ).json()
-        self.assertEqual(vote1.vote, 1)
+        self.assertEqual(vote1["vote"], 1)
         for v in [1, 0, -1]:
             self.assertQuery(
                 ("POST", "/votes"),
@@ -139,9 +140,9 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Ballot(**ballot1_closed)
         )
-        self.assertEqual(ballot1_closed.result, 1)
-        self.assertIsInstance(ballot1_closed.closed, datetime.datetime)
-        self.assertEqual(ballot1_closed.votes, [vote1])
+        self.assertEqual(ballot1_closed["result"], 1)
+        self.assertIsInstance(ballot1_closed["closed"], int)
+        self.assertEqual(ballot1_closed["votes"], [vote1])
 
         # Try adding new votes with a new user to the closed ballot
         self.assertQuery(
@@ -158,24 +159,23 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Open a new ballot and close it immediately
-        self.assertEqual(
-            True,
+        self.assertTrue(
             self.assertQuery(
                 ("POST", "/ballots"),
                 201,
                 json={"question": "Why did you even open this ballot?", "restricted": True},
                 r_schema=_schemas.Ballot
-            ).json().active
+            ).json()["active"]
         )
         ballot3_closed = self.assertQuery(
             ("PATCH", "/ballots/3"),
             200,
             r_schema=_schemas.Ballot
         ).json()
-        self.assertEqual(ballot3_closed.result, 0)
-        self.assertEqual(ballot3_closed.active, False)
-        self.assertEqual(ballot3_closed.restricted, True)
-        self.assertEqual(ballot3_closed.votes, [])
+        self.assertEqual(ballot3_closed["result"], 0)
+        self.assertEqual(ballot3_closed["active"], False)
+        self.assertEqual(ballot3_closed["restricted"], True)
+        self.assertEqual(ballot3_closed["votes"], [])
 
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
