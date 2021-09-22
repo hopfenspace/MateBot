@@ -87,7 +87,6 @@ async def patch_existing_ballot(
     if model.closed is not None:
         local.entity.model_name = models.Ballot.__name__
         return local.attach_headers(model.schema)
-        # return await helpers.get_one_of_model(ballot.id, models.Ballot, local)
 
     model.result = sum(v.vote for v in model.votes)
     model.active = False

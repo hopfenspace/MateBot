@@ -26,10 +26,9 @@ class VoteCreation(pydantic.BaseModel):
     vote: pydantic.conint(ge=-1, le=1)
 
 
-class VoteUpdate(pydantic.BaseModel):
+class VotePatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    user_id: pydantic.NonNegativeInt
-    vote: pydantic.conint(ge=-1, le=1)
+    vote: Optional[pydantic.conint(ge=-1, le=1)]
 
 
 class Ballot(pydantic.BaseModel):
