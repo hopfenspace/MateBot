@@ -7,9 +7,11 @@ from typing import Generator, Optional
 
 import sqlalchemy.exc
 from fastapi import BackgroundTasks, Depends, Request, Response
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
 from sqlalchemy.orm import Session
 
-from . import auth, base, etag
+from . import base, etag
 from ..persistence import database
 from ..settings import Settings
 
@@ -65,6 +67,28 @@ class MinimalRequestData:
         return self._config
 
 
+async def check_auth_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="login"))):
+    credentials_exception = base.APIException(
+        status_code=401,
+        detail=f"token={token!r}",
+        message="Failed to validate token successfully",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+    try:
+        payload = jwt.decode(
+            token,
+            base.runtime_key,
+            algorithms=[jwt.ALGORITHMS.HS256],
+            options={"require_exp": True, "require_iat": True}
+        )
+        username = payload.get("sub", None)
+        if username is None:
+            raise credentials_exception
+    except jwt.JWTError as exc:
+        raise credentials_exception from exc
+
+
 class LocalRequestData(MinimalRequestData):
     """
     Collection of core dependencies used by all path operations
@@ -94,7 +118,7 @@ class LocalRequestData(MinimalRequestData):
             response: Response,
             tasks: BackgroundTasks,
             session: Session = Depends(get_session),
-            token: str = Depends(auth.check_auth)
+            token: str = Depends(check_auth_token)
     ):
         super().__init__(request, response, session)
         self.tasks = tasks

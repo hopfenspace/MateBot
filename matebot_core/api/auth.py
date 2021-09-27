@@ -37,5 +37,6 @@ def create_access_token(username: str, expiration_minutes: int = 120) -> str:
             "iat": datetime.datetime.utcnow(),
             "username": username
         },
-        base.runtime_key
+        base.runtime_key,
+        algorithm=jwt.ALGORITHMS.HS256
     )
