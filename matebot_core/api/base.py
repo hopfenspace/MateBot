@@ -5,9 +5,8 @@ MateBot REST API base library
 import enum
 import time
 import uuid
-import random
-import string
 import logging
+import secrets
 from typing import Any, Dict, List, Optional, Union
 
 import pydantic
@@ -21,7 +20,7 @@ from .. import schemas
 logger = logging.getLogger(__name__)
 
 startup = time.time()
-runtime_key = "".join([random.choice(string.hexdigits) for _ in range(32)]).lower()
+runtime_key = secrets.token_hex(16)
 runtime_uuid = uuid.UUID(runtime_key)
 
 ModelType = Union[pydantic.BaseModel, List[pydantic.BaseModel]]
