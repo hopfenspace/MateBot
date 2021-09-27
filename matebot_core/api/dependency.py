@@ -9,12 +9,12 @@ import sqlalchemy.exc
 from fastapi import BackgroundTasks, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from . import base, etag
+from . import auth, base, etag
 from ..persistence import database
 from ..settings import Settings
 
 
-def _get_session() -> Generator[Session, None, bool]:
+def get_session() -> Generator[Session, None, bool]:
     """
     Return a generator to handle database sessions gracefully
     """
@@ -40,7 +40,32 @@ def _get_session() -> Generator[Session, None, bool]:
     return True
 
 
-class LocalRequestData:
+class MinimalRequestData:
+    """
+    Collection of minimal dependencies used only for internal functionalities
+    """
+
+    def __init__(
+            self,
+            request: Request,
+            response: Response,
+            session: Session = Depends(get_session)
+    ):
+        self.request = request
+        self.response = response
+        self.headers = request.headers
+        self.session = session
+
+        self._config: Optional[Settings] = None
+
+    @property
+    def config(self) -> Settings:
+        if self._config is None:
+            self._config = Settings()
+        return self._config
+
+
+class LocalRequestData(MinimalRequestData):
     """
     Collection of core dependencies used by all path operations
 
@@ -68,16 +93,13 @@ class LocalRequestData:
             request: Request,
             response: Response,
             tasks: BackgroundTasks,
-            session: Session = Depends(_get_session),
+            session: Session = Depends(get_session),
+            token: str = Depends(auth.check_auth)
     ):
-        self.request = request
-        self.response = response
+        super().__init__(request, response, session)
         self.tasks = tasks
-        self.headers = request.headers
         self.entity = etag.ETag(request)
-        self.session = session
-
-        self._config: Optional[Settings] = None
+        self._token = token
 
     def attach_headers(self, model: base.ModelType, **kwargs) -> base.ModelType:
         """
@@ -89,9 +111,3 @@ class LocalRequestData:
                 self.response.headers.append(k, kwargs[k])
         self.entity.add_header(self.response, model)
         return model
-
-    @property
-    def config(self) -> Settings:
-        if self._config is None:
-            self._config = Settings()
-        return self._config
