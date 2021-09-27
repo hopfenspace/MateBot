@@ -24,6 +24,17 @@ def _make_id_column():
     )
 
 
+class Password(Base):
+    __tablename__ = "passwords"
+
+    id = _make_id_column()
+    salt = Column(String(255), nullable=False)
+    passwd = Column(String(255), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"Password(id={self.id})"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -71,9 +82,11 @@ class Application(Base):
     name = Column(String(255), unique=True, nullable=False)
     community_user_alias_id = Column(Integer, ForeignKey("aliases.id"), nullable=True)
     created = Column(DateTime, server_default=func.now())
+    password_id = Column(Integer, ForeignKey("passwords.id"), unique=True, nullable=False)
 
     community_user_alias = relationship("UserAlias", foreign_keys=[community_user_alias_id])
     callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
+    password = relationship("Password", cascade="all,delete")
 
     @property
     def schema(self) -> schemas.Application:
