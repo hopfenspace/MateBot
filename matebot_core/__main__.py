@@ -12,7 +12,7 @@ from matebot_core import settings as _settings
 from matebot_core.api.api import create_app
 
 
-def _handle_systemd() -> int:
+def handle_systemd(args: argparse.Namespace) -> int:
     python_executable = sys.executable
     if sys.executable is None or sys.executable == "":
         python_executable = "python3"
@@ -43,16 +43,15 @@ SyslogIdentifier=matebot_core
 WantedBy=multi-user.target
 """
 
-    service_file_path = os.path.join(os.path.abspath("."), "matebot_core.service")
-    if os.path.exists(service_file_path):
-        print(f"File {service_file_path!r} already exists. Aborting!", file=sys.stderr)
+    if os.path.exists(args.path) and not args.force:
+        print(f"File {args.path!r} already exists. Aborting!", file=sys.stderr)
         return 1
 
-    with open(service_file_path, "w") as f:
+    with open(args.path, "w") as f:
         f.write(content)
 
     print(
-        f"Successfully created the new file {service_file_path!r}. Now, create a "
+        f"Successfully created the new file {args.path!r}. Now, create a "
         f"symlink from /lib/systemd/system/ to that file. Then use 'systemctl "
         f"daemon-reload' and enable your new service. Check that it works afterwards."
     )
@@ -60,76 +59,98 @@ WantedBy=multi-user.target
     return 0
 
 
-def _get_parser(program: str) -> argparse.ArgumentParser:
+def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=program,
         description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
     )
 
-    parser.add_argument(
+    commands = parser.add_subparsers(
+        description="Available sub-commands: init, run, clear, systemd",
+        dest="command",
+        required=True,
+        metavar="<command>",
+        help="the sub-command to be executed"
+    )
+
+    parser_init = commands.add_parser("init")
+    parser_run = commands.add_parser("run")
+    parser_clear = commands.add_parser("clear")
+    parser_systemd = commands.add_parser("systemd")
+
+    # TODO: parser_init
+
+    parser_run.add_argument(
         "--host",
         type=str,
         metavar="host",
         help="Bind TCP socket to this host (overwrite config)"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--port",
         type=int,
         metavar="port",
         help="Bind TCP socket to this port (overwrite config)"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug mode"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--echo",
         action="store_true",
         help="Enable echoing of database actions (overwrite config)"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--reload",
         action="store_true",
         help="Enable auto-reload"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--workers",
         type=int,
         default=None,
         metavar="n",
         help="Number of worker processes (not valid with --reload)",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--access-log",
         action="store_true",
         help="Enable access logs"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--use-colors",
         action="store_true",
         help="Enable colorized output"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--root-path",
         type=str,
         default="",
         metavar="p",
         help="Sub-mount the application below the given path"
     )
-    parser.add_argument(
-        "--systemd",
+
+    # TODO: parser_clear
+
+    parser_systemd.add_argument(
+        "--force",
         action="store_true",
-        help="Configure the systemd service and exit"
+        help="Allow overwriting existing files"
+    )
+    parser_systemd.add_argument(
+        "--path",
+        type=str,
+        default=os.path.join(os.path.abspath("."), "matebot_core.service"),
+        metavar="p",
+        help="Path to the newly created systemd file"
     )
 
     return parser
 
 
 def run_server(args: argparse.Namespace):
-    if args.systemd:
-        exit(_handle_systemd())
-
     if args.debug:
         print("Do not start the server this way during production!", file=sys.stderr)
 
@@ -162,7 +183,24 @@ def run_server(args: argparse.Namespace):
     )
 
 
+def init_project(args: argparse.Namespace) -> int:
+    print("This feature is currently not available.", file=sys.stderr)
+    return 1
+
+
+def clear_project(args: argparse.Namespace) -> int:
+    print("This feature is currently not available.", file=sys.stderr)
+    return 1
+
+
 if __name__ == '__main__':
     program_name = sys.argv[0] if not sys.argv[0].endswith("__main__.py") else "matebot_core"
-    namespace = _get_parser(program_name).parse_args(sys.argv[1:])
-    run_server(namespace)
+    namespace = get_parser(program_name).parse_args(sys.argv[1:])
+
+    command_functions = {
+        "run": run_server,
+        "init": init_project,
+        "systemd": handle_systemd,
+        "clear": clear_project
+    }
+    exit(command_functions[namespace.command](namespace))
