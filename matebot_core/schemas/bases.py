@@ -48,6 +48,7 @@ class ApplicationAliasCreation(pydantic.BaseModel):
 class ApplicationCreation(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     community_user: ApplicationAliasCreation
+    password: pydantic.constr(min_length=8, max_length=64)
 
 
 class User(pydantic.BaseModel):
