@@ -9,12 +9,12 @@ import errno
 import queue
 import random
 import string
-import tempfile
+import secrets
 import unittest
 import threading
 import subprocess
 import http.server
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
 import pydantic
@@ -45,19 +45,14 @@ class BaseTest(unittest.TestCase):
     teardown method at the end of the subclass teardown method.
     """
 
+    config_file: Optional[str] = None
     database_url: Optional[str] = None
     database_type: Optional[DatabaseType] = None
     _database_file: Optional[str] = None
-    _config_backup: Optional[Dict[str, tempfile.TemporaryFile]] = None
 
     def setUp(self) -> None:
-        if self._config_backup is None:
-            self._config_backup = {}
-        for p in _settings.CONFIG_PATHS:
-            if os.path.exists(p):
-                self._config_backup[p] = tempfile.TemporaryFile()
-                with open(p, "rb") as f:
-                    self._config_backup[p].write(f.read())
+        self.config_file = f"config_{os.getpid()}_{secrets.token_hex(8)}.json"
+        _settings.CONFIG_PATHS = [self.config_file]
 
         if conf.DATABASE_URL is not None:
             self.database_url = conf.DATABASE_URL
@@ -124,12 +119,8 @@ class BaseTest(unittest.TestCase):
             if os.path.exists(self._database_file):
                 os.remove(self._database_file)
 
-        if self._config_backup is not None:
-            for p in self._config_backup:
-                with open(p, "wb") as f:
-                    self._config_backup[p].seek(0)
-                    f.write(self._config_backup[p].read())
-                self._config_backup[p].close()
+        if self.config_file and os.path.exists(self.config_file):
+            os.remove(self.config_file)
 
 
 class BaseAPITests(BaseTest):
@@ -287,11 +278,13 @@ class BaseAPITests(BaseTest):
         return response
 
     def _run_api_server(self):
+        self.server_port = random.randint(10000, 64000)
+
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
-        with open("config.json", "w") as f:
+        with open(self.config_file, "w") as f:
             f.write(config.json())
 
         app = create_app(
@@ -300,7 +293,6 @@ class BaseAPITests(BaseTest):
             configure_static_docs=False
         )
 
-        self.server_port = random.randint(10000, 64000)
         try:
             uvicorn.run(
                 app,  # noqa
@@ -369,6 +361,4 @@ class BaseAPITests(BaseTest):
 
     def tearDown(self) -> None:
         self.callback_server.shutdown()
-        if os.path.exists("config.json"):
-            os.remove("config.json")
         super().tearDown()
