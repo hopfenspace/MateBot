@@ -12,6 +12,7 @@ import sqlalchemy.exc
 from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas
+from matebot_core.api import auth
 from matebot_core.persistence import models
 
 from . import conf, utils
@@ -25,6 +26,10 @@ def _tested(cls: Type):
     for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
         persistence_suite.addTest(cls(fixture))
     return cls
+
+
+def _mk_passwd(passwd: str = "password", salt: str = "salt") -> models.Password:
+    return models.Password(salt=salt, passwd=auth.hash_password(passwd, salt))
 
 
 class _BaseDatabaseTests(utils.BaseTest):
@@ -134,8 +139,8 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
 
-        app1 = models.Application(name="app1")
-        app2 = models.Application(name="app2")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -160,8 +165,8 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(0, len(self.session.query(models.UserAlias).all()))
 
     def test_add_applications_and_aliases(self):
-        app1 = models.Application(name="app1")
-        app2 = models.Application(name="app2")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -196,7 +201,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
 
     def test_applications_and_callbacks(self):
-        app1 = models.Application(name="app1")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
         self.session.add(app1)
         self.session.commit()
 
@@ -217,7 +222,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
         self.assertTrue(isinstance(app1.callbacks, list))
         self.assertEqual([], app1.callbacks)
 
-        app2 = models.Application(name="app2")
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add(app2)
         self.session.commit()
 
@@ -399,7 +404,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
         # Everything fine
         self.session.add_all(self.get_sample_users())
-        self.session.add(models.Application(name="app"))
+        self.session.add(models.Application(name="app", password=_mk_passwd("password")))
         self.session.commit()
         self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
         self.session.commit()
