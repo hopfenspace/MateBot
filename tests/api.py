@@ -25,6 +25,12 @@ def _tested(cls: Type):
 
 
 @_tested
+class UninitializedAPITests(utils.BaseAPITests):
+    def _init_project_data(self):
+        pass
+
+
+@_tested
 class WorkingAPITests(utils.BaseAPITests):
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
