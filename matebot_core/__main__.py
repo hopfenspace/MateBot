@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import getpass
 import logging
 import argparse
@@ -10,6 +11,7 @@ import uvicorn
 
 from matebot_core import settings as _settings
 from matebot_core.api.api import create_app
+from matebot_core.persistence import database, models
 
 
 def handle_systemd(args: argparse.Namespace) -> int:
@@ -60,10 +62,7 @@ WantedBy=multi-user.target
 
 
 def get_parser(program: str) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog=program,
-        description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
-    )
+    parser = argparse.ArgumentParser(prog=program)
 
     commands = parser.add_subparsers(
         description="Available sub-commands: init, run, clear, systemd",
@@ -73,12 +72,48 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="the sub-command to be executed"
     )
 
-    parser_init = commands.add_parser("init")
-    parser_run = commands.add_parser("run")
-    parser_clear = commands.add_parser("clear")
-    parser_systemd = commands.add_parser("systemd")
+    parser_init = commands.add_parser(
+        "init",
+        description="Initialize the project by creating config files and some database models"
+    )
+    parser_run = commands.add_parser(
+        "run",
+        description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
+    )
+    parser_clear = commands.add_parser(
+        "clear",
+        description=""  # TODO
+    )
+    parser_systemd = commands.add_parser(
+        "systemd",
+        description="Create a systemd unit file to run the MateBot core REST API as system service"
+    )
 
     # TODO: parser_init
+    parser_init.add_argument(
+        "--database",
+        type=str,
+        metavar="url",
+        help="Database connection URL including scheme and auth"
+    )
+    init_community = parser_init.add_mutually_exclusive_group()
+    init_community.add_argument(
+        "--no-community",
+        action="store_true",
+        help="Don't create the community user if it doesn't exist"
+    )
+    init_community.add_argument(
+        "--community",
+        type=str,
+        metavar="name",
+        help="Optional name of the possibly new community user"
+    )
+    parser_init.add_argument(
+        "--application",
+        type=str,
+        metavar="name",
+        help="Name of a newly created application account"
+    )
 
     parser_run.add_argument(
         "--host",
@@ -184,8 +219,61 @@ def run_server(args: argparse.Namespace):
 
 
 def init_project(args: argparse.Namespace) -> int:
-    print("This feature is currently not available.", file=sys.stderr)
-    return 1
+    settings = _settings.read_settings_from_json_source(False)
+    if not settings:
+        print("No settings file found. A basic config will be created now interactively.")
+        settings = _settings.get_default_config()
+
+        if args.database:
+            settings["database"]["connection"] = args.database
+        else:
+            print(
+                "\nEnter the full database connection string below. It's required to make the "
+                "project persistent. It uses an in-memory sqlite3 database by default (press "
+                "Enter to use that default). Note that the in-memory database does not work "
+                "properly in all environments. A persistent database is highly recommended."
+            )
+            settings["database"]["connection"] = input("> ") or settings["database"]["connection"]
+
+        with open(_settings.CONFIG_PATHS[0], "w") as f:
+            json.dump(settings, f, indent=4)
+
+    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    database.init(config.database.connection, config.database.echo)
+    session = database.get_new_session()
+
+    if not args.no_community:
+        specials = session.query(models.User).filter_by(special=True).all()
+        if len(specials) > 1:
+            raise RuntimeError("CRITICAL ERROR. Please drop a bug report.")
+        if len(specials) == 0:
+            session.add(models.User(
+                active=True,
+                special=True,
+                external=False,
+                permission=False,
+                name=args.community
+            ))
+            session.commit()
+
+    if len(session.query(models.Application).all()) == 0:
+        name = args.application
+        if not name:
+            print(
+                "\nThere's no registered application yet. Nobody can use the API "
+                "without an application account. Skip this step by pressing Enter. "
+                "Otherwise type in the name of the new application account below."
+            )
+            name = input("> ")
+        if name:
+            session.add(models.Application(name=name))
+            session.commit()
+
+    session.flush()
+    session.close()
+
+    print("Done.")
+    return 0
 
 
 def clear_project(args: argparse.Namespace) -> int:
