@@ -31,9 +31,9 @@ amount of predefined but modifiable consumables with different stocks.
    ```shell
    pip3 install -r requirements.txt
    ```
-4. Execute the MateBot core once:
+4. Initialize the MateBot core data once (`--help` to show the options first):
    ```shell
-   python3 -m matebot_core
+   python3 -m matebot_core init --help
    ```
 5. Edit the newly created config file `config.json`. Important parts
    are the server and database settings, but you may want to change
@@ -45,7 +45,7 @@ amount of predefined but modifiable consumables with different stocks.
 
 Executing the MateBot REST API can simply be done by calling the module:
 ```shell
-python3 -m matebot_core
+python3 -m matebot_core run
 ```
 Take a look at the built-in help page using `--help`.
 
@@ -53,11 +53,11 @@ Take a look at the built-in help page using `--help`.
 
 On systemd-enabled systems, it's recommended to add a systemd service to
 start the MateBot core API automatically. To do so, call the module with
-the `--systemd` option, add a symlink to it, reload the systemd daemon
+the `systemd` command, add a symlink to it, reload the systemd daemon
 and finally enable the new service. All steps as an example below:
 
 ```shell
-python3 -m matebot_core --systemd
+python3 -m matebot_core systemd
 sudo ln -vrs matebot_core.service /lib/systemd/system/matebot_core.service
 sudo systemctl daemon-reload
 sudo systemctl enable matebot_core
