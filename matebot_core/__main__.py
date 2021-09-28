@@ -65,7 +65,7 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=program)
 
     commands = parser.add_subparsers(
-        description="Available sub-commands: init, run, clear, systemd",
+        description="Available sub-commands: init, run, systemd",
         dest="command",
         required=True,
         metavar="<command>",
@@ -80,16 +80,11 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "run",
         description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
     )
-    parser_clear = commands.add_parser(
-        "clear",
-        description=""  # TODO
-    )
     parser_systemd = commands.add_parser(
         "systemd",
         description="Create a systemd unit file to run the MateBot core REST API as system service"
     )
 
-    # TODO: parser_init
     parser_init.add_argument(
         "--database",
         type=str,
@@ -166,8 +161,6 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         metavar="p",
         help="Sub-mount the application below the given path"
     )
-
-    # TODO: parser_clear
 
     parser_systemd.add_argument(
         "--force",
@@ -276,11 +269,6 @@ def init_project(args: argparse.Namespace) -> int:
     return 0
 
 
-def clear_project(args: argparse.Namespace) -> int:
-    print("This feature is currently not available.", file=sys.stderr)
-    return 1
-
-
 if __name__ == '__main__':
     program_name = sys.argv[0] if not sys.argv[0].endswith("__main__.py") else "matebot_core"
     namespace = get_parser(program_name).parse_args(sys.argv[1:])
@@ -288,7 +276,6 @@ if __name__ == '__main__':
     command_functions = {
         "run": run_server,
         "init": init_project,
-        "systemd": handle_systemd,
-        "clear": clear_project
+        "systemd": handle_systemd
     }
     exit(command_functions[namespace.command](namespace))
