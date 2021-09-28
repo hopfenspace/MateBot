@@ -19,9 +19,12 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Un
 import uvicorn
 import pydantic
 import requests
+import sqlalchemy.orm
+from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas as _schemas, settings as _settings
 from matebot_core.api.api import create_app
+from matebot_core.persistence import models
 
 from . import conf
 
@@ -130,6 +133,41 @@ class BaseTest(unittest.TestCase):
                     self._config_backup[p].seek(0)
                     f.write(self._config_backup[p].read())
                 self._config_backup[p].close()
+
+
+class BasePersistenceTests(BaseTest):
+    engine: _Engine
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        super().setUp()
+        opts = {"echo": conf.SQLALCHEMY_ECHOING}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
+        self.session = sqlalchemy.orm.sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.engine
+        )()
+        models.Base.metadata.create_all(bind=self.engine)
+
+    def tearDown(self) -> None:
+        self.session.close()
+        self.engine.dispose()
+        super().tearDown()
+
+    @staticmethod
+    def get_sample_users() -> List[models.User]:
+        return [
+            models.User(name="user1", balance=-42, external=True),
+            models.User(name="user2", balance=51, external=False),
+            models.User(name="user3", external=True),
+            models.User(name="user4", balance=2, external=False),
+            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
+            models.User(external=False),
+            models.User(name="community", external=False, special=True, balance=2, permission=True)
+        ]
 
 
 class BaseAPITests(BaseTest):

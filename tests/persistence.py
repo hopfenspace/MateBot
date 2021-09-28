@@ -4,17 +4,16 @@ MateBot database unit tests
 
 import datetime
 import unittest as _unittest
-from typing import List, Type
+from typing import Type
 
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.exc
-from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas
 from matebot_core.persistence import models
 
-from . import conf, utils
+from . import utils
 
 
 persistence_suite = _unittest.TestSuite()
@@ -27,43 +26,8 @@ def _tested(cls: Type):
     return cls
 
 
-class _BaseDatabaseTests(utils.BaseTest):
-    engine: _Engine
-    session: sqlalchemy.orm.Session
-
-    def setUp(self) -> None:
-        super().setUp()
-        opts = {"echo": conf.SQLALCHEMY_ECHOING}
-        if self.database_url.startswith("sqlite:"):
-            opts = {"connect_args": {"check_same_thread": False}}
-        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
-        self.session = sqlalchemy.orm.sessionmaker(
-            autocommit=False,
-            autoflush=False,
-            bind=self.engine
-        )()
-        models.Base.metadata.create_all(bind=self.engine)
-
-    def tearDown(self) -> None:
-        self.session.close()
-        self.engine.dispose()
-        super().tearDown()
-
-    @staticmethod
-    def get_sample_users() -> List[models.User]:
-        return [
-            models.User(name="user1", balance=-42, external=True),
-            models.User(name="user2", balance=51, external=False),
-            models.User(name="user3", external=True),
-            models.User(name="user4", balance=2, external=False),
-            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
-            models.User(external=False),
-            models.User(name="community", external=False, special=True, balance=2, permission=True)
-        ]
-
-
 @_tested
-class DatabaseUsabilityTests(_BaseDatabaseTests):
+class DatabaseUsabilityTests(utils.BasePersistenceTests):
     """
     Database test cases checking the correct usability of the models
     """
@@ -352,7 +316,7 @@ class DatabaseUsabilityTests(_BaseDatabaseTests):
 
 
 @_tested
-class DatabaseRestrictionTests(_BaseDatabaseTests):
+class DatabaseRestrictionTests(utils.BasePersistenceTests):
     """
     Database test cases checking restrictions on certain operations (constraints)
     """
@@ -555,7 +519,7 @@ class DatabaseRestrictionTests(_BaseDatabaseTests):
 
 
 @_tested
-class DatabaseSchemaTests(_BaseDatabaseTests):
+class DatabaseSchemaTests(utils.BasePersistenceTests):
     """
     Database test cases checking the usability of schemas together with the models
     """
