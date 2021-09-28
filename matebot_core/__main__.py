@@ -267,6 +267,16 @@ def init_project(args: argparse.Namespace) -> int:
             )
             name = input("> ")
 
+        if len(session.query(models.Application).filter_by(name=name).all()) > 0:
+            print(
+                f"An application with the given name {name!r} already "
+                f"exists. Therefore, it can't be created. Exiting.",
+                file=sys.stderr
+            )
+            session.flush()
+            session.close()
+            return 1
+
         passwd = args.password
         if not passwd and name:
             print(
