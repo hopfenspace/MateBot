@@ -7,7 +7,7 @@ from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine as _Engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 
 DEFAULT_DATABASE_URL = "sqlite://"
@@ -76,7 +76,7 @@ def get_engine() -> _Engine:
     return _engine
 
 
-def get_new_session():
+def get_new_session() -> Session:
     if _make_session is None or _engine is None:
         _warn("engine or its session maker")
         init(DEFAULT_DATABASE_URL)
