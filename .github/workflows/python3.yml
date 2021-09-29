@@ -57,7 +57,8 @@ jobs:
         python3 -m unittest tests -v
     - name: Run matebot_core once
       run: |
-        python3 -m matebot_core || echo "OK"
+        python3 -m matebot_core init --database sqlite:///test.db --application app --password password
+        rm test.db
         rm config.json
     - name: Build the package
       run: |
@@ -68,10 +69,8 @@ jobs:
         python3 -m venv venv
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
-        ../venv/bin/python3 -m matebot_core || echo "OK"
-        sed -i 's/sqlite:\\\/\\\//sqlite:\/\//g' config.json
-        sed -i 's/sqlite:\/\//sqlite:\/\/\/test.db/g' config.json
-        ../venv/bin/python3 -m matebot_core &
+        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --application app --password password
+        ../venv/bin/python3 -m matebot_core run &
         sleep 3
         curl http://localhost:8000/
         wget http://localhost:8000/openapi.json --debug
