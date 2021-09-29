@@ -6,7 +6,7 @@ import hashlib
 import secrets
 import datetime
 
-from jose import JWTError, jwt
+from jose import jwt
 from sqlalchemy.orm import Session
 
 from . import base, helpers
@@ -35,7 +35,7 @@ def create_access_token(username: str, expiration_minutes: int = 120) -> str:
         {
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=expiration_minutes),
             "iat": datetime.datetime.utcnow(),
-            "username": username
+            "sub": username
         },
         base.runtime_key,
         algorithm=jwt.ALGORITHMS.HS256

@@ -27,8 +27,11 @@ router = APIRouter(
 
 @router.post("/login", response_model=schemas.Token)
 @versioning.versions(1)
-async def login(data: OAuth2PasswordRequestFormStrict = Depends(), local: MinimalRequestData = Depends(MinimalRequestData)):
-    if not await auth.check_credentials(data.username, data.password, local.session):
+async def login(
+        data: OAuth2PasswordRequestFormStrict = Depends(),
+        local: MinimalRequestData = Depends(MinimalRequestData)
+):
+    if not await auth.check_app_credentials(data.username, data.password, local.session):
         raise APIException(
             status_code=401,
             detail=f"username={data.username!r}, password=?",
