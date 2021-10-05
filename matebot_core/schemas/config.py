@@ -8,11 +8,10 @@ import pydantic
 
 
 class GeneralConfig(pydantic.BaseModel):
-    max_amount: pydantic.conint(gt=100) = 10000
-    max_consume: pydantic.conint(gt=2) = 10
-    payment_consent: pydantic.PositiveInt = 2
-    payment_denial: pydantic.PositiveInt = 2
-    max_vouched: pydantic.PositiveInt = 3
+    min_refund_approves: pydantic.PositiveInt = 2
+    max_parallel_debtors: pydantic.PositiveInt = 3
+    max_simultaneous_consumption: pydantic.conint(gt=2) = 20
+    max_transaction_amount: pydantic.conint(gt=100) = 50000
 
 
 class ServerConfig(pydantic.BaseModel):
