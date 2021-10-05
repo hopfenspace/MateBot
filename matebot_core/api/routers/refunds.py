@@ -3,12 +3,13 @@ MateBot router module for /refunds requests
 """
 
 import logging
+import datetime
 from typing import List
 
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import APIException, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -72,7 +73,7 @@ async def create_new_refund(
 @router.patch(
     "",
     response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}}
+    responses={403: {"model": schemas.APIError}, 404: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def close_refund_by_id(
@@ -91,10 +92,39 @@ async def close_refund_by_id(
     thousand times. Note that the field `cancelled` can be set to
     true in order to cancel the refund and therefore prevent any
     further transactions based on this refund. Of course, the
-    ballot will be closed in order to prevent changes, too.
+    ballot will be closed in order to prevent changes, too. However,
+    setting the field `cancelled` to false will perform the actual
+    refund operation (and does a transaction), if enough votes
+    approve the refund request (see list of error codes below).
 
+    A 403 error will be returned if the refund should be accepted
+    but has not enough approving votes yet (it won't be performed).
     A 404 error will be returned if the refund ID is not found.
     """
+
+    obj = await helpers.return_one(refund.id, models.Refund, local.session)
+    ballot = obj.ballot
+    if ballot.closed is not None and not obj.active:
+        return await helpers.get_one_of_model(refund.id, models.Refund, local)
+
+    sum_of_votes = sum(v.vote for v in ballot.votes)
+    required_votes = local.config.general.min_refund_approves
+    if sum_of_votes < required_votes:
+        raise APIException(
+            status_code=403,
+            message=f"Not enough approving votes for refund {refund.id}",
+            detail=f"refund={refund}, sum={sum_of_votes}, required={required_votes}"
+        )
+
+    if ballot.closed is None and not obj.active:
+        logger.error(f"Inconsistent data detected: {ballot}, {refund}")
+
+    obj.active = False
+    ballot.result = sum_of_votes
+    ballot.active = False
+    ballot.closed = datetime.datetime.now().replace(microsecond=0)
+
+    # TODO: implement actual money transfer, confirmation and database commit
 
     raise MissingImplementation("close_refund_by_id")
 
