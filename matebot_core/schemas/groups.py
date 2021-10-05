@@ -72,7 +72,7 @@ class RefundCreation(pydantic.BaseModel):
 
 class RefundPatch(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    cancelled: bool = False
+    cancelled: bool
 
 
 class CommunismUserBinding(pydantic.BaseModel):
