@@ -9,6 +9,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -63,7 +64,7 @@ async def add_new_ballot(
 @router.patch(
     "",
     response_model=schemas.Ballot,
-    responses={404: {"model": schemas.APIError}}
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def patch_existing_ballot(
@@ -75,15 +76,18 @@ async def patch_existing_ballot(
 
     If the ballot has already been closed, this operation will
     do nothing and silently return the unmodified model.
-    Note that if any refund makes use of this ballot, then this
-    refund will also be closed implicitly by closing its ballot.
-    This will also make its transaction(s), if the ballot was
-    successful. Take a look at `PATCH /refunds` for details.
 
     A 404 error will be returned if the ballot ID is not found.
+    A 409 error will be returned if the ballot is used by some refund
+    and this refund has not been closed yet, since this should
+    be done first. Take a look at `PATCH /refunds` for details.
     """
 
     model = await helpers.return_one(ballot.id, models.Ballot, local.session)
+    refund = local.session.query(models.Refund).filter_by(ballot_id=model.id).first()
+    if refund and refund.active:
+        raise Conflict(f"Ballot is used by refund {refund.id}", detail=str(refund))
+
     if model.closed is not None:
         local.entity.model_name = models.Ballot.__name__
         return local.attach_headers(model.schema)
