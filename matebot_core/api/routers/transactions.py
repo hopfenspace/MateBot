@@ -3,7 +3,7 @@ MateBot router module for /transactions requests
 """
 
 import logging
-from typing import List
+from typing import List, Union
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -73,11 +73,15 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     "",
     status_code=201,
     response_model=schemas.Transaction,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={
+        400: {"model": schemas.APIError},
+        404: {"model": schemas.APIError},
+        409: {"model": schemas.APIError}
+    }
 )
 @versioning.versions(minimal=1)
 async def make_a_new_transaction(
-        transaction: schemas.TransactionCreation,
+        transaction: Union[schemas.TransactionCreation, schemas.Consumption],
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -87,10 +91,69 @@ async def make_a_new_transaction(
     endpoint by design, so take care doing that. The frontend application
     might want to request explicit user approval ahead of time.
 
+    This endpoint allows both one-to-one and consumption transactions.
+    A one-to-one transaction is the simplest form, where one user sends
+    money to another user. The latter form lets a user consume goods
+    (which are in stock, ideally), so they will be paid to the community.
+
+    Specific information about one-to-one transactions:
+
     A 404 error will be returned if the sender or receiver users can't be
     determined. A 409 error will be returned if any supplied aliases are not
     accurate (e.g. outdated), or when the sender equals the receiver.
+
+    Specific information about consumption transactions:
+
+    Using `adjust_stock=true` will be ignored when `respect_stock` is `false`.
+    Note that its the client's duty to select the appropriate response to
+    the successful consumption, since one consumable type may have any number
+    of consumable messages which may be used as a reply template to the user.
+
+    A 400 error will be returned when the specified user who should consume
+    the good is the special community user. A 404 error will be returned
+    if the sender user or consumable isn't found. A 409 error will be returned
+    when the good is out of stock (this is already the case when there's
+    not enough available to fit the needs, e.g. requesting four items
+    where only two items are in stock would lead to such an error).
     """
+
+    if isinstance(transaction, schemas.Consumption):
+        consumption = transaction
+
+        user = await helpers.return_one(consumption.user, models.User, local.session)
+        consumable: models.Consumable = await helpers.return_one(
+            consumption.consumable_id,
+            models.Consumable,
+            local.session
+        )
+
+        if user.special:
+            raise APIException(
+                status_code=400,
+                message="The special community user can't consume goods.",
+                detail=str(user.schema)
+            )
+
+        wastage = 0
+        if consumption.respect_stock:
+            if consumable.stock < consumption.amount:
+                raise Conflict(
+                    f"Not enough {consumable.name} in stock to consume the goods.",
+                    f"requested={consumption.amount}, stock={consumable.stock}",
+                    repeat=True
+                )
+            if consumption.adjust_stock:
+                wastage = consumption.amount
+
+        community = await helpers.return_unique(models.User, local.session, special=True)
+
+        reason = f"consume: {consumption.amount}x {consumable.name}"
+        total = consumable.price * consumption.amount
+        consumable.stock -= wastage
+        return _make_transaction(user, community, total, reason, local, [consumable])
+
+    elif not isinstance(transaction, schemas.Transaction):
+        raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
     def _get_user(data, target: str) -> models.User:
         if isinstance(data, schemas.Alias):
@@ -108,10 +171,10 @@ async def make_a_new_transaction(
         else:
             raise TypeError(f"Unexpected type {type(data)} for {data!r}")
 
-        user = local.session.get(models.User, user_id)
-        if user is None:
+        found_user = local.session.get(models.User, user_id)
+        if found_user is None:
             raise NotFound(f"User ID {user_id} as {target}")
-        return user
+        return found_user
 
     sender = _get_user(transaction.sender, "sender")
     receiver = _get_user(transaction.receiver, "receiver")
@@ -176,71 +239,3 @@ async def get_all_transactions_of_receiver(
 
     user = await helpers.return_one(user_id, models.User, local.session)
     return await helpers.get_all_of_model(models.Transaction, local, receiver=user)
-
-
-@router.post(
-    "/consume",
-    status_code=201,
-    response_model=schemas.Transaction,
-    responses={
-        400: {"model": schemas.APIError},
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError}
-    }
-)
-@versioning.versions(1)
-async def consume_goods(
-        consumption: schemas.Consumption,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Let a user consume goods (in stock) which will be paid to the community.
-
-    Note that transactions can't be edited after being sent to this
-    endpoint by design, so take care doing that. The frontend application
-    might want to request explicit user approval ahead of time.
-
-    Using `adjust_stock=true` will be ignored when `respect_stock` is `false`.
-    Note that its the client's duty to select the appropriate response to
-    the successful consumption, since one consumable type may have any number
-    of consumable messages which may be used as a reply template to the user.
-
-    A 400 error will be returned when the specified user who should consume
-    the good is the special community user. A 404 error will be returned
-    if the sender user or consumable isn't found. A 409 error will be returned
-    when the good is out of stock (this is already the case when there's
-    not enough available to fit the needs, e.g. requesting four items
-    where only two items are in stock would lead to such an error).
-    """
-
-    user = await helpers.return_one(consumption.user, models.User, local.session)
-    consumable: models.Consumable = await helpers.return_one(
-        consumption.consumable_id,
-        models.Consumable,
-        local.session
-    )
-
-    if user.special:
-        raise APIException(
-            status_code=400,
-            message="The special community user can't consume goods.",
-            detail=str(user.schema)
-        )
-
-    wastage = 0
-    if consumption.respect_stock:
-        if consumable.stock < consumption.amount:
-            raise Conflict(
-                f"Not enough {consumable.name} in stock to consume the goods.",
-                f"requested={consumption.amount}, stock={consumable.stock}",
-                repeat=True
-            )
-        if consumption.adjust_stock:
-            wastage = consumption.amount
-
-    community = await helpers.return_unique(models.User, local.session, special=True)
-
-    reason = f"consume: {consumption.amount}x {consumable.name}"
-    total = consumable.price * consumption.amount
-    consumable.stock -= wastage
-    return _make_transaction(user, community, total, reason, local, [consumable])
