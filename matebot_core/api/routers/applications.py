@@ -7,7 +7,6 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -39,7 +38,7 @@ async def get_all_applications(local: LocalRequestData = Depends(LocalRequestDat
     "",
     status_code=201,
     response_model=schemas.Application,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def add_new_application(
@@ -49,29 +48,23 @@ async def add_new_application(
     """
     Add a new "empty" application and create a new ID for it.
 
-    The required new alias `community_user` is used to create a proper
-    binding to the "banking user" for the newly created application. This
+    This will also create a new alias for the community user,
+    taking the `community_user_name` as the app's user ID. This
     special user will be used to e.g. pay refunds to individual users.
 
-    A 404 error will be returned if the `user_id` of the community user is not known.
-    A 409 error will be returned if the application name is already taken or
-    if the optional application name doesn't match the community user's app name.
+    A 409 error will be returned if the application name is already taken.
     """
 
-    if application.community_user.application is not None:
-        if application.name != application.community_user.application:
-            raise Conflict("Application name doesn't match alias app name!")
-
+    community = await helpers.return_unique(models.User, local.session, special=True)
     await helpers.expect_none(models.Application, local.session, name=application.name)
-    user = await helpers.return_one(application.community_user.user_id, models.User, local.session)
     app = models.Application(name=application.name)
     alias = models.UserAlias(
-        user_id=user.id,
-        app_user_id=application.community_user.app_user_id,
+        user_id=community.id,
+        app_user_id=application.community_user_name,
         app=app
     )
 
-    def hook(*args):
+    def hook(*_):
         app.community_user_alias = alias
         local.session.add(app)
         local.session.commit()
