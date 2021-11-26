@@ -14,20 +14,10 @@ from .database import Base
 from .. import schemas
 
 
-def _make_id_column():
-    return Column(
-        Integer,
-        nullable=False,
-        primary_key=True,
-        autoincrement=True,
-        unique=True
-    )
-
-
 class User(Base):
     __tablename__ = "users"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name = Column(String(255), nullable=True)
     balance = Column(Integer, nullable=False, default=0)
     permission = Column(Boolean, nullable=False, default=False)
@@ -67,7 +57,7 @@ class User(Base):
 class Application(Base):
     __tablename__ = "applications"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name = Column(String(255), unique=True, nullable=False)
     community_user_alias_id = Column(Integer, ForeignKey("aliases.id"), nullable=True)
     created = Column(DateTime, server_default=func.now())
@@ -91,7 +81,7 @@ class Application(Base):
 class UserAlias(Base):
     __tablename__ = "aliases"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
     app_user_id = Column(String(255), nullable=False)
@@ -121,7 +111,7 @@ class UserAlias(Base):
 class TransactionType(Base):
     __tablename__ = "transaction_types"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name = Column(String(255), unique=True, nullable=False)
 
     @property
@@ -141,7 +131,7 @@ class TransactionType(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Integer, nullable=False)
@@ -179,7 +169,7 @@ class Transaction(Base):
 class Consumable(Base):
     __tablename__ = "consumables"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name = Column(String(255), unique=True)
     description = Column(String(255), nullable=False, default="")
     price = Column(Integer, nullable=False)
@@ -214,7 +204,7 @@ class Consumable(Base):
 class ConsumableMessage(Base):
     __tablename__ = "consumables_messages"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     consumable_id = Column(Integer, ForeignKey("consumables.id", ondelete="CASCADE"), nullable=False)
     message = Column(String(255), nullable=False)
 
@@ -231,7 +221,7 @@ class ConsumableMessage(Base):
 class Refund(Base):
     __tablename__ = "refunds"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     amount = Column(Integer, nullable=False)
     description = Column(String(255), nullable=True)
     active = Column(Boolean, nullable=False, default=True)
@@ -272,7 +262,7 @@ class Refund(Base):
 class Ballot(Base):
     __tablename__ = "ballots"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     question = Column(String(255), nullable=False)
     changeable = Column(Boolean, nullable=False)
     active = Column(Boolean, nullable=False, default=True)
@@ -300,7 +290,7 @@ class Ballot(Base):
 class Vote(Base):
     __tablename__ = "votes"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     ballot_id = Column(Integer, ForeignKey("ballots.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     vote = Column(SmallInteger, nullable=False)
@@ -334,7 +324,7 @@ class Vote(Base):
 class Communism(Base):
     __tablename__ = "communisms"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     active = Column(Boolean, nullable=False, default=True)
     amount = Column(Integer, nullable=False)
     description = Column(String(255), nullable=False)
@@ -372,7 +362,7 @@ class Communism(Base):
 class CommunismUsers(Base):
     __tablename__ = "communisms_users"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     communism_id = Column(Integer, ForeignKey("communisms.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     quantity = Column(Integer, nullable=False)
@@ -399,7 +389,7 @@ class CommunismUsers(Base):
 class Callback(Base):
     __tablename__ = "callbacks"
 
-    id = _make_id_column()
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     base = Column(String(255), unique=False, nullable=False)
     app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
     username = Column(String(255), nullable=True)
