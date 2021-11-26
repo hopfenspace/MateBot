@@ -34,7 +34,7 @@ class VotePatch(pydantic.BaseModel):
 class Ballot(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     question: pydantic.constr(max_length=255)
-    restricted: bool
+    changeable: bool
     active: bool
     votes: List[Vote]
     result: Optional[int]
@@ -43,7 +43,7 @@ class Ballot(pydantic.BaseModel):
 
 class BallotCreation(pydantic.BaseModel):
     question: pydantic.constr(max_length=255)
-    restricted: bool
+    changeable: bool
 
 
 class BallotPatch(pydantic.BaseModel):

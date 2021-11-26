@@ -98,7 +98,7 @@ class WorkingAPITests(utils.BaseAPITests):
             self.assertQuery(
                 ("POST", "/ballots"),
                 201,
-                json={"question": "Is this a question?", "restricted": False},
+                json={"question": "Is this a question?", "changeable": True},
                 r_schema=_schemas.Ballot,
                 recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
             ).json()["question"],
@@ -109,11 +109,11 @@ class WorkingAPITests(utils.BaseAPITests):
         ballot2 = self.assertQuery(
             ("POST", "/ballots"),
             201,
-            json={"question": "Are you sure?", "restricted": True},
+            json={"question": "Are you sure?", "changeable": False},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/2")]
         ).json()
         self.assertEqual(ballot2["votes"], [])
-        self.assertEqual(ballot2["restricted"], True)
+        self.assertEqual(ballot2["changeable"], False)
 
         # Add the vote once, but not twice, even not with another vote
         vote1 = self.assertQuery(
@@ -158,7 +158,7 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/2")]
         ).json()
 
-        # Don't allow to change a vote of a restricted ballot
+        # Don't allow to change a vote of a restricted (unchangeable) ballot
         vote3 = self.assertQuery(
             ("POST", "/votes"),
             201,
@@ -216,7 +216,7 @@ class WorkingAPITests(utils.BaseAPITests):
             self.assertQuery(
                 ("POST", "/ballots"),
                 201,
-                json={"question": "Why did you even open this ballot?", "restricted": True},
+                json={"question": "Why did you even open this ballot?", "changeable": False},
                 r_schema=_schemas.Ballot
             ).json()["active"]
         )
@@ -228,7 +228,7 @@ class WorkingAPITests(utils.BaseAPITests):
         ).json()
         self.assertEqual(ballot3_closed["result"], 0)
         self.assertEqual(ballot3_closed["active"], False)
-        self.assertEqual(ballot3_closed["restricted"], True)
+        self.assertEqual(ballot3_closed["changeable"], False)
         self.assertEqual(ballot3_closed["votes"], [])
 
     def test_communisms(self):

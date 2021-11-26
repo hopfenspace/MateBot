@@ -274,7 +274,7 @@ class Ballot(Base):
 
     id = _make_id_column()
     question = Column(String(255), nullable=False)
-    restricted = Column(Boolean, nullable=False)
+    changeable = Column(Boolean, nullable=False)
     active = Column(Boolean, nullable=False, default=True)
     result = Column(Integer, nullable=True, default=None)
     closed = Column(DateTime, nullable=True, default=None)
@@ -284,7 +284,7 @@ class Ballot(Base):
         return schemas.Ballot(
             id=self.id,
             question=self.question,
-            restricted=self.restricted,
+            changeable=self.changeable,
             active=self.active,
             votes=[vote.schema for vote in self.votes],
             result=self.result,

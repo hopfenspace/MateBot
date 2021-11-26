@@ -474,7 +474,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.rollback()
 
         # Everything fine
-        ballot = models.Ballot(question="Why not?", restricted=True, active=True)
+        ballot = models.Ballot(question="Why not?", changeable=False, active=True)
         self.session.add(ballot)
         self.session.commit()
 

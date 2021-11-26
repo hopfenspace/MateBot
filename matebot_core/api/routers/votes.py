@@ -95,7 +95,7 @@ async def change_existing_vote(
     local.entity.model_name = type(model).__name__
     local.entity.compare(model.schema)
 
-    if model.ballot.restricted:
+    if not model.ballot.changeable:
         raise Conflict("Updating the vote of a restricted ballot is illegal", str(model.ballot))
 
     if not vote.vote:
