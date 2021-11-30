@@ -151,6 +151,20 @@ class NotModified(APIException):
         )
 
 
+class ForbiddenChange(APIException):
+    """
+    Exception when a resource was requested to be changed which is forbidden
+    """
+
+    def __init__(self, resource: str, detail: Optional[str] = None):
+        super().__init__(
+            status_code=403,
+            detail=detail,
+            repeat=False,
+            message=f"Resource '{resource}' may not be modified."
+        )
+
+
 class NotFound(APIException):
     """
     Exception when a requested resource was not found in the system
