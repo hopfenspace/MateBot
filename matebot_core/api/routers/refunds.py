@@ -9,7 +9,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, ForbiddenChange
+from ..base import Conflict, ForbiddenChange, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, notifier, versioning
 from ...persistence import models
@@ -153,6 +153,28 @@ async def close_refund_by_id(
     )
 
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+
+
+@router.delete(
+    "",
+    status_code=204,
+    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)}
+)
+@versioning.versions(minimal=1)
+async def abort_open_refund(
+        refund: schemas.Refund,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Abort an open refund request without performing any transactions, discarding all votes.
+
+    A 404 error will be returned if the requested `id` doesn't exist.
+    A 409 error will be returned if the object is not up-to-date, which
+    means that the user agent needs to get the object before proceeding.
+    A 412 error will be returned if the conditional request fails.
+    """
+
+    raise MissingImplementation("abort_open_refund")
 
 
 @router.get(
