@@ -61,42 +61,41 @@ async def add_new_ballot(
     )
 
 
-@router.patch(
+@router.put(
     "",
     response_model=schemas.Ballot,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
 )
 @versioning.versions(1)
-async def patch_existing_ballot(
-        ballot: schemas.BallotPatch,
+async def update_existing_ballot(
+        ballot: schemas.Ballot,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Close a ballot to calculate the result based on all votes.
+    Update an existing ballot model (and maybe calculate the
+    result based on all votes, when closing it).
 
-    If the ballot has already been closed, this operation will
-    do nothing and silently return the unmodified model.
-
-    A 404 error will be returned if the ballot ID is not found.
+    A 403 error will be returned if any other attribute than `active` has
+    been changed. A 404 error will be returned if the ballot ID is not found.
     A 409 error will be returned if the ballot is used by some refund
     and this refund has not been closed yet, since this should
-    be done first. Take a look at `PATCH /refunds` for details.
+    be done first. Take a look at `PUT /refunds` for details.
     """
 
-    model = await helpers.return_one(ballot.id, models.Ballot, local.session)
-    refund = local.session.query(models.Refund).filter_by(ballot_id=model.id).first()
+    ballot_model = await helpers.return_one(ballot.id, models.Ballot, local.session)
+    helpers.restrict_updates(ballot, ballot_model.schema)
+
+    refund = local.session.query(models.Refund).filter_by(ballot_id=ballot.id).first()
     if refund and refund.active:
-        raise Conflict(f"Ballot is used by refund {refund.id}", detail=str(refund))
+        raise Conflict(f"Ballot {ballot.id} is used by active refund {refund.id}", detail=str(refund))
 
-    if model.closed is not None:
-        local.entity.model_name = models.Ballot.__name__
-        return local.attach_headers(model.schema)
+    if ballot_model.active and not ballot.active:
+        ballot_model.result = sum(v.vote for v in ballot_model.votes)
+        ballot_model.active = False
+        ballot_model.closed = datetime.datetime.now().replace(microsecond=0)
+        return await helpers.update_model(ballot_model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
 
-    model.result = sum(v.vote for v in model.votes)
-    model.active = False
-    model.closed = datetime.datetime.now().replace(microsecond=0)
-
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.get_one_of_model(ballot.id, models.Ballot, local)
 
 
 @router.get(

@@ -95,11 +95,9 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    Allowed fields: `app_user_id`.
-
-    A 403 error will be returned if forbidden attributes got changed.
-    A 404 error will be returned if at least one of the `alias_id`,
-    `application` or `user_id` doesn't exist.
+    A 403 error will be returned if any other attribute than `app_user_id`
+    has been changed. A 404 error will be returned if at least one of the
+    `alias_id`, `application` or `user_id` doesn't exist.
     """
 
     alias_model = await helpers.return_one(alias.id, models.UserAlias, local.session)
