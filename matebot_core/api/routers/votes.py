@@ -125,7 +125,7 @@ async def delete_existing_vote(
     or if the ballot has already been closed and the result was determined.
     """
 
-    def hook(model: models.Vote, *args):
+    def hook(model: models.Vote, *_):
         if model.ballot.restricted:
             raise Conflict("Deleting the vote of a restricted ballot is illegal", str(model.ballot))
         if model.ballot.closed or not model.ballot.active:

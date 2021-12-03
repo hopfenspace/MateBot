@@ -161,7 +161,7 @@ class NotFound(APIException):
             status_code=404,
             detail=detail,
             repeat=False,
-            message=f"{resource} was not found."
+            message=f"{str(resource)!r} was not found."
         )
 
 

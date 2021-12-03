@@ -75,7 +75,7 @@ async def create_new_communism(
         participants=[]
     )
 
-    async def hook(*args):
+    async def hook(*_):
         local.session.add_all([
             models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
             for p in communism.participants
