@@ -82,18 +82,18 @@ async def update_existing_ballot(
     be done first. Take a look at `PUT /refunds` for details.
     """
 
-    ballot_model = await helpers.return_one(ballot.id, models.Ballot, local.session)
-    helpers.restrict_updates(ballot, ballot_model.schema)
+    model = await helpers.return_one(ballot.id, models.Ballot, local.session)
+    helpers.restrict_updates(ballot, model.schema)
 
     refund = local.session.query(models.Refund).filter_by(ballot_id=ballot.id).first()
     if refund and refund.active:
         raise Conflict(f"Ballot {ballot.id} is used by active refund {refund.id}", detail=str(refund))
 
-    if ballot_model.active and not ballot.active:
-        ballot_model.result = sum(v.vote for v in ballot_model.votes)
-        ballot_model.active = False
-        ballot_model.closed = datetime.datetime.now().replace(microsecond=0)
-        return await helpers.update_model(ballot_model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    if model.active and not ballot.active:
+        model.result = sum(v.vote for v in model.votes)
+        model.active = False
+        model.closed = datetime.datetime.now().replace(microsecond=0)
+        return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
 
     return await helpers.get_one_of_model(ballot.id, models.Ballot, local)
 

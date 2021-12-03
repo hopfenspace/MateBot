@@ -100,13 +100,13 @@ async def update_existing_alias(
     `alias_id`, `application` or `user_id` doesn't exist.
     """
 
-    alias_model = await helpers.return_one(alias.id, models.UserAlias, local.session)
-    helpers.restrict_updates(alias, alias_model.schema)
+    model = await helpers.return_one(alias.id, models.UserAlias, local.session)
+    helpers.restrict_updates(alias, model.schema)
     await helpers.return_one(alias.user_id, models.User, local.session)
     await helpers.return_unique(models.Application, local.session, name=alias.application)
 
-    alias_model.app_user_id = alias.app_user_id
-    return await helpers.update_model(alias_model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    model.app_user_id = alias.app_user_id
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
 
 
 @router.delete(
