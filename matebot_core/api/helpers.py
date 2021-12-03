@@ -132,16 +132,64 @@ def _return_expected(
         local: LocalRequestData,
         headers: Dict[str, Any]
 ) -> Optional[pydantic.BaseModel]:
-    if returns == ReturnType.NONE:
-        return
-    elif returns == ReturnType.MODEL:
-        return model
-    elif returns == ReturnType.SCHEMA:
-        return model.schema
-    elif returns == ReturnType.SCHEMA_WITH_TAG:
-        return local.attach_headers(model.schema)
-    elif returns == ReturnType.SCHEMA_WITH_ALL_HEADERS:
-        return local.attach_headers(model.schema, **headers)
+    """
+    Select the appropriate returned value based on the given return type enum
+    """
+
+    return {
+        ReturnType.NONE: None,
+        ReturnType.MODEL: model,
+        ReturnType.SCHEMA: model.schema,
+        ReturnType.SCHEMA_WITH_TAG: local.attach_headers(model.schema),
+        ReturnType.SCHEMA_WITH_ALL_HEADERS: local.attach_headers(model.schema, **headers)
+    }[returns]
+
+
+async def create_transaction(
+        sender: models.User,
+        receiver: models.User,
+        amount: int,
+        reason: str,
+        local: LocalRequestData,
+        logger: logging.Logger,
+        callback: bool = True
+) -> models.Transaction:
+    """
+    Send the specified amount of money from one user to another one
+
+    :param sender: user that sends money (whose balance will be decreased by amount)
+    :param receiver: user that receives money (whose balance will be increased by amount)
+    :param amount: amount of money to be transferred between the two parties
+    :param reason: textual description of the transaction
+    :param local: contextual local data
+    :param logger: logger that should be used for INFO and ERROR messages
+    :param callback: switch to enable/disable triggering callbacks
+    :return: the newly created and committed Transaction object
+    """
+
+    logger = _enforce_logger(logger)
+    logger.info(f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}.")
+
+    model = models.Transaction(
+        sender_id=sender.id,
+        receiver_id=receiver.id,
+        amount=amount,
+        reason=reason
+    )
+    sender.balance -= amount
+    receiver.balance += amount
+
+    await _commit(local.session, sender, receiver, model, logger=logger)
+    if callback:
+        local.tasks.add_task(
+            Callback.created,
+            type(model).__name__.lower(),
+            model.id,
+            logger,
+            await return_all(models.Callback, local.session)
+        )
+
+    return model
 
 
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
@@ -438,24 +486,23 @@ async def update_model(
         local: LocalRequestData,
         logger: Optional[logging.Logger] = None,
         returns: ReturnType = ReturnType.NONE,
-        require_conditional_header_compared_to_schema: Optional[pydantic.BaseModel] = None
+        require_header: bool = True
 ):
     """
-    Add the model to a database transaction and commit it (triggering callbacks)
+    Add the updated model to a database transaction and commit it (triggering callbacks)
 
     :param model: instance of the updated SQLAlchemy model
     :param local: contextual local data
     :param logger: optional logger that should be used for INFO and ERROR messages
     :param returns: determine the return value and its annotations (of this function)
-    :param require_conditional_header_compared_to_schema: optional schema that's used
-        to compare the conditional request header before proceeding with the action
-        (omit the schema to avoid the check for a valid conditional header field)
+    :param require_header: enable/disable the check for a valid conditional header field
+        before proceeding with the update action and changing the database state
     """
 
     logger = _enforce_logger(logger)
-    if require_conditional_header_compared_to_schema is not None:
+    if require_header is not None:
         local.entity.model_name = type(model).__name__
-        local.entity.compare(require_conditional_header_compared_to_schema)
+        local.entity.compare(model)
 
     logger.info(f"Updating model {model!r}...")
     await _commit(local.session, model, logger=logger)

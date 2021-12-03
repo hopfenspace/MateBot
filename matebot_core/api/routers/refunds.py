@@ -62,7 +62,7 @@ async def create_new_refund(
             active=refund.active,
             ballot=models.Ballot(
                 question=f"Accept refund request for {refund.description!r}?",
-                restricted=True
+                changable=False
             )
         ),
         local,

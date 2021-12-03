@@ -23,39 +23,6 @@ router = APIRouter(
 )
 
 
-async def _make_transaction(
-        sender: models.User,
-        receiver: models.User,
-        amount: int,
-        reason: str,
-        local: LocalRequestData,
-        more_models: List[models.Base] = None
-) -> pydantic.BaseModel:
-    if more_models is None:
-        more_models = []
-    if not isinstance(more_models, list):
-        raise TypeError
-
-    logger.info(
-        f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}."
-    )
-
-    model = models.Transaction(
-        sender_id=sender.id,
-        receiver_id=receiver.id,
-        amount=amount,
-        reason=reason
-    )
-    sender.balance -= amount
-    receiver.balance += amount
-    return await helpers.create_new_of_model(
-        model,
-        local,
-        logger,
-        more_models=more_models.extend([sender, receiver])
-    )
-
-
 @router.get(
     "",
     response_model=List[schemas.Transaction]
@@ -150,7 +117,8 @@ async def make_a_new_transaction(
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
         consumable.stock -= wastage
-        return _make_transaction(user, community, total, reason, local, [consumable])
+        t = await helpers.create_transaction(user, community, total, reason, local, logger)
+        return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
     elif not isinstance(transaction, schemas.Transaction):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
@@ -179,7 +147,8 @@ async def make_a_new_transaction(
     sender = _get_user(transaction.sender, "sender")
     receiver = _get_user(transaction.receiver, "receiver")
 
-    return await _make_transaction(sender, receiver, transaction.amount, transaction.reason, local)
+    t = await helpers.create_transaction(sender, receiver, transaction.amount, transaction.reason, local, logger)
+    return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
 
 @router.get(
