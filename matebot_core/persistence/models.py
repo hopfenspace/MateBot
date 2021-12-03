@@ -249,6 +249,7 @@ class Refund(Base):
             active=self.active,
             allowed=self.ballot.result,
             ballot=self.ballot_id,
+            transactions=self.transaction,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()
         )
