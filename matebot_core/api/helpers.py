@@ -471,57 +471,6 @@ async def update_model(
     return _return_expected(returns, model, local, {})
 
 
-async def patch_model(
-        instance_id: pydantic.NonNegativeInt,
-        model: Type[models.Base],
-        local: LocalRequestData,
-        require_conditional_header: bool = True,
-        logger: Optional[logging.Logger] = None,
-        return_schema: bool = False,
-        **kwargs
-) -> Optional[pydantic.BaseModel]:
-    """
-    Patch object of the model with the specified keyword arguments (triggering callbacks)
-
-    :param instance_id: unique identifier of the instance to be edited
-    :param model: SQLAlchemy model type
-    :param local: contextual local data
-    :param logger: optional logger that should be used for INFO and ERROR messages
-    :param require_conditional_header: force the user agent to provide a valid conditional request
-        header before proceeding with the action, otherwise abort further operation
-    :param return_schema: switch to enable returning the object schema with attached ETag header
-    :param kwargs: collection of changed attributes and their values
-    :raises NotFound: when the specified ID can't be found for the given model
-    :raises PreconditionFailed: if no valid conditional request header has been set
-    """
-
-    logger = _enforce_logger(logger)
-    cls_name = model.__name__
-    obj = await return_one(instance_id, model, local.session)
-
-    if require_conditional_header:
-        local.entity.model_name = cls_name
-        local.entity.compare(obj.schema)
-
-    logger.info(f"Patching model {obj!r}...")
-    for k in kwargs:
-        setattr(obj, k, kwargs[k])
-
-    await _commit(local.session, obj, logger=logger)
-
-    local.tasks.add_task(
-        Callback.updated,
-        type(model).__name__.lower(),
-        model.id,
-        logger,
-        await return_all(models.Callback, local.session)
-    )
-
-    if not return_schema:
-        return
-    return local.attach_headers(obj.schema)
-
-
 async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
