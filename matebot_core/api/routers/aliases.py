@@ -112,11 +112,7 @@ async def update_existing_alias(
 @router.delete(
     "",
     status_code=204,
-    responses={
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError},
-        412: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
