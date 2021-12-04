@@ -169,7 +169,7 @@ class WorkingAPITests(utils.BaseAPITests):
         vote3_json["vote"] = 1
         self.assertQuery(
             ("PUT", "/votes"),
-            412,
+            409,
             json=vote3_json
         )
         self.assertQuery(
@@ -327,6 +327,11 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Communism(**communism2)
         ).json()
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            r_schema=_schemas.Communism(**communism2)
+        ).json()
 
         # Create and get the third communism object
         response3 = self.assertQuery(
@@ -342,13 +347,6 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Communism(**communism3)
         ).json()
-
-        # Omit the If-Match header entirely even though enforced
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism2
-        )
 
         # Try updating with a wrong If-Match header (which should fail)
         self.assertQuery(
