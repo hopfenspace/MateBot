@@ -158,7 +158,7 @@ async def close_refund_by_id(
 @router.delete(
     "",
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)}
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409, 412)}
 )
 @versioning.versions(minimal=1)
 async def abort_open_refund(
@@ -166,15 +166,33 @@ async def abort_open_refund(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Abort an open refund request without performing any transactions, discarding all votes.
+    Abort an open refund request without performing any transactions,
+    discarding the ballot or votes. However, the refund object will be deleted.
 
+    A 403 error will be returned if the refund was already closed.
     A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
     A 412 error will be returned if the conditional request fails.
     """
 
-    raise MissingImplementation("abort_open_refund")
+    def hook(model, *_):
+        if not model.active:
+            raise ForbiddenChange("Refund", str(refund))
+
+        model.ballot.result = 0
+        model.ballot.active = False
+        model.ballot.closed = datetime.datetime.now().replace(microsecond=0)
+        local.session.add(model.ballot)
+
+    await helpers.delete_one_of_model(
+        refund.id,
+        models.Refund,
+        local,
+        schema=refund,
+        logger=logger,
+        hook_func=hook
+    )
 
 
 @router.get(
