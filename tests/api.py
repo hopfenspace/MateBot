@@ -136,7 +136,6 @@ class WorkingAPITests(utils.BaseAPITests):
             ("PUT", "/votes"),
             200,
             json=vote1_json,
-            headers={"If-Match": vote1.headers.get("ETag")},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/vote/1")]
         ).json()
@@ -176,23 +175,16 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/votes"),
             409,
-            json=vote3_json,
-            headers={"If-Match": vote3.headers.get("ETag")}
+            json=vote3_json
         )
 
         # Close the ballot, then try closing it again
-        ballot1_etag = self.assertQuery(
-            ("GET", "/ballots/1"),
-            200,
-            r_schema=_schemas.Ballot
-        ).headers.get("ETag")
         ballot1["closed"] = True
         ballot1_closed_response = self.assertQuery(
             ("PUT", "/ballots"),
             200,
             json=ballot1,
             r_schema=_schemas.Ballot,
-            headers={"If-Match": ballot1_etag},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
         )
         ballot1 = ballot1_closed_response.json()
@@ -200,7 +192,6 @@ class WorkingAPITests(utils.BaseAPITests):
             ("PUT", "/ballots"),
             200,
             json=ballot1,
-            headers={"If-Match": ballot1_closed_response.headers.get("ETag")},
             r_schema=_schemas.Ballot(**ballot1)
         )
         self.assertEqual(ballot1["result"], -2)
@@ -378,7 +369,6 @@ class WorkingAPITests(utils.BaseAPITests):
             ("PUT", "/communisms"),
             200,
             json=communism2,
-            headers={"If-Match": response2.headers.get("ETag")},
             r_schema=communism2,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
         )
@@ -393,7 +383,6 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism,
-            headers={"If-Match": response3.headers.get("ETag")},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
         )
         communism3_changed = response3_changed.json()
@@ -424,8 +413,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/communisms"),
             400,
-            json=communism3,
-            headers={"If-Match": response3_changed.headers.get("ETag")}
+            json=communism3
         )
 
 
