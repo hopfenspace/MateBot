@@ -6,7 +6,6 @@ This module contains the special schemas for updates and the status.
 
 import sys
 import time
-import uuid
 import datetime
 from typing import List, Optional
 
@@ -25,19 +24,6 @@ class Versions(pydantic.BaseModel):
 
     latest: pydantic.PositiveInt
     versions: List[Version]
-
-
-class Updates(pydantic.BaseModel):
-    aliases: uuid.UUID
-    applications: uuid.UUID
-    ballots: uuid.UUID
-    communisms: uuid.UUID
-    consumables: uuid.UUID
-    refunds: uuid.UUID
-    transactions: uuid.UUID
-    users: uuid.UUID
-    votes: uuid.UUID
-    timestamp: pydantic.NonNegativeInt
 
 
 class VersionInfo(pydantic.BaseModel):
