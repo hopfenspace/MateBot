@@ -9,7 +9,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, ForbiddenChange, MissingImplementation
+from ..base import Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, notifier, versioning
 from ...persistence import models
