@@ -94,16 +94,14 @@ class WorkingAPITests(utils.BaseAPITests):
             404,
             json={"user_id": 1, "ballot_id": 1, "vote": 1}
         )
-        self.assertEqual(
-            self.assertQuery(
-                ("POST", "/ballots"),
-                201,
-                json={"question": "Is this a question?", "changeable": True},
-                r_schema=_schemas.Ballot,
-                recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
-            ).json()["question"],
-            "Is this a question?"
-        )
+        ballot1 = self.assertQuery(
+            ("POST", "/ballots"),
+            201,
+            json={"question": "Is this a question?", "changeable": True},
+            r_schema=_schemas.Ballot,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/ballot/1")]
+        ).json()
+        self.assertEqual(ballot1["question"], "Is this a question?")
 
         # Add another ballot to be sure
         ballot2 = self.assertQuery(
@@ -132,15 +130,17 @@ class WorkingAPITests(utils.BaseAPITests):
             )
 
         # Update the vote to become negative
-        vote1 = self.assertQuery(
-            ("PATCH", "/votes"),
+        vote1_json = vote1.json()
+        vote1_json["vote"] = -1
+        vote1_json_updated = self.assertQuery(
+            ("PUT", "/votes"),
             200,
-            json={"id": 1, "vote": -1},
+            json=vote1_json,
             headers={"If-Match": vote1.headers.get("ETag")},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/vote/1")]
         ).json()
-        self.assertEqual(vote1["vote"], -1)
+        self.assertEqual(vote1_json_updated["vote"], -1)
 
         # Add another user for testing a second voting user
         self.assertQuery(
@@ -166,15 +166,17 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/3")]
         )
+        vote3_json = vote3.json()
+        vote3_json["vote"] = 1
         self.assertQuery(
-            ("PATCH", "/votes"),
+            ("PUT", "/votes"),
             412,
-            json={"id": 3, "vote": 1}
+            json=vote3_json
         )
         self.assertQuery(
-            ("PATCH", "/votes"),
+            ("PUT", "/votes"),
             409,
-            json={"id": 3, "vote": 1},
+            json=vote3_json,
             headers={"If-Match": vote3.headers.get("ETag")}
         )
 
@@ -184,19 +186,20 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Ballot
         ).headers.get("ETag")
+        ballot1["closed"] = True
         ballot1_closed_response = self.assertQuery(
-            ("PATCH", "/ballots"),
+            ("PUT", "/ballots"),
             200,
-            json={"id": 1},
+            json=ballot1,
             r_schema=_schemas.Ballot,
             headers={"If-Match": ballot1_etag},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
         )
         ballot1 = ballot1_closed_response.json()
         self.assertQuery(
-            ("PATCH", "/ballots"),
+            ("PUT", "/ballots"),
             200,
-            json={"id": 1},
+            json=ballot1,
             headers={"If-Match": ballot1_closed_response.headers.get("ETag")},
             r_schema=_schemas.Ballot(**ballot1)
         )
@@ -212,18 +215,19 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Open a new ballot and close it immediately
-        self.assertTrue(
-            self.assertQuery(
-                ("POST", "/ballots"),
-                201,
-                json={"question": "Why did you even open this ballot?", "changeable": False},
-                r_schema=_schemas.Ballot
-            ).json()["active"]
+        ballot3 = self.assertQuery(
+            ("POST", "/ballots"),
+            201,
+            json={"question": "Why did you even open this ballot?", "changeable": False},
+            r_schema=_schemas.Ballot
         )
+        ballot3_json = ballot3.json()
+        self.assertTrue(ballot3_json["active"])
+        ballot3_json["active"] = False
         ballot3_closed = self.assertQuery(
-            ("PATCH", "/ballots"),
+            ("PUT", "/ballots"),
             200,
-            json={"id": 3},
+            json=ballot3_json,
             r_schema=_schemas.Ballot
         ).json()
         self.assertEqual(ballot3_closed["result"], 0)
@@ -350,82 +354,78 @@ class WorkingAPITests(utils.BaseAPITests):
 
         # Omit the If-Match header entirely even though enforced
         self.assertQuery(
-            ("PATCH", "/communisms"),
+            ("PUT", "/communisms"),
             412,
-            json={"id": 2}
+            json=communism2
         )
 
         # Try updating with a wrong If-Match header (which should fail)
         self.assertQuery(
-            ("PATCH", "/communisms"),
+            ("PUT", "/communisms"),
             412,
-            json={"id": 2},
+            json=communism2,
             headers={"If-Match": "Definitively-Wrong"}
         )
         self.assertQuery(
-            ("PATCH", "/communisms"),
+            ("PUT", "/communisms"),
             412,
-            json={"id": 2},
+            json=communism3,
             headers={"If-Match": str(uuid.uuid4())}
         )
 
-        # Do an empty patch operation (that shouldn't change anything)
+        # Perform a PUT operation with the same data (that shouldn't change anything)
         self.assertQuery(
-            ("PATCH", "/communisms"),
+            ("PUT", "/communisms"),
             200,
-            json={"id": 2},
+            json=communism2,
             headers={"If-Match": response2.headers.get("ETag")},
             r_schema=communism2,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
         )
 
         # Add new users to the third communism
-        response3_patched = self.assertQuery(
-            ("PATCH", "/communisms"),
-            200,
-            json={
-                "id": 3,
-                "participants": [
-                    {"user": 1, "quantity": 10},
-                    {"user": 2, "quantity": 20}
-                ]
-            },
-            r_schema=_schemas.Communism,
-            headers={"If-Match": response3.headers.get("ETag")},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
-        )
-        communism3_patched = response3_patched.json()
         communism3["participants"] = [
             _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
             _schemas.CommunismUserBinding(user=2, quantity=20).dict()
         ]
-        self.assertEqual(communism3_patched, communism3)
+        response3_changed = self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism3,
+            r_schema=_schemas.Communism,
+            headers={"If-Match": response3.headers.get("ETag")},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+        )
+        communism3_changed = response3_changed.json()
+        self.assertEqual(communism3_changed, communism3)
         self.assertQuery(
             ("GET", "/communisms/3"),
             200,
-            r_schema=communism3_patched
+            r_schema=communism3_changed
         )
 
-        # Do not allow to delete the first communism
+        # Do not allow to delete communisms
         self.assertQuery(
             ("DELETE", "/communisms"),
-            [400, 405]
+            [400, 404, 405]
+        )
+        self.assertQuery(
+            ("DELETE", "/communisms/1"),
+            [400, 404, 405]
         )
 
         # Forbid to update a communism if a user is mentioned twice or more
+        communism3["participants"] = [
+            {"user": 1, "quantity": 10},
+            {"user": 1, "quantity": 10},
+            {"user": 1, "quantity": 10},
+            {"user": 2, "quantity": 20}
+        ]
         self.assertQuery(
-            ("PATCH", "/communisms"),
+            ("PUT", "/communisms"),
             400,
-            json={
-                "id": 3,
-                "participants": [
-                    {"user": 1, "quantity": 10},
-                    {"user": 1, "quantity": 10},
-                    {"user": 1, "quantity": 10},
-                    {"user": 2, "quantity": 20}
-                ]
-            },
-            headers={"If-Match": response3_patched.headers.get("ETag")}
+            json=communism3,
+            headers={"If-Match": response3_changed.headers.get("ETag")}
         )
 
 

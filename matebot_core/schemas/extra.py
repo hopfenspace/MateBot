@@ -12,6 +12,8 @@ from typing import List, Optional
 
 import pydantic
 
+from .bases import BaseModel
+
 
 _URL_SCHEMES = {"http", "https"}
 
@@ -59,15 +61,17 @@ class Status(pydantic.BaseModel):
     timestamp: pydantic.NonNegativeInt
 
 
-class Callback(pydantic.BaseModel):
+class Callback(BaseModel):
     id: pydantic.NonNegativeInt
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
 
+    __allowed_updates__ = ["base", "username", "password"]
 
-class CallbackCreation(pydantic.BaseModel):
+
+class CallbackCreation(BaseModel):
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]

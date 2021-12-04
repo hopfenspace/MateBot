@@ -11,10 +11,11 @@ import pydantic
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from .base import APIException, Conflict, InternalServerException, NotFound, Operations, ReturnType
+from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
 from .notifier import Callback
 from ..persistence import models
+from ..schemas.bases import BaseModel
 
 
 _CallbackType = Callable[[str, str, logging.Logger, sqlalchemy.orm.Session], None]
@@ -517,57 +518,6 @@ async def update_model(
     return _return_expected(returns, model, local, {})
 
 
-async def patch_model(
-        instance_id: pydantic.NonNegativeInt,
-        model: Type[models.Base],
-        local: LocalRequestData,
-        require_conditional_header: bool = True,
-        logger: Optional[logging.Logger] = None,
-        return_schema: bool = False,
-        **kwargs
-) -> Optional[pydantic.BaseModel]:
-    """
-    Patch object of the model with the specified keyword arguments (triggering callbacks)
-
-    :param instance_id: unique identifier of the instance to be edited
-    :param model: SQLAlchemy model type
-    :param local: contextual local data
-    :param logger: optional logger that should be used for INFO and ERROR messages
-    :param require_conditional_header: force the user agent to provide a valid conditional request
-        header before proceeding with the action, otherwise abort further operation
-    :param return_schema: switch to enable returning the object schema with attached ETag header
-    :param kwargs: collection of changed attributes and their values
-    :raises NotFound: when the specified ID can't be found for the given model
-    :raises PreconditionFailed: if no valid conditional request header has been set
-    """
-
-    logger = _enforce_logger(logger)
-    cls_name = model.__name__
-    obj = await return_one(instance_id, model, local.session)
-
-    if require_conditional_header:
-        local.entity.model_name = cls_name
-        local.entity.compare(obj.schema)
-
-    logger.info(f"Patching model {obj!r}...")
-    for k in kwargs:
-        setattr(obj, k, kwargs[k])
-
-    await _commit(local.session, obj, logger=logger)
-
-    local.tasks.add_task(
-        Callback.updated,
-        type(model).__name__.lower(),
-        model.id,
-        logger,
-        await return_all(models.Callback, local.session)
-    )
-
-    if not return_schema:
-        return
-    return local.attach_headers(obj.schema)
-
-
 async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
@@ -626,3 +576,24 @@ async def delete_one_of_model(
         logger,
         await return_all(models.Callback, local.session)
     )
+
+
+def restrict_updates(remote_schema: BaseModel, db_schema: BaseModel) -> bool:
+    """
+    Compare a remote schema with the local state's schema to enforce unmodified fields
+
+    :param remote_schema: incoming schema attached to a PUT request to be validated
+    :param db_schema: schema of the local database model prior to modification
+    :raises ForbiddenChange: in case the remote and local state of a "forbidden" field differs
+    :raises InternalServerException: in case the schema types don't match correctly
+    :return: True
+    """
+
+    if not isinstance(remote_schema, type(db_schema)):
+        raise InternalServerException("Schema types don't match", f"{type(remote_schema)}!={type(db_schema)}")
+    for k in db_schema.__fields__.keys():
+        if not hasattr(remote_schema, k):
+            raise InternalServerException("Invalid schema type", str(remote_schema))
+        if k not in db_schema.__allowed_updates__ and getattr(remote_schema, k) != getattr(db_schema, k):
+            raise ForbiddenChange(f"{type(db_schema).__name__}.{k}")
+    return True

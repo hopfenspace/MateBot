@@ -74,33 +74,29 @@ async def add_new_vote(
     return await helpers.create_new_of_model(model, local, logger)
 
 
-@router.patch(
+@router.put(
     "",
     response_model=schemas.Vote,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def change_existing_vote(
-        vote: schemas.VotePatch,
+        vote: schemas.Vote,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Update the `vote` value of an existing vote.
 
+    A 403 error will be returned if any other attribute than `vote` got changed.
     A 404 error will be returned if the vote ID is unknown. A 409 error
-    will be returned if the ballot is restricted (i.e. forbids changes).
+    will be returned if the ballot isn't marked changeable (i.e. forbids changes).
     """
 
     model = await helpers.return_one(vote.id, models.Vote, local.session)
-    local.entity.model_name = type(model).__name__
-    local.entity.compare(model.schema)
+    helpers.restrict_updates(vote, model.schema)
 
     if not model.ballot.changeable:
         raise Conflict("Updating the vote of a restricted ballot is illegal", str(model.ballot))
-
-    if not vote.vote:
-        local.entity.model_name = models.Vote.__name__
-        return local.attach_headers(model.schema)
 
     model.vote = vote.vote
     return await helpers.update_model(model, local, logger, ReturnType.SCHEMA_WITH_TAG)

@@ -9,6 +9,7 @@ import pydantic
 
 class GeneralConfig(pydantic.BaseModel):
     min_refund_approves: pydantic.PositiveInt = 2
+    min_refund_disapproves: pydantic.PositiveInt = 2
     max_parallel_debtors: pydantic.PositiveInt = 3
     max_simultaneous_consumption: pydantic.conint(gt=2) = 20
     max_transaction_amount: pydantic.conint(gt=100) = 50000
