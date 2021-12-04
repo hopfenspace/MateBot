@@ -152,7 +152,7 @@ async def close_refund_by_id(
         await helpers.return_all(models.Callback, local.session)
     )
 
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.delete(

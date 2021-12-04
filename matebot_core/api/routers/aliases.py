@@ -106,7 +106,7 @@ async def update_existing_alias(
     await helpers.return_unique(models.Application, local.session, name=alias.application)
 
     model.app_user_id = alias.app_user_id
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.delete(
