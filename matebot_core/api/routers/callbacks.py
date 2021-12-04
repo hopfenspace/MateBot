@@ -7,7 +7,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -39,12 +39,12 @@ def trigger_cache_refresh():
 @callback_router.get("/create/{model}/{id}")
 def announce_created_model():
     """
-    Announce a created object of the ``model`` with the ``id``.
+    Announce a created object of the `model` with the `id`.
 
     This endpoint may be seen as optional, since the external API is not
     strictly required to implement this endpoint (but a meaningful error,
     like 404, should be returned, of course). The endpoint will be called
-    after the response to the ``/trigger`` request has arrived.
+    after the response to the `/trigger` request has arrived.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -55,12 +55,12 @@ def announce_created_model():
 @callback_router.get("/update/{model}/{id}")
 def announce_updated_model():
     """
-    Announce an updated object of the ``model`` with the ``id``.
+    Announce an updated object of the `model` with the `id`.
 
     This endpoint may be seen as optional, since the external API is not
     strictly required to implement this endpoint (but a meaningful error,
     like 404, should be returned, of course). The endpoint will be called
-    after the response to the ``/trigger`` request has arrived.
+    after the response to the `/trigger` request has arrived.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -71,12 +71,12 @@ def announce_updated_model():
 @callback_router.get("/delete/{model}/{id}")
 def announce_deleted_model():
     """
-    Announce a deleted object of the ``model`` with the ``id``.
+    Announce a deleted object of the `model` with the `id`.
 
     This endpoint may be seen as optional, since the external API is not
     strictly required to implement this endpoint (but a meaningful error,
     like 404, should be returned, of course). The endpoint will be called
-    after the response to the ``/trigger`` request has arrived.
+    after the response to the `/trigger` request has arrived.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -150,24 +150,29 @@ async def update_existing_callback(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Update an existing callback model identified by its ``id``.
+    Update an existing callback model identified by its `id`.
 
-    A 404 error will be returned if the callback's ``id`` doesn't exist.
-    A 409 error will be returned when the exact same base URL has already been
-    registered or when one application already has a registered callback.
+    A 404 error will be returned if the callback `id` doesn't exist.
+    A 409 error will be returned when the exact same base URL is already in use.
     """
 
-    raise MissingImplementation("update_existing_callback")
+    model = await helpers.return_one(callback.id, models.Callback, local.session)
+    helpers.restrict_updates(callback, model.schema)
+
+    if await helpers.expect_none(models.Callback, local.session, base=callback.base):
+        raise Conflict(f"Base URL {callback.base} already in use.", detail=str(callback))
+
+    model.base = callback.base
+    model.username = callback.username
+    model.password = callback.password
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
 
 
 @router.delete(
     "",
     status_code=204,
-    responses={
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError},
-        412: {"model": schemas.APIError}
-    },
+    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -178,10 +183,16 @@ async def delete_existing_callback(
     """
     Delete an existing callback model.
 
-    A 404 error will be returned if the requested ``id`` doesn't exist.
+    A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
     A 412 error will be returned if the conditional request fails.
     """
 
-    raise MissingImplementation("delete_existing_callback")
+    await helpers.delete_one_of_model(
+        callback.id,
+        models.Callback,
+        local,
+        schema=callback,
+        logger=logger
+    )
