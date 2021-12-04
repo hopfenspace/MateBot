@@ -39,8 +39,6 @@ class ReturnType(enum.Enum):
     NONE = enum.auto()
     MODEL = enum.auto()
     SCHEMA = enum.auto()
-    SCHEMA_WITH_TAG = enum.auto()
-    SCHEMA_WITH_ALL_HEADERS = enum.auto()
 
 
 class APIException(HTTPException):

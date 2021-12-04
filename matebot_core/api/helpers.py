@@ -130,18 +130,19 @@ def _return_expected(
         returns: ReturnType,
         model: models.Base,
         local: LocalRequestData,
-        headers: Dict[str, Any]
+        headers: Optional[Dict[str, Any]] = None
 ) -> Optional[pydantic.BaseModel]:
     """
     Select the appropriate returned value based on the given return type enum
     """
 
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
     return {
         ReturnType.NONE: None,
         ReturnType.MODEL: model,
-        ReturnType.SCHEMA: model.schema,
-        ReturnType.SCHEMA_WITH_TAG: local.attach_headers(model.schema),
-        ReturnType.SCHEMA_WITH_ALL_HEADERS: local.attach_headers(model.schema, **headers)
+        ReturnType.SCHEMA: model.schema
     }[returns]
 
 
@@ -282,9 +283,6 @@ async def get_one_of_model(
     """
     Get the object of a given model that's identified by its object ID
 
-    This method will also take care of handling any conditional request headers
-    and setting the correct ``ETag`` header (besides the others) in the response.
-
     :param object_id: internal ID (primary key in the database) of the model
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
@@ -294,12 +292,10 @@ async def get_one_of_model(
     """
 
     obj = await return_one(object_id, model, local.session)
-    schema = obj.schema
-    local.entity.model_name = model.__name__
-    local.entity.compare(schema)
-    if headers and isinstance(headers, dict):
-        return local.attach_headers(schema, **headers)
-    return local.attach_headers(schema)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return obj.schema
 
 
 async def get_all_of_model(
@@ -311,9 +307,6 @@ async def get_all_of_model(
     """
     Get a list of all known objects of a given model
 
-    This method will also take care of handling any conditional request headers
-    and setting the correct ``ETag`` header (besides the others) in the response.
-
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
     :param headers: additional headers for the response
@@ -322,11 +315,10 @@ async def get_all_of_model(
     """
 
     all_schemas = [obj.schema for obj in await return_all(model, local.session, **kwargs)]
-    local.entity.model_name = model.__name__
-    local.entity.compare(all_schemas)
-    if headers and isinstance(headers, dict):
-        return local.attach_headers(all_schemas, **headers)
-    return local.attach_headers(all_schemas)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return all_schemas
 
 
 async def _handle_data_changes(
@@ -342,8 +334,6 @@ async def _handle_data_changes(
         content_location: bool = False,
         trigger_callback: bool = False,
         callback_operation: Optional[_CallbackType] = None,
-        require_conditional_header: bool = True,
-        compare_existing_schema: Optional[pydantic.BaseModel] = None,
         hook_before: Optional[HookType] = None,
         hook_after: Optional[HookType] = None,
         extra_headers: Optional[Dict[str, Any]] = None,
@@ -365,11 +355,8 @@ async def _handle_data_changes(
     if not isinstance(local, LocalRequestData):
         raise InternalServerException("TypeError", f"{local} is no {LocalRequestData} object")
 
-    # Enforce to have a logger and check the conditional request header(s)
+    # Enforce to have a logger
     logger = _enforce_logger(logger)
-    if require_conditional_header:
-        local.entity.model_name = model_type.__name__
-        local.entity.compare(compare_existing_schema)
 
     # Execute the 'before' hook function or coroutine
     await _call_hook(hook_before, model, local, logger)
@@ -440,8 +427,6 @@ async def create_new_of_model(
     """
 
     logger = _enforce_logger(logger)
-    local.entity.model_name = type(model).__name__
-    local.entity.compare(None)
 
     logger.info(f"Adding new model {model!r}...")
     if more_models is not None:
@@ -478,7 +463,10 @@ async def create_new_of_model(
         headers["Location"] = location_format.format(model.id)
         if content_location:
             headers["Content-Location"] = headers["Location"]
-    return local.attach_headers(model.schema, **headers)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return model.schema
 
 
 async def update_model(
@@ -486,7 +474,6 @@ async def update_model(
         local: LocalRequestData,
         logger: Optional[logging.Logger] = None,
         returns: ReturnType = ReturnType.NONE,
-        require_header: bool = True
 ):
     """
     Add the updated model to a database transaction and commit it (triggering callbacks)
@@ -495,14 +482,9 @@ async def update_model(
     :param local: contextual local data
     :param logger: optional logger that should be used for INFO and ERROR messages
     :param returns: determine the return value and its annotations (of this function)
-    :param require_header: enable/disable the check for a valid conditional header field
-        before proceeding with the update action and changing the database state
     """
 
     logger = _enforce_logger(logger)
-    if require_header is not None:
-        local.entity.model_name = type(model).__name__
-        local.entity.compare(model)
 
     logger.info(f"Updating model {model!r}...")
     await _commit(local.session, model, logger=logger)
@@ -522,7 +504,6 @@ async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
         local: LocalRequestData,
-        require_conditional_header: bool = True,
         schema: Optional[pydantic.BaseModel] = None,
         logger: Optional[logging.Logger] = None,
         hook_func: Optional[HookType] = None
@@ -533,8 +514,6 @@ async def delete_one_of_model(
     :param instance_id: unique identifier of the instance to be deleted
     :param model: class of the SQLAlchemy model
     :param local: contextual local data
-    :param require_conditional_header: force the user agent to provide a valid conditional request
-        header before proceeding with the action, otherwise abort further operation
     :param schema: optional supplied schema of the request to validate the client's state
     :param logger: optional logger that should be used for INFO and ERROR messages
     :param hook_func: optional callable which will be called after all previous checks
@@ -551,10 +530,6 @@ async def delete_one_of_model(
     obj = await return_one(instance_id, model, local.session)
 
     logger.info(f"Deleting model {obj!r}...")
-    if require_conditional_header:
-        local.entity.model_name = cls_name
-        local.entity.compare(obj.schema)
-
     if schema is not None and obj.schema != schema:
         raise Conflict(
             f"Invalid state of the {cls_name}. Query the {cls_name} to update.",
