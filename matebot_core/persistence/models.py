@@ -173,14 +173,15 @@ class MultiTransaction(Base):
     __tablename__ = "multi_transaction"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    amount = Column(Integer, nullable=False)
+    single_amount = Column(Integer, nullable=False)
     registered = Column(DateTime, nullable=False, server_default=func.now())
 
     @property
     def schema(self) -> schemas.MultiTransaction:
         return schemas.MultiTransaction(
             id=self.id,
-            total=self.amount,
+            single_amount=self.single_amount,
+            total_amount=sum(t.amount for t in self.transactions),
             transactions=list(map(lambda x: x.schema, self.transactions)),
             timestamp=self.registered.timestamp()
         )

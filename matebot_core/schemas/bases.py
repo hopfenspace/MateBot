@@ -103,7 +103,8 @@ class TransactionCreation(BaseModel):
 
 class MultiTransaction(BaseModel):
     id: pydantic.NonNegativeInt
-    total: pydantic.NonNegativeInt
+    single_amount: pydantic.NonNegativeInt
+    total_amount: pydantic.NonNegativeInt
     transactions: List[Transaction]
     timestamp: pydantic.NonNegativeInt
 
