@@ -138,10 +138,12 @@ class Transaction(Base):
     reason = Column(String(255), nullable=True)
     registered = Column(DateTime, nullable=False, server_default=func.now())
     transaction_types_id = Column(Integer, ForeignKey("transaction_types.id"), nullable=True)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
     sender = relationship("User", foreign_keys=[sender_id])
     receiver = relationship("User", foreign_keys=[receiver_id])
     transaction_type = relationship("TransactionType", backref="transactions")
+    multi_transaction = relationship("MultiTransaction", backref="transactions")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -157,6 +159,29 @@ class Transaction(Base):
             amount=self.amount,
             reason=self.reason,
             transaction_type=self.transaction_type.schema if self.transaction_type else None,
+            multi_transaction=self.multi_transaction_id,
+            timestamp=self.registered.timestamp()
+        )
+
+    def __repr__(self) -> str:
+        return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
+            self.id, self.sender_id, self.receiver_id, self.amount
+        )
+
+
+class MultiTransaction(Base):
+    __tablename__ = "multi_transaction"
+
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    amount = Column(Integer, nullable=False)
+    registered = Column(DateTime, nullable=False, server_default=func.now())
+
+    @property
+    def schema(self) -> schemas.MultiTransaction:
+        return schemas.MultiTransaction(
+            id=self.id,
+            total=self.amount,
+            transactions=list(map(lambda x: x.schema, self.transactions)),
             timestamp=self.registered.timestamp()
         )
 

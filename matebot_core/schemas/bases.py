@@ -90,6 +90,7 @@ class Transaction(BaseModel):
     amount: pydantic.NonNegativeInt
     reason: Optional[pydantic.constr(max_length=255)]
     transaction_type: TransactionType
+    multi_transaction: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 
@@ -98,6 +99,13 @@ class TransactionCreation(BaseModel):
     receiver: Union[pydantic.NonNegativeInt, Alias]
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
+
+
+class MultiTransaction(BaseModel):
+    id: pydantic.NonNegativeInt
+    total: pydantic.NonNegativeInt
+    transactions: List[Transaction]
+    timestamp: pydantic.NonNegativeInt
 
 
 class Consumable(BaseModel):
