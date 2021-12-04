@@ -408,3 +408,11 @@ class Callback(Base):
 
     def __repr__(self) -> str:
         return f"Callback(id={self.id}, base={self.base}, app_id={self.app_id})"
+
+
+# Asserting that every database model has a `schema` attribute
+assert not any(
+    True
+    for mapper in Base.registry.mappers
+    if not hasattr(mapper.class_, "schema")
+)
