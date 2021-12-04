@@ -127,10 +127,17 @@ async def update_existing_communism(
 
     model.externals = communism.externals
 
+    remaining = list(communism.participants)[:]
     for c_u in model.participants:
         for p in communism.participants:
             if c_u.user_id == p.user:
                 c_u.quantity = p.quantity
+                remaining.remove(p)
+                break
+        else:
+            local.session.delete(c_u)
+    for p in remaining:
+        local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity))
 
     if not communism.active:
         raise MissingImplementation("update_existing_communism_close_communism")
