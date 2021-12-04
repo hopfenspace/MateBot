@@ -2,7 +2,6 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
-import uuid
 import datetime
 import unittest as _unittest
 from typing import Type
@@ -149,13 +148,13 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
         )
-        vote2 = self.assertQuery(
+        self.assertQuery(
             ("POST", "/votes"),
             201,
             json={"user_id": 2, "ballot_id": 1, "vote": -1},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/2")]
-        ).json()
+        )
 
         # Don't allow to change a vote of a restricted (unchangeable) ballot
         vote3 = self.assertQuery(
@@ -178,25 +177,41 @@ class WorkingAPITests(utils.BaseAPITests):
             json=vote3_json
         )
 
-        # Close the ballot, then try closing it again
+        # Try to close the ballot with an old model
         ballot1["active"] = False
-        ballot1_closed_response = self.assertQuery(
+        self.assertQuery(
+            ("PUT", "/ballots"),
+            403,
+            json=ballot1
+        )
+
+        # Close the ballot, then try closing it again
+        ballot1 = self.assertQuery(
+            ("GET", "/ballots/1"),
+            200
+        ).json()
+        ballot1["active"] = False
+        ballot1_updated = self.assertQuery(
             ("PUT", "/ballots"),
             200,
             json=ballot1,
             r_schema=_schemas.Ballot,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
-        )
-        ballot1 = ballot1_closed_response.json()
+        ).json()
+        self.assertNotEqual(ballot1, ballot1_updated)
+        self.assertEqual(ballot1_updated["result"], -2)
+        self.assertGreaterEqual(ballot1_updated["closed"], int(datetime.datetime.now().timestamp()) - 1)
+        self.assertEqual(ballot1_updated["votes"], [
+            self.assertQuery(("GET", "/votes/1"), 200).json(),
+            self.assertQuery(("GET", "/votes/2"), 200).json(),
+        ])
         self.assertQuery(
             ("PUT", "/ballots"),
             200,
-            json=ballot1,
-            r_schema=_schemas.Ballot(**ballot1)
-        )
-        self.assertEqual(ballot1["result"], -2)
-        self.assertGreaterEqual(ballot1["closed"], int(datetime.datetime.now().timestamp()) - 1)
-        self.assertEqual(ballot1["votes"], [vote1, vote2])
+            json=ballot1_updated,
+            r_schema=_schemas.Ballot(**ballot1_updated),
+            recent_callbacks=[]
+        ).json()
 
         # Try adding new votes with another user to the closed ballot
         self.assertQuery(
