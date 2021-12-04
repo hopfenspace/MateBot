@@ -69,31 +69,46 @@ async def create_new_consumable(
 @router.put(
     "",
     response_model=schemas.Consumable,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_consumable(
-        consumable: schemas.ConsumableUpdate,
+        consumable: schemas.Consumable,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Update an existing consumable model.
 
+    A 403 error will be returned if the `modified` field has been changed.
     A 404 error will be returned if the `id` doesn't exist.
     A 409 error will be returned when the name has already been taken.
     """
 
-    raise MissingImplementation("update_existing_consumable")
+    model = await helpers.return_one(consumable.id, models.Consumable, local.session)
+    helpers.restrict_updates(consumable, model.schema)
+
+    await helpers.expect_none(models.Consumable, local.session, name=consumable.name)
+
+    model.name = consumable.name
+    model.description = consumable.description
+    model.price = consumable.price
+    model.symbol = consumable.symbol
+    model.stock = consumable.stock
+
+    for m in model.messages:
+        local.session.delete(m)
+
+    model.messages = [
+        models.ConsumableMessage(message=m, consumable_id=model.id) for m in consumable.messages
+    ]
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
 
 
 @router.delete(
     "",
     status_code=204,
-    responses={
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError},
-        412: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_consumable(
