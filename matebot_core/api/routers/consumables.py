@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, MissingImplementation
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
