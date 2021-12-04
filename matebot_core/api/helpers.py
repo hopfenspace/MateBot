@@ -3,9 +3,10 @@ Generic helper library for the core REST API
 """
 
 import sys
+import math
 import asyncio
 import logging
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 import pydantic
 import sqlalchemy.exc
@@ -190,6 +191,94 @@ async def create_transaction(
         )
 
     return model
+
+
+async def create_multi_transaction_by_single(
+        senders: List[models.User],
+        receivers: List[models.User],
+        single_amount: int,
+        reason: str,
+        local: LocalRequestData,
+        logger: logging.Logger,
+        callback: bool = True
+) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    """
+
+    """
+
+    logger = _enforce_logger(logger)
+    logger.info(f"Incoming multi-transaction from {senders} to {receivers} with base {single_amount} for {reason!r}.")
+
+    transactions = []
+    multi = models.MultiTransaction(single_amount=single_amount)
+
+    counter = 0
+    for sender in senders:
+        for receiver in receivers:
+            if sender == receiver:
+                logger.debug(f"Skipping equal sender and receiver: {sender}")
+                continue
+
+            sender.balance -= single_amount
+            receiver.balance += single_amount
+            logger.debug(f"Adding transaction from {sender} to {receiver} for {single_amount}...")
+            transactions.append(
+                models.Transaction(
+                    sender=sender,
+                    receiver=receiver,
+                    amount=single_amount,
+                    reason=f"Multi-transaction[{counter}]: {reason}",
+                    multi_transaction=multi.id
+                )
+            )
+            counter += 1
+
+    logger.info(f"Added {counter} transactions of {len(senders) * len(receivers)} combinations")
+
+    local.session.add_all(list(set(senders)))
+    local.session.add_all(list(set(receivers)))
+    local.session.add_all(transactions)
+
+    logger.debug("Committing multi-transaction and all changed states ...")
+    await _commit(local.session, multi, logger=logger)
+    if callback:
+        local.tasks.add_task(
+            Callback.created,
+            type(multi).__name__.lower(),
+            multi.id,
+            logger,
+            await return_all(models.Callback, local.session)
+        )
+
+    logger.info("Completed multi-transaction.")
+
+    return multi, transactions
+
+
+async def create_multi_transaction_by_total(
+        senders: List[models.User],
+        receivers: List[models.User],
+        total_amount: int,
+        reason: str,
+        local: LocalRequestData,
+        logger: logging.Logger,
+        callback: bool = True
+) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    """
+    Create a new multi transaction by specifying the estimated total amount.
+    See `create_multi_transaction_by_single` for more details.
+    """
+
+    single_amount = math.ceil(total_amount / (len(senders) * len(receivers)))
+    return await create_multi_transaction_by_single(
+        senders,
+        receivers,
+        single_amount,
+        reason,
+        local,
+        logger,
+        callback
+    )
 
 
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
