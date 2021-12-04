@@ -179,7 +179,7 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Close the ballot, then try closing it again
-        ballot1["closed"] = True
+        ballot1["active"] = False
         ballot1_closed_response = self.assertQuery(
             ("PUT", "/ballots"),
             200,
@@ -330,7 +330,9 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/communisms"),
             200,
-            r_schema=_schemas.Communism(**communism2)
+            json=communism2,
+            r_schema=_schemas.Communism(**communism2),
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
         ).json()
 
         # Create and get the third communism object
@@ -347,20 +349,6 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Communism(**communism3)
         ).json()
-
-        # Try updating with a wrong If-Match header (which should fail)
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism2,
-            headers={"If-Match": "Definitively-Wrong"}
-        )
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism3,
-            headers={"If-Match": str(uuid.uuid4())}
-        )
 
         # Perform a PUT operation with the same data (that shouldn't change anything)
         self.assertQuery(
