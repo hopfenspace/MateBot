@@ -2,6 +2,7 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
+import time
 import uuid
 import datetime
 import unittest as _unittest
@@ -58,6 +59,25 @@ class WorkingAPITests(utils.BaseAPITests):
                 self.assertQuery(("GET", f"/users/{i+1}"), 200, r_schema=_schemas.User).json()
             )
             users.append(user)
+            self.assertEqual(
+                users,
+                self.assertQuery(("GET", "/users"), 200, skip_callbacks=2).json()
+            )
+
+        time.sleep(1)
+
+        for u in users:
+            self.assertQuery(("PUT", "/users"), 200, json=u, r_schema=u, skip_callbacks=2)
+
+        for i in range(3):
+            self.assertQuery(
+                ("DELETE", "/users"),
+                200,
+                json=users[-1],
+                recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{len(users)}")]
+            )
+            self.assertQuery(("GET", f"/users/{len(users)}"), 404, r_schema=_schemas.APIError)
+            users.pop(-1)
             self.assertEqual(
                 users,
                 self.assertQuery(("GET", "/users"), 200, skip_callbacks=2).json()
