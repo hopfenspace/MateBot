@@ -26,6 +26,17 @@ def _tested(cls: Type):
 
 @_tested
 class WorkingAPITests(utils.BaseAPITests):
+    def _set_user_attrs(self, uid: int, success: bool, **kwargs) -> dict:
+        user = self.assertQuery(("GET", f"/users/{uid}"), 200).json()
+        user.update(**kwargs)
+        return self.assertQuery(
+            ("PUT", "/users"),
+            200 if success else [403, 404, 409],
+            json=user,
+            r_schema=_schemas.User if success else None,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{uid}")] if success else None
+        ).json()
+
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
@@ -74,13 +85,7 @@ class WorkingAPITests(utils.BaseAPITests):
         time.sleep(1)
 
         for u in users:
-            self.assertQuery(
-                ("PUT", "/users"),
-                200,
-                json=u,
-                r_schema=u,
-                recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{u['id']}")]
-            )
+            self._set_user_attrs(u["id"], True)
 
         # Deleting valid models just works
         for i in range(3):
@@ -108,32 +113,27 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
         user0["name"] = user0_old_name
 
-        # Updating the balance of a user should fail
-        user0["balance"] += 1
-        self.assertQuery(("PUT", "/users"), 409, json=user0)
-        user0["balance"] -= 1
-        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2)
+        # Updating the balance, special flag, access times or aliases of a user should fail
+        uid = user0["id"]
+        self._set_user_attrs(uid, True, balance=0)
+        self._set_user_attrs(uid, False, balance=1)
+        # self._set_user_attrs(uid, False, special=True)
+        self._set_user_attrs(uid, False, created=1337)
+        self._set_user_attrs(uid, False, accessed=42)
+        self._set_user_attrs(uid, False, aliases=[{
+            "id": 1,
+            "user_id": user0["id"],
+            "application": "none",
+            "app_user_id": "unknown@none"
+        }])
+        self._set_user_attrs(uid, True)
 
         # Updating the name, permission/active/external flags and the voucher should work
-        user0_old = user0.copy()
-        user0["external"] = True
-        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
-        user0["voucher"] = user1["id"]
-        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
-        user0["permission"] = False
-        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
-        user0["active"] = False
-        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
-        user0["active"] = True
-        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
-        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0_old, skip_callbacks=2).json()
-        self.assertEqual(user0, user0_old)
-
-        # Updating the special flag of a user should fail
-        user0["special"] = True
-        self.assertQuery(("PUT", "/users"), 409, json=user0)
-        user0["special"] = False
-        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2)
+        self._set_user_attrs(uid, True, external=True)
+        self._set_user_attrs(uid, True, voucher=user1["id"])
+        self._set_user_attrs(uid, True, permission=False)
+        self._set_user_attrs(uid, True, active=False)
+        self._set_user_attrs(uid, True, active=True)
 
         # Deleting users with balance != 0 should fail
         self.assertQuery(

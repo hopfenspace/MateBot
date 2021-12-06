@@ -288,7 +288,10 @@ class BaseAPITests(BaseTest):
         if isinstance(status_code, int):
             self.assertEqual(status_code, response.status_code, response.text)
         elif isinstance(status_code, Iterable):
-            self.assertTrue(response.status_code in status_code, response.text)
+            self.assertTrue(
+                response.status_code in status_code,
+                (response.text, response.status_code, status_code)
+            )
 
         if r_headers is not None:
             for k in (r_headers if isinstance(r_headers, Iterable) else r_headers.keys()):
