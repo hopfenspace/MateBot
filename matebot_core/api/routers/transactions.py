@@ -40,11 +40,7 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     "",
     status_code=201,
     response_model=schemas.Transaction,
-    responses={
-        400: {"model": schemas.APIError},
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def make_a_new_transaction(

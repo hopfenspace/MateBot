@@ -138,7 +138,6 @@ async def delete_existing_user(
 
         for communism in local.session.query(models.Communism).filter_by(active=True).all():
             for participant in communism.participants:
-                participant: models.CommunismUsers
                 if participant.user_id == model.id:
                     if participant.quantity == 0:
                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
