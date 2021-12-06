@@ -45,6 +45,7 @@ class WorkingAPITests(utils.BaseAPITests):
     def test_users(self):
         self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
 
+        # Creating a set of test users
         users = []
         for i in range(10):
             user = self.assertQuery(
@@ -69,10 +70,11 @@ class WorkingAPITests(utils.BaseAPITests):
         for u in users:
             self.assertQuery(("PUT", "/users"), 200, json=u, r_schema=u, skip_callbacks=2)
 
+        # Deleting valid models just works
         for i in range(3):
             self.assertQuery(
                 ("DELETE", "/users"),
-                200,
+                204,
                 json=users[-1],
                 recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{len(users)}")]
             )
@@ -82,6 +84,72 @@ class WorkingAPITests(utils.BaseAPITests):
                 users,
                 self.assertQuery(("GET", "/users"), 200, skip_callbacks=2).json()
             )
+
+        # Deleting invalid models should fail
+        user0 = users[0]
+        user1 = users[1]
+        user0["balance"] += 1
+        self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
+        user0["balance"] -= 1
+        user0_old_name = user0["name"]
+        user0["name"] += "INVALID"
+        self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
+        user0["name"] = user0_old_name
+
+        # Updating the balance of a user should fail
+        user0["balance"] += 1
+        self.assertQuery(("PUT", "/users"), 409, json=user0)
+        user0["balance"] -= 1
+        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2)
+
+        # Updating the special flag of a user should fail
+        user0["special"] = True
+        self.assertQuery(("PUT", "/users"), 409, json=user0)
+        user0["special"] = False
+        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2)
+
+        # Deleting users with balance != 0 should fail
+        self.assertQuery(
+            ("POST", "/transactions"),
+            201,
+            json={
+                "sender": user0.id,
+                "receiver": user1.id,
+                "amount": 42,
+                "reason": "test"
+            },
+            skip_callbacks=2
+        )
+        user0 = self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()
+        user1 = self.assertQuery(("GET", f"/users/{user1.id}"), 200).json()
+        self.assertEqual(user0["balance"], -user1["balance"])
+        self.assertQuery(("PUT", "/users"), 200, json=user0, r_schema=_schemas.User(**user0), skip_callbacks=2)
+        self.assertQuery(("DELETE", "/users"), 409, json=user0)
+        self.assertQuery(("DELETE", "/users"), 409, json=user1)
+
+        # Deleting the user after fixing the balance should work again
+        self.assertQuery(
+            ("POST", "/transactions"),
+            201,
+            json={
+                "sender": user1.id,
+                "receiver": user0.id,
+                "amount": 42,
+                "reason": "reverse"
+            },
+            skip_callbacks=2
+        )
+        user0 = self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()
+        user1 = self.assertQuery(("GET", f"/users/{user1.id}"), 200).json()
+        self.assertEqual(user0["balance"], 0)
+        self.assertEqual(user1["balance"], 0)
+        self.assertQuery(
+            ("DELETE", "/users"),
+            204,
+            json=user0,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0.id}")]
+        )
+        users.pop(0)
 
     def test_ballots_and_votes(self):
         self.assertListEqual([], self.assertQuery(("GET", "/ballots"), 200).json())
