@@ -80,7 +80,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 200,
                 json=u,
                 r_schema=u,
-                recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{u.id}")]
+                recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{u['id']}")]
             )
 
         # Deleting valid models just works
@@ -126,15 +126,15 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender": user0.id,
-                "receiver": user1.id,
+                "sender": user0["id"],
+                "receiver": user1["id"],
                 "amount": 42,
                 "reason": "test"
             },
             skip_callbacks=2
         )
-        user0 = self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()
-        user1 = self.assertQuery(("GET", f"/users/{user1.id}"), 200).json()
+        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
+        user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
         self.assertEqual(user0["balance"], -user1["balance"])
         self.assertQuery(("PUT", "/users"), 200, json=user0, r_schema=_schemas.User(**user0), skip_callbacks=2)
         self.assertQuery(("DELETE", "/users"), 409, json=user0)
@@ -145,22 +145,22 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender": user1.id,
-                "receiver": user0.id,
+                "sender": user1["id"],
+                "receiver": user0["id"],
                 "amount": 42,
                 "reason": "reverse"
             },
             skip_callbacks=2
         )
-        user0 = self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()
-        user1 = self.assertQuery(("GET", f"/users/{user1.id}"), 200).json()
+        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
+        user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
         self.assertEqual(user0["balance"], 0)
         self.assertEqual(user1["balance"], 0)
         self.assertQuery(
             ("DELETE", "/users"),
             204,
             json=user0,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0.id}")]
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0['id']}")]
         )
         users.pop(0)
 
@@ -173,10 +173,10 @@ class WorkingAPITests(utils.BaseAPITests):
             json={
                 "amount": 1337,
                 "description": "description",
-                "creator": user0.id,
+                "creator": user0["id"],
                 "active": True,
                 "externals": 0,
-                "participants": [{"quantity": 1, "user": user1.id}]
+                "participants": [{"quantity": 1, "user": user1["id"]}]
             }
         ).json()
         self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
@@ -190,7 +190,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("DELETE", "/users"),
             204,
             json=user1,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1.id}")]
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1['id']}")]
         )
         users.pop(1)
 
@@ -204,13 +204,13 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Communism,
             skip_callbacks=2
         )
-        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()["balance"])
+        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()["balance"])
         self.assertEqual(transactions, self.assertQuery(("GET", "/transactions"), 200).json())
         self.assertQuery(
             ("DELETE", "/users"),
             204,
             json=user1,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1.id}")]
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1['id']}")]
         )
         users.pop(0)
 
