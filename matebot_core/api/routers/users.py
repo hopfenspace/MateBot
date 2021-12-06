@@ -80,11 +80,7 @@ async def update_existing_user(
 @router.delete(
     "",
     status_code=204,
-    responses={
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError},
-        412: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_user(
@@ -97,15 +93,17 @@ async def delete_existing_user(
     This operation will delete the user aliases, but no user history or transactions.
 
     A 404 error will be returned if the user's `id` doesn't exist.
-    A 409 error will be returned if the balance of the user is not zero
-    or if there are any open refund requests or communisms that were
-    either created by that user or which this user participates in.
-    A 412 error will be returned if the conditional request fails.
+    A 409 error will be returned if the object is not up-to-date, the balance
+    of the user is not zero or if there are any open refund requests or communisms
+    that were either created by that user or which this user participates in.
     """
 
-    def hook(model, *args):
+    def hook(model, *_):
         if model.balance != 0:
-            raise Conflict(f"Balance of {user.name} is not zero. Can't delete user.", str(user))
+            info = ""
+            if model.voucher_id and model.external:
+                info = f" User {model.voucher_id} vouches for this user and may handle this."
+            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
 
         active_created_refunds = local.session.query(models.Refund).filter_by(
             active=True, creator_id=model.id
@@ -125,7 +123,16 @@ async def delete_existing_user(
                 str(active_created_communisms)
             )
 
-        raise MissingImplementation("delete_existing_user_hook_check_communism_participants")
+        for communism in local.session.query(models.Communism).filter_by(active=True).all():
+            for participant in communism.participants:
+                participant: models.CommunismUsers
+                if participant.user_id == model.id:
+                    if participant.quantity == 0:
+                        logger.warning(f"Quantity 0 for {participant} of {communism}.")
+                    raise Conflict(
+                        f"User {user.name} is participant of at least one active communism. Can't delete user.",
+                        str(participant)
+                    )
 
     return await helpers.delete_one_of_model(
         user.id,
