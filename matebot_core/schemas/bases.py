@@ -57,6 +57,8 @@ class User(BaseModel):
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
 
+    __allowed_updates__ = ["name", "permission", "active", "external", "voucher"]
+
 
 class UserCreation(BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
@@ -64,17 +66,6 @@ class UserCreation(BaseModel):
     active: bool = True
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
-
-
-class UserUpdate(BaseModel):
-    id: pydantic.NonNegativeInt
-    name: Optional[pydantic.constr(max_length=255)]
-    permission: bool
-    active: bool
-    external: bool
-    voucher: Optional[pydantic.NonNegativeInt]
-
-    __allowed_updates__ = ["name", "permission", "active", "external", "voucher"]
 
 
 class TransactionType(BaseModel):
