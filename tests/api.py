@@ -115,6 +115,21 @@ class WorkingAPITests(utils.BaseAPITests):
         user0["balance"] -= 1
         self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2)
 
+        # Updating the name, permission/active/external flags and the voucher should work
+        user0_old = user0.copy()
+        user0["external"] = True
+        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
+        user0["voucher"] = user1["id"]
+        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
+        user0["permission"] = False
+        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
+        user0["active"] = False
+        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
+        user0["active"] = True
+        self.assertQuery(("PUT", "/users"), 200, json=user0, skip_callbacks=2).json()
+        user0 = self.assertQuery(("PUT", "/users"), 200, json=user0_old, skip_callbacks=2).json()
+        self.assertEqual(user0, user0_old)
+
         # Updating the special flag of a user should fail
         user0["special"] = True
         self.assertQuery(("PUT", "/users"), 409, json=user0)
