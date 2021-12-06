@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict
+from ..base import Conflict, InternalServerException
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -164,6 +164,21 @@ async def delete_existing_user(
         logger=logger,
         hook_func=hook
     )
+
+
+@router.get(
+    "/community",
+    response_model=schemas.User
+)
+async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return the user model of the community user.
+    """
+
+    objs = await helpers.return_all(models.User, local.session, special=True)
+    if len(objs) != 1:
+        raise InternalServerException("Multiple community users found. Please file a bug report.", str(objs))
+    return objs[0]
 
 
 @router.get(
