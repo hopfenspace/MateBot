@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, MissingImplementation
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -69,12 +69,25 @@ async def update_existing_user(
     """
     Update an existing user model identified by the `user_id`.
 
-    A 404 error will be returned if the `user_id` is not known. A 409 error
-    will be returned when some of the following fields have been changed
-    compared to the internal user state: `balance`, `created`, `accessed`.
+    A 404 error will be returned if the `user_id` or `voucher` is not known.
+    A 409 error will be returned when some of the following fields have been
+    changed compared to the internal user state: `balance`, `created`, `accessed`.
+    A 409 error will also be returned if the voucher ID equals the user ID.
     """
 
-    raise MissingImplementation("update_existing_user")
+    model = await helpers.return_one(user.id, models.User, local.session)
+    helpers.restrict_updates(user, model.schema)
+
+    if model.id == user.voucher:
+        raise Conflict("A user can't vouch for itself.", str(user))
+
+    model.name = user.name
+    model.permission = user.permission
+    model.active = user.active
+    model.external = user.external
+    model.voucher_user = await helpers.return_one(user.voucher, models.User, local.session)
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.delete(
