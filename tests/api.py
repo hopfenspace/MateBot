@@ -3,7 +3,6 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import time
-import uuid
 import datetime
 import unittest as _unittest
 from typing import Type
@@ -305,7 +304,6 @@ class WorkingAPITests(utils.BaseAPITests):
             ("PUT", "/votes"),
             200,
             json=vote1_json,
-            headers={"If-Match": vote1.headers.get("ETag")},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/vote/1")]
         ).json()
@@ -319,13 +317,13 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
         )
-        vote2 = self.assertQuery(
+        self.assertQuery(
             ("POST", "/votes"),
             201,
             json={"user_id": 2, "ballot_id": 1, "vote": -1},
             r_schema=_schemas.Vote,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/2")]
-        ).json()
+        )
 
         # Don't allow to change a vote of a restricted (unchangeable) ballot
         vote3 = self.assertQuery(
@@ -339,42 +337,50 @@ class WorkingAPITests(utils.BaseAPITests):
         vote3_json["vote"] = 1
         self.assertQuery(
             ("PUT", "/votes"),
-            412,
+            409,
             json=vote3_json
         )
         self.assertQuery(
             ("PUT", "/votes"),
             409,
-            json=vote3_json,
-            headers={"If-Match": vote3.headers.get("ETag")}
+            json=vote3_json
+        )
+
+        # Try to close the ballot with an old model
+        ballot1["active"] = False
+        self.assertQuery(
+            ("PUT", "/ballots"),
+            403,
+            json=ballot1
         )
 
         # Close the ballot, then try closing it again
-        ballot1_etag = self.assertQuery(
+        ballot1 = self.assertQuery(
             ("GET", "/ballots/1"),
-            200,
-            r_schema=_schemas.Ballot
-        ).headers.get("ETag")
-        ballot1["closed"] = True
-        ballot1_closed_response = self.assertQuery(
+            200
+        ).json()
+        ballot1["active"] = False
+        ballot1_updated = self.assertQuery(
             ("PUT", "/ballots"),
             200,
             json=ballot1,
             r_schema=_schemas.Ballot,
-            headers={"If-Match": ballot1_etag},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/ballot/1")]
-        )
-        ballot1 = ballot1_closed_response.json()
+        ).json()
+        self.assertNotEqual(ballot1, ballot1_updated)
+        self.assertEqual(ballot1_updated["result"], -2)
+        self.assertGreaterEqual(ballot1_updated["closed"], int(datetime.datetime.now().timestamp()) - 1)
+        self.assertEqual(ballot1_updated["votes"], [
+            self.assertQuery(("GET", "/votes/1"), 200).json(),
+            self.assertQuery(("GET", "/votes/2"), 200).json(),
+        ])
         self.assertQuery(
             ("PUT", "/ballots"),
             200,
-            json=ballot1,
-            headers={"If-Match": ballot1_closed_response.headers.get("ETag")},
-            r_schema=_schemas.Ballot(**ballot1)
-        )
-        self.assertEqual(ballot1["result"], -2)
-        self.assertGreaterEqual(ballot1["closed"], int(datetime.datetime.now().timestamp()) - 1)
-        self.assertEqual(ballot1["votes"], [vote1, vote2])
+            json=ballot1_updated,
+            r_schema=_schemas.Ballot(**ballot1_updated),
+            recent_callbacks=[]
+        ).json()
 
         # Try adding new votes with another user to the closed ballot
         self.assertQuery(
@@ -505,6 +511,13 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=_schemas.Communism(**communism2)
         ).json()
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism2,
+            r_schema=_schemas.Communism(**communism2),
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
+        ).json()
 
         # Create and get the third communism object
         response3 = self.assertQuery(
@@ -521,33 +534,11 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Communism(**communism3)
         ).json()
 
-        # Omit the If-Match header entirely even though enforced
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism2
-        )
-
-        # Try updating with a wrong If-Match header (which should fail)
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism2,
-            headers={"If-Match": "Definitively-Wrong"}
-        )
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            412,
-            json=communism3,
-            headers={"If-Match": str(uuid.uuid4())}
-        )
-
         # Perform a PUT operation with the same data (that shouldn't change anything)
         self.assertQuery(
             ("PUT", "/communisms"),
             200,
             json=communism2,
-            headers={"If-Match": response2.headers.get("ETag")},
             r_schema=communism2,
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
         )
@@ -562,7 +553,6 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism,
-            headers={"If-Match": response3.headers.get("ETag")},
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
         )
         communism3_changed = response3_changed.json()
@@ -593,8 +583,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/communisms"),
             400,
-            json=communism3,
-            headers={"If-Match": response3_changed.headers.get("ETag")}
+            json=communism3
         )
 
 

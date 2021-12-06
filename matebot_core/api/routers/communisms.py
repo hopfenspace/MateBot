@@ -143,7 +143,7 @@ async def update_existing_communism(
         raise MissingImplementation("update_existing_communism_close_communism")
 
     # TODO: verify that the communism user quantities get updated correctly implicitly!
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.get(
