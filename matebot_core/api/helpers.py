@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List, Optional, Type
 import pydantic
 import sqlalchemy.exc
 import sqlalchemy.orm
+from fastapi.responses import Response
 
 from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
@@ -551,6 +552,8 @@ async def delete_one_of_model(
         logger,
         await return_all(models.Callback, local.session)
     )
+
+    return Response(status_code=204)
 
 
 def restrict_updates(remote_schema: BaseModel, db_schema: BaseModel) -> bool:

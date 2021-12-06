@@ -209,6 +209,7 @@ class BaseAPITests(BaseTest):
             status_code: Union[int, Iterable[int]] = 200,
             json: Optional[Union[dict, pydantic.BaseModel]] = None,
             headers: Optional[dict] = None,
+            r_none: bool = False,
             r_is_json: bool = True,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
@@ -234,6 +235,7 @@ class BaseAPITests(BaseTest):
         :param status_code: asserted status code(s) of the final server's response
         :param json: optional dictionary or model holding the request data
         :param headers: optional set of headers to sent in the request
+        :param r_none: switch to expect no (=empty) result and skip all other response content checks
         :param r_is_json: switch to check that the response contains JSON data
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
@@ -294,17 +296,21 @@ class BaseAPITests(BaseTest):
                 if isinstance(r_headers, Mapping):
                     self.assertEqual(r_headers[k], response.headers.get(k), response.headers)
 
-        if r_is_json:
-            try:
-                self.assertIsNotNone(response.json())
-            except ValueError:
-                self.fail(("No JSON content detected", response.headers, response.text))
+        if r_none:
+            self.assertEqual("", response.text)
 
-        if r_schema and isinstance(r_schema, pydantic.BaseModel):
-            r_model = type(r_schema)(**response.json())
-            self.assertEqual(r_schema, r_model, response.json())
-        elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
-            self.assertTrue(r_schema(**response.json()), response.json())
+        else:
+            if r_is_json:
+                try:
+                    self.assertIsNotNone(response.json())
+                except ValueError:
+                    self.fail(("No JSON content detected", response.headers, response.text))
+
+            if r_schema and isinstance(r_schema, pydantic.BaseModel):
+                r_model = type(r_schema)(**response.json())
+                self.assertEqual(r_schema, r_model, response.json())
+            elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
+                self.assertTrue(r_schema(**response.json()), response.json())
 
         if recent_callbacks is not None:
             while recent_callbacks:
