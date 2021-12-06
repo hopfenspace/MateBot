@@ -319,6 +319,8 @@ class BaseAPITests(BaseTest):
         self.server_port = random.randint(10000, 64000)
 
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
+        if conf.SERVER_LOGGING_OVERWRITE:
+            config.logging = conf.SERVER_LOGGING_OVERWRITE
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port

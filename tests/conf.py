@@ -4,6 +4,11 @@ Data definitions used for unit testing
 
 from typing import List, Optional
 
+# Specify a custom logging configuration for the running API server
+# Note: The value must be understood by `logging.config.dictConfig`!
+# Setting this variable overwrites the default configuration (default: None)
+SERVER_LOGGING_OVERWRITE: Optional[dict] = None
+
 # Set the database URL to be used (default: None) which will be
 # passed to SQLAlchemy, so make sure it's understood by SQLAlchemy
 # (using None enables the sqlite database instead, see below)
