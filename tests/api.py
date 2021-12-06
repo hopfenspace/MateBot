@@ -62,13 +62,26 @@ class WorkingAPITests(utils.BaseAPITests):
             users.append(user)
             self.assertEqual(
                 users,
-                self.assertQuery(("GET", "/users"), 200, skip_callbacks=2).json()
+                self.assertQuery(("GET", "/users"), 200).json()
             )
 
+        # Adding the callback server for testing
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+        )
         time.sleep(1)
 
         for u in users:
-            self.assertQuery(("PUT", "/users"), 200, json=u, r_schema=u, skip_callbacks=2)
+            self.assertQuery(
+                ("PUT", "/users"),
+                200,
+                json=u,
+                r_schema=u,
+                recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{u.id}")]
+            )
 
         # Deleting valid models just works
         for i in range(3):
@@ -150,6 +163,59 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0.id}")]
         )
         users.pop(0)
+
+        # Deleting users that created an active communism shouldn't work
+        user0 = users[0]
+        user1 = users[1]
+        communism = self.assertQuery(
+            ("POST", "/communisms"),
+            201,
+            json={
+                "amount": 1337,
+                "description": "description",
+                "creator": user0.id,
+                "active": True,
+                "externals": 0,
+                "participants": [{"quantity": 1, "user": user1.id}]
+            }
+        ).json()
+        self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
+        self.assertEqual(communism, self.assertQuery(("GET", "/communisms/1"), 200).json())
+
+        # Deleting users that participate in active communisms shouldn't work
+        self.assertQuery(("DELETE", "/users"), 409, json=user1, recent_callbacks=[])
+        communism["participants"] = []
+        self.assertQuery(("PUT", "/communisms"), 200, json=communism, r_schema=_schemas.Communism, skip_callbacks=2)
+        self.assertQuery(
+            ("DELETE", "/users"),
+            204,
+            json=user1,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1.id}")]
+        )
+        users.pop(1)
+
+        # Deleting the aforementioned user after closing the communism should work
+        communism["active"] = False
+        transactions = self.assertQuery(("GET", "/transactions"), 200).json()
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism,
+            r_schema=_schemas.Communism,
+            skip_callbacks=2
+        )
+        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user0.id}"), 200).json()["balance"])
+        self.assertEqual(transactions, self.assertQuery(("GET", "/transactions"), 200).json())
+        self.assertQuery(
+            ("DELETE", "/users"),
+            204,
+            json=user1,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1.id}")]
+        )
+        users.pop(0)
+
+        self.assertEqual(users, self.assertQuery(("GET", "/users"), 200).json())
+        self.assertEqual(len(users), 4, "Might I miss something?")
 
     def test_ballots_and_votes(self):
         self.assertListEqual([], self.assertQuery(("GET", "/ballots"), 200).json())
