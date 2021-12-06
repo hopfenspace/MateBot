@@ -72,7 +72,9 @@ async def update_existing_user(
     A 403 error will be returned when any other field than the allowed fields
     have been changed: `name`, `permission` `active`, `external` or `voucher`.
     A 404 error will be returned if the `user_id` or `voucher` is not known.
-    A 409 error will be returned if the voucher ID equals the user ID.
+    A 409 error will be returned if the voucher ID equals the user ID, if
+    an internal user should get a voucher or if an external user should
+    loose its voucher without also having a positive balance.
     """
 
     model = await helpers.return_one(user.id, models.User, local.session)
@@ -80,6 +82,10 @@ async def update_existing_user(
 
     if model.id == user.voucher:
         raise Conflict("A user can't vouch for itself.", str(user))
+    if user.voucher and not user.external:
+        raise Conflict("An internal user can't have a voucher user.", str(user))
+    if model.external and model.balance < 0 and not user.voucher:
+        raise Conflict("An external user with negative balance can't loose its voucher.", str(user))
 
     voucher_user = None
     if user.voucher is not None:
