@@ -214,7 +214,7 @@ class BaseAPITests(BaseTest):
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
             skip_callbacks: Optional[int] = None,
-            skip_callback_timeout: float = 0.0,
+            skip_callback_timeout: float = 0.025,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
             callback_timeout: float = 0.5,
             no_version: bool = False,

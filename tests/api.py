@@ -93,6 +93,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 ("DELETE", "/users"),
                 204,
                 json=users[-1],
+                r_none=True,
                 recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{len(users)}")]
             )
             self.assertQuery(("GET", f"/users/{len(users)}"), 404, r_schema=_schemas.APIError)
@@ -112,6 +113,7 @@ class WorkingAPITests(utils.BaseAPITests):
         user0["name"] += "INVALID"
         self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
         user0["name"] = user0_old_name
+        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
 
         # Updating the balance, special flag, access times or aliases of a user should fail
         uid = user0["id"]
@@ -145,7 +147,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "amount": 42,
                 "reason": "test"
             },
-            skip_callbacks=2
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/transaction/1")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
@@ -164,7 +166,8 @@ class WorkingAPITests(utils.BaseAPITests):
                 "amount": 42,
                 "reason": "reverse"
             },
-            skip_callbacks=2
+            skip_callbacks=2,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/transaction/2")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
@@ -174,6 +177,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("DELETE", "/users"),
             204,
             json=user0,
+            r_none=True,
             recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0['id']}")]
         )
         users.pop(0)
@@ -191,7 +195,8 @@ class WorkingAPITests(utils.BaseAPITests):
                 "active": True,
                 "externals": 0,
                 "participants": [{"quantity": 1, "user": user1["id"]}]
-            }
+            },
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/communism/1")]
         ).json()
         self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
         self.assertEqual(communism, self.assertQuery(("GET", "/communisms/1"), 200).json())
@@ -204,6 +209,9 @@ class WorkingAPITests(utils.BaseAPITests):
             ("DELETE", "/users"),
             204,
             json=user1,
+            r_none=True,
+            skip_callbacks=2,
+            skip_callback_timeout=0.1,
             recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1['id']}")]
         )
         users.pop(1)
@@ -215,16 +223,19 @@ class WorkingAPITests(utils.BaseAPITests):
             ("PUT", "/communisms"),
             200,
             json=communism,
-            r_schema=_schemas.Communism,
-            skip_callbacks=2
+            r_schema=_schemas.Communism
         )
-        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()["balance"])
+        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
+        self.assertEqual(0, user0["balance"])
         self.assertEqual(transactions, self.assertQuery(("GET", "/transactions"), 200).json())
         self.assertQuery(
             ("DELETE", "/users"),
             204,
-            json=user1,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1['id']}")]
+            json=user0,
+            r_none=True,
+            skip_callbacks=4,
+            skip_callback_timeout=0.1,
+            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0['id']}")]
         )
         users.pop(0)
 
