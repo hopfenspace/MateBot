@@ -170,6 +170,7 @@ async def delete_existing_user(
     "/community",
     response_model=schemas.User
 )
+@versioning.versions(1)
 async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return the user model of the community user.

@@ -116,7 +116,7 @@ async def make_a_new_transaction(
         t = await helpers.create_transaction(user, community, total, reason, local, logger)
         return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
-    elif not isinstance(transaction, schemas.Transaction):
+    elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
     def _get_user(data, target: str) -> models.User:
