@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends
 
 from ..base import Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
-from .. import helpers, notifier, versioning
+from .. import helpers, versioning
+from ...misc import notifier
 from ...persistence import models
 from ... import schemas
 

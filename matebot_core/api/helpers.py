@@ -14,8 +14,8 @@ from fastapi.responses import Response
 
 from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
-from .notifier import Callback
 from ..persistence import models
+from ..misc.notifier import Callback
 from ..schemas.bases import BaseModel
 
 
