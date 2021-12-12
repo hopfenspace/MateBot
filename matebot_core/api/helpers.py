@@ -15,26 +15,13 @@ from fastapi.responses import Response
 from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
 from ..persistence import models
+from ..misc.logger import enforce_logger
 from ..misc.notifier import Callback
 from ..schemas.bases import BaseModel
 
 
 _CallbackType = Callable[[str, str, logging.Logger, sqlalchemy.orm.Session], None]
 HookType = Callable[[models.Base, LocalRequestData, logging.Logger], Any]
-
-
-def _enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
-    """
-    Enforce availability of a working logger
-    """
-
-    if logger is not None and isinstance(logger, logging.Logger):
-        return logger
-    elif logger is not None:
-        raise TypeError(f"Expected 'logging.Logger', got {type(logger)}")
-    log = logging.getLogger(__name__)
-    log.warning("No logger specified for function call; using defaults.")
-    return log
 
 
 async def _handle_db_exception(
@@ -63,7 +50,7 @@ async def _handle_db_exception(
     session.rollback()
 
     details = exc.statement.replace("\n", "")
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
     logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}", exc_info=exc)
 
     return APIException(
@@ -93,7 +80,7 @@ async def _commit(
         session.add_all(objects)
         session.commit()
     except sqlalchemy.exc.DBAPIError as exc:
-        raise await _handle_db_exception(session, exc, _enforce_logger(logger)) from exc
+        raise await _handle_db_exception(session, exc, enforce_logger(logger)) from exc
     return True
 
 
@@ -169,7 +156,7 @@ async def create_transaction(
     :return: the newly created and committed Transaction object
     """
 
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
     logger.info(f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}.")
 
     model = models.Transaction(
@@ -357,7 +344,7 @@ async def _handle_data_changes(
         raise InternalServerException("TypeError", f"{local} is no {LocalRequestData} object")
 
     # Enforce to have a logger
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
 
     # Execute the 'before' hook function or coroutine
     await _call_hook(hook_before, model, local, logger)
@@ -427,7 +414,7 @@ async def create_new_of_model(
     :raises APIException: when the database operation went wrong (to report the problem)
     """
 
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
 
     logger.info(f"Adding new model {model!r}...")
     if more_models is not None:
@@ -485,7 +472,7 @@ async def update_model(
     :param returns: determine the return value and its annotations (of this function)
     """
 
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
 
     logger.info(f"Updating model {model!r}...")
     await _commit(local.session, model, logger=logger)
@@ -526,7 +513,7 @@ async def delete_one_of_model(
     :raises PreconditionFailed: if no valid conditional request header has been set
     """
 
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
     cls_name = model.__name__
     obj = await return_one(instance_id, model, local.session)
 
