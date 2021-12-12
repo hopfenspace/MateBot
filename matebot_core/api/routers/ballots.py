@@ -93,7 +93,7 @@ async def update_existing_ballot(
         model.result = sum(v.vote for v in model.votes)
         model.active = False
         model.closed = datetime.datetime.now().replace(microsecond=0)
-        return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+        return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
     return await helpers.get_one_of_model(ballot.id, models.Ballot, local)
 

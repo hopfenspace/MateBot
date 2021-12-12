@@ -102,7 +102,7 @@ async def update_existing_consumable(
         models.ConsumableMessage(message=m, consumable_id=model.id) for m in consumable.messages
     ]
 
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.delete(

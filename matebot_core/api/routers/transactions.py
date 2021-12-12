@@ -12,6 +12,7 @@ from ..base import APIException, Conflict, NotFound
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.transactions import create_transaction
 from ... import schemas
 
 
@@ -40,11 +41,7 @@ async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestDat
     "",
     status_code=201,
     response_model=schemas.Transaction,
-    responses={
-        400: {"model": schemas.APIError},
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def make_a_new_transaction(
@@ -117,10 +114,10 @@ async def make_a_new_transaction(
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
         consumable.stock -= wastage
-        t = await helpers.create_transaction(user, community, total, reason, local, logger)
+        t = create_transaction(user, community, total, reason, local.session, logger, local.tasks)
         return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
-    elif not isinstance(transaction, schemas.Transaction):
+    elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
     def _get_user(data, target: str) -> models.User:
@@ -146,8 +143,10 @@ async def make_a_new_transaction(
 
     sender = _get_user(transaction.sender, "sender")
     receiver = _get_user(transaction.receiver, "receiver")
+    amount = transaction.amount
+    reason = transaction.reason
 
-    t = await helpers.create_transaction(sender, receiver, transaction.amount, transaction.reason, local, logger)
+    t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
 

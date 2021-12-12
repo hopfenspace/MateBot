@@ -99,7 +99,7 @@ async def change_existing_vote(
         raise Conflict("Updating the vote of a restricted ballot is illegal", str(model.ballot))
 
     model.vote = vote.vote
-    return await helpers.update_model(model, local, logger, ReturnType.SCHEMA_WITH_TAG)
+    return await helpers.update_model(model, local, logger, ReturnType.SCHEMA)
 
 
 @router.delete(

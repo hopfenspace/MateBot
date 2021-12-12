@@ -3,38 +3,25 @@ Generic helper library for the core REST API
 """
 
 import sys
-import math
 import asyncio
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import pydantic
 import sqlalchemy.exc
 import sqlalchemy.orm
+from fastapi.responses import Response
 
 from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, Operations, ReturnType
 from .dependency import LocalRequestData
-from .notifier import Callback
 from ..persistence import models
+from ..misc.logger import enforce_logger
+from ..misc.notifier import Callback
 from ..schemas.bases import BaseModel
 
 
 _CallbackType = Callable[[str, str, logging.Logger, sqlalchemy.orm.Session], None]
 HookType = Callable[[models.Base, LocalRequestData, logging.Logger], Any]
-
-
-def _enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
-    """
-    Enforce availability of a working logger
-    """
-
-    if logger is not None and isinstance(logger, logging.Logger):
-        return logger
-    elif logger is not None:
-        raise TypeError(f"Expected 'logging.Logger', got {type(logger)}")
-    log = logging.getLogger(__name__)
-    log.warning("No logger specified for function call; using defaults.")
-    return log
 
 
 async def _handle_db_exception(
@@ -63,7 +50,7 @@ async def _handle_db_exception(
     session.rollback()
 
     details = exc.statement.replace("\n", "")
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
     logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}", exc_info=exc)
 
     return APIException(
@@ -93,7 +80,7 @@ async def _commit(
         session.add_all(objects)
         session.commit()
     except sqlalchemy.exc.DBAPIError as exc:
-        raise await _handle_db_exception(session, exc, _enforce_logger(logger)) from exc
+        raise await _handle_db_exception(session, exc, enforce_logger(logger)) from exc
     return True
 
 
@@ -131,154 +118,20 @@ def _return_expected(
         returns: ReturnType,
         model: models.Base,
         local: LocalRequestData,
-        headers: Dict[str, Any]
+        headers: Optional[Dict[str, Any]] = None
 ) -> Optional[pydantic.BaseModel]:
     """
     Select the appropriate returned value based on the given return type enum
     """
 
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
     return {
         ReturnType.NONE: None,
         ReturnType.MODEL: model,
-        ReturnType.SCHEMA: model.schema,
-        ReturnType.SCHEMA_WITH_TAG: local.attach_headers(model.schema),
-        ReturnType.SCHEMA_WITH_ALL_HEADERS: local.attach_headers(model.schema, **headers)
+        ReturnType.SCHEMA: model.schema
     }[returns]
-
-
-async def create_transaction(
-        sender: models.User,
-        receiver: models.User,
-        amount: int,
-        reason: str,
-        local: LocalRequestData,
-        logger: logging.Logger,
-        callback: bool = True
-) -> models.Transaction:
-    """
-    Send the specified amount of money from one user to another one
-
-    :param sender: user that sends money (whose balance will be decreased by amount)
-    :param receiver: user that receives money (whose balance will be increased by amount)
-    :param amount: amount of money to be transferred between the two parties
-    :param reason: textual description of the transaction
-    :param local: contextual local data
-    :param logger: logger that should be used for INFO and ERROR messages
-    :param callback: switch to enable/disable triggering callbacks
-    :return: the newly created and committed Transaction object
-    """
-
-    logger = _enforce_logger(logger)
-    logger.info(f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}.")
-
-    model = models.Transaction(
-        sender_id=sender.id,
-        receiver_id=receiver.id,
-        amount=amount,
-        reason=reason
-    )
-    sender.balance -= amount
-    receiver.balance += amount
-
-    await _commit(local.session, sender, receiver, model, logger=logger)
-    if callback:
-        local.tasks.add_task(
-            Callback.created,
-            type(model).__name__.lower(),
-            model.id,
-            logger,
-            await return_all(models.Callback, local.session)
-        )
-
-    return model
-
-
-async def create_multi_transaction_by_single(
-        senders: List[models.User],
-        receivers: List[models.User],
-        single_amount: int,
-        reason: str,
-        local: LocalRequestData,
-        logger: logging.Logger,
-        callback: bool = True
-) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
-    """
-
-    """
-
-    logger = _enforce_logger(logger)
-    logger.info(f"Incoming multi-transaction from {senders} to {receivers} with base {single_amount} for {reason!r}.")
-
-    transactions = []
-    multi = models.MultiTransaction(single_amount=single_amount)
-
-    counter = 0
-    for sender in senders:
-        for receiver in receivers:
-            if sender == receiver:
-                logger.debug(f"Skipping equal sender and receiver: {sender}")
-                continue
-
-            sender.balance -= single_amount
-            receiver.balance += single_amount
-            logger.debug(f"Adding transaction from {sender} to {receiver} for {single_amount}...")
-            transactions.append(
-                models.Transaction(
-                    sender=sender,
-                    receiver=receiver,
-                    amount=single_amount,
-                    reason=f"Multi-transaction[{counter}]: {reason}",
-                    multi_transaction=multi.id
-                )
-            )
-            counter += 1
-
-    logger.info(f"Added {counter} transactions of {len(senders) * len(receivers)} combinations")
-
-    local.session.add_all(list(set(senders)))
-    local.session.add_all(list(set(receivers)))
-    local.session.add_all(transactions)
-
-    logger.debug("Committing multi-transaction and all changed states ...")
-    await _commit(local.session, multi, logger=logger)
-    if callback:
-        local.tasks.add_task(
-            Callback.created,
-            type(multi).__name__.lower(),
-            multi.id,
-            logger,
-            await return_all(models.Callback, local.session)
-        )
-
-    logger.info("Completed multi-transaction.")
-
-    return multi, transactions
-
-
-async def create_multi_transaction_by_total(
-        senders: List[models.User],
-        receivers: List[models.User],
-        total_amount: int,
-        reason: str,
-        local: LocalRequestData,
-        logger: logging.Logger,
-        callback: bool = True
-) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
-    """
-    Create a new multi transaction by specifying the estimated total amount.
-    See `create_multi_transaction_by_single` for more details.
-    """
-
-    single_amount = math.ceil(total_amount / (len(senders) * len(receivers)))
-    return await create_multi_transaction_by_single(
-        senders,
-        receivers,
-        single_amount,
-        reason,
-        local,
-        logger,
-        callback
-    )
 
 
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
@@ -371,9 +224,6 @@ async def get_one_of_model(
     """
     Get the object of a given model that's identified by its object ID
 
-    This method will also take care of handling any conditional request headers
-    and setting the correct ``ETag`` header (besides the others) in the response.
-
     :param object_id: internal ID (primary key in the database) of the model
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
@@ -383,12 +233,10 @@ async def get_one_of_model(
     """
 
     obj = await return_one(object_id, model, local.session)
-    schema = obj.schema
-    local.entity.model_name = model.__name__
-    local.entity.compare(schema)
-    if headers and isinstance(headers, dict):
-        return local.attach_headers(schema, **headers)
-    return local.attach_headers(schema)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return obj.schema
 
 
 async def get_all_of_model(
@@ -400,9 +248,6 @@ async def get_all_of_model(
     """
     Get a list of all known objects of a given model
 
-    This method will also take care of handling any conditional request headers
-    and setting the correct ``ETag`` header (besides the others) in the response.
-
     :param model: class of a SQLAlchemy model
     :param local: contextual local data
     :param headers: additional headers for the response
@@ -411,11 +256,10 @@ async def get_all_of_model(
     """
 
     all_schemas = [obj.schema for obj in await return_all(model, local.session, **kwargs)]
-    local.entity.model_name = model.__name__
-    local.entity.compare(all_schemas)
-    if headers and isinstance(headers, dict):
-        return local.attach_headers(all_schemas, **headers)
-    return local.attach_headers(all_schemas)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return all_schemas
 
 
 async def _handle_data_changes(
@@ -431,8 +275,6 @@ async def _handle_data_changes(
         content_location: bool = False,
         trigger_callback: bool = False,
         callback_operation: Optional[_CallbackType] = None,
-        require_conditional_header: bool = True,
-        compare_existing_schema: Optional[pydantic.BaseModel] = None,
         hook_before: Optional[HookType] = None,
         hook_after: Optional[HookType] = None,
         extra_headers: Optional[Dict[str, Any]] = None,
@@ -454,11 +296,8 @@ async def _handle_data_changes(
     if not isinstance(local, LocalRequestData):
         raise InternalServerException("TypeError", f"{local} is no {LocalRequestData} object")
 
-    # Enforce to have a logger and check the conditional request header(s)
-    logger = _enforce_logger(logger)
-    if require_conditional_header:
-        local.entity.model_name = model_type.__name__
-        local.entity.compare(compare_existing_schema)
+    # Enforce to have a logger
+    logger = enforce_logger(logger)
 
     # Execute the 'before' hook function or coroutine
     await _call_hook(hook_before, model, local, logger)
@@ -528,9 +367,7 @@ async def create_new_of_model(
     :raises APIException: when the database operation went wrong (to report the problem)
     """
 
-    logger = _enforce_logger(logger)
-    local.entity.model_name = type(model).__name__
-    local.entity.compare(None)
+    logger = enforce_logger(logger)
 
     logger.info(f"Adding new model {model!r}...")
     if more_models is not None:
@@ -567,7 +404,10 @@ async def create_new_of_model(
         headers["Location"] = location_format.format(model.id)
         if content_location:
             headers["Content-Location"] = headers["Location"]
-    return local.attach_headers(model.schema, **headers)
+    if headers:
+        for k in headers:
+            local.response.headers.append(k, headers[k])
+    return model.schema
 
 
 async def update_model(
@@ -575,7 +415,6 @@ async def update_model(
         local: LocalRequestData,
         logger: Optional[logging.Logger] = None,
         returns: ReturnType = ReturnType.NONE,
-        require_header: bool = True
 ):
     """
     Add the updated model to a database transaction and commit it (triggering callbacks)
@@ -584,14 +423,9 @@ async def update_model(
     :param local: contextual local data
     :param logger: optional logger that should be used for INFO and ERROR messages
     :param returns: determine the return value and its annotations (of this function)
-    :param require_header: enable/disable the check for a valid conditional header field
-        before proceeding with the update action and changing the database state
     """
 
-    logger = _enforce_logger(logger)
-    if require_header is not None:
-        local.entity.model_name = type(model).__name__
-        local.entity.compare(model)
+    logger = enforce_logger(logger)
 
     logger.info(f"Updating model {model!r}...")
     await _commit(local.session, model, logger=logger)
@@ -611,7 +445,6 @@ async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],
         local: LocalRequestData,
-        require_conditional_header: bool = True,
         schema: Optional[pydantic.BaseModel] = None,
         logger: Optional[logging.Logger] = None,
         hook_func: Optional[HookType] = None
@@ -622,8 +455,6 @@ async def delete_one_of_model(
     :param instance_id: unique identifier of the instance to be deleted
     :param model: class of the SQLAlchemy model
     :param local: contextual local data
-    :param require_conditional_header: force the user agent to provide a valid conditional request
-        header before proceeding with the action, otherwise abort further operation
     :param schema: optional supplied schema of the request to validate the client's state
     :param logger: optional logger that should be used for INFO and ERROR messages
     :param hook_func: optional callable which will be called after all previous checks
@@ -635,15 +466,11 @@ async def delete_one_of_model(
     :raises PreconditionFailed: if no valid conditional request header has been set
     """
 
-    logger = _enforce_logger(logger)
+    logger = enforce_logger(logger)
     cls_name = model.__name__
     obj = await return_one(instance_id, model, local.session)
 
     logger.info(f"Deleting model {obj!r}...")
-    if require_conditional_header:
-        local.entity.model_name = cls_name
-        local.entity.compare(obj.schema)
-
     if schema is not None and obj.schema != schema:
         raise Conflict(
             f"Invalid state of the {cls_name}. Query the {cls_name} to update.",
@@ -665,6 +492,8 @@ async def delete_one_of_model(
         logger,
         await return_all(models.Callback, local.session)
     )
+
+    return Response(status_code=204)
 
 
 def restrict_updates(remote_schema: BaseModel, db_schema: BaseModel) -> bool:
