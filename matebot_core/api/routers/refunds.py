@@ -14,6 +14,7 @@ from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...misc import notifier
 from ...persistence import models
+from ...misc.transactions import create_transaction
 from ... import schemas
 
 
@@ -140,8 +141,8 @@ async def close_refund_by_id(
     if sum_of_votes >= min_approves:
         sender = await helpers.return_unique(models.User, local.session, special=True)
         receiver = model.creator
-        model.transaction = await helpers.create_transaction(
-            sender, receiver, model.amount, model.description, local, logger=logger
+        model.transaction = create_transaction(
+            sender, receiver, model.amount, model.description, local.session, logger, local.tasks
         )
 
     await helpers._commit(local.session, ballot, logger=logger)

@@ -134,53 +134,6 @@ def _return_expected(
     }[returns]
 
 
-async def create_transaction(
-        sender: models.User,
-        receiver: models.User,
-        amount: int,
-        reason: str,
-        local: LocalRequestData,
-        logger: logging.Logger,
-        callback: bool = True
-) -> models.Transaction:
-    """
-    Send the specified amount of money from one user to another one
-
-    :param sender: user that sends money (whose balance will be decreased by amount)
-    :param receiver: user that receives money (whose balance will be increased by amount)
-    :param amount: amount of money to be transferred between the two parties
-    :param reason: textual description of the transaction
-    :param local: contextual local data
-    :param logger: logger that should be used for INFO and ERROR messages
-    :param callback: switch to enable/disable triggering callbacks
-    :return: the newly created and committed Transaction object
-    """
-
-    logger = enforce_logger(logger)
-    logger.info(f"Incoming transaction from {sender} to {receiver} about {amount} for {reason!r}.")
-
-    model = models.Transaction(
-        sender_id=sender.id,
-        receiver_id=receiver.id,
-        amount=amount,
-        reason=reason
-    )
-    sender.balance -= amount
-    receiver.balance += amount
-
-    await _commit(local.session, sender, receiver, model, logger=logger)
-    if callback:
-        local.tasks.add_task(
-            Callback.created,
-            type(model).__name__.lower(),
-            model.id,
-            logger,
-            await return_all(models.Callback, local.session)
-        )
-
-    return model
-
-
 async def expect_none(model: Type[models.Base], session: sqlalchemy.orm.Session, **kwargs) -> None:
     """
     Expect to find no values in the dataset that match the keyword args for that model
