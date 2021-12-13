@@ -97,6 +97,10 @@ def _make_simple_multi_transaction(
         indicator: Optional[str] = None,
         tasks: Optional[BackgroundTasks] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    """
+    Perform a simple multi transaction; see the other `create_*` functions for its API
+    """
+
     logger = enforce_logger(logger)
     logger.debug(f"Incoming simple multi transaction {direction.name} about {base_amount} for {reason!r}")
 
@@ -246,6 +250,40 @@ def create_one_to_many_transaction_by_total(
         indicator: Optional[str] = None,
         tasks: Optional[BackgroundTasks] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    """
+    Send money from one user to a list of receiver users
+
+    Note that the total amount of transferred money may be a little bit higher than the
+    specified total amount, since the base amount will be evaluated as the smallest common
+    amount of money for a receiver with quantity=1. Therefore, for example, if you want
+    to send a total of 8 to two receivers A (quantity 2) and B (quantity 1), then the
+    base amount will be 3, to make it even for all receivers. At the end, a total of
+    9 will be transferred from the sender, whereof A gets 6 and B gets 3.
+
+    Specifying the same user multiple times in the list of receivers will not result
+    in multiple transactions, but one combined transaction instead. Specifying the
+    sender in the list of receivers has no effect, since the record will be ignored.
+    Specifying a negative quantity or amount raises ValueErrors, zero will just be ignored.
+
+    :param sender: user that sends the money to the receivers
+    :param receivers: list of users that receive money, represented as list of tuples
+        of users and their quantities (so that some users may get more money than others)
+    :param total_amount: minimal total amount of money to be transferred to all receivers
+    :param reason: textual description of every single transaction
+    :param session: SQLAlchemy session used to perform database operations
+    :param logger: logger that should be used for INFO and ERROR messages
+    :param indicator: optional format string that transforms the reason before creating the
+        transaction to allow customization with the two possible keys being `reason` and `n`
+    :param tasks: FastAPI's list of background tasks the callback task should be added to
+        (use None to disable creating the notification background task completely)
+    :return: both the newly created and committed MultiTransaction
+        object and the list of new transactions
+    :raises ValueError: in case no receivers have been given, the amount is
+        negative, the quantity of any user is negative or any user has no ID
+    :raises KeyError: in case the custom indicator string is somehow broken
+    :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
+    """
+
     total_amount = int(total_amount)
     if total_amount <= 0:
         raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
@@ -319,6 +357,40 @@ def create_many_to_one_transaction_by_total(
         indicator: Optional[str] = None,
         tasks: Optional[BackgroundTasks] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    """
+    Send money from a list of users to a single users
+
+    Note that the total amount of transferred money may be a little bit higher than the
+    specified total amount, since the base amount will be evaluated as the smallest common
+    amount of money for a sender with quantity=1. Therefore, for example, if you want
+    to send a total of 8 from two senders A (quantity 2) and B (quantity 1), then the
+    base amount will be 3, to make it even for all senders. At the end, a total of
+    9 will be transferred to the receiver, whereof A sends 6 and B sends 3.
+
+    Specifying the same user multiple times in the list of senders will not result
+    in multiple transactions, but one combined transaction instead. Specifying the
+    receiver in the list of senders has no effect, since the record will be ignored.
+    Specifying a negative quantity or amount raises ValueErrors, zero will just be ignored.
+
+    :param senders: list of users that send money, represented as list of tuples
+        of users and their quantities (so that some users may send more money than others)
+    :param receiver: user that receives the money from the senders
+    :param total_amount: minimal total amount of money to be transferred from all senders
+    :param reason: textual description of every single transaction
+    :param session: SQLAlchemy session used to perform database operations
+    :param logger: logger that should be used for INFO and ERROR messages
+    :param indicator: optional format string that transforms the reason before creating the
+        transaction to allow customization with the two possible keys being `reason` and `n`
+    :param tasks: FastAPI's list of background tasks the callback task should be added to
+        (use None to disable creating the notification background task completely)
+    :return: both the newly created and committed MultiTransaction
+        object and the list of new transactions
+    :raises ValueError: in case no senders have been given, the amount is
+        negative, the quantity of any user is negative or any user has no ID
+    :raises KeyError: in case the custom indicator string is somehow broken
+    :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
+    """
+
     total_amount = int(total_amount)
     if total_amount <= 0:
         raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
