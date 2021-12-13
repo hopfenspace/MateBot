@@ -319,7 +319,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
 
         # Three people donate their money to one
-        m1 = models.MultiTransaction(single_amount=4)
+        m1 = models.MultiTransaction(base_amount=4)
         self.session.add(m1)
         self.session.commit()
         self.session.add_all([
@@ -328,11 +328,11 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
             models.Transaction(sender_id=4, receiver_id=1, amount=4, multi_transaction_id=1)
         ])
         self.session.commit()
-        self.assertEqual(m1.single_amount, 4)
+        self.assertEqual(m1.base_amount, 4)
         self.assertEqual(m1.schema.total_amount, 12)
 
         # Four people get paid by one equally
-        m2 = models.MultiTransaction(single_amount=3)
+        m2 = models.MultiTransaction(base_amount=3)
         self.session.add(m2)
         self.session.commit()
         self.session.add_all([
@@ -347,7 +347,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         # Six people pay to two guys unequally (6th person payer pays twice)
         self.session.add(models.User(balance=-132, external=False))
         self.session.add(models.User(balance=3, external=False))
-        m3 = models.MultiTransaction(single_amount=10)
+        m3 = models.MultiTransaction(base_amount=10)
         self.session.add(m3)
         self.session.commit()
         self.session.add_all([
@@ -453,8 +453,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             sender_id=1,
             receiver_id=2,
             amount=-32,
-            reason="reason",
-            transaction_types_id=1
+            reason="reason"
         ))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
@@ -465,8 +464,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             sender_id=1,
             receiver_id=2,
             amount=0,
-            reason="reason",
-            transaction_types_id=1
+            reason="reason"
         ))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
@@ -477,8 +475,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             sender_id=1,
             receiver_id=1,
             amount=1,
-            reason="reason",
-            transaction_types_id=1
+            reason="reason"
         ))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
@@ -489,15 +486,13 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             id=1,
             sender_id=1,
             receiver_id=2,
-            amount=1,
-            transaction_types_id=1
+            amount=1
         ))
         self.session.add(models.Transaction(
             id=1,
             sender_id=2,
             receiver_id=1,
-            amount=1,
-            transaction_types_id=1
+            amount=1
         ))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
@@ -508,8 +503,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             self.session.add(models.Transaction(
                 sender_id=1,
                 receiver_id=2,
-                amount=1,
-                transaction_types_id=1
+                amount=1
             ))
             with self.assertRaises(sqlalchemy.exc.DatabaseError):
                 self.session.commit()
