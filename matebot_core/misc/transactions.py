@@ -86,28 +86,6 @@ def create_transaction(
     return model
 
 
-def _pre_check_simple_multi_transaction(
-        sender: models.User,
-        receivers: List[Tuple[models.User, int]],
-        amount: int,
-        indicator: Optional[str] = None
-):
-    if int(amount) <= 0:
-        raise ValueError(f"Base amount {int(amount)} can't be negative or zero!")
-
-    if sender.id is None or any(receiver for receiver, _ in receivers if receiver.id is None):
-        raise ValueError("The user ID of some user is None!")
-
-    if len(receivers) == 0:
-        raise ValueError(f"No known participants for transaction of base amount {int(amount)}")
-
-    if indicator:
-        _ = indicator.format(reason="", n=0)
-
-    if any(quantity for _, quantity in receivers if int(quantity) < 0):
-        raise ValueError("A quantity can not be negative!")
-
-
 def _make_simple_multi_transaction(
         sender: models.User,
         receivers_uncompressed: List[Tuple[models.User, int]],
@@ -122,17 +100,24 @@ def _make_simple_multi_transaction(
     logger = enforce_logger(logger)
     logger.debug(f"Incoming simple multi transaction {direction.name} about {base_amount} for {reason!r}")
 
-    _pre_check_simple_multi_transaction(
-        sender,
-        receivers_uncompressed,
-        base_amount,
-        indicator
-    )
+    if base_amount <= 0 or int(base_amount) <= 0:
+        raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
+    base_amount = int(base_amount)
+
+    if sender.id is None or any(receiver for receiver, _ in receivers_uncompressed if receiver.id is None):
+        raise ValueError("The user ID of some user is None!")
+    if len(receivers_uncompressed) == 0:
+        raise ValueError(f"No known participants for transaction of base amount {base_amount}")
+
+    if indicator:
+        _ = indicator.format(reason="", n=0)
+
+    if any(quantity for _, quantity in receivers_uncompressed if int(quantity) < 0):
+        raise ValueError("A quantity can not be negative!")
     if len(receivers_uncompressed) == 1:
         logger.warning(f"Using {direction.value} transaction with n=1 instead of normal transaction!")
 
     transactions = []
-    base_amount = int(base_amount)
     multi = models.MultiTransaction(base_amount=base_amount)
 
     receiver_users = {}
