@@ -1,3 +1,8 @@
+"""
+MateBot library to easily create new transactions of various types
+"""
+
+import enum
 import math
 import logging
 from typing import List, Optional, Tuple
@@ -12,6 +17,11 @@ from ..persistence import models
 
 def _get_base_amount(total: int, quantities: List[int]) -> int:
     return math.ceil(total / sum(quantities))
+
+
+class _SimpleMultiTransactionMode(enum.Enum):
+    ONE_TO_MANY = "1->n"
+    MANY_TO_ONE = "n->1"
 
 
 def create_transaction(
@@ -77,44 +87,25 @@ def create_transaction(
 
 
 def _pre_check_simple_multi_transaction(
-        senders: List[Tuple[models.User, int]],
+        sender: models.User,
         receivers: List[Tuple[models.User, int]],
         amount: int,
-        reason: str,
-        logger: logging.Logger,
-        total_or_base: str,
-        direction: str,
         indicator: Optional[str] = None
-) -> logging.Logger:
-    logger = enforce_logger(logger)
-    logger.info(
-        f"Incoming {direction} transaction from {senders} to {receivers} "
-        f"about {total_or_base} {amount} for {reason!r}."
-    )
-
+):
     if int(amount) <= 0:
-        raise ValueError(f"{total_or_base.upper()} amount {int(amount)} can't be negative or zero!")
-    amount = int(amount)
+        raise ValueError(f"Base amount {int(amount)} can't be negative or zero!")
 
-    if any(sender for sender, _ in senders if sender.id is None):
-        raise ValueError("ID of some sender user is None!")
-    if any(receiver for receiver, _ in receivers if receiver.id is None):
-        raise ValueError("ID of some sender user is None!")
+    if sender.id is None or any(receiver for receiver, _ in receivers if receiver.id is None):
+        raise ValueError("The user ID of some user is None!")
 
-    if len(senders) == 0:
-        raise ValueError(f"No known senders for transaction of {total_or_base} amount {amount}")
     if len(receivers) == 0:
-        raise ValueError(f"No known receivers for transaction of {total_or_base} amount {amount}")
+        raise ValueError(f"No known participants for transaction of base amount {int(amount)}")
 
     if indicator:
         _ = indicator.format(reason="", n=0)
 
-    if any(quantity for _, quantity in senders if int(quantity) < 0):
-        raise ValueError("A quantity can not be negative!")
     if any(quantity for _, quantity in receivers if int(quantity) < 0):
         raise ValueError("A quantity can not be negative!")
-
-    return logger
 
 
 def _make_simple_multi_transaction(
@@ -124,16 +115,25 @@ def _make_simple_multi_transaction(
         reason: str,
         session: Session,
         logger: logging.Logger,
-        direction: str,
-        func_name: str,
+        direction: _SimpleMultiTransactionMode,
         indicator: Optional[str] = None,
         tasks: Optional[BackgroundTasks] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
-    logger.debug(f"Incoming simple multi transaction {func_name!r} about {base_amount} for {reason!r}")
+    logger = enforce_logger(logger)
+    logger.debug(f"Incoming simple multi transaction {direction.name} about {base_amount} for {reason!r}")
+
+    _pre_check_simple_multi_transaction(
+        sender,
+        receivers_uncompressed,
+        base_amount,
+        indicator
+    )
+    if len(receivers_uncompressed) == 1:
+        logger.warning(f"Using {direction.value} transaction with n=1 instead of normal transaction!")
 
     transactions = []
     base_amount = int(base_amount)
-    multi = models.MultiTransaction(base_amount=abs(base_amount))
+    multi = models.MultiTransaction(base_amount=base_amount)
 
     receiver_users = {}
     receiver_count = {}
@@ -143,20 +143,15 @@ def _make_simple_multi_transaction(
             receiver_count[receiver.id] = 0
         receiver_count[receiver.id] += int(quantity)
 
-    if base_amount > 0 and direction != "1->n":
-        raise ValueError(f"Invalid direction {direction!r} for positive base amount")
-    if base_amount < 0 and direction != "n->1":
-        raise ValueError(f"Invalid direction {direction!r} for negative base amount")
-
     c = 0
     for user_id in receiver_users:
         if sender.id == user_id:
             continue
         c += 1
         quantity = int(receiver_count[user_id])
+        amount = base_amount * quantity
 
-        if base_amount > 0:  # 1->n
-            amount = base_amount * quantity
+        if direction == _SimpleMultiTransactionMode.ONE_TO_MANY:
             transactions.append(models.Transaction(
                 sender_id=sender.id,
                 receiver_id=user_id,
@@ -168,8 +163,7 @@ def _make_simple_multi_transaction(
             receiver_users[user_id].balance += amount
             logger.debug(f"Creating single transaction {sender.id} -> {user_id} of {amount}")
 
-        elif base_amount < 0:  # n->1
-            amount = (-base_amount) * quantity
+        elif direction == _SimpleMultiTransactionMode.MANY_TO_ONE:
             transactions.append(models.Transaction(
                 sender_id=user_id,
                 receiver_id=sender.id,
@@ -244,19 +238,6 @@ def create_one_to_many_transaction(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    logger = _pre_check_simple_multi_transaction(
-        [(sender, 1)],
-        receivers,
-        base_amount,
-        reason,
-        logger,
-        "base",
-        "1->n",
-        indicator
-    )
-    if len(receivers) == 1:
-        logger.info("Using 1->n transaction with n=1 instead of normal transaction!")
-
     return _make_simple_multi_transaction(
         sender,
         receivers,
@@ -264,8 +245,7 @@ def create_one_to_many_transaction(
         reason,
         session,
         logger,
-        "1->n",
-        "create_one_to_many_transaction",
+        _SimpleMultiTransactionMode.ONE_TO_MANY,
         indicator,
         tasks
     )
@@ -331,28 +311,14 @@ def create_many_to_one_transaction(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    logger = _pre_check_simple_multi_transaction(
-        senders,
-        [(receiver, 1)],
-        base_amount,
-        reason,
-        logger,
-        "base",
-        "n->1",
-        indicator
-    )
-    if len(senders) == 1:
-        logger.warning("Using n->1 transaction with n=1 instead of normal transaction!")
-
     return _make_simple_multi_transaction(
         receiver,
         senders,
-        -base_amount,
+        base_amount,
         reason,
         session,
         logger,
-        "n->1",
-        "create_many_to_one_transaction",
+        _SimpleMultiTransactionMode.MANY_TO_ONE,
         indicator,
         tasks
     )
