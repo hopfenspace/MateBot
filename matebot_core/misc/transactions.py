@@ -117,6 +117,92 @@ def _pre_check_simple_multi_transaction(
     return logger
 
 
+def _make_simple_multi_transaction(
+        sender: models.User,
+        receivers_uncompressed: List[Tuple[models.User, int]],
+        base_amount: int,
+        reason: str,
+        session: Session,
+        logger: logging.Logger,
+        direction: str,
+        func_name: str,
+        indicator: Optional[str] = None,
+        tasks: Optional[BackgroundTasks] = None
+) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    logger.debug(f"Incoming simple multi transaction {func_name!r} about {base_amount} for {reason!r}")
+
+    transactions = []
+    base_amount = int(base_amount)
+    multi = models.MultiTransaction(base_amount=abs(base_amount))
+
+    receiver_users = {}
+    receiver_count = {}
+    for receiver, quantity in receivers_uncompressed:
+        if receiver not in receiver_users:
+            receiver_users[receiver.id] = receiver
+            receiver_count[receiver.id] = 0
+        receiver_count[receiver.id] += int(quantity)
+
+    if base_amount > 0 and direction != "1->n":
+        raise ValueError(f"Invalid direction {direction!r} for positive base amount")
+    if base_amount < 0 and direction != "n->1":
+        raise ValueError(f"Invalid direction {direction!r} for negative base amount")
+
+    c = 0
+    for user_id in receiver_users:
+        if sender.id == user_id:
+            continue
+        c += 1
+        quantity = int(receiver_count[user_id])
+
+        if base_amount > 0:  # 1->n
+            amount = base_amount * quantity
+            transactions.append(models.Transaction(
+                sender_id=sender.id,
+                receiver_id=user_id,
+                amount=amount,
+                reason=indicator.format(reason=reason, n=c) if indicator else reason,
+                multi_transaction=multi
+            ))
+            sender.balance -= amount
+            receiver_users[user_id].balance += amount
+            logger.debug(f"Creating single transaction {sender.id} -> {user_id} of {amount}")
+
+        elif base_amount < 0:  # n->1
+            amount = (-base_amount) * quantity
+            transactions.append(models.Transaction(
+                sender_id=user_id,
+                receiver_id=sender.id,
+                amount=amount,
+                reason=indicator.format(reason=reason, n=c) if indicator else reason,
+                multi_transaction=multi
+            ))
+            receiver_users[user_id].balance -= amount
+            sender.balance += amount
+            logger.debug(f"Creating single transaction {user_id} -> {sender.id} of {amount}")
+
+    session.add(sender)
+    session.add_all(list(receiver_users.values()))
+    session.add_all(transactions)
+    session.add(multi)
+    session.commit()
+    logger.debug(
+        f"Successfully committed new multi transaction {multi.id} and "
+        f"transactions: {[t.id for t in transactions]}"
+    )
+
+    if tasks is not None:
+        tasks.add_task(
+            Callback.created,
+            type(multi).__name__.lower(),
+            multi.id,
+            logger,
+            session.query(models.Callback).all()
+        )
+
+    return multi, transactions
+
+
 def create_one_to_many_transaction(
         sender: models.User,
         receivers: List[Tuple[models.User, int]],
@@ -171,47 +257,18 @@ def create_one_to_many_transaction(
     if len(receivers) == 1:
         logger.info("Using 1->n transaction with n=1 instead of normal transaction!")
 
-    transactions = []
-    multi = models.MultiTransaction(base_amount=base_amount)
-
-    c = 0
-    for receiver, quantity in receivers:
-        if sender.id == receiver.id:
-            continue
-        c += 1
-        quantity = int(quantity)
-        amount = base_amount * quantity
-        transactions.append(models.Transaction(
-            sender_id=sender.id,
-            receiver_id=receiver.id,
-            amount=amount,
-            reason=indicator.format(reason=reason, n=c) if indicator else reason,
-            multi_transaction=multi
-        ))
-        sender.balance -= amount
-        receiver.balance += amount
-        logger.debug(f"Creating single transaction {sender.id} -> {receiver.id} of {amount}")
-
-    session.add(sender)
-    session.add_all(r for r, q in receivers)
-    session.add_all(transactions)
-    session.add(multi)
-    session.commit()
-    logger.debug(
-        f"Successfully committed new multi transaction {multi.id} and "
-        f"transactions: {[t.id for t in transactions]}"
+    return _make_simple_multi_transaction(
+        sender,
+        receivers,
+        base_amount,
+        reason,
+        session,
+        logger,
+        "1->n",
+        "create_one_to_many_transaction",
+        indicator,
+        tasks
     )
-
-    if tasks is not None:
-        tasks.add_task(
-            Callback.created,
-            type(multi).__name__.lower(),
-            multi.id,
-            logger,
-            session.query(models.Callback).all()
-        )
-
-    return multi, transactions
 
 
 def create_one_to_many_transaction_by_total(
@@ -285,49 +342,20 @@ def create_many_to_one_transaction(
         indicator
     )
     if len(senders) == 1:
-        logger.info("Using n->1 transaction with n=1 instead of normal transaction!")
+        logger.warning("Using n->1 transaction with n=1 instead of normal transaction!")
 
-    transactions = []
-    multi = models.MultiTransaction(base_amount=base_amount)
-
-    c = 0
-    for sender, quantity in senders:
-        if sender.id == receiver.id:
-            continue
-        c += 1
-        quantity = int(quantity)
-        amount = base_amount * quantity
-        transactions.append(models.Transaction(
-            sender_id=sender.id,
-            receiver_id=receiver.id,
-            amount=amount,
-            reason=indicator.format(reason=reason, n=c) if indicator else reason,
-            multi_transaction=multi
-        ))
-        sender.balance -= amount
-        receiver.balance += amount
-        logger.debug(f"Creating single transaction {sender.id} -> {receiver.id} of {amount}")
-
-    session.add(receiver)
-    session.add_all(s for s, q in senders)
-    session.add_all(transactions)
-    session.add(multi)
-    session.commit()
-    logger.debug(
-        f"Successfully committed new multi transaction {multi.id} and "
-        f"transactions: {[t.id for t in transactions]}"
+    return _make_simple_multi_transaction(
+        receiver,
+        senders,
+        -base_amount,
+        reason,
+        session,
+        logger,
+        "n->1",
+        "create_many_to_one_transaction",
+        indicator,
+        tasks
     )
-
-    if tasks is not None:
-        tasks.add_task(
-            Callback.created,
-            type(multi).__name__.lower(),
-            multi.id,
-            logger,
-            session.query(models.Callback).all()
-        )
-
-    return multi, transactions
 
 
 def create_many_to_one_transaction_by_total(
