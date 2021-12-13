@@ -60,6 +60,8 @@ class TransactionTests(utils.BasePersistenceTests):
 
     def test_one_to_many_transactions(self):
         users = self.session.query(models.User).all()
+
+        # First basic check of equal parts for everyone
         m, ts = transactions.create_one_to_many_transaction(
             users[0],
             [(users[2], 1), (users[3], 1), (users[4], 1), (users[5], 1)],
@@ -77,6 +79,7 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(f"foo{t.id}", self.session.query(models.Transaction).get(t.id).reason)
             self.assertEqual(self.session.query(models.Transaction).get(t.id), t)
 
+        # Quantities should be handled correctly
         m, ts = transactions.create_one_to_many_transaction(
             users[4],
             [(users[2], 4), (users[3], 9), (users[4], 1), (users[5], 2)],
@@ -93,6 +96,30 @@ class TransactionTests(utils.BasePersistenceTests):
         self.assertEqual(self.session.query(models.Transaction).get(5).amount, 12)
         self.assertEqual(self.session.query(models.Transaction).get(6).amount, 27)
 
+        # Users can't send money to themselves
+        m, ts = transactions.create_one_to_many_transaction(
+            users[1],
+            [(users[1], 1)],
+            4,
+            "foo",
+            self.session,
+            logging.getLogger()
+        )
+        self.assertEqual(0, len(ts))
+        self.assertEqual(0, len(m.transactions))
+
+        # Users can't send money to themselves, no matter how often they try
+        m, ts = transactions.create_one_to_many_transaction(
+            users[1],
+            [(users[1], 2), (users[1], 6), (users[1], 0), (users[1], 1337)],
+            4,
+            "foo",
+            self.session,
+            logging.getLogger()
+        )
+        self.assertEqual(0, len(ts))
+        self.assertEqual(0, len(m.transactions))
+
     def test_many_to_one_transactions(self):
         pass
 
@@ -102,6 +129,8 @@ class TransactionTests(utils.BasePersistenceTests):
 
         test_cases = [
             (users[4], [(users[1], 1)]),
+            (users[4], [(users[4], 1)]),
+            (users[4], [(users[1], 1), (users[1], 1), (users[1], 1)]),
             (users[1], [(users[4], 2), (users[0], 9)]),
             (users[0], [(users[3], 42), (users[1], 19)]),
             (users[0], [(users[1], 1), (users[2], 5), (users[3], 9), (users[4], 12), (users[5], 38)]),
@@ -131,6 +160,9 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(len(ts_from), len(ts_to))
             self.assertEqual(sum(t.amount for t in ts_from), sum(t.amount for t in ts_to))
             self.assertEqual(balances, [u.balance for u in users])
+
+        self.assertEqual(12, len(self.session.query(models.MultiTransaction).all()))
+        self.assertEqual(22, len(self.session.query(models.Transaction).all()))
 
     def test_matrix_transactions(self):
         pass
