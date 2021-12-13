@@ -76,6 +76,47 @@ def create_transaction(
     return model
 
 
+def _pre_check_simple_multi_transaction(
+        senders: List[Tuple[models.User, int]],
+        receivers: List[Tuple[models.User, int]],
+        amount: int,
+        reason: str,
+        logger: logging.Logger,
+        total_or_base: str,
+        direction: str,
+        indicator: Optional[str] = None
+) -> logging.Logger:
+    logger = enforce_logger(logger)
+    logger.info(
+        f"Incoming {direction} transaction from {senders} to {receivers} "
+        f"about {total_or_base} {amount} for {reason!r}."
+    )
+
+    if int(amount) <= 0:
+        raise ValueError(f"{total_or_base.upper()} amount {int(amount)} can't be negative or zero!")
+    amount = int(amount)
+
+    if any(sender for sender, _ in senders if sender.id is None):
+        raise ValueError("ID of some sender user is None!")
+    if any(receiver for receiver, _ in receivers if receiver.id is None):
+        raise ValueError("ID of some sender user is None!")
+
+    if len(senders) == 0:
+        raise ValueError(f"No known senders for transaction of {total_or_base} amount {amount}")
+    if len(receivers) == 0:
+        raise ValueError(f"No known receivers for transaction of {total_or_base} amount {amount}")
+
+    if indicator:
+        _ = indicator.format(reason="", n=0)
+
+    if any(quantity for _, quantity in senders if int(quantity) < 0):
+        raise ValueError("A quantity can not be negative!")
+    if any(quantity for _, quantity in receivers if int(quantity) < 0):
+        raise ValueError("A quantity can not be negative!")
+
+    return logger
+
+
 def create_one_to_many_transaction(
         sender: models.User,
         receivers: List[Tuple[models.User, int]],
@@ -117,26 +158,18 @@ def create_one_to_many_transaction(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    logger = enforce_logger(logger)
-    logger.info(f"Incoming 1->n transaction from {sender} to {receivers} about base {base_amount} for {reason!r}.")
-
-    base_amount = int(base_amount)
-    if base_amount <= 0:
-        raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
-
-    if sender.id is None or any(receiver for receiver, _ in receivers if receiver.id is None):
-        raise ValueError("ID of some user None!")
-
-    if len(receivers) == 0:
-        raise ValueError(f"No known receivers for transaction of base amount {base_amount}")
-    elif len(receivers) == 1:
-        logger.warning("Using 1->n transaction with n=1 instead of normal transaction!")
-
-    # Testing the indicator before performing actual operations
-    _ = indicator.format(reason="", n=0)
-
-    if any(quantity for _, quantity in receivers if int(quantity) < 0):
-        raise ValueError("A quantity can not be negative!")
+    logger = _pre_check_simple_multi_transaction(
+        [(sender, 1)],
+        receivers,
+        base_amount,
+        reason,
+        logger,
+        "base",
+        "1->n",
+        indicator
+    )
+    if len(receivers) == 1:
+        logger.info("Using 1->n transaction with n=1 instead of normal transaction!")
 
     transactions = []
     multi = models.MultiTransaction(base_amount=base_amount)
@@ -152,7 +185,7 @@ def create_one_to_many_transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=c),
+            reason=indicator.format(reason=reason, n=c) if indicator else reason,
             multi_transaction=multi
         ))
         sender.balance -= amount
@@ -241,26 +274,18 @@ def create_many_to_one_transaction(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    logger = enforce_logger(logger)
-    logger.info(f"Incoming n->1 transaction from {senders} to {receiver} about base {base_amount} for {reason!r}.")
-
-    base_amount = int(base_amount)
-    if base_amount <= 0:
-        raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
-
-    if receiver.id is None or any(sender for sender, _ in senders if sender.id is None):
-        raise ValueError("ID of some user None!")
-
-    if len(senders) == 0:
-        raise ValueError(f"No known senders for transaction of base amount {base_amount}")
-    elif len(senders) == 1:
-        logger.warning("Using n->1 transaction with n=1 instead of normal transaction!")
-
-    # Testing the indicator before performing actual operations
-    _ = indicator.format(reason="", n=0)
-
-    if any(quantity for sender, quantity in senders if int(quantity) < 0):
-        raise ValueError("A quantity can not be negative!")
+    logger = _pre_check_simple_multi_transaction(
+        senders,
+        [(receiver, 1)],
+        base_amount,
+        reason,
+        logger,
+        "base",
+        "n->1",
+        indicator
+    )
+    if len(senders) == 1:
+        logger.info("Using n->1 transaction with n=1 instead of normal transaction!")
 
     transactions = []
     multi = models.MultiTransaction(base_amount=base_amount)
@@ -276,7 +301,7 @@ def create_many_to_one_transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=c),
+            reason=indicator.format(reason=reason, n=c) if indicator else reason,
             multi_transaction=multi
         ))
         sender.balance -= amount
