@@ -42,6 +42,10 @@ class TransactionTests(utils.BasePersistenceTests):
         self.assertEqual(user1_balance, user1.balance)
         self.assertEqual(user4_balance, user4.balance)
 
+        # Don't allow transactions of unknown users
+        with self.assertRaises(ValueError):
+            transactions.create_transaction(models.User(), user1, 42, "", self.session, logging.getLogger())
+
         total = 0
         for i, v in enumerate([3, 41, 51, 9, 3]):
             t = transactions.create_transaction(user4, user1, v, "", self.session, logging.getLogger())
@@ -54,7 +58,39 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(i+1, len(self.session.query(models.Transaction).all()))
 
     def test_one_to_many_transactions(self):
-        pass
+        users = self.session.query(models.User).all()
+        m, ts = transactions.create_one_to_many_transaction(
+            users[0],
+            [(users[2], 1), (users[3], 1), (users[4], 1), (users[5], 1)],
+            5,
+            "foo",
+            self.session,
+            logging.getLogger(),
+            "{reason}{n}"
+        )
+        self.assertEqual(m.id, 1)
+        self.assertEqual(len(ts), 4)
+        self.assertEqual(users[0].balance, -62)
+        self.assertEqual(users[5].balance, 5)
+        for t in ts:
+            self.assertEqual(f"foo{t.id}", self.session.query(models.Transaction).get(t.id).reason)
+            self.assertEqual(self.session.query(models.Transaction).get(t.id), t)
+
+        m, ts = transactions.create_one_to_many_transaction(
+            users[4],
+            [(users[2], 4), (users[3], 9), (users[4], 1), (users[5], 2)],
+            3,
+            "bar",
+            self.session,
+            logging.getLogger(),
+            "{n}_{reason}"
+        )
+        for i, t in enumerate(ts):
+            self.assertEqual(f"{i+1}_bar", self.session.query(models.Transaction).get(t.id).reason)
+            self.assertEqual(self.session.query(models.Transaction).get(t.id), t)
+        self.assertEqual(self.session.query(models.Transaction).get(4).amount, 5)
+        self.assertEqual(self.session.query(models.Transaction).get(5).amount, 12)
+        self.assertEqual(self.session.query(models.Transaction).get(6).amount, 27)
 
     def test_many_to_one_transactions(self):
         pass

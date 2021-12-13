@@ -141,15 +141,18 @@ def create_one_to_many_transaction(
     transactions = []
     multi = models.MultiTransaction(base_amount=base_amount)
 
-    for i, receiver_quantity in enumerate(receivers):
-        receiver, quantity = receiver_quantity
+    c = 0
+    for receiver, quantity in receivers:
+        if sender.id == receiver.id:
+            continue
+        c += 1
         quantity = int(quantity)
         amount = base_amount * quantity
         transactions.append(models.Transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=i),
+            reason=indicator.format(reason=reason, n=c),
             multi_transaction=multi
         ))
         sender.balance -= amount
@@ -262,15 +265,18 @@ def create_many_to_one_transaction(
     transactions = []
     multi = models.MultiTransaction(base_amount=base_amount)
 
-    for i, sender_quantity in enumerate(senders):
-        sender, quantity = sender_quantity
+    c = 0
+    for sender, quantity in senders:
+        if sender.id == receiver.id:
+            continue
+        c += 1
         quantity = int(quantity)
         amount = base_amount * quantity
         transactions.append(models.Transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=i),
+            reason=indicator.format(reason=reason, n=c),
             multi_transaction=multi
         ))
         sender.balance -= amount
