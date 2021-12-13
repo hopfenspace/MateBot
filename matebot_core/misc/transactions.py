@@ -208,3 +208,59 @@ def create_many_to_one_transaction(
     :raises KeyError: in case the custom indicator string is somehow broken
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
+
+    logger = enforce_logger(logger)
+    logger.info(f"Incoming n->1 transaction from {senders} to {receiver} about base {base_amount} for {reason!r}.")
+
+    base_amount = int(base_amount)
+    if base_amount <= 0:
+        raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
+
+    if len(senders) == 0:
+        raise ValueError(f"No known senders for transaction of base amount {base_amount}")
+    elif len(senders) == 1:
+        logger.warning("Using n->1 transaction with n=1 instead of normal transaction!")
+
+    # Testing the indicator before performing actual operations
+    _ = indicator.format(reason="", n=0)
+
+    if any(quantity for sender, quantity in senders if int(quantity) < 0):
+        raise ValueError("A quantity can not be negative!")
+
+    transactions = []
+    multi = models.MultiTransaction(base_amount=base_amount)
+
+    for i, sender_quantity in enumerate(senders):
+        sender, quantity = sender_quantity
+        quantity = int(quantity)
+        amount = base_amount * quantity
+        transactions.append(models.Transaction(
+            sender_id=sender.id,
+            receiver_id=receiver.id,
+            amount=amount,
+            reason=indicator.format(reason=reason, n=i)
+        ))
+        sender.balance -= amount
+        receiver.balance += amount
+        logger.debug(f"Creating single transaction {sender.id} -> {receiver.id} of {amount}")
+
+    session.add(receiver)
+    session.add_all(s for s, q in senders)
+    session.add_all(transactions)
+    session.add(multi)
+    session.commit()
+    logger.debug(
+        f"Successfully committed new multi transaction {multi.id} and "
+        f"transactions: {[t.id for t in transactions]}"
+    )
+
+    if tasks is not None:
+        tasks.add_task(
+            Callback.created,
+            type(multi).__name__.lower(),
+            multi.id,
+            logger,
+            session.query(models.Callback).all()
+        )
+
+    return multi, transactions
