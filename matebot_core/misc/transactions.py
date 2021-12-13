@@ -35,7 +35,7 @@ def create_transaction(
     :param tasks: FastAPI's list of background tasks the callback task should be added to
         (use None to disable creating the notification background task completely)
     :return: the newly created and committed Transaction object
-    :raises ValueError: in case the amount is negative or zero
+    :raises ValueError: in case the amount is not positive or some user ID is not set
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
@@ -45,6 +45,9 @@ def create_transaction(
     amount = int(amount)
     if amount <= 0:
         raise ValueError(f"Amount {amount} can't be negative or zero!")
+
+    if sender.id is None or receiver.id is None:
+        raise ValueError("ID of some user None!")
 
     model = models.Transaction(
         sender_id=sender.id,
@@ -109,7 +112,7 @@ def create_one_to_many_transaction(
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no receivers have been given, the amount is
-        negative or the quantity of any user is negative
+        negative, the quantity of any user is negative or any user has no ID
     :raises KeyError: in case the custom indicator string is somehow broken
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
@@ -121,6 +124,9 @@ def create_one_to_many_transaction(
     if base_amount <= 0:
         raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
 
+    if sender.id is None or any(receiver for receiver, _ in receivers if receiver.id is None):
+        raise ValueError("ID of some user None!")
+
     if len(receivers) == 0:
         raise ValueError(f"No known receivers for transaction of base amount {base_amount}")
     elif len(receivers) == 1:
@@ -129,7 +135,7 @@ def create_one_to_many_transaction(
     # Testing the indicator before performing actual operations
     _ = indicator.format(reason="", n=0)
 
-    if any(quantity for receiver, quantity in receivers if int(quantity) < 0):
+    if any(quantity for _, quantity in receivers if int(quantity) < 0):
         raise ValueError("A quantity can not be negative!")
 
     transactions = []
@@ -227,7 +233,7 @@ def create_many_to_one_transaction(
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no senders have been given, the amount is
-        negative or the quantity of any user is negative
+        negative, the quantity of any user is negative or any user has no ID
     :raises KeyError: in case the custom indicator string is somehow broken
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
@@ -238,6 +244,9 @@ def create_many_to_one_transaction(
     base_amount = int(base_amount)
     if base_amount <= 0:
         raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
+
+    if receiver.id is None or any(sender for sender, _ in senders if sender.id is None):
+        raise ValueError("ID of some user None!")
 
     if len(senders) == 0:
         raise ValueError(f"No known senders for transaction of base amount {base_amount}")
