@@ -3,6 +3,7 @@ MateBot unit tests for helpers and other miscellaneous features
 """
 
 import unittest as _unittest
+import random
 import logging
 from typing import Type
 
@@ -94,6 +95,42 @@ class TransactionTests(utils.BasePersistenceTests):
 
     def test_many_to_one_transactions(self):
         pass
+
+    def test_reversed_multi_transactions(self):
+        users = self.session.query(models.User).all()
+        balances = [u.balance for u in users][:]
+
+        test_cases = [
+            (users[4], [(users[1], 1)]),
+            (users[1], [(users[4], 2), (users[0], 9)]),
+            (users[0], [(users[3], 42), (users[1], 19)]),
+            (users[0], [(users[1], 1), (users[2], 5), (users[3], 9), (users[4], 12), (users[5], 38)]),
+        ]
+
+        for s, rs in test_cases:
+            base_amount = random.randint(1, 42)
+            m_from, ts_from = transactions.create_one_to_many_transaction(
+                s,
+                rs,
+                base_amount,
+                "foo",
+                self.session,
+                logging.getLogger()
+            )
+            m_to, ts_to = transactions.create_many_to_one_transaction(
+                rs,
+                s,
+                base_amount,
+                "bar",
+                self.session,
+                logging.getLogger()
+            )
+
+            self.assertEqual(m_from.base_amount, m_to.base_amount)
+            self.assertEqual(m_from.base_amount, base_amount)
+            self.assertEqual(len(ts_from), len(ts_to))
+            self.assertEqual(sum(t.amount for t in ts_from), sum(t.amount for t in ts_to))
+            self.assertEqual(balances, [u.balance for u in users])
 
     def test_matrix_transactions(self):
         pass
