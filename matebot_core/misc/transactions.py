@@ -10,6 +10,10 @@ from .notifier import Callback
 from ..persistence import models
 
 
+def _get_base_amount(total: int, quantities: List[int]) -> int:
+    return math.ceil(total / sum(quantities))
+
+
 def create_transaction(
         sender: models.User,
         receiver: models.User,
@@ -168,6 +172,23 @@ def create_one_to_many_transaction(
     return multi, transactions
 
 
+def create_one_to_many_transaction_by_total(
+        sender: models.User,
+        receivers: List[Tuple[models.User, int]],
+        total_amount: int,
+        reason: str,
+        session: Session,
+        logger: logging.Logger,
+        indicator: Optional[str] = None,
+        tasks: Optional[BackgroundTasks] = None
+) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    total_amount = int(total_amount)
+    if total_amount <= 0:
+        raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
+    base_amount = _get_base_amount(total_amount, [q for r, q in receivers])
+    return create_one_to_many_transaction(sender, receivers, base_amount, reason, session, logger, indicator, tasks)
+
+
 def create_many_to_one_transaction(
         senders: List[Tuple[models.User, int]],
         receiver: models.User,
@@ -265,3 +286,20 @@ def create_many_to_one_transaction(
         )
 
     return multi, transactions
+
+
+def create_many_to_one_transaction_by_total(
+        senders: List[Tuple[models.User, int]],
+        receiver: models.User,
+        total_amount: int,
+        reason: str,
+        session: Session,
+        logger: logging.Logger,
+        indicator: Optional[str] = None,
+        tasks: Optional[BackgroundTasks] = None
+) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
+    total_amount = int(total_amount)
+    if total_amount <= 0:
+        raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
+    base_amount = _get_base_amount(total_amount, [q for s, q in senders])
+    return create_many_to_one_transaction(senders, receiver, base_amount, reason, session, logger, indicator, tasks)
