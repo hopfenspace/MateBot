@@ -15,13 +15,14 @@ from .notifier import Callback
 from ..persistence import models
 
 
-def _get_base_amount(total: int, quantities: List[int]) -> int:
-    return math.ceil(total / sum(quantities))
-
-
 class _SimpleMultiTransactionMode(enum.Enum):
     ONE_TO_MANY = "1->n"
     MANY_TO_ONE = "n->1"
+
+
+class _SimpleMultiTransactionAmount(enum.Enum):
+    BASE = "base"
+    TOTAL = "total"
 
 
 def create_transaction(
@@ -89,7 +90,8 @@ def create_transaction(
 def _make_simple_multi_transaction(
         sender: models.User,
         receivers_uncompressed: List[Tuple[models.User, int]],
-        base_amount: int,
+        pre_amount: int,
+        amount_type: _SimpleMultiTransactionAmount,
         reason: str,
         session: Session,
         logger: logging.Logger,
@@ -102,11 +104,26 @@ def _make_simple_multi_transaction(
     """
 
     logger = enforce_logger(logger)
-    logger.debug(f"Incoming simple multi transaction {direction.name} about {base_amount} for {reason!r}")
+    logger.debug(
+        f"Incoming simple multi transaction {direction.name} about "
+        f"{pre_amount} ({amount_type.name}) for {reason!r}"
+    )
+
+    if amount_type == _SimpleMultiTransactionAmount.TOTAL:
+        total_amount = int(pre_amount)
+        if total_amount <= 0:
+            raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
+        quantities = sum(q for _, q in receivers_uncompressed)
+        if quantities == 0:
+            raise ValueError(f"No participants with quantity > 1 given!")
+        base_amount = math.ceil(total_amount / quantities)
+    elif amount_type == _SimpleMultiTransactionAmount.BASE:
+        base_amount = int(pre_amount)
+    else:
+        raise TypeError(f"Unknown enum {amount_type}")
 
     if base_amount <= 0 or int(base_amount) <= 0:
         raise ValueError(f"Base amount {base_amount} can't be negative or zero!")
-    base_amount = int(base_amount)
 
     if sender.id is None or any(receiver for receiver, _ in receivers_uncompressed if receiver.id is None):
         raise ValueError("The user ID of some user is None!")
@@ -186,7 +203,7 @@ def _make_simple_multi_transaction(
     return multi, transactions
 
 
-def create_one_to_many_transaction(
+def create_one_to_many_transaction_by_base(
         sender: models.User,
         receivers: List[Tuple[models.User, int]],
         base_amount: int,
@@ -231,6 +248,7 @@ def create_one_to_many_transaction(
         sender,
         receivers,
         base_amount,
+        _SimpleMultiTransactionAmount.BASE,
         reason,
         session,
         logger,
@@ -284,16 +302,21 @@ def create_one_to_many_transaction_by_total(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    total_amount = int(total_amount)
-    if total_amount <= 0:
-        raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
-    if len(receivers) == 0:
-        raise ValueError(f"No known receivers for transaction of total amount {total_amount}")
-    base_amount = _get_base_amount(total_amount, [q for r, q in receivers])
-    return create_one_to_many_transaction(sender, receivers, base_amount, reason, session, logger, indicator, tasks)
+    return _make_simple_multi_transaction(
+        sender,
+        receivers,
+        total_amount,
+        _SimpleMultiTransactionAmount.TOTAL,
+        reason,
+        session,
+        logger,
+        _SimpleMultiTransactionMode.ONE_TO_MANY,
+        indicator,
+        tasks
+    )
 
 
-def create_many_to_one_transaction(
+def create_many_to_one_transaction_by_base(
         senders: List[Tuple[models.User, int]],
         receiver: models.User,
         base_amount: int,
@@ -338,6 +361,7 @@ def create_many_to_one_transaction(
         receiver,
         senders,
         base_amount,
+        _SimpleMultiTransactionAmount.BASE,
         reason,
         session,
         logger,
@@ -391,10 +415,15 @@ def create_many_to_one_transaction_by_total(
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
-    total_amount = int(total_amount)
-    if total_amount <= 0:
-        raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
-    if len(senders) == 0:
-        raise ValueError(f"No known senders for transaction of total amount {total_amount}")
-    base_amount = _get_base_amount(total_amount, [q for s, q in senders])
-    return create_many_to_one_transaction(senders, receiver, base_amount, reason, session, logger, indicator, tasks)
+    return _make_simple_multi_transaction(
+        receiver,
+        senders,
+        total_amount,
+        _SimpleMultiTransactionAmount.TOTAL,
+        reason,
+        session,
+        logger,
+        _SimpleMultiTransactionMode.MANY_TO_ONE,
+        indicator,
+        tasks
+    )
