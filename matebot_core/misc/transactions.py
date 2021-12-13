@@ -185,6 +185,8 @@ def create_one_to_many_transaction_by_total(
     total_amount = int(total_amount)
     if total_amount <= 0:
         raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
+    if len(receivers) == 0:
+        raise ValueError(f"No known receivers for transaction of total amount {total_amount}")
     base_amount = _get_base_amount(total_amount, [q for r, q in receivers])
     return create_one_to_many_transaction(sender, receivers, base_amount, reason, session, logger, indicator, tasks)
 
@@ -301,5 +303,7 @@ def create_many_to_one_transaction_by_total(
     total_amount = int(total_amount)
     if total_amount <= 0:
         raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
+    if len(senders) == 0:
+        raise ValueError(f"No known senders for transaction of total amount {total_amount}")
     base_amount = _get_base_amount(total_amount, [q for s, q in senders])
     return create_many_to_one_transaction(senders, receiver, base_amount, reason, session, logger, indicator, tasks)
