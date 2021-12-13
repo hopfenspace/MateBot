@@ -2,7 +2,6 @@ import math
 import logging
 from typing import List, Optional, Tuple
 
-import pydantic
 from sqlalchemy.orm.session import Session
 from fastapi.background import BackgroundTasks
 
@@ -72,8 +71,8 @@ def create_transaction(
 
 def create_one_to_many_transaction(
         sender: models.User,
-        receivers: List[Tuple[models.User, pydantic.NonNegativeInt]],
-        base_amount: pydantic.NonNegativeInt,
+        receivers: List[Tuple[models.User, int]],
+        base_amount: int,
         reason: str,
         session: Session,
         logger: logging.Logger,
@@ -140,7 +139,8 @@ def create_one_to_many_transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=i)
+            reason=indicator.format(reason=reason, n=i),
+            multi_transaction=multi
         ))
         sender.balance -= amount
         receiver.balance += amount
@@ -169,9 +169,9 @@ def create_one_to_many_transaction(
 
 
 def create_many_to_one_transaction(
-        senders: List[Tuple[models.User, pydantic.NonNegativeInt]],
+        senders: List[Tuple[models.User, int]],
         receiver: models.User,
-        base_amount: pydantic.NonNegativeInt,
+        base_amount: int,
         reason: str,
         session: Session,
         logger: logging.Logger,
@@ -238,7 +238,8 @@ def create_many_to_one_transaction(
             sender_id=sender.id,
             receiver_id=receiver.id,
             amount=amount,
-            reason=indicator.format(reason=reason, n=i)
+            reason=indicator.format(reason=reason, n=i),
+            multi_transaction=multi
         ))
         sender.balance -= amount
         receiver.balance += amount
