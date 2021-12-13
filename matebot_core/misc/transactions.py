@@ -113,7 +113,7 @@ def _make_simple_multi_transaction(
         total_amount = int(pre_amount)
         if total_amount <= 0:
             raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
-        quantities = sum(q for _, q in receivers_uncompressed)
+        quantities = sum(q for r, q in receivers_uncompressed if r.id != sender.id)
         if quantities == 0:
             raise ValueError(f"No participants with quantity > 1 given!")
         base_amount = math.ceil(total_amount / quantities)
@@ -153,9 +153,11 @@ def _make_simple_multi_transaction(
     for user_id in receiver_users:
         if sender.id == user_id:
             continue
-        c += 1
         quantity = int(receiver_count[user_id])
         amount = base_amount * quantity
+        if amount == 0:
+            continue
+        c += 1
 
         if direction == _SimpleMultiTransactionMode.ONE_TO_MANY:
             transactions.append(models.Transaction(
