@@ -144,7 +144,7 @@ def _make_simple_multi_transaction(
     receiver_users = {}
     receiver_count = {}
     for receiver, quantity in receivers_uncompressed:
-        if receiver not in receiver_users:
+        if receiver.id not in receiver_users:
             receiver_users[receiver.id] = receiver
             receiver_count[receiver.id] = 0
         receiver_count[receiver.id] += int(quantity)

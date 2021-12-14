@@ -58,11 +58,11 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(user4.balance, user4_balance - total)
             self.assertEqual(i+1, len(self.session.query(models.Transaction).all()))
 
-    def test_one_to_many_transactions(self):
+    def test_one_to_many_transactions_base(self):
         users = self.session.query(models.User).all()
 
         # First basic check of equal parts for everyone
-        m, ts = transactions.create_one_to_many_transaction(
+        m, ts = transactions.create_one_to_many_transaction_by_base(
             users[0],
             [(users[2], 1), (users[3], 1), (users[4], 1), (users[5], 1)],
             5,
@@ -80,7 +80,7 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(self.session.query(models.Transaction).get(t.id), t)
 
         # Quantities should be handled correctly
-        m, ts = transactions.create_one_to_many_transaction(
+        m, ts = transactions.create_one_to_many_transaction_by_base(
             users[4],
             [(users[2], 4), (users[3], 9), (users[4], 1), (users[5], 2)],
             3,
@@ -97,7 +97,7 @@ class TransactionTests(utils.BasePersistenceTests):
         self.assertEqual(self.session.query(models.Transaction).get(6).amount, 27)
 
         # Users can't send money to themselves
-        m, ts = transactions.create_one_to_many_transaction(
+        m, ts = transactions.create_one_to_many_transaction_by_base(
             users[1],
             [(users[1], 1)],
             4,
@@ -109,7 +109,7 @@ class TransactionTests(utils.BasePersistenceTests):
         self.assertEqual(0, len(m.transactions))
 
         # Users can't send money to themselves, no matter how often they try
-        m, ts = transactions.create_one_to_many_transaction(
+        m, ts = transactions.create_one_to_many_transaction_by_base(
             users[1],
             [(users[1], 2), (users[1], 6), (users[1], 0), (users[1], 1337)],
             4,
@@ -133,12 +133,12 @@ class TransactionTests(utils.BasePersistenceTests):
             (users[4], [(users[1], 1), (users[1], 1), (users[1], 1)]),
             (users[1], [(users[4], 2), (users[0], 9)]),
             (users[0], [(users[3], 42), (users[1], 19)]),
-            (users[0], [(users[1], 1), (users[2], 5), (users[3], 9), (users[4], 12), (users[5], 38)]),
+            (users[0], [(users[1], 1), (users[2], 5), (users[3], 9), (users[4], 12), (users[5], 38)])
         ]
 
         for s, rs in test_cases:
             base_amount = random.randint(1, 42)
-            m_from, ts_from = transactions.create_one_to_many_transaction(
+            m_from, ts_from = transactions.create_one_to_many_transaction_by_base(
                 s,
                 rs,
                 base_amount,
@@ -146,7 +146,7 @@ class TransactionTests(utils.BasePersistenceTests):
                 self.session,
                 logging.getLogger()
             )
-            m_to, ts_to = transactions.create_many_to_one_transaction(
+            m_to, ts_to = transactions.create_many_to_one_transaction_by_base(
                 rs,
                 s,
                 base_amount,
