@@ -58,6 +58,48 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertEqual(user4.balance, user4_balance - total)
             self.assertEqual(i+1, len(self.session.query(models.Transaction).all()))
 
+    def test_simple_multi_transaction_restrictions(self):
+        users = self.session.query(models.User).all()
+
+        for func, direction, total in [
+            (transactions.create_one_to_many_transaction_by_base, True, False),
+            (transactions.create_many_to_one_transaction_by_base, False, False),
+            (transactions.create_one_to_many_transaction_by_total, True, True),
+            (transactions.create_many_to_one_transaction_by_total, False, True),
+        ]:
+            if direction:
+                def f(one, many, amount):
+                    return func(one, many, amount, "foo", self.session, logging.getLogger())
+            else:
+                def f(one, many, amount):
+                    return func(many, one, amount, "foo", self.session, logging.getLogger())
+
+            # At least one valid user with quantity > 1 must be present
+            with self.assertRaises(ValueError, msg=func):
+                f(users[1], [], 1337)
+            if total:
+                with self.assertRaises(ValueError, msg=func):
+                    f(users[4], [(users[4], 1)], 1337)
+                with self.assertRaises(ValueError, msg=func):
+                    f(users[4], [(users[4], 1), (users[4], 1), (users[4], 1)], 1337)
+
+            # Quantities mustn't be negative
+            with self.assertRaises(ValueError, msg=func):
+                f(users[1], [(users[4], -1)], 1337)
+            with self.assertRaises(ValueError, msg=func):
+                f(users[1], [(users[4], 6), (users[4], -2)], 1337)
+
+            # Specifying the same receivers multiple times just yields one transaction to them
+            m, ts = f(users[1], [(users[4], 1), (users[4], 1), (users[4], 1)], 1337)
+            self.assertEqual(1, len(ts))
+            self.assertEqual(m.transactions, ts)
+            self.assertGreaterEqual(ts[0].amount, 1337)
+
+            # The amount must not be negative or zero
+            for v in [0, 0.2, 0.9, -42, -1e10, -0.1, -random.randint(2, 1024)]:
+                with self.assertRaises(ValueError, msg=func):
+                    f(users[1], [(users[4], 2)], v)
+
     def test_one_to_many_transactions_base(self):
         users = self.session.query(models.User).all()
 
