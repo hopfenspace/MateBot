@@ -151,6 +151,19 @@ async def make_a_new_transaction(
 
 
 @router.get(
+    "/multi",
+    response_model=List[schemas.MultiTransaction]
+)
+@versioning.versions(1)
+async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+    """
+    Return a list of all multi transactions in the system.
+    """
+
+    return await helpers.get_all_of_model(models.MultiTransaction, local)
+
+
+@router.get(
     "/{transaction_id}",
     response_model=schemas.Transaction,
     responses={404: {"model": schemas.APIError}}
