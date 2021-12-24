@@ -162,8 +162,85 @@ class TransactionTests(utils.BasePersistenceTests):
         self.assertEqual(0, len(ts))
         self.assertEqual(0, len(m.transactions))
 
-    def test_many_to_one_transactions(self):
-        pass
+    def test_one_to_many_transactions_total(self):
+        users = self.session.query(models.User).all()
+
+        # Starting with a base case
+        balance_user1 = users[1].balance
+        balance_user2 = users[2].balance
+        balance_user3 = users[3].balance
+        balance_user4 = users[4].balance
+        m, ts = transactions.create_one_to_many_transaction_by_total(
+            users[0],
+            [(users[1], 7), (users[2], 0), (users[3], 9), (users[4], 2)],
+            215,
+            "foo",
+            self.session,
+            logging.getLogger()
+        )
+        self.assertEqual(m.base_amount, 12)
+        self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
+        self.assertGreaterEqual(sum(t.amount for t in ts), 215)
+        self.assertEqual(users[1].balance, balance_user1 + 7 * 12)
+        self.assertEqual(users[2].balance, balance_user2 + 0 * 12)
+        self.assertEqual(users[3].balance, balance_user3 + 9 * 12)
+        self.assertEqual(users[4].balance, balance_user4 + 2 * 12)
+
+        # Adding more complex test scenarios
+        test_cases = [
+            (25, 25, users[4], [(1, 1, 25)]),
+            (91, 31, users[4], [(1, 1, 93), (1, 1, 93), (1, 1, 93)]),
+            (734, 67, users[1], [(4, 2, 134), (0, 9, 603)]),
+            (623, 11, users[0], [(3, 42, 462), (1, 19, 209)]),
+            (9814, 151, users[0], [(1, 1, 151), (2, 5, 755), (3, 9, 1359), (4, 12, 1812), (5, 38, 5738)])
+        ]
+
+        # Transactions by total amount must be "fair" (=equally distributed) in various situations
+        for total, base, s, rs_a in test_cases:
+            rs = [(users[r_id], q) for r_id, q, _ in rs_a]
+            balances = [u.balance for u in users][:]
+            m, ts = transactions.create_one_to_many_transaction_by_total(
+                s,
+                rs,
+                total,
+                "foo",
+                self.session,
+                logging.getLogger()
+            )
+            self.assertEqual(m.base_amount, base)
+            self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
+            self.assertGreaterEqual(sum(t.amount for t in ts), total)
+            for user_id, _, increase in rs_a:
+                self.assertEqual(users[user_id].balance, balances[user_id] + increase)
+
+    def test_many_to_one_transactions_total(self):
+        users = self.session.query(models.User).all()
+
+        test_cases = [
+            (42, 42, users[1], [(3, 1, 42)]),
+            (1337, 1337, users[2], [(2, 1, -1337), (1, 1, 1337)]),
+            (8351, 182, users[0], [(1, 6, 1092), (2, 9, 1638), (3, 31, 5642), (4, 0, 0)]),
+            (9999, 3333, users[1], [(2, 1, 3333), (3, 1, 3333), (4, 1, 3333)]),
+            (10000, 3334, users[1], [(2, 1, 3334), (3, 1, 3334), (4, 1, 3334)]),
+            (17693, 770, users[3], [(0, 7, 5390), (1, 8, 6160), (2, 8, 6160)])
+        ]
+
+        for total, base, r, ss_a in test_cases:
+            ss = [(users[s_id], q) for s_id, q, _ in ss_a]
+            balances = [u.balance for u in users][:]
+            m, ts = transactions.create_many_to_one_transaction_by_total(
+                ss,
+                r,
+                total,
+                "foo",
+                self.session,
+                logging.getLogger()
+            )
+            self.assertEqual(m.base_amount, base)
+            self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
+            self.assertGreaterEqual(sum(t.amount for t in ts), total)
+            for user_id, _, decrease in ss_a:
+                self.assertEqual(users[user_id].balance, balances[user_id] - decrease)
 
     def test_reversed_multi_transactions(self):
         users = self.session.query(models.User).all()
