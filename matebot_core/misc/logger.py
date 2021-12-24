@@ -1,3 +1,7 @@
+"""
+MateBot library containing logging helper functionality
+"""
+
 import logging
 from typing import Optional
 

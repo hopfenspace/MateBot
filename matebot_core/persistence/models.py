@@ -108,26 +108,6 @@ class UserAlias(Base):
         )
 
 
-class TransactionType(Base):
-    __tablename__ = "transaction_types"
-
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    name = Column(String(255), unique=True, nullable=False)
-
-    @property
-    def schema(self) -> schemas.TransactionType:
-        return schemas.TransactionType(
-            id=self.id,
-            name=self.name,
-            count=len(self.transactions)
-        )
-
-    def __repr__(self) -> str:
-        return "TransactionType(id={}, name={}, count={})".format(
-            self.id, self.name, len(self.transactions)
-        )
-
-
 class Transaction(Base):
     __tablename__ = "transactions"
 
@@ -137,11 +117,11 @@ class Transaction(Base):
     amount = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=True)
     registered = Column(DateTime, nullable=False, server_default=func.now())
-    transaction_types_id = Column(Integer, ForeignKey("transaction_types.id"), nullable=True)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
     sender = relationship("User", foreign_keys=[sender_id])
     receiver = relationship("User", foreign_keys=[receiver_id])
-    transaction_type = relationship("TransactionType", backref="transactions")
+    multi_transaction = relationship("MultiTransaction", backref="transactions")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -156,7 +136,30 @@ class Transaction(Base):
             receiver=self.receiver_id,
             amount=self.amount,
             reason=self.reason,
-            transaction_type=self.transaction_type.schema if self.transaction_type else None,
+            multi_transaction=self.multi_transaction_id,
+            timestamp=self.registered.timestamp()
+        )
+
+    def __repr__(self) -> str:
+        return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
+            self.id, self.sender_id, self.receiver_id, self.amount
+        )
+
+
+class MultiTransaction(Base):
+    __tablename__ = "multi_transaction"
+
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    base_amount = Column(Integer, nullable=False)
+    registered = Column(DateTime, nullable=False, server_default=func.now())
+
+    @property
+    def schema(self) -> schemas.MultiTransaction:
+        return schemas.MultiTransaction(
+            id=self.id,
+            base_amount=self.base_amount,
+            total_amount=sum(t.amount for t in self.transactions),
+            transactions=list(map(lambda x: x.schema, self.transactions)),
             timestamp=self.registered.timestamp()
         )
 

@@ -68,19 +68,13 @@ class UserCreation(BaseModel):
     voucher: Optional[pydantic.NonNegativeInt]
 
 
-class TransactionType(BaseModel):
-    id: pydantic.NonNegativeInt
-    name: pydantic.constr(max_length=255)
-    count: pydantic.NonNegativeInt
-
-
 class Transaction(BaseModel):
     id: pydantic.NonNegativeInt
     sender: pydantic.NonNegativeInt
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: Optional[pydantic.constr(max_length=255)]
-    transaction_type: TransactionType
+    multi_transaction: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 
@@ -89,6 +83,14 @@ class TransactionCreation(BaseModel):
     receiver: Union[pydantic.NonNegativeInt, Alias]
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
+
+
+class MultiTransaction(BaseModel):
+    id: pydantic.NonNegativeInt
+    base_amount: pydantic.NonNegativeInt
+    total_amount: pydantic.NonNegativeInt
+    transactions: List[Transaction]
+    timestamp: pydantic.NonNegativeInt
 
 
 class Consumable(BaseModel):
