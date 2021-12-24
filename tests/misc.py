@@ -100,6 +100,53 @@ class TransactionTests(utils.BasePersistenceTests):
                 with self.assertRaises(ValueError, msg=func):
                     f(users[1], [(users[4], 2)], v)
 
+    def test_simple_multi_transaction_base(self):
+        users = self.session.query(models.User).all()
+        ms = 0
+
+        for switch in (0, 1):
+            if switch:
+                def f(a, b, amount, **kwargs):
+                    return transactions.create_one_to_many_transaction_by_base(
+                        a, b, amount, "foo", self.session, logging.getLogger(), **kwargs
+                    )
+            else:
+                def f(a, b, amount, **kwargs):
+                    return transactions.create_many_to_one_transaction_by_base(
+                        b, a, amount, "foo", self.session, logging.getLogger(), **kwargs
+                    )
+
+            # Base amount, total amount, (ID, change) of the one, list of (ID, quantity, change) of the many
+            test_cases = [
+                (7, 70, (0, 70), [(1, 1, 7), (2, 2, 14), (3, 3, 21), (4, 4, 28)]),
+                (5, 35, (1, 35), [(0, 1, 15), (0, 1, 15), (0, 1, 15), (2, 3, 15), (3, 1, 5)]),
+                (2, 18, (4, 18), [(0, 4, 8), (1, 4, 8), (2, 1, 2)]),
+                (10, 100, (0, 100), [(1, 1, 10), (2, 2, 20), (3, 3, 30), (4, 4, 40)]),
+                (99, 99, (4, 99), [(1, 1, 99)]),
+                (23, 253, (2, 253), [(1, 1, 23), (3, 9, 207), (4, 1, 23)])
+            ]
+
+            for test in test_cases:
+                base, total, (one, one_c), many = test
+                quantified_many = [(users[uid], q) for uid, q, _ in many]
+                balances = [u.balance for u in users][:]
+
+                m, ts = f(users[one], quantified_many, base)
+                ms += 1
+                self.assertEqual(m.id, ms)
+                self.assertEqual(m.base_amount, base)
+                self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
+                self.assertEqual(sum(t.amount for t in ts), total)
+
+                if switch:
+                    self.assertEqual(users[one].balance, balances[one] - one_c)
+                    for user_id, _, change in many:
+                        self.assertEqual(users[user_id].balance, balances[user_id] + change)
+                else:
+                    self.assertEqual(users[one].balance, balances[one] + one_c)
+                    for user_id, _, change in many:
+                        self.assertEqual(users[user_id].balance, balances[user_id] - change)
+
     def test_one_to_many_transactions_base(self):
         users = self.session.query(models.User).all()
 
