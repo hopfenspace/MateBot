@@ -164,8 +164,8 @@ class MultiTransaction(Base):
         )
 
     def __repr__(self) -> str:
-        return "Transaction(id={}, sender_id={}, receiver_id={}, amount={})".format(
-            self.id, self.sender_id, self.receiver_id, self.amount
+        return "MultiTransaction(id={}, base={})".format(
+            self.id, self.base_amount
         )
 
 
