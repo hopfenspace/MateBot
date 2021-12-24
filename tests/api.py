@@ -539,6 +539,7 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/3")]
         )
         communism3 = response3.json()
+        self.assertEqual(communism3["externals"], 0)
         self.assertQuery(
             ("GET", "/communisms/3"),
             200,
@@ -573,6 +574,63 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             r_schema=communism3_changed
         )
+
+        # Remove a user from the third communism
+        communism3["participants"] = [
+            _schemas.CommunismUserBinding(user=1, quantity=10).dict()
+        ]
+        communism3_changed = self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism3,
+            r_schema=_schemas.Communism,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+        ).json()
+        self.assertEqual(communism3_changed, communism3)
+        self.assertQuery(
+            ("GET", "/communisms/3"),
+            200,
+            r_schema=communism3_changed
+        )
+
+        # Modify the quantity of a user from the third communism
+        communism3["participants"] = [
+            _schemas.CommunismUserBinding(user=1, quantity=40).dict()
+        ]
+        communism3 = self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism3,
+            r_schema=_schemas.Communism(**communism3),
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+        ).json()
+
+        # Add and modify users from the third communism
+        communism3["externals"] += 2
+        communism3["participants"] = [
+            _schemas.CommunismUserBinding(user=1, quantity=20).dict(),
+            _schemas.CommunismUserBinding(user=2, quantity=5).dict(),
+            _schemas.CommunismUserBinding(user=3, quantity=15).dict()
+        ]
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            404,
+            json=communism3
+        ).json()
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user3", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/3")]
+        )
+        communism3 = self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism3,
+            r_schema=_schemas.Communism(**communism3),
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+        ).json()
 
         # Do not allow to delete communisms
         self.assertQuery(
