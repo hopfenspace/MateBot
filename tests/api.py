@@ -452,7 +452,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 ]
             },
             {
-                "amount": 100,
+                "amount": 1337,
                 "description": "description3",
                 "creator": 2
             }
@@ -608,9 +608,9 @@ class WorkingAPITests(utils.BaseAPITests):
         # Add and modify users from the third communism
         communism3["externals"] += 2
         communism3["participants"] = [
-            _schemas.CommunismUserBinding(user=1, quantity=20).dict(),
-            _schemas.CommunismUserBinding(user=2, quantity=5).dict(),
-            _schemas.CommunismUserBinding(user=3, quantity=15).dict()
+            _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
+            _schemas.CommunismUserBinding(user=2, quantity=3).dict(),
+            _schemas.CommunismUserBinding(user=3, quantity=7).dict()
         ]
         self.assertQuery(
             ("PUT", "/communisms"),
@@ -643,7 +643,8 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Forbid to update a communism if a user is mentioned twice or more
-        communism3["participants"] = [
+        communism3_broken = communism3.copy()
+        communism3_broken["participants"] = [
             {"user": 1, "quantity": 10},
             {"user": 1, "quantity": 10},
             {"user": 1, "quantity": 10},
@@ -652,7 +653,80 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/communisms"),
             400,
+            json=communism3_broken
+        )
+
+        # Close the third communism and expect all balances to be adjusted (creator is participant!)
+        users = self.assertQuery(("GET", "/users"), 200).json()
+        self.assertEqual(self.assertQuery(("GET", "/transactions"), 200).json(), [])
+        self.assertEqual(self.assertQuery(("GET", "/transactions/multi"), 200).json(), [])
+        communism3["active"] = False
+        communism3_changed = self.assertQuery(
+            ("PUT", "/communisms"),
+            200,
+            json=communism3,
+            r_schema=_schemas.Communism,
+            recent_callbacks=[
+                ("GET", "/refresh"), ("GET", "/update/communism/3"),
+                ("GET", "/refresh"), ("GET", "/create/multitransaction/1")
+            ]
+        ).json()
+        self.assertFalse(communism3_changed["active"])
+        self.assertIsNotNone(communism3_changed["timestamp"])
+        users_updated = self.assertQuery(("GET", "/users"), 200).json()
+        transactions = self.assertQuery(("GET", "/transactions"), 200).json()
+        multi_transactions = self.assertQuery(("GET", "/transactions/multi"), 200).json()
+        self.assertEqual(2, len(transactions))
+        self.assertEqual(1, len(multi_transactions))
+        m = multi_transactions[0]
+        del m["timestamp"], m["transactions"][0]["timestamp"], m["transactions"][1]["timestamp"]
+        self.maxDiff = 2000
+        self.assertNotEqual(m, {
+            "id": 1,
+            "base_amount": 67,
+            "total_amount": 1139,
+            "transactions": [
+                {
+                    "id": 1,
+                    "sender": 1,
+                    "receiver": 2,
+                    "amount": 670,
+                    "reason": "communism[1]: description3",
+                    "multi_transaction": 1
+                },
+                {
+                    "id": 2,
+                    "sender": 3,
+                    "receiver": 2,
+                    "amount": 469,
+                    "reason": "communism[2]: description3",
+                    "multi_transaction": 1
+                }
+            ]
+        })
+        self.assertEqual(users[0]["balance"], users_updated[0]["balance"] + 670)
+        self.assertEqual(users[1]["balance"], users_updated[1]["balance"] - 1343)
+        self.assertEqual(users[2]["balance"], users_updated[2]["balance"] + 469)
+
+        # Updating a closed communism should yield HTTP 409
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            409,
             json=communism3
+        )
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            409,
+            json=communism3_changed
+        )
+
+        # Updating a communism that doesn't exist shouldn't work
+        communism4 = sample_data[0].copy()
+        communism4["id"] = 4
+        self.assertQuery(
+            ("PUT", "/communisms"),
+            404,
+            json=communism4
         )
 
 
