@@ -33,7 +33,6 @@ class VersionInfo(pydantic.BaseModel):
 
 
 class Status(pydantic.BaseModel):
-    healthy: bool
     startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
     api_version: pydantic.PositiveInt
     project_version: VersionInfo

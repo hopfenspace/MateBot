@@ -30,8 +30,6 @@ async def get_status():
     Return some information about the current status of the server, the database and whatsoever.
     """
 
-    healthy = True  # TODO: implement some kind of health check here
-
     project_version_list = __version__.split(".") + [0, 0]
     project_version = schemas.VersionInfo(
         major=project_version_list[0],
@@ -40,7 +38,6 @@ async def get_status():
     )
 
     return schemas.Status(
-        healthy=healthy,
         api_version=1,
         project_version=project_version,
         localtime=datetime.datetime.now(),
