@@ -674,6 +674,7 @@ class WorkingAPITests(utils.BaseAPITests):
         ).json()
         self.assertFalse(communism3_changed["active"])
         self.assertIsNotNone(communism3_changed["accessed"])
+        self.assertIsNotNone(communism3_changed["created"])
         users_updated = self.assertQuery(("GET", "/users"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
         multi_transactions = self.assertQuery(("GET", "/transactions/multi"), 200).json()

@@ -353,6 +353,8 @@ class Communism(Base):
             creator=self.creator_id,
             active=self.active,
             externals=self.externals,
+            created=self.created.timestamp(),
+            accessed=self.accessed.timestamp(),
             participants=[
                 schemas.CommunismUserBinding(user=p.user_id, quantity=p.quantity)
                 for p in self.participants
