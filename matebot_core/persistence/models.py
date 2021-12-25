@@ -434,4 +434,5 @@ assert not any(
     True
     for mapper in Base.registry.mappers
     if not hasattr(mapper.class_, "schema")
+    and mapper.class_.__name__ not in ["Password"]
 )
