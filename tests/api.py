@@ -193,7 +193,6 @@ class WorkingAPITests(utils.BaseAPITests):
                 "description": "description",
                 "creator": user0["id"],
                 "active": True,
-                "externals": 0,
                 "participants": [{"quantity": 1, "user": user1["id"]}]
             },
             recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/communism/1")]
@@ -431,7 +430,6 @@ class WorkingAPITests(utils.BaseAPITests):
                 "description": "description1",
                 "creator": 1,
                 "active": True,
-                "externals": 0,
                 "participants": []
             },
             {
@@ -439,7 +437,6 @@ class WorkingAPITests(utils.BaseAPITests):
                 "description": "description2",
                 "creator": 1,
                 "active": True,
-                "externals": 2,
                 "participants": [
                     {
                         "user": 1,
@@ -539,7 +536,6 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/3")]
         )
         communism3 = response3.json()
-        self.assertEqual(communism3["externals"], 0)
         self.assertQuery(
             ("GET", "/communisms/3"),
             200,
@@ -606,7 +602,6 @@ class WorkingAPITests(utils.BaseAPITests):
         ).json()
 
         # Add and modify users from the third communism
-        communism3["externals"] += 2
         communism3["participants"] = [
             _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
             _schemas.CommunismUserBinding(user=2, quantity=3).dict(),

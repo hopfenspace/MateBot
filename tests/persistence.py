@@ -199,7 +199,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
 
         # Adding a communism
-        communism = models.Communism(amount=42, creator_id=1, externals=1, description="")
+        communism = models.Communism(amount=42, creator_id=1, description="")
         self.session.add(communism)
         self.session.commit()
         self.assertIsNotNone(communism.creator)
@@ -235,12 +235,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
                 raise
             self.session.rollback()
         self.assertEqual(4, len(self.session.query(models.Communism).get(1).participants))
-
-        # Modifying the external count of a communism
-        self.assertEqual(1, self.session.query(models.Communism).get(1).externals)
-        communism.externals += 1
-        self.session.commit()
-        self.assertEqual(2, self.session.query(models.Communism).get(1).externals)
 
         # Deleting a communism
         self.session.delete(communism)

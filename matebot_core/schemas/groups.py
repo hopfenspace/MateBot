@@ -79,13 +79,12 @@ class Communism(BaseModel):
     creator: pydantic.NonNegativeInt
     active: bool
     accepted: Optional[bool]
-    externals: pydantic.NonNegativeInt
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
     participants: List[CommunismUserBinding]
     transactions: Optional[List[_Transaction]]
 
-    __allowed_updates__ = ["active", "externals", "participants"]
+    __allowed_updates__ = ["active", "participants"]
 
 
 class CommunismCreation(BaseModel):
@@ -93,7 +92,6 @@ class CommunismCreation(BaseModel):
     description: pydantic.constr(max_length=255)
     creator: pydantic.NonNegativeInt
     active: bool = True
-    externals: pydantic.NonNegativeInt = 0
     participants: List[CommunismUserBinding] = []
 
 
