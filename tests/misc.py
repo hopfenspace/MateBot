@@ -219,8 +219,8 @@ class TransactionTests(utils.BasePersistenceTests):
         balance_user4 = users[4].balance
         m, ts = transactions.create_one_to_many_transaction_by_total(
             users[0],
-            [(users[1], 7), (users[2], 0), (users[3], 9), (users[4], 2)],
-            215,
+            [(users[0], 1), (users[1], 7), (users[2], 0), (users[3], 9), (users[4], 2)],
+            227,
             "foo",
             self.session,
             logging.getLogger()
@@ -265,7 +265,7 @@ class TransactionTests(utils.BasePersistenceTests):
 
         test_cases = [
             (42, 42, users[1], [(3, 1, 42)]),
-            (1337, 1337, users[2], [(2, 1, -1337), (1, 1, 1337)]),
+            (1337, 669, users[2], [(3, 1, 669), (1, 1, 669)]),
             (8351, 182, users[0], [(1, 6, 1092), (2, 9, 1638), (3, 31, 5642), (4, 0, 0)]),
             (9999, 3333, users[1], [(2, 1, 3333), (3, 1, 3333), (4, 1, 3333)]),
             (10000, 3334, users[1], [(2, 1, 3334), (3, 1, 3334), (4, 1, 3334)]),
@@ -288,6 +288,21 @@ class TransactionTests(utils.BasePersistenceTests):
             self.assertGreaterEqual(sum(t.amount for t in ts), total)
             for user_id, _, decrease in ss_a:
                 self.assertEqual(users[user_id].balance, balances[user_id] - decrease)
+
+        balances = [u.balance for u in users][:]
+        m, ts = transactions.create_many_to_one_transaction_by_total(
+            [(users[1], 1), (users[2], 2), (users[3], 3)],
+            users[2],
+            1337,
+            "bar",
+            self.session,
+            logging.getLogger()
+        )
+        self.assertEqual(m.base_amount, 223)
+        self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
+        self.assertEqual(sum(t.amount for t in ts), 892)
+        for user_id, diff in [(1, 223), (2, -892), (3, 669)]:
+            self.assertEqual(users[user_id].balance, balances[user_id] - diff)
 
     def test_reversed_multi_transactions(self):
         users = self.session.query(models.User).all()
