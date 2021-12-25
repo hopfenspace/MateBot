@@ -713,17 +713,12 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("PUT", "/communisms"),
             409,
-            json=communism3
-        )
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            409,
             json=communism3_changed
         )
 
         # Updating a communism that doesn't exist shouldn't work
         self.assertQuery(("GET", "/communisms/4"), 404)
-        communism4 = sample_data[0].copy()
+        communism4 = communism3.copy()
         communism4["id"] = 4
         self.assertQuery(
             ("PUT", "/communisms"),
