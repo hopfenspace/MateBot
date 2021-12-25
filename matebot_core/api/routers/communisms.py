@@ -8,10 +8,11 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict, MissingImplementation
+from ..base import APIException, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.transactions import create_many_to_one_transaction_by_total
 from ... import schemas
 
 
@@ -139,10 +140,25 @@ async def update_existing_communism(
     for p in remaining:
         local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity))
 
-    if not communism.active:
-        raise MissingImplementation("update_existing_communism_close_communism")
+    model = await helpers.update_model(model, local, logger, helpers.ReturnType.MODEL)
+    if communism.active:
+        return model.schema
 
-    # TODO: verify that the communism user quantities get updated correctly implicitly!
+    model.active = False
+    m, ts = None, []
+    if sum(p.quantity for p in model.participants if p.user_id != model.creator_id) > 0:
+        m, ts = create_many_to_one_transaction_by_total(
+            [(p.user, p.quantity) for p in model.participants],
+            model.creator,
+            model.amount,
+            model.description,
+            local.session,
+            logger,
+            "communism[{n}]: {reason}",
+            local.tasks
+        )
+
+    logger.debug(f"Closing communism {model} (created multi transaction {m} with {len(ts)} parts)")
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
