@@ -14,44 +14,44 @@ import pydantic
 UUID_REGEX = r"^\b[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b$"
 
 
-class Token(pydantic.BaseModel):
+class BaseModel(pydantic.BaseModel):
+    __allowed_updates__ = []
+
+
+class Token(BaseModel):
     access_token: str
     token_type: str
 
 
-class Alias(pydantic.BaseModel):
+class Alias(BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
 
+    __allowed_updates__ = ["app_user_id"]
 
-class AliasCreation(pydantic.BaseModel):
+
+class AliasCreation(BaseModel):
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
 
 
-class Application(pydantic.BaseModel):
+class Application(BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     community_user: Alias
     created: pydantic.NonNegativeInt
 
 
-class ApplicationAliasCreation(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
-    application: Optional[pydantic.constr(max_length=255)]
-    app_user_id: pydantic.constr(max_length=255)
-
-
-class ApplicationCreation(pydantic.BaseModel):
+class ApplicationCreation(BaseModel):
     name: pydantic.constr(max_length=255)
-    community_user: ApplicationAliasCreation
     password: pydantic.constr(min_length=8, max_length=64)
+    community_user_name: pydantic.constr(max_length=255)
 
 
-class User(pydantic.BaseModel):
+class User(BaseModel):
     id: pydantic.NonNegativeInt
     name: Optional[pydantic.constr(max_length=255)]
     balance: int
@@ -63,8 +63,10 @@ class User(pydantic.BaseModel):
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
 
+    __allowed_updates__ = ["name", "permission", "active", "external", "voucher"]
 
-class UserCreation(pydantic.BaseModel):
+
+class UserCreation(BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
     active: bool = True
@@ -72,39 +74,32 @@ class UserCreation(pydantic.BaseModel):
     voucher: Optional[pydantic.NonNegativeInt]
 
 
-class UserUpdate(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    name: Optional[pydantic.constr(max_length=255)]
-    permission: bool
-    active: bool
-    external: bool
-    voucher: Optional[pydantic.NonNegativeInt]
-
-
-class TransactionType(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    name: pydantic.constr(max_length=255)
-    count: pydantic.NonNegativeInt
-
-
-class Transaction(pydantic.BaseModel):
+class Transaction(BaseModel):
     id: pydantic.NonNegativeInt
     sender: pydantic.NonNegativeInt
     receiver: pydantic.NonNegativeInt
     amount: pydantic.NonNegativeInt
     reason: Optional[pydantic.constr(max_length=255)]
-    transaction_type: TransactionType
+    multi_transaction: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 
-class TransactionCreation(pydantic.BaseModel):
+class TransactionCreation(BaseModel):
     sender: Union[pydantic.NonNegativeInt, Alias]
     receiver: Union[pydantic.NonNegativeInt, Alias]
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
 
 
-class Consumable(pydantic.BaseModel):
+class MultiTransaction(BaseModel):
+    id: pydantic.NonNegativeInt
+    base_amount: pydantic.NonNegativeInt
+    total_amount: pydantic.NonNegativeInt
+    transactions: List[Transaction]
+    timestamp: pydantic.NonNegativeInt
+
+
+class Consumable(BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255)
@@ -114,8 +109,10 @@ class Consumable(pydantic.BaseModel):
     stock: pydantic.NonNegativeInt
     modified: pydantic.NonNegativeInt
 
+    __allowed_updates__ = ["name", "description", "price", "messages", "symbol", "stock"]
 
-class ConsumableCreation(pydantic.BaseModel):
+
+class ConsumableCreation(BaseModel):
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255) = ""
     price: pydantic.PositiveInt
@@ -124,17 +121,7 @@ class ConsumableCreation(pydantic.BaseModel):
     stock: pydantic.NonNegativeInt
 
 
-class ConsumableUpdate(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
-    name: pydantic.constr(max_length=255)
-    description: pydantic.constr(max_length=255) = ""
-    price: pydantic.PositiveInt
-    messages: List[pydantic.constr(max_length=255)]
-    symbol: pydantic.constr(min_length=1, max_length=2)
-    stock: pydantic.NonNegativeInt
-
-
-class Consumption(pydantic.BaseModel):
+class Consumption(BaseModel):
     user: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     consumable_id: pydantic.NonNegativeInt

@@ -8,10 +8,11 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict, MissingImplementation
+from ..base import APIException, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.transactions import create_many_to_one_transaction_by_total
 from ... import schemas
 
 
@@ -75,7 +76,7 @@ async def create_new_communism(
         participants=[]
     )
 
-    async def hook(*args):
+    async def hook(*_):
         local.session.add_all([
             models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
             for p in communism.participants
@@ -85,18 +86,14 @@ async def create_new_communism(
     return await helpers.create_new_of_model(model, local, logger, hook_func=hook)
 
 
-@router.patch(
+@router.put(
     "",
     response_model=schemas.Communism,
-    responses={
-        400: {"model": schemas.APIError},
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (400, 403, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_communism(
-        communism: schemas.CommunismPatch,
+        communism: schemas.Communism,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -106,15 +103,17 @@ async def update_existing_communism(
     the internal state of the communism (which will be returned afterwards).
 
     A 400 error will be returned if any participant was mentioned more
-    than one time. A 404 error will be returned if the communism ID was
-    not found or if the user ID of any mentioned participant is unknown.
+    than one time. A 403 error will be returned if any other attributes
+    than `active`, `externals` or `participants` have been changed.
+    A 404 error will be returned if the communism ID was not found
+    or if the user ID of any mentioned participant is unknown.
     A 409 error will be returned if a closed communism was altered.
     """
 
     model = await helpers.return_one(communism.id, models.Communism, local.session)
-    schema = model.schema
+    helpers.restrict_updates(communism, model.schema)
 
-    if communism.participants is not None and len(communism.participants) != len({
+    if len(communism.participants) != len({
         p.user: await helpers.return_one(p.user, models.User, local.session)
         for p in communism.participants
     }):
@@ -125,29 +124,42 @@ async def update_existing_communism(
         )
 
     if not model.active:
-        raise Conflict("Patching an already closed communism is illegal", detail=str(communism))
+        raise Conflict("Updating an already closed communism is illegal", detail=str(communism))
 
-    if communism.externals is not None:
-        model.externals = communism.externals
+    model.externals = communism.externals
 
-    if communism.participants is not None:
-        for p in model.participants:
-            local.session.delete(p)
-        model.participants = [
-            models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
-            for p in communism.participants
-        ]
+    remaining = list(communism.participants)[:]
+    for c_u in model.participants:
+        for p in communism.participants:
+            if c_u.user_id == p.user:
+                c_u.quantity = p.quantity
+                remaining.remove(p)
+                break
+        else:
+            local.session.delete(c_u)
+    for p in remaining:
+        local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity))
 
-    if communism.close is not None and communism.close:
-        raise MissingImplementation("update_existing_communism_patch_close_communism")
+    model = await helpers.update_model(model, local, logger, helpers.ReturnType.MODEL)
+    if communism.active:
+        return model.schema
 
-    return await helpers.update_model(
-        model,
-        local,
-        logger,
-        require_conditional_header_compared_to_schema=schema,
-        returns=helpers.ReturnType.SCHEMA_WITH_ALL_HEADERS
-    )
+    model.active = False
+    m, ts = None, []
+    if sum(p.quantity for p in model.participants if p.user_id != model.creator_id) > 0:
+        m, ts = create_many_to_one_transaction_by_total(
+            [(p.user, p.quantity) for p in model.participants],
+            model.creator,
+            model.amount,
+            model.description,
+            local.session,
+            logger,
+            "communism[{n}]: {reason}",
+            local.tasks
+        )
+
+    logger.debug(f"Closing communism {model} (created multi transaction {m} with {len(ts)} parts)")
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.get(

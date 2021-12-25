@@ -6,11 +6,12 @@ This module contains the special schemas for updates and the status.
 
 import sys
 import time
-import uuid
 import datetime
 from typing import List, Optional
 
 import pydantic
+
+from .bases import BaseModel
 
 
 _URL_SCHEMES = {"http", "https"}
@@ -25,19 +26,6 @@ class Versions(pydantic.BaseModel):
     versions: List[Version]
 
 
-class Updates(pydantic.BaseModel):
-    aliases: uuid.UUID
-    applications: uuid.UUID
-    ballots: uuid.UUID
-    communisms: uuid.UUID
-    consumables: uuid.UUID
-    refunds: uuid.UUID
-    transactions: uuid.UUID
-    users: uuid.UUID
-    votes: uuid.UUID
-    timestamp: pydantic.NonNegativeInt
-
-
 class VersionInfo(pydantic.BaseModel):
     major: pydantic.NonNegativeInt
     minor: pydantic.NonNegativeInt
@@ -45,7 +33,6 @@ class VersionInfo(pydantic.BaseModel):
 
 
 class Status(pydantic.BaseModel):
-    healthy: bool
     startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
     api_version: pydantic.PositiveInt
     project_version: VersionInfo
@@ -59,15 +46,17 @@ class Status(pydantic.BaseModel):
     timestamp: pydantic.NonNegativeInt
 
 
-class Callback(pydantic.BaseModel):
+class Callback(BaseModel):
     id: pydantic.NonNegativeInt
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
 
+    __allowed_updates__ = ["base", "username", "password"]
 
-class CallbackCreation(pydantic.BaseModel):
+
+class CallbackCreation(BaseModel):
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
     app: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]

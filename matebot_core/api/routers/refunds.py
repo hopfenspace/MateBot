@@ -3,15 +3,18 @@ MateBot router module for /refunds requests
 """
 
 import logging
+import datetime
 from typing import List
 
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import MissingImplementation
+from ..base import Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
+from ...misc import notifier
 from ...persistence import models
+from ...misc.transactions import create_transaction
 from ... import schemas
 
 
@@ -61,7 +64,7 @@ async def create_new_refund(
             active=refund.active,
             ballot=models.Ballot(
                 question=f"Accept refund request for {refund.description!r}?",
-                restricted=True
+                changable=False
             )
         ),
         local,
@@ -69,34 +72,129 @@ async def create_new_refund(
     )
 
 
-@router.patch(
+@router.put(
     "",
     response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def close_refund_by_id(
-        refund: schemas.RefundPatch,
+        refund: schemas.Refund,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Close a refund, calculate the result of all votes and eventually pay back money.
+    Update an existing refund, possibly calculating the result of all votes and
+    eventually paying back money in case the refund got approved properly.
 
-    If the refund or its ballot has already been closed, this
-    operation will do nothing and silently return the therefore
-    unmodified model. Note that closing the refund also closes its
-    associated ballot to finally calculate the result of all votes.
-    As transactions can't be edited after being created by design,
-    it doesn't matter if a user agent calls this endpoint once or a
-    thousand times. Note that the field `cancelled` can be set to
-    true in order to cancel the refund and therefore prevent any
-    further transactions based on this refund. Of course, the
-    ballot will be closed in order to prevent changes, too.
+    Note that closing the refund by setting `active` to False also closes
+    its associated ballot to finally calculate the result of all votes.
+    If the total of approving votes fulfills the minimum limit of necessary
+    approves, the refund will be accepted. All transactions related to this
+    particular refund will be executed. If the total of disapproving votes
+    fulfills the minimum limit of necessary disapproves, the refund will be
+    rejected. However, trying to close a refund that didn't reach any of those
+    two minimum number of votes in either direction won't be allowed.
+    Of course, the associated ballot will always be closed when the refund it
+    refers to gets closed, for whatever reason, in order to prevent changes.
+    To abort an open refund, use `DELETE /refunds` instead of this method.
 
-    A 404 error will be returned if the refund ID is not found.
+    A 403 error will be returned if any other attribute than `active` has
+    been changed or if a try to re-open a refund was attempted. A 404 error
+    will be returned if the refund ID is not found. A 409 error will be
+    returned if the refund could not be accepted or rejected, because
+    it didn't reach any of the minimum limits for particular actions.
     """
 
-    raise MissingImplementation("close_refund_by_id")
+    model = await helpers.return_one(refund.id, models.Refund, local.session)
+    helpers.restrict_updates(refund, model.schema)
+    ballot = model.ballot
+
+    if not model.active:
+        if refund.active:
+            logger.warning(f"Request to re-open a closed refund blocked: {model!r}")
+            raise ForbiddenChange(
+                "Refund.active",
+                detail=f"{model!r} has already been closed, it can't be reopened again!"
+            )
+        if ballot.closed is None:
+            logger.error(f"Inconsistent data detected: {ballot}, {refund}")
+        return await helpers.get_one_of_model(refund.id, models.Refund, local)
+
+    if refund.active:
+        return await helpers.get_one_of_model(refund.id, models.Refund, local)
+
+    sum_of_votes = sum(v.vote for v in ballot.votes)
+    min_approves = local.config.general.min_refund_approves
+    min_disapproves = local.config.general.min_refund_disapproves
+    if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
+        raise Conflict(
+            repeat=True,
+            message=f"Not enough approving/disapproving votes for refund {refund.id}",
+            detail=f"refund={refund}, sum={sum_of_votes}, required=({min_approves}, {min_disapproves})"
+        )
+
+    model.active = False
+    ballot.result = sum_of_votes
+    ballot.active = False
+    ballot.closed = datetime.datetime.now().replace(microsecond=0)
+
+    if sum_of_votes >= min_approves:
+        sender = await helpers.return_unique(models.User, local.session, special=True)
+        receiver = model.creator
+        model.transaction = create_transaction(
+            sender, receiver, model.amount, model.description, local.session, logger, local.tasks
+        )
+
+    await helpers._commit(local.session, ballot, logger=logger)
+    local.tasks.add_task(
+        notifier.Callback.updated,
+        models.Ballot.__name__.lower(),
+        ballot.id,
+        logger,
+        await helpers.return_all(models.Callback, local.session)
+    )
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+
+
+@router.delete(
+    "",
+    status_code=204,
+    responses={k: {"model": schemas.APIError} for k in (403, 404, 409, 412)}
+)
+@versioning.versions(minimal=1)
+async def abort_open_refund(
+        refund: schemas.Refund,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Abort an open refund request without performing any transactions,
+    discarding the ballot or votes. However, the refund object will be deleted.
+
+    A 403 error will be returned if the refund was already closed.
+    A 404 error will be returned if the requested `id` doesn't exist.
+    A 409 error will be returned if the object is not up-to-date, which
+    means that the user agent needs to get the object before proceeding.
+    A 412 error will be returned if the conditional request fails.
+    """
+
+    def hook(model, *_):
+        if not model.active:
+            raise ForbiddenChange("Refund", str(refund))
+
+        model.ballot.result = 0
+        model.ballot.active = False
+        model.ballot.closed = datetime.datetime.now().replace(microsecond=0)
+        local.session.add(model.ballot)
+
+    await helpers.delete_one_of_model(
+        refund.id,
+        models.Refund,
+        local,
+        schema=refund,
+        logger=logger,
+        hook_func=hook
+    )
 
 
 @router.get(

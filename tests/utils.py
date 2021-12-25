@@ -19,6 +19,8 @@ from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
 import uvicorn
 import pydantic
 import requests
+import sqlalchemy.orm
+from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas as _schemas, settings as _settings
 from matebot_core.api import auth
@@ -125,6 +127,41 @@ class BaseTest(unittest.TestCase):
             os.remove(self.config_file)
 
 
+class BasePersistenceTests(BaseTest):
+    engine: _Engine
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        super().setUp()
+        opts = {"echo": conf.SQLALCHEMY_ECHOING}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
+        self.session = sqlalchemy.orm.sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.engine
+        )()
+        models.Base.metadata.create_all(bind=self.engine)
+
+    def tearDown(self) -> None:
+        self.session.close()
+        self.engine.dispose()
+        super().tearDown()
+
+    @staticmethod
+    def get_sample_users() -> List[models.User]:
+        return [
+            models.User(name="user1", balance=-42, external=True),
+            models.User(name="user2", balance=51, external=False),
+            models.User(name="user3", external=True),
+            models.User(name="user4", balance=2, external=False),
+            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
+            models.User(external=False),
+            models.User(name="community", external=False, special=True, balance=2, permission=True)
+        ]
+
+
 class BaseAPITests(BaseTest):
     api_version_format: str = "/v{}"
     _latest_api_version: Optional[int] = None
@@ -175,11 +212,13 @@ class BaseAPITests(BaseTest):
             status_code: Union[int, Iterable[int]] = 200,
             json: Optional[Union[dict, pydantic.BaseModel]] = None,
             headers: Optional[dict] = None,
+            r_none: bool = False,
             r_is_json: bool = True,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
+            r_schema_ignored_fields: Optional[List[str]] = None,
             skip_callbacks: Optional[int] = None,
-            skip_callback_timeout: float = 0.0,
+            skip_callback_timeout: float = 0.025,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
             callback_timeout: float = 0.5,
             no_version: bool = False,
@@ -200,9 +239,11 @@ class BaseAPITests(BaseTest):
         :param status_code: asserted status code(s) of the final server's response
         :param json: optional dictionary or model holding the request data
         :param headers: optional set of headers to sent in the request
+        :param r_none: switch to expect no (=empty) result and skip all other response content checks
         :param r_is_json: switch to check that the response contains JSON data
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
+        :param r_schema_ignored_fields: list of ignored fields while checking a response with schema
         :param skip_callbacks: optional number of callback requests that will be dropped and
             not checked in the recent callback check later (no problem if the number is too high)
         :param skip_callback_timeout: maximal waiting time for the skip operation
@@ -252,7 +293,10 @@ class BaseAPITests(BaseTest):
         if isinstance(status_code, int):
             self.assertEqual(status_code, response.status_code, response.text)
         elif isinstance(status_code, Iterable):
-            self.assertTrue(response.status_code in status_code, response.text)
+            self.assertTrue(
+                response.status_code in status_code,
+                (response.text, response.status_code, status_code)
+            )
 
         if r_headers is not None:
             for k in (r_headers if isinstance(r_headers, Iterable) else r_headers.keys()):
@@ -260,17 +304,25 @@ class BaseAPITests(BaseTest):
                 if isinstance(r_headers, Mapping):
                     self.assertEqual(r_headers[k], response.headers.get(k), response.headers)
 
-        if r_is_json:
-            try:
-                self.assertIsNotNone(response.json())
-            except ValueError:
-                self.fail(("No JSON content detected", response.headers, response.text))
+        if r_none:
+            self.assertEqual("", response.text)
 
-        if r_schema and isinstance(r_schema, pydantic.BaseModel):
-            r_model = type(r_schema)(**response.json())
-            self.assertEqual(r_schema, r_model, response.json())
-        elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
-            self.assertTrue(r_schema(**response.json()), response.json())
+        else:
+            if r_is_json:
+                try:
+                    self.assertIsNotNone(response.json())
+                except ValueError:
+                    self.fail(("No JSON content detected", response.headers, response.text))
+
+            r_schema_ignored_fields = r_schema_ignored_fields or []
+            if r_schema and isinstance(r_schema, pydantic.BaseModel):
+                r_model = type(r_schema)(**response.json())
+                for key in r_schema_ignored_fields:
+                    delattr(r_model, key)
+                    delattr(r_schema, key)
+                self.assertEqual(r_schema, r_model, response.json())
+            elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
+                self.assertTrue(r_schema(**response.json()), response.json())
 
         if recent_callbacks is not None:
             while recent_callbacks:
@@ -297,6 +349,8 @@ class BaseAPITests(BaseTest):
         self.server_port = random.randint(10000, 64000)
 
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
+        if conf.SERVER_LOGGING_OVERWRITE:
+            config.logging = conf.SERVER_LOGGING_OVERWRITE
         config.database.echo = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port

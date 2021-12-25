@@ -58,6 +58,7 @@ jobs:
     - name: Run matebot_core once
       run: |
         python3 -m matebot_core init --database sqlite:///test.db --application app --password password
+        python3 -m matebot_core init --database sqlite:///test.db --application app
         rm test.db
         rm config.json
     - name: Build the package

@@ -24,7 +24,7 @@ class Callback:
                 for client in clients:
                     url = client.base + ("/" if not client.base.endswith("/") else "") + p
                     try:
-                        response = await session.get(url)
+                        response = await session.get(url, timeout=aiohttp.ClientTimeout(total=10))
                         if response.status != 200:
                             logger.info(
                                 f"Callback for {getattr(client.app, 'name', '<unknown app>')!r} "

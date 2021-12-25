@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from sqlalchemy.orm import Session
 
-from . import base, etag
+from . import base
 from ..persistence import database
 from ..settings import Settings
 
@@ -97,19 +97,6 @@ class LocalRequestData(MinimalRequestData):
     will almost certainly be used by request handlers (path operations).
     Note that any dependency added here will be added to the OpenAPI
     definition, if it refers to a Query, Header, Path or Cookie.
-
-    Just add a single dependency for this class to your path operation
-    to be able to use its attributes in a well-defined manner. It also
-    supports the attachment of the ``ETag`` header as well as specific
-    extra headers to the response using just one additional method call:
-
-    .. code-block:: python3
-
-        @app.get("/user")
-        def get_user(local: LocalRequestData = Depends(LocalRequestData)):
-            ...
-            return local.attach_headers(model)
-
     """
 
     def __init__(
@@ -122,16 +109,13 @@ class LocalRequestData(MinimalRequestData):
     ):
         super().__init__(request, response, session)
         self.tasks = tasks
-        self.entity = etag.ETag(request)
         self._token = token
+        self.headers = request.headers
+        self.session = session
+        self._config: Optional[Settings] = None
 
-    def attach_headers(self, model: base.ModelType, **kwargs) -> base.ModelType:
-        """
-        Attach the specified headers (excl. ETag) to the response and return the model
-        """
-
-        for k in kwargs:
-            if k.lower() != "etag":
-                self.response.headers.append(k, kwargs[k])
-        self.entity.add_header(self.response, model)
-        return model
+    @property
+    def config(self) -> Settings:
+        if self._config is None:
+            self._config = Settings()
+        return self._config

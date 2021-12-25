@@ -85,7 +85,7 @@ async def create_new_alias(
 @router.put(
     "",
     response_model=schemas.Alias,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (403, 404)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_alias(
@@ -95,40 +95,24 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    It's also possible to overwrite the previous unique
-    `app_user_id` of that `alias_id` to adapt to changes.
-    It's not possible to change the `application` or
-    `user_id` fields, compared to the server state.
-
-    A 404 error will be returned if the `alias_id` doesn't exist.
-    A 409 error will be returned when the combination of `app_user_id`
-    and `application` already exists with another alias.
+    A 403 error will be returned if any other attribute than `app_user_id`
+    has been changed. A 404 error will be returned if at least one of the
+    `alias_id`, `application` or `user_id` doesn't exist.
     """
 
-    alias_model = await helpers.return_one(alias.id, models.UserAlias, local.session)
-    user = await helpers.return_one(alias.user_id, models.User, local.session)
-    application = await helpers.return_unique(
-        models.Application,
-        local.session,
-        name=alias.application
-    )
+    model = await helpers.return_one(alias.id, models.UserAlias, local.session)
+    helpers.restrict_updates(alias, model.schema)
+    await helpers.return_one(alias.user_id, models.User, local.session)
+    await helpers.return_unique(models.Application, local.session, name=alias.application)
 
-    alias_model.user_id = user.id
-    alias_model.app_id = application.id
-    alias_model.app_user_id = alias.app_user_id
-
-    await helpers.update_model(alias_model, local, logger)
-    return helpers.get_one_of_model(alias.id, models.UserAlias, local)
+    model.app_user_id = alias.app_user_id
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.delete(
     "",
     status_code=204,
-    responses={
-        404: {"model": schemas.APIError},
-        409: {"model": schemas.APIError},
-        412: {"model": schemas.APIError}
-    }
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
@@ -141,7 +125,6 @@ async def delete_existing_alias(
     A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
-    A 412 error will be returned if the conditional request fails.
     """
 
     await helpers.delete_one_of_model(

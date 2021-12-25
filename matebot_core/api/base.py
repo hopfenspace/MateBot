@@ -38,8 +38,6 @@ class ReturnType(enum.Enum):
     NONE = enum.auto()
     MODEL = enum.auto()
     SCHEMA = enum.auto()
-    SCHEMA_WITH_TAG = enum.auto()
-    SCHEMA_WITH_ALL_HEADERS = enum.auto()
 
 
 class APIException(HTTPException):
@@ -150,6 +148,20 @@ class NotModified(APIException):
         )
 
 
+class ForbiddenChange(APIException):
+    """
+    Exception when a resource was requested to be changed which is forbidden
+    """
+
+    def __init__(self, resource: str, detail: Optional[str] = None):
+        super().__init__(
+            status_code=403,
+            detail=detail,
+            repeat=False,
+            message=f"Resource '{resource}' may not be modified."
+        )
+
+
 class NotFound(APIException):
     """
     Exception when a requested resource was not found in the system
@@ -160,7 +172,7 @@ class NotFound(APIException):
             status_code=404,
             detail=detail,
             repeat=False,
-            message=f"{resource} was not found."
+            message=f"{str(resource)!r} was not found."
         )
 
 
