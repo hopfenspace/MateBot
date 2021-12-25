@@ -629,6 +629,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism(**communism3),
+            r_schema_ignored_fields=["accessed", "created"],
             recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
         ).json()
 
@@ -672,7 +673,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ]
         ).json()
         self.assertFalse(communism3_changed["active"])
-        self.assertIsNotNone(communism3_changed["timestamp"])
+        self.assertIsNotNone(communism3_changed["accessed"])
         users_updated = self.assertQuery(("GET", "/users"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
         multi_transactions = self.assertQuery(("GET", "/transactions/multi"), 200).json()
@@ -680,8 +681,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(1, len(multi_transactions))
         m = multi_transactions[0]
         del m["timestamp"], m["transactions"][0]["timestamp"], m["transactions"][1]["timestamp"]
-        self.maxDiff = 2000
-        self.assertNotEqual(m, {
+        self.assertEqual(m, {
             "id": 1,
             "base_amount": 67,
             "total_amount": 1139,
@@ -705,7 +705,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ]
         })
         self.assertEqual(users[0]["balance"], users_updated[0]["balance"] + 670)
-        self.assertEqual(users[1]["balance"], users_updated[1]["balance"] - 1343)
+        self.assertEqual(users[1]["balance"], users_updated[1]["balance"] - 1139)
         self.assertEqual(users[2]["balance"], users_updated[2]["balance"] + 469)
 
         # Updating a closed communism should yield HTTP 409
@@ -721,6 +721,7 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Updating a communism that doesn't exist shouldn't work
+        self.assertQuery(("GET", "/communisms/4"), 404)
         communism4 = sample_data[0].copy()
         communism4["id"] = 4
         self.assertQuery(

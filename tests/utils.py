@@ -213,6 +213,7 @@ class BaseAPITests(BaseTest):
             r_is_json: bool = True,
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
+            r_schema_ignored_fields: Optional[List[str]] = None,
             skip_callbacks: Optional[int] = None,
             skip_callback_timeout: float = 0.025,
             recent_callbacks: Optional[List[Tuple[str, str]]] = None,
@@ -239,6 +240,7 @@ class BaseAPITests(BaseTest):
         :param r_is_json: switch to check that the response contains JSON data
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
+        :param r_schema_ignored_fields: list of ignored fields while checking a response with schema
         :param skip_callbacks: optional number of callback requests that will be dropped and
             not checked in the recent callback check later (no problem if the number is too high)
         :param skip_callback_timeout: maximal waiting time for the skip operation
@@ -309,8 +311,12 @@ class BaseAPITests(BaseTest):
                 except ValueError:
                     self.fail(("No JSON content detected", response.headers, response.text))
 
+            r_schema_ignored_fields = r_schema_ignored_fields or []
             if r_schema and isinstance(r_schema, pydantic.BaseModel):
                 r_model = type(r_schema)(**response.json())
+                for key in r_schema_ignored_fields:
+                    delattr(r_model, key)
+                    delattr(r_schema, key)
                 self.assertEqual(r_schema, r_model, response.json())
             elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
                 self.assertTrue(r_schema(**response.json()), response.json())
