@@ -48,27 +48,27 @@ async def add_new_vote(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Add a new vote to some open ballot.
+    Add a new vote to some open poll.
 
-    A 404 error will be returned if either the user ID or the ballot ID was
-    not found. A 409 error will be returned if either the ballot has already been
-    closed or the user has already voted in the ballot (use `PUT` to change votes).
+    A 404 error will be returned if either the user ID or the poll ID was
+    not found. A 409 error will be returned if either the poll has already been
+    closed or the user has already voted in the poll (use `PUT` to change votes).
     """
 
     user = await helpers.return_one(vote.user_id, models.User, local.session)
-    ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
+    poll = await helpers.return_one(vote.poll_id, models.Poll, local.session)
 
-    if ballot.closed is not None:
-        raise Conflict("Adding votes to already closed ballots is illegal")
-    if await helpers.return_all(models.Vote, local.session, ballot=ballot, user=user):
+    if poll.closed is not None:
+        raise Conflict("Adding votes to already closed polls is illegal")
+    if await helpers.return_all(models.Vote, local.session, poll=poll, user=user):
         raise Conflict(
-            f"User {user.name!r} has already voted in this ballot",
-            str({"user": user, "ballot": ballot})
+            f"User {user.name!r} has already voted in this poll",
+            str({"user": user, "poll": poll})
         )
 
     model = models.Vote(
         user=user,
-        ballot=ballot,
+        poll=poll,
         vote=vote.vote
     )
     return await helpers.create_new_of_model(model, local, logger)
@@ -89,14 +89,14 @@ async def change_existing_vote(
 
     A 403 error will be returned if any other attribute than `vote` got changed.
     A 404 error will be returned if the vote ID is unknown. A 409 error
-    will be returned if the ballot isn't marked changeable (i.e. forbids changes).
+    will be returned if the poll isn't marked changeable (i.e. forbids changes).
     """
 
     model = await helpers.return_one(vote.id, models.Vote, local.session)
     helpers.restrict_updates(vote, model.schema)
 
-    if not model.ballot.changeable:
-        raise Conflict("Updating the vote of a restricted ballot is illegal", str(model.ballot))
+    if not model.poll.changeable:
+        raise Conflict("Updating the vote of a restricted poll is illegal", str(model.poll))
 
     model.vote = vote.vote
     return await helpers.update_model(model, local, logger, ReturnType.SCHEMA)
@@ -116,16 +116,16 @@ async def delete_existing_vote(
     Delete an existing vote model.
 
     A 404 error will be returned if the vote can't be found. A 409 error
-    will be returned if the ballot is restricted, i.e. votes can't be
-    removed from the ongoing ballot as soon as they have been created,
-    or if the ballot has already been closed and the result was determined.
+    will be returned if the poll is restricted, i.e. votes can't be
+    removed from the ongoing poll as soon as they have been created,
+    or if the poll has already been closed and the result was determined.
     """
 
     def hook(model: models.Vote, *_):
-        if not model.ballot.changeable:
-            raise Conflict("Deleting the vote of a restricted ballot is illegal", str(model.ballot))
-        if model.ballot.closed or not model.ballot.active:
-            raise Conflict("Deleting the vote of a closed ballot is illegal", str(model.ballot))
+        if not model.poll.changeable:
+            raise Conflict("Deleting the vote of a restricted poll is illegal", str(model.poll))
+        if model.poll.closed or not model.poll.active:
+            raise Conflict("Deleting the vote of a closed poll is illegal", str(model.poll))
 
     await helpers.delete_one_of_model(vote.id, models.Vote, local, logger=logger, hook_func=hook)
 

@@ -62,7 +62,7 @@ async def create_new_refund(
             description=refund.description,
             creator=creator,
             active=refund.active,
-            ballot=models.Ballot(
+            poll=models.Poll(
                 question=f"Accept refund request for {refund.description!r}?",
                 changable=False
             )
@@ -87,14 +87,14 @@ async def close_refund_by_id(
     eventually paying back money in case the refund got approved properly.
 
     Note that closing the refund by setting `active` to False also closes
-    its associated ballot to finally calculate the result of all votes.
+    its associated poll to finally calculate the result of all votes.
     If the total of approving votes fulfills the minimum limit of necessary
     approves, the refund will be accepted. All transactions related to this
     particular refund will be executed. If the total of disapproving votes
     fulfills the minimum limit of necessary disapproves, the refund will be
     rejected. However, trying to close a refund that didn't reach any of those
     two minimum number of votes in either direction won't be allowed.
-    Of course, the associated ballot will always be closed when the refund it
+    Of course, the associated poll will always be closed when the refund it
     refers to gets closed, for whatever reason, in order to prevent changes.
     To abort an open refund, use `DELETE /refunds` instead of this method.
 
@@ -107,7 +107,7 @@ async def close_refund_by_id(
 
     model = await helpers.return_one(refund.id, models.Refund, local.session)
     helpers.restrict_updates(refund, model.schema)
-    ballot = model.ballot
+    poll = model.poll
 
     if not model.active:
         if refund.active:
@@ -116,14 +116,14 @@ async def close_refund_by_id(
                 "Refund.active",
                 detail=f"{model!r} has already been closed, it can't be reopened again!"
             )
-        if ballot.closed is None:
-            logger.error(f"Inconsistent data detected: {ballot}, {refund}")
+        if poll.closed is None:
+            logger.error(f"Inconsistent data detected: {poll}, {refund}")
         return await helpers.get_one_of_model(refund.id, models.Refund, local)
 
     if refund.active:
         return await helpers.get_one_of_model(refund.id, models.Refund, local)
 
-    sum_of_votes = sum(v.vote for v in ballot.votes)
+    sum_of_votes = sum(v.vote for v in poll.votes)
     min_approves = local.config.general.min_refund_approves
     min_disapproves = local.config.general.min_refund_disapproves
     if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
@@ -134,9 +134,9 @@ async def close_refund_by_id(
         )
 
     model.active = False
-    ballot.result = sum_of_votes
-    ballot.active = False
-    ballot.closed = datetime.datetime.now().replace(microsecond=0)
+    poll.result = sum_of_votes
+    poll.active = False
+    poll.closed = datetime.datetime.now().replace(microsecond=0)
 
     if sum_of_votes >= min_approves:
         sender = await helpers.return_unique(models.User, local.session, special=True)
@@ -145,11 +145,11 @@ async def close_refund_by_id(
             sender, receiver, model.amount, model.description, local.session, logger, local.tasks
         )
 
-    await helpers._commit(local.session, ballot, logger=logger)
+    await helpers._commit(local.session, poll, logger=logger)
     local.tasks.add_task(
         notifier.Callback.updated,
-        models.Ballot.__name__.lower(),
-        ballot.id,
+        models.Poll.__name__.lower(),
+        poll.id,
         logger,
         await helpers.return_all(models.Callback, local.session)
     )
@@ -169,7 +169,7 @@ async def abort_open_refund(
 ):
     """
     Abort an open refund request without performing any transactions,
-    discarding the ballot or votes. However, the refund object will be deleted.
+    discarding the poll or votes. However, the refund object will be deleted.
 
     A 403 error will be returned if the refund was already closed.
     A 404 error will be returned if the requested `id` doesn't exist.
@@ -182,10 +182,10 @@ async def abort_open_refund(
         if not model.active:
             raise ForbiddenChange("Refund", str(refund))
 
-        model.ballot.result = 0
-        model.ballot.active = False
-        model.ballot.closed = datetime.datetime.now().replace(microsecond=0)
-        local.session.add(model.ballot)
+        model.poll.result = 0
+        model.poll.active = False
+        model.poll.closed = datetime.datetime.now().replace(microsecond=0)
+        local.session.add(model.poll)
 
     await helpers.delete_one_of_model(
         refund.id,
