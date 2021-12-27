@@ -155,7 +155,7 @@ async def make_a_new_transaction(
     response_model=List[schemas.MultiTransaction]
 )
 @versioning.versions(1)
-async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_multi_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all multi transactions in the system.
     """
