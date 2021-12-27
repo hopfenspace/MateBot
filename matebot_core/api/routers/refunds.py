@@ -40,6 +40,7 @@ async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}}
 )
@@ -63,7 +64,7 @@ async def create_new_refund(
             active=refund.active,
             poll=models.Poll(
                 question=f"Accept refund request for {refund.description!r}?",
-                changable=False
+                changeable=False
             )
         ),
         local,
@@ -165,7 +166,7 @@ async def abort_open_refund(
         model.poll.closed = datetime.datetime.now().replace(microsecond=0)
         local.session.add(model.poll)
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         refund.id,
         models.Refund,
         local,

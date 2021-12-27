@@ -422,6 +422,77 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(poll3_closed["changeable"], False)
         self.assertEqual(poll3_closed["votes"], [])
 
+    def test_refunds(self):
+        self.assertListEqual([], self.assertQuery(("GET", "/refunds"), 200).json())
+
+        # Adding the callback server for testing
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+        )
+
+        # User referenced by 'creator' doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/refunds"),
+            404,
+            json={"description": "Foo", "amount": 1337, "creator": 1}
+        ).json()
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user1", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/1")]
+        ).json()
+
+        # Poll referenced by 'poll_id' doesn't exist, then it's created by the refund
+        self.assertQuery(
+            ("POST", "/votes"),
+            404,
+            json={"user_id": 1, "poll_id": 1, "vote": 1}
+        )
+        refund1 = self.assertQuery(
+            ("POST", "/refunds"),
+            201,
+            json={"description": "Foo", "amount": 1337, "creator": 1},
+            r_schema=_schemas.Refund,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/refund/1")]
+        ).json()
+        self.assertTrue(refund1["active"])
+        self.assertIsNone(refund1["allowed"])
+        self.assertIsNone(refund1["transaction"])
+        self.assertIsNotNone(refund1["created"])
+        self.assertIsNotNone(refund1["accessed"])
+
+        # The refund should not be closed now but can be deleted
+        poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
+        self.assertTrue(poll1["active"])
+        self.assertQuery(("PUT", "/refunds"), 200, json=refund1)
+        refund1["active"] = False
+        self.assertQuery(("PUT", "/refunds"), 409, json=refund1)
+        self.assertQuery(
+            ("DELETE", "/refunds"),
+            204,
+            json=self.assertQuery(("GET", "/refunds/1"), 200).json(),
+            r_is_json=False,
+            recent_callbacks=[("GET", "/refresh"), ("GET", "/delete/refund/1")]
+        )
+        poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
+        self.assertFalse(poll1["active"])
+
+        # A new refund creates a new poll as well
+        refund2 = self.assertQuery(
+            ("POST", "/refunds"),
+            201,
+            json={"description": "Bar", "amount": 1337, "creator": 1},
+            r_schema=_schemas.Refund,
+            recent_callbacks=[("GET", "/refresh")]
+        ).json()
+        self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=1).json()["votes"], [])
+        self.assertEqual(2, len(self.assertQuery(("GET", "/polls"), 200).json()))
+
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
 
