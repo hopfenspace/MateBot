@@ -85,6 +85,7 @@ class UserAlias(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
     app_user_id = Column(String(255), nullable=False)
+    confirmed = Column(Boolean, nullable=False, default=False)
 
     app = relationship("Application", foreign_keys=[app_id])
 
@@ -99,7 +100,8 @@ class UserAlias(Base):
             id=self.id,
             user_id=self.user_id,
             application=self.app.name,
-            app_user_id=self.app_user_id
+            app_user_id=self.app_user_id,
+            confirmed=self.confirmed
         )
 
     def __repr__(self) -> str:

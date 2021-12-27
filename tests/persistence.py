@@ -105,12 +105,13 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
 
         user1 = self.session.query(models.User).get(3)
         user2 = self.session.query(models.User).get(5)
-        alias1 = models.UserAlias(app_user_id="alias1", app_id=app1.id, user_id=3)
+        alias1 = models.UserAlias(app_user_id="alias1", app_id=app1.id, user_id=3, confirmed=True)
         alias2 = models.UserAlias(app_user_id="alias2", app_id=app2.id)
         alias2.user = user2
 
         self.session.add_all([alias1, alias2])
         self.session.commit()
+        self.assertFalse(alias2.confirmed)
         self.assertEqual(2, len(self.session.query(models.UserAlias).all()))
 
         self.session.delete(user1)
@@ -139,7 +140,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         community_alias1 = models.UserAlias(
             app_id=app1.id,
             user_id=community_user.id,
-            app_user_id="community_alias1"
+            app_user_id="community_alias1",
+            confirmed=True
         )
         community_alias2 = models.UserAlias(
             app_id=app2.id,

@@ -126,7 +126,8 @@ class WorkingAPITests(utils.BaseAPITests):
             "id": 1,
             "user_id": user0["id"],
             "application": "none",
-            "app_user_id": "unknown@none"
+            "app_user_id": "unknown@none",
+            "confirmed": True
         }])
         self._set_user_attrs(uid, True)
 
