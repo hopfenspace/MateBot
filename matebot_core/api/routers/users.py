@@ -179,7 +179,7 @@ async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)
     objs = await helpers.return_all(models.User, local.session, special=True)
     if len(objs) != 1:
         raise InternalServerException("Multiple community users found. Please file a bug report.", str(objs))
-    return objs[0]
+    return objs[0].schema
 
 
 @router.get(

@@ -42,7 +42,7 @@ async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     status_code=201,
     response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}}
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_refund(
@@ -53,9 +53,13 @@ async def create_new_refund(
     Create a new refund based on the specified data.
 
     A 404 error will be returned if the user ID of the `creator` is unknown.
+    A 409 error will be returned if the special community user is the creator.
     """
 
     creator = await helpers.return_one(refund.creator, models.User, local.session)
+    if creator.special:
+        raise Conflict("Community user can't create a refund")
+
     return await helpers.create_new_of_model(
         models.Refund(
             amount=refund.amount,

@@ -85,6 +85,8 @@ async def make_a_new_transaction(
         consumption = transaction
 
         user = await helpers.return_one(consumption.user, models.User, local.session)
+        if user.special:
+            raise Conflict("Community user can't consume goods")
         consumable: models.Consumable = await helpers.return_one(
             consumption.consumable_id,
             models.Consumable,

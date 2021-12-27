@@ -67,6 +67,8 @@ async def add_new_vote(
     user = await helpers.return_one(vote.user_id, models.User, local.session)
     poll = await helpers.return_one(vote.poll_id, models.Poll, local.session)
 
+    if user.special:
+        raise Conflict("Community user can't create a vote")
     if poll.closed is not None:
         raise Conflict("Adding votes to already closed polls is illegal")
     if await helpers.return_all(models.Vote, local.session, poll=poll, user=user):
