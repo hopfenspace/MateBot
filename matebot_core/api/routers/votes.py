@@ -12,6 +12,7 @@ from ..base import Conflict, ReturnType
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.refunds import close_refund
 from ... import schemas
 
 
@@ -108,7 +109,7 @@ async def add_new_vote(
     min_approves = local.config.general.min_refund_approves
     min_disapproves = local.config.general.min_refund_disapproves
     if sum_of_votes >= min_approves or -sum_of_votes >= min_disapproves:
-        pass
+        close_refund(refunds[0], local.session, (min_approves, min_disapproves), logger, local.tasks)
 
     return vote_schema
 

@@ -57,7 +57,7 @@ def close_refund(
 
     if tasks is not None:
         tasks.add_task(
-            Callback.created,
+            Callback.updated,
             type(refund).__name__.lower(),
             refund.id,
             logger,
