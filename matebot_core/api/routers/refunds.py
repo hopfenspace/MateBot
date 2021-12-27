@@ -12,9 +12,8 @@ from fastapi import APIRouter, Depends
 from ..base import Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
-from ...misc import notifier
 from ...persistence import models
-from ...misc.transactions import create_transaction
+from ...misc.refunds import close_refund
 from ... import schemas
 
 
@@ -133,28 +132,7 @@ async def close_refund_by_id(
             detail=f"refund={refund}, sum={sum_of_votes}, required=({min_approves}, {min_disapproves})"
         )
 
-    model.active = False
-    poll.result = sum_of_votes
-    poll.active = False
-    poll.closed = datetime.datetime.now().replace(microsecond=0)
-
-    if sum_of_votes >= min_approves:
-        sender = await helpers.return_unique(models.User, local.session, special=True)
-        receiver = model.creator
-        model.transaction = create_transaction(
-            sender, receiver, model.amount, model.description, local.session, logger, local.tasks
-        )
-
-    await helpers._commit(local.session, poll, logger=logger)
-    local.tasks.add_task(
-        notifier.Callback.updated,
-        models.Poll.__name__.lower(),
-        poll.id,
-        logger,
-        await helpers.return_all(models.Callback, local.session)
-    )
-
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return close_refund(model, local.session, (min_approves, min_disapproves), logger, local.tasks).schema
 
 
 @router.delete(
