@@ -100,70 +100,73 @@ async def update_existing_user(
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
-@router.delete(
-    "",
-    status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
-)
-@versioning.versions(minimal=1)
-async def delete_existing_user(
-        user: schemas.User,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Delete an existing user model.
-
-    This operation will delete the user aliases, but no user history or transactions.
-
-    A 404 error will be returned if the user's `id` doesn't exist.
-    A 409 error will be returned if the object is not up-to-date, the balance
-    of the user is not zero or if there are any open refund requests or communisms
-    that were either created by that user or which this user participates in.
-    """
-
-    def hook(model, *_):
-        if model.balance != 0:
-            info = ""
-            if model.voucher_id and model.external:
-                info = f" User {model.voucher_id} vouches for this user and may handle this."
-            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
-
-        active_created_refunds = local.session.query(models.Refund).filter_by(
-            active=True, creator_id=model.id
-        ).all()
-        if active_created_refunds:
-            raise Conflict(
-                f"User {user.name} has at least one active refund requests. Can't delete user.",
-                str(active_created_refunds)
-            )
-
-        active_created_communisms = local.session.query(models.Communism).filter_by(
-            active=True, creator_id=model.id
-        ).all()
-        if active_created_communisms:
-            raise Conflict(
-                f"User {user.name} has created at least one active communism. Can't delete user.",
-                str(active_created_communisms)
-            )
-
-        for communism in local.session.query(models.Communism).filter_by(active=True).all():
-            for participant in communism.participants:
-                if participant.user_id == model.id:
-                    if participant.quantity == 0:
-                        logger.warning(f"Quantity 0 for {participant} of {communism}.")
-                    raise Conflict(
-                        f"User {user.name} is participant of at least one active communism. Can't delete user.",
-                        str(participant)
-                    )
-
-    return await helpers.delete_one_of_model(
-        user.id,
-        models.User,
-        local,
-        schema=user,
-        logger=logger,
-        hook_func=hook
-    )
+# TODO: Do not delete users. Just update their names to null/empty string and disable
+#  them (active = False). Using or re-enabling it shouldn't be possible again.
+#  For the moment, this endpoint is just disabled. Patches for `PUT` are pending.
+# @router.delete(
+#     "",
+#     status_code=204,
+#     responses={k: {"model": schemas.APIError} for k in (404, 409)}
+# )
+# @versioning.versions(minimal=1)
+# async def delete_existing_user(
+#         user: schemas.User,
+#         local: LocalRequestData = Depends(LocalRequestData)
+# ):
+#     """
+#     Delete an existing user model.
+#
+#     This operation will delete the user aliases, but no user history or transactions.
+#
+#     A 404 error will be returned if the user's `id` doesn't exist.
+#     A 409 error will be returned if the object is not up-to-date, the balance
+#     of the user is not zero or if there are any open refund requests or communisms
+#     that were either created by that user or which this user participates in.
+#     """
+#
+#     def hook(model, *_):
+#         if model.balance != 0:
+#             info = ""
+#             if model.voucher_id and model.external:
+#                 info = f" User {model.voucher_id} vouches for this user and may handle this."
+#             raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
+#
+#         active_created_refunds = local.session.query(models.Refund).filter_by(
+#             active=True, creator_id=model.id
+#         ).all()
+#         if active_created_refunds:
+#             raise Conflict(
+#                 f"User {user.name} has at least one active refund requests. Can't delete user.",
+#                 str(active_created_refunds)
+#             )
+#
+#         active_created_communisms = local.session.query(models.Communism).filter_by(
+#             active=True, creator_id=model.id
+#         ).all()
+#         if active_created_communisms:
+#             raise Conflict(
+#                 f"User {user.name} has created at least one active communism. Can't delete user.",
+#                 str(active_created_communisms)
+#             )
+#
+#         for communism in local.session.query(models.Communism).filter_by(active=True).all():
+#             for participant in communism.participants:
+#                 if participant.user_id == model.id:
+#                     if participant.quantity == 0:
+#                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
+#                     raise Conflict(
+#                         f"User {user.name} is participant of at least one active communism. Can't delete user.",
+#                         str(participant)
+#                     )
+#
+#     return await helpers.delete_one_of_model(
+#         user.id,
+#         models.User,
+#         local,
+#         schema=user,
+#         logger=logger,
+#         hook_func=hook
+#     )
 
 
 @router.get(
