@@ -52,6 +52,7 @@ async def create_new_user(
 
     values = user.dict()
     values["voucher_id"] = values.pop("voucher")
+    values["active"] = True
     model = models.User(**values)
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
@@ -80,12 +81,53 @@ async def update_existing_user(
     model = await helpers.return_one(user.id, models.User, local.session)
     helpers.restrict_updates(user, model.schema)
 
+    if not model.active:
+        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
+    if model.special:
+        raise Conflict("The community user can't be updated via this endpoint.", str(user))
     if model.id == user.voucher:
         raise Conflict("A user can't vouch for itself.", str(user))
     if user.voucher and not user.external:
         raise Conflict("An internal user can't have a voucher user.", str(user))
     if model.external and model.balance < 0 and not user.voucher:
         raise Conflict("An external user with negative balance can't loose its voucher.", str(user))
+    if user.external and user.permission:
+        raise Conflict("An external user can't have extended permissions", str(user))
+
+    if not user.active:
+        if model.balance != 0:
+            info = ""
+            if model.voucher_id and model.external:
+                info = f" User {model.voucher_id} vouches for this user and may handle this."
+            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
+
+        active_created_refunds = local.session.query(models.Refund).filter_by(
+            active=True, creator_id=model.id
+        ).all()
+        if active_created_refunds:
+            raise Conflict(
+                f"User {user.name} has at least one active refund requests. Can't delete user.",
+                str(active_created_refunds)
+            )
+
+        active_created_communisms = local.session.query(models.Communism).filter_by(
+            active=True, creator_id=model.id
+        ).all()
+        if active_created_communisms:
+            raise Conflict(
+                f"User {user.name} has created at least one active communism. Can't delete user.",
+                str(active_created_communisms)
+            )
+
+        for communism in local.session.query(models.Communism).filter_by(active=True).all():
+            for participant in communism.participants:
+                if participant.user_id == model.id:
+                    if participant.quantity == 0:
+                        logger.warning(f"Quantity 0 for {participant} of {communism}.")
+                    raise Conflict(
+                        f"User {user.name} is participant of at least one active communism. Can't delete user.",
+                        str(participant)
+                    )
 
     voucher_user = None
     if user.voucher is not None:

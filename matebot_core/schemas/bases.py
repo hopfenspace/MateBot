@@ -64,7 +64,6 @@ class User(BaseModel):
 class UserCreation(BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
-    active: bool = True
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
 

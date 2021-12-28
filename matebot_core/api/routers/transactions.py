@@ -148,6 +148,11 @@ async def make_a_new_transaction(
     amount = transaction.amount
     reason = transaction.reason
 
+    if not sender.active:
+        raise Conflict(f"Disabled user {sender.id} can't make transactions", str(sender))
+    if not receiver.active:
+        raise Conflict(f"Disabled user {receiver.id} can't get transactions", str(receiver))
+
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
