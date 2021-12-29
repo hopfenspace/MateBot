@@ -190,6 +190,27 @@ async def get_transaction_by_id(
 
 
 @router.get(
+    "/user/{user_id}",
+    response_model=List[schemas.Transaction],
+    responses={404: {"model": schemas.APIError}}
+)
+@versioning.versions(1)
+async def get_all_transactions_of_sender(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Return a list of all transactions sent & received by a specific user identified by its user ID.
+
+    A 404 error will be returned if the user ID is unknown.
+    """
+
+    await helpers.return_one(user_id, models.User, local.session)
+    flt = (models.Transaction.sender_id == user_id) | (models.Transaction.receiver_id == user_id)
+    return [obj.schema for obj in local.session.query(models.Transaction).filter(flt).all()]
+
+
+@router.get(
     "/sender/{user_id}",
     response_model=List[schemas.Transaction],
     responses={404: {"model": schemas.APIError}}
