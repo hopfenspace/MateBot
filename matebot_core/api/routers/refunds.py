@@ -12,9 +12,8 @@ from fastapi import APIRouter, Depends
 from ..base import Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
-from ...misc import notifier
 from ...persistence import models
-from ...misc.transactions import create_transaction
+from ...misc.refunds import close_refund
 from ... import schemas
 
 
@@ -41,8 +40,9 @@ async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
 
 @router.post(
     "",
+    status_code=201,
     response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}}
+    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_refund(
@@ -53,18 +53,22 @@ async def create_new_refund(
     Create a new refund based on the specified data.
 
     A 404 error will be returned if the user ID of the `creator` is unknown.
+    A 409 error will be returned if the special community user is the creator.
     """
 
     creator = await helpers.return_one(refund.creator, models.User, local.session)
+    if creator.special:
+        raise Conflict("Community user can't create a refund")
+
     return await helpers.create_new_of_model(
         models.Refund(
             amount=refund.amount,
             description=refund.description,
             creator=creator,
             active=refund.active,
-            ballot=models.Ballot(
+            poll=models.Poll(
                 question=f"Accept refund request for {refund.description!r}?",
-                changable=False
+                changeable=False
             )
         ),
         local,
@@ -87,14 +91,14 @@ async def close_refund_by_id(
     eventually paying back money in case the refund got approved properly.
 
     Note that closing the refund by setting `active` to False also closes
-    its associated ballot to finally calculate the result of all votes.
+    its associated poll to finally calculate the result of all votes.
     If the total of approving votes fulfills the minimum limit of necessary
     approves, the refund will be accepted. All transactions related to this
     particular refund will be executed. If the total of disapproving votes
     fulfills the minimum limit of necessary disapproves, the refund will be
     rejected. However, trying to close a refund that didn't reach any of those
     two minimum number of votes in either direction won't be allowed.
-    Of course, the associated ballot will always be closed when the refund it
+    Of course, the associated poll will always be closed when the refund it
     refers to gets closed, for whatever reason, in order to prevent changes.
     To abort an open refund, use `DELETE /refunds` instead of this method.
 
@@ -107,7 +111,7 @@ async def close_refund_by_id(
 
     model = await helpers.return_one(refund.id, models.Refund, local.session)
     helpers.restrict_updates(refund, model.schema)
-    ballot = model.ballot
+    poll = model.poll
 
     if not model.active:
         if refund.active:
@@ -116,14 +120,14 @@ async def close_refund_by_id(
                 "Refund.active",
                 detail=f"{model!r} has already been closed, it can't be reopened again!"
             )
-        if ballot.closed is None:
-            logger.error(f"Inconsistent data detected: {ballot}, {refund}")
+        if poll.closed is None:
+            logger.error(f"Inconsistent data detected: {poll}, {refund}")
         return await helpers.get_one_of_model(refund.id, models.Refund, local)
 
     if refund.active:
         return await helpers.get_one_of_model(refund.id, models.Refund, local)
 
-    sum_of_votes = sum(v.vote for v in ballot.votes)
+    sum_of_votes = sum(v.vote for v in poll.votes)
     min_approves = local.config.general.min_refund_approves
     min_disapproves = local.config.general.min_refund_disapproves
     if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
@@ -133,28 +137,7 @@ async def close_refund_by_id(
             detail=f"refund={refund}, sum={sum_of_votes}, required=({min_approves}, {min_disapproves})"
         )
 
-    model.active = False
-    ballot.result = sum_of_votes
-    ballot.active = False
-    ballot.closed = datetime.datetime.now().replace(microsecond=0)
-
-    if sum_of_votes >= min_approves:
-        sender = await helpers.return_unique(models.User, local.session, special=True)
-        receiver = model.creator
-        model.transaction = create_transaction(
-            sender, receiver, model.amount, model.description, local.session, logger, local.tasks
-        )
-
-    await helpers._commit(local.session, ballot, logger=logger)
-    local.tasks.add_task(
-        notifier.Callback.updated,
-        models.Ballot.__name__.lower(),
-        ballot.id,
-        logger,
-        await helpers.return_all(models.Callback, local.session)
-    )
-
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return close_refund(model, local.session, (min_approves, min_disapproves), logger, local.tasks).schema
 
 
 @router.delete(
@@ -169,7 +152,7 @@ async def abort_open_refund(
 ):
     """
     Abort an open refund request without performing any transactions,
-    discarding the ballot or votes. However, the refund object will be deleted.
+    discarding the poll or votes. However, the refund object will be deleted.
 
     A 403 error will be returned if the refund was already closed.
     A 404 error will be returned if the requested `id` doesn't exist.
@@ -182,12 +165,12 @@ async def abort_open_refund(
         if not model.active:
             raise ForbiddenChange("Refund", str(refund))
 
-        model.ballot.result = 0
-        model.ballot.active = False
-        model.ballot.closed = datetime.datetime.now().replace(microsecond=0)
-        local.session.add(model.ballot)
+        model.poll.result = 0
+        model.poll.active = False
+        model.poll.closed = datetime.datetime.now().replace(microsecond=0)
+        local.session.add(model.poll)
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         refund.id,
         models.Refund,
         local,

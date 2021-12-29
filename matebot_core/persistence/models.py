@@ -98,6 +98,7 @@ class UserAlias(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
     app_user_id = Column(String(255), nullable=False)
+    confirmed = Column(Boolean, nullable=False, default=False)
 
     app = relationship("Application", foreign_keys=[app_id])
 
@@ -112,7 +113,8 @@ class UserAlias(Base):
             id=self.id,
             user_id=self.user_id,
             application=self.app.name,
-            app_user_id=self.app_user_id
+            app_user_id=self.app_user_id,
+            confirmed=self.confirmed
         )
 
     def __repr__(self) -> str:
@@ -245,11 +247,11 @@ class Refund(Base):
     accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
-    ballot_id = Column(Integer, ForeignKey("ballots.id"), nullable=False)
+    poll_id = Column(Integer, ForeignKey("polls.id"), nullable=False)
 
     creator = relationship("User", backref="refunds")
     transaction = relationship("Transaction")
-    ballot = relationship("Ballot")
+    poll = relationship("Poll")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -263,8 +265,8 @@ class Refund(Base):
             description=self.description,
             creator=self.creator_id,
             active=self.active,
-            allowed=self.ballot.result,
-            ballot=self.ballot_id,
+            allowed=self.poll.result,
+            poll=self.poll_id,
             transactions=self.transaction,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()
@@ -276,8 +278,8 @@ class Refund(Base):
         )
 
 
-class Ballot(Base):
-    __tablename__ = "ballots"
+class Poll(Base):
+    __tablename__ = "polls"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     question = Column(String(255), nullable=False)
@@ -287,8 +289,8 @@ class Ballot(Base):
     closed = Column(DateTime, nullable=True, default=None)
 
     @property
-    def schema(self) -> schemas.Ballot:
-        return schemas.Ballot(
+    def schema(self) -> schemas.Poll:
+        return schemas.Poll(
             id=self.id,
             question=self.question,
             changeable=self.changeable,
@@ -299,7 +301,7 @@ class Ballot(Base):
         )
 
     def __repr__(self) -> str:
-        return "Ballot(id={}, votes={})".format(
+        return "Poll(id={}, votes={})".format(
             self.id, [v.vote for v in self.votes]
         )
 
@@ -308,18 +310,18 @@ class Vote(Base):
     __tablename__ = "votes"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    ballot_id = Column(Integer, ForeignKey("ballots.id", ondelete="CASCADE"), nullable=False)
+    poll_id = Column(Integer, ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     vote = Column(SmallInteger, nullable=False)
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    ballot = relationship("Ballot", backref="votes")
+    poll = relationship("Poll", backref="votes")
     user = relationship("User", backref="votes")
 
     __table_args__ = (
         CheckConstraint("vote <= 1"),
         CheckConstraint("vote >= -1"),
-        UniqueConstraint("user_id", "ballot_id"),
+        UniqueConstraint("user_id", "poll_id"),
     )
 
     @property
@@ -327,14 +329,14 @@ class Vote(Base):
         return schemas.Vote(
             id=self.id,
             user_id=self.user_id,
-            ballot_id=self.ballot_id,
+            poll_id=self.poll_id,
             vote=self.vote,
             modified=self.modified.timestamp()
         )
 
     def __repr__(self) -> str:
-        return "Vote(id={}, ballot_id={}, user_id={}, vote={})".format(
-            self.id, self.ballot_id, self.user_id, self.vote
+        return "Vote(id={}, poll_id={}, user_id={}, vote={})".format(
+            self.id, self.poll_id, self.user_id, self.vote
         )
 
 

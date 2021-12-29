@@ -52,6 +52,7 @@ async def create_new_user(
 
     values = user.dict()
     values["voucher_id"] = values.pop("voucher")
+    values["active"] = True
     model = models.User(**values)
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
@@ -80,48 +81,20 @@ async def update_existing_user(
     model = await helpers.return_one(user.id, models.User, local.session)
     helpers.restrict_updates(user, model.schema)
 
+    if not model.active:
+        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
+    if model.special:
+        raise Conflict("The community user can't be updated via this endpoint.", str(user))
     if model.id == user.voucher:
         raise Conflict("A user can't vouch for itself.", str(user))
     if user.voucher and not user.external:
         raise Conflict("An internal user can't have a voucher user.", str(user))
     if model.external and model.balance < 0 and not user.voucher:
         raise Conflict("An external user with negative balance can't loose its voucher.", str(user))
+    if user.external and user.permission:
+        raise Conflict("An external user can't have extended permissions", str(user))
 
-    voucher_user = None
-    if user.voucher is not None:
-        voucher_user = await helpers.return_one(user.voucher, models.User, local.session)
-
-    model.name = user.name
-    model.permission = user.permission
-    model.active = user.active
-    model.external = user.external
-    model.voucher_user = voucher_user
-
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
-
-
-@router.delete(
-    "",
-    status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
-)
-@versioning.versions(minimal=1)
-async def delete_existing_user(
-        user: schemas.User,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Delete an existing user model.
-
-    This operation will delete the user aliases, but no user history or transactions.
-
-    A 404 error will be returned if the user's `id` doesn't exist.
-    A 409 error will be returned if the object is not up-to-date, the balance
-    of the user is not zero or if there are any open refund requests or communisms
-    that were either created by that user or which this user participates in.
-    """
-
-    def hook(model, *_):
+    if not user.active:
         if model.balance != 0:
             info = ""
             if model.voucher_id and model.external:
@@ -156,14 +129,86 @@ async def delete_existing_user(
                         str(participant)
                     )
 
-    return await helpers.delete_one_of_model(
-        user.id,
-        models.User,
-        local,
-        schema=user,
-        logger=logger,
-        hook_func=hook
-    )
+    voucher_user = None
+    if user.voucher is not None:
+        voucher_user = await helpers.return_one(user.voucher, models.User, local.session)
+
+    model.name = user.name
+    model.permission = user.permission
+    model.active = user.active
+    model.external = user.external
+    model.voucher_user = voucher_user
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+
+
+# TODO: Do not delete users. Just update their names to null/empty string and disable
+#  them (active = False). Using or re-enabling it shouldn't be possible again.
+#  For the moment, this endpoint is just disabled. Patches for `PUT` are pending.
+# @router.delete(
+#     "",
+#     status_code=204,
+#     responses={k: {"model": schemas.APIError} for k in (404, 409)}
+# )
+# @versioning.versions(minimal=1)
+# async def delete_existing_user(
+#         user: schemas.User,
+#         local: LocalRequestData = Depends(LocalRequestData)
+# ):
+#     """
+#     Delete an existing user model.
+#
+#     This operation will delete the user aliases, but no user history or transactions.
+#
+#     A 404 error will be returned if the user's `id` doesn't exist.
+#     A 409 error will be returned if the object is not up-to-date, the balance
+#     of the user is not zero or if there are any open refund requests or communisms
+#     that were either created by that user or which this user participates in.
+#     """
+#
+#     def hook(model, *_):
+#         if model.balance != 0:
+#             info = ""
+#             if model.voucher_id and model.external:
+#                 info = f" User {model.voucher_id} vouches for this user and may handle this."
+#             raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
+#
+#         active_created_refunds = local.session.query(models.Refund).filter_by(
+#             active=True, creator_id=model.id
+#         ).all()
+#         if active_created_refunds:
+#             raise Conflict(
+#                 f"User {user.name} has at least one active refund requests. Can't delete user.",
+#                 str(active_created_refunds)
+#             )
+#
+#         active_created_communisms = local.session.query(models.Communism).filter_by(
+#             active=True, creator_id=model.id
+#         ).all()
+#         if active_created_communisms:
+#             raise Conflict(
+#                 f"User {user.name} has created at least one active communism. Can't delete user.",
+#                 str(active_created_communisms)
+#             )
+#
+#         for communism in local.session.query(models.Communism).filter_by(active=True).all():
+#             for participant in communism.participants:
+#                 if participant.user_id == model.id:
+#                     if participant.quantity == 0:
+#                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
+#                     raise Conflict(
+#                         f"User {user.name} is participant of at least one active communism. Can't delete user.",
+#                         str(participant)
+#                     )
+#
+#     return await helpers.delete_one_of_model(
+#         user.id,
+#         models.User,
+#         local,
+#         schema=user,
+#         logger=logger,
+#         hook_func=hook
+#     )
 
 
 @router.get(
@@ -179,7 +224,7 @@ async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)
     objs = await helpers.return_all(models.User, local.session, special=True)
     if len(objs) != 1:
         raise InternalServerException("Multiple community users found. Please file a bug report.", str(objs))
-    return objs[0]
+    return objs[0].schema
 
 
 @router.get(

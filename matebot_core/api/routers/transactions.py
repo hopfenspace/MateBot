@@ -85,6 +85,8 @@ async def make_a_new_transaction(
         consumption = transaction
 
         user = await helpers.return_one(consumption.user, models.User, local.session)
+        if user.special:
+            raise Conflict("Community user can't consume goods")
         consumable: models.Consumable = await helpers.return_one(
             consumption.consumable_id,
             models.Consumable,
@@ -146,6 +148,11 @@ async def make_a_new_transaction(
     amount = transaction.amount
     reason = transaction.reason
 
+    if not sender.active:
+        raise Conflict(f"Disabled user {sender.id} can't make transactions", str(sender))
+    if not receiver.active:
+        raise Conflict(f"Disabled user {receiver.id} can't get transactions", str(receiver))
+
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
@@ -155,7 +162,7 @@ async def make_a_new_transaction(
     response_model=List[schemas.MultiTransaction]
 )
 @versioning.versions(1)
-async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_multi_transactions(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Return a list of all multi transactions in the system.
     """
@@ -180,6 +187,27 @@ async def get_transaction_by_id(
     """
 
     return await helpers.get_one_of_model(transaction_id, models.Transaction, local)
+
+
+@router.get(
+    "/user/{user_id}",
+    response_model=List[schemas.Transaction],
+    responses={404: {"model": schemas.APIError}}
+)
+@versioning.versions(1)
+async def get_all_transactions_of_sender(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Return a list of all transactions sent & received by a specific user identified by its user ID.
+
+    A 404 error will be returned if the user ID is unknown.
+    """
+
+    await helpers.return_one(user_id, models.User, local.session)
+    flt = (models.Transaction.sender_id == user_id) | (models.Transaction.receiver_id == user_id)
+    return [obj.schema for obj in local.session.query(models.Transaction).filter(flt).all()]
 
 
 @router.get(

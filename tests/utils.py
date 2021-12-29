@@ -403,6 +403,31 @@ class BaseAPITests(BaseTest):
 
         self.callback_server.serve_forever()
 
+    def make_special_user(self, community_name: str = "Community"):
+        opts = {"echo": conf.SQLALCHEMY_ECHOING}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        engine = sqlalchemy.create_engine(self.database_url, **opts)
+        session = sqlalchemy.orm.sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=engine
+        )()
+
+        specials = session.query(models.User).filter_by(special=True).all()
+        if len(specials) > 1:
+            self.fail("CRITICAL ERROR. Please drop a bug report.")
+        if len(specials) == 0:
+            session.add(models.User(
+                active=True,
+                special=True,
+                external=False,
+                permission=False,
+                name=community_name
+            ))
+            session.commit()
+        session.close()
+
     def setUp(self) -> None:
         super().setUp()
         self.server_port = random.randint(10000, 64000)

@@ -28,8 +28,9 @@ class Alias(BaseModel):
     user_id: pydantic.NonNegativeInt
     application: pydantic.constr(max_length=255)
     app_user_id: pydantic.constr(max_length=255)
+    confirmed: bool
 
-    __allowed_updates__ = ["app_user_id"]
+    __allowed_updates__ = ["app_user_id", "confirmed"]
 
 
 class AliasCreation(BaseModel):
@@ -69,7 +70,6 @@ class User(BaseModel):
 class UserCreation(BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
-    active: bool = True
     external: bool
     voucher: Optional[pydantic.NonNegativeInt]
 

@@ -7,7 +7,7 @@
 The API provided in this package allows clients to handle a diverse user base,
 where every user has any number of associated aliases but one shared balance.
 It can be sent to other users, shared in bills or refunded by the community
-by a community ballot, where every user has the equal privileges and voting
+by a community poll, where every user has the equal privileges and voting
 weight. Additionally, the API provides endpoints to easily consume any
 amount of predefined but modifiable consumables with different stocks.
 

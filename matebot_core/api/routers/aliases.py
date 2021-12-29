@@ -77,7 +77,8 @@ async def create_new_alias(
     model = models.UserAlias(
         user_id=user.id,
         app_id=application.id,
-        app_user_id=alias.app_user_id
+        app_user_id=alias.app_user_id,
+        confirmed=False
     )
     return await helpers.create_new_of_model(model, local, logger)
 
@@ -95,9 +96,9 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    A 403 error will be returned if any other attribute than `app_user_id`
-    has been changed. A 404 error will be returned if at least one of the
-    `alias_id`, `application` or `user_id` doesn't exist.
+    A 403 error will be returned if any other attribute than `app_user_id` or
+    `confirmed` has been changed. A 404 error will be returned if at least one
+    of the `alias_id`, `application` or `user_id` doesn't exist.
     """
 
     model = await helpers.return_one(alias.id, models.UserAlias, local.session)
@@ -106,6 +107,7 @@ async def update_existing_alias(
     await helpers.return_unique(models.Application, local.session, name=alias.application)
 
     model.app_user_id = alias.app_user_id
+    model.confirmed = alias.confirmed
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
