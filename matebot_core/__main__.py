@@ -239,6 +239,9 @@ def init_project(args: argparse.Namespace) -> int:
         with open(_settings.CONFIG_PATHS[0], "w") as f:
             json.dump(settings, f, indent=4)
 
+    else:
+        print("A config file has been found. Consider removing it before continuing to avoid inconsistencies.")
+
     config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
     database.init(config.database.connection, config.database.echo)
     session = database.get_new_session()

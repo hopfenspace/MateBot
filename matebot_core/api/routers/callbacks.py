@@ -21,21 +21,6 @@ callback_router = APIRouter(
 )
 
 
-@callback_router.get("/refresh")
-def trigger_cache_refresh():
-    """
-    Trigger a refresh of the local object caches.
-
-    This endpoint must be present on the external API, since it will always
-    be called when some internal states of the MateBot core have changed.
-    It will be called before the other, more specific endpoints below.
-
-    Implementation detail: The response of the external API implementation
-    will be logged in case of an error, but will be ignored in general.
-    The external API does not need to return any meaningful response.
-    """
-
-
 @callback_router.get("/create/{model}/{id}")
 def announce_created_model():
     """

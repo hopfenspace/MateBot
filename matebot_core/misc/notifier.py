@@ -38,10 +38,6 @@ class Callback:
                         )
 
     @classmethod
-    async def refreshed(cls, logger: logging.Logger, clients: List[models.Callback]):
-        await cls._get(["refresh"], clients, logger)
-
-    @classmethod
     async def created(
             cls,
             model_name: str,
@@ -49,7 +45,7 @@ class Callback:
             logger: logging.Logger,
             clients: List[models.Callback]
     ):
-        await cls._get(["refresh", f"create/{model_name.lower()}/{model_id}"], clients, logger)
+        await cls._get([f"create/{model_name.lower()}/{model_id}"], clients, logger)
 
     @classmethod
     async def updated(
@@ -59,7 +55,7 @@ class Callback:
             logger: logging.Logger,
             clients: List[models.Callback]
     ):
-        await cls._get(["refresh", f"update/{model_name.lower()}/{model_id}"], clients, logger)
+        await cls._get([f"update/{model_name.lower()}/{model_id}"], clients, logger)
 
     @classmethod
     async def deleted(
@@ -69,4 +65,4 @@ class Callback:
             logger: logging.Logger,
             clients: List[models.Callback]
     ):
-        await cls._get(["refresh", f"delete/{model_name.lower()}/{model_id}"], clients, logger)
+        await cls._get([f"delete/{model_name.lower()}/{model_id}"], clients, logger)
