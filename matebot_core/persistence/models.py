@@ -347,7 +347,6 @@ class Communism(Base):
     active = Column(Boolean, nullable=False, default=True)
     amount = Column(Integer, nullable=False)
     description = Column(String(255), nullable=False)
-    externals = Column(Integer, nullable=False, default=0)
     created = Column(DateTime, nullable=False, server_default=func.now())
     accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -367,7 +366,6 @@ class Communism(Base):
             description=self.description,
             creator=self.creator_id,
             active=self.active,
-            externals=self.externals,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp(),
             participants=[

@@ -72,7 +72,6 @@ async def create_new_communism(
         description=communism.description,
         creator=creator,
         active=communism.active,
-        externals=communism.externals,
         participants=[]
     )
 
@@ -99,12 +98,12 @@ async def update_existing_communism(
     """
     Change certain pieces of mutable information about an already existing communism.
 
-    The fields `externals` and `participants` will be used as-is to overwrite
-    the internal state of the communism (which will be returned afterwards).
+    The field `participants` will be used as-is to overwrite the internal
+    state of the communism (which will be returned afterwards).
 
-    A 400 error will be returned if any participant was mentioned more
-    than one time. A 403 error will be returned if any other attributes
-    than `active`, `externals` or `participants` have been changed.
+    A 400 error will be returned if any participant was mentioned
+    more than one time. A 403 error will be returned if any other
+    attributes than `active` or `participants` have been changed.
     A 404 error will be returned if the communism ID was not found
     or if the user ID of any mentioned participant is unknown.
     A 409 error will be returned if a closed communism was altered.
@@ -125,8 +124,6 @@ async def update_existing_communism(
 
     if not model.active:
         raise Conflict("Updating an already closed communism is illegal", detail=str(communism))
-
-    model.externals = communism.externals
 
     remaining = list(communism.participants)[:]
     for c_u in model.participants:
