@@ -14,6 +14,7 @@ import unittest
 import threading
 import subprocess
 import http.server
+import urllib.parse
 from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
@@ -170,6 +171,7 @@ class BaseAPITests(BaseTest):
     server_thread: Optional[threading.Thread] = None
 
     auth: Optional[Tuple[str, str]] = None
+    token: Optional[str] = None
 
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
@@ -282,6 +284,8 @@ class BaseAPITests(BaseTest):
             prefix = ""
         elif not prefix.endswith("/"):
             prefix += "/"
+        headers = headers or {}
+        headers.update({"Authorization": f"Bearer {self.token}"})
         response = requests.request(
             method.upper(),
             self.server + prefix + path,
@@ -332,6 +336,24 @@ class BaseAPITests(BaseTest):
                 )
 
         return response
+
+    def login(self):
+        response = requests.post(
+            self.server + self.api_version_format.format(self.latest_api_version)[1:] + "/login",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data="&".join([
+                "grant_type=password",
+                "client_id=",
+                "client_secret=",
+                "scope=password",
+                f"username={urllib.parse.quote(self.auth[0])}",
+                f"password={urllib.parse.quote(self.auth[1])}"
+            ])
+        )
+        if response.ok:
+            self.token = response.json()["access_token"]
+        else:
+            self.fail(f"Failed to login ({response.status_code}")
 
     def _init_project_data(self):
         self.auth = ("application", secrets.token_urlsafe(16))

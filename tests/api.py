@@ -32,6 +32,10 @@ class UninitializedAPITests(utils.BaseAPITests):
 
 @_tested
 class WorkingAPITests(utils.BaseAPITests):
+    def setUp(self) -> None:
+        super().setUp()
+        self.login()
+
     def _set_user_attrs(self, uid: int, success: bool, **kwargs) -> dict:
         user = self.assertQuery(("GET", f"/users/{uid}"), 200).json()
         user.update(**kwargs)
