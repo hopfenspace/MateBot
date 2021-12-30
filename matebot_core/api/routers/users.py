@@ -73,9 +73,10 @@ async def update_existing_user(
     A 403 error will be returned when any other field than the allowed fields
     have been changed: `name`, `permission` `active`, `external` or `voucher`.
     A 404 error will be returned if the `user_id` or `voucher` is not known.
-    A 409 error will be returned if the voucher ID equals the user ID, if
-    an internal user should get a voucher or if an external user should
-    loose its voucher without also having a positive balance.
+    A 409 error will be returned if the voucher ID equals the user ID, if an
+    internal user should get a voucher, if an external user should loose its
+    voucher without also having a positive balance, a disabled user is updated or
+    some other restrictions on user updates get applied to make the request fail.
     """
 
     model = await helpers.return_one(user.id, models.User, local.session)
@@ -99,14 +100,14 @@ async def update_existing_user(
             info = ""
             if model.voucher_id and model.external:
                 info = f" User {model.voucher_id} vouches for this user and may handle this."
-            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
+            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
 
         active_created_refunds = local.session.query(models.Refund).filter_by(
             active=True, creator_id=model.id
         ).all()
         if active_created_refunds:
             raise Conflict(
-                f"User {user.name} has at least one active refund requests. Can't delete user.",
+                f"User {user.name} has at least one active refund requests. Can't disable user.",
                 str(active_created_refunds)
             )
 
@@ -115,7 +116,7 @@ async def update_existing_user(
         ).all()
         if active_created_communisms:
             raise Conflict(
-                f"User {user.name} has created at least one active communism. Can't delete user.",
+                f"User {user.name} has created at least one active communism. Can't disable user.",
                 str(active_created_communisms)
             )
 
@@ -125,9 +126,14 @@ async def update_existing_user(
                     if participant.quantity == 0:
                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
                     raise Conflict(
-                        f"User {user.name} is participant of at least one active communism. Can't delete user.",
+                        f"User {user.name} is participant of at least one active communism. Can't disable user.",
                         str(participant)
                     )
+
+        if user.voucher is not None:
+            raise Conflict(f"User {model.id} should vouch for someone else. Can't disable user.", str(user))
+        if model.voucher_user is not None:
+            raise Conflict(f"User {model.id} currently vouches for someone else. Can't disable user.", str(user))
 
     voucher_user = None
     if user.voucher is not None:
@@ -138,6 +144,16 @@ async def update_existing_user(
     model.active = user.active
     model.external = user.external
     model.voucher_user = voucher_user
+
+    if not user.active:
+        for alias in model.aliases:
+            await helpers.delete_one_of_model(
+                alias.id,
+                models.UserAlias,
+                local,
+                schema=alias,
+                logger=logger
+            )
 
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 

@@ -86,19 +86,16 @@ async def make_a_new_transaction(
 
         user = await helpers.return_one(consumption.user, models.User, local.session)
         if user.special:
-            raise Conflict("Community user can't consume goods")
-        consumable: models.Consumable = await helpers.return_one(
-            consumption.consumable_id,
-            models.Consumable,
-            local.session
-        )
-
-        if user.special:
             raise APIException(
                 status_code=400,
                 message="The special community user can't consume goods.",
                 detail=str(user.schema)
             )
+        consumable: models.Consumable = await helpers.return_one(
+            consumption.consumable_id,
+            models.Consumable,
+            local.session
+        )
 
         wastage = 0
         if consumption.respect_stock:
