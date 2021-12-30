@@ -116,6 +116,7 @@ async def make_a_new_transaction(
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
         consumable.stock -= wastage
+        local.session.add(consumable)
         t = create_transaction(user, community, total, reason, local.session, logger, local.tasks)
         return await helpers.get_one_of_model(t.id, models.Transaction, local)
 
