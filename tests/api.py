@@ -25,6 +25,12 @@ def _tested(cls: Type):
 
 
 @_tested
+class UninitializedAPITests(utils.BaseAPITests):
+    def _init_project_data(self):
+        pass
+
+
+@_tested
 class WorkingAPITests(utils.BaseAPITests):
     def _set_user_attrs(self, uid: int, success: bool, **kwargs) -> dict:
         user = self.assertQuery(("GET", f"/users/{uid}"), 200).json()

@@ -5,11 +5,13 @@ import sys
 import json
 import getpass
 import logging
+import secrets
 import argparse
 
 import uvicorn
 
 from matebot_core import settings as _settings
+from matebot_core.api import auth
 from matebot_core.api.api import create_app
 from matebot_core.persistence import database, models
 
@@ -108,6 +110,12 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         type=str,
         metavar="name",
         help="Name of a newly created application account"
+    )
+    parser_init.add_argument(
+        "--password",
+        type=str,
+        metavar="passwd",
+        help="Password for the new app account (see --application)"
     )
 
     parser_run.add_argument(
@@ -249,7 +257,7 @@ def init_project(args: argparse.Namespace) -> int:
             ))
             session.commit()
 
-    if len(session.query(models.Application).all()) == 0:
+    if len(session.query(models.Application).all()) == 0 or args.application:
         name = args.application
         if not name:
             print(
@@ -258,8 +266,33 @@ def init_project(args: argparse.Namespace) -> int:
                 "Otherwise type in the name of the new application account below."
             )
             name = input("> ")
-        if name:
-            session.add(models.Application(name=name))
+
+        if len(session.query(models.Application).filter_by(name=name).all()) > 0:
+            print(
+                f"An application with the given name {name!r} already "
+                f"exists. Therefore, it can't be created. Exiting.",
+                file=sys.stderr
+            )
+            session.flush()
+            session.close()
+            return 1
+
+        passwd = args.password
+        if not passwd and name:
+            print(
+                f"\nThe new application {name!r} needs a password to properly authenticate "
+                "against the API in production later on. Enter the password below. "
+                "Make sure that the password meets good length & strength standards. "
+                "Note that pressing Enter will not create the new application!"
+            )
+            passwd = input("> ")
+
+        if name and not passwd:
+            print("No new application account created!")
+        elif name and passwd:
+            salt = secrets.token_urlsafe(16)
+            password = models.Password(salt=salt, passwd=auth.hash_password(passwd, salt))
+            session.add(models.Application(name=name, password=password))
             session.commit()
 
     session.flush()

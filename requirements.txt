@@ -2,6 +2,8 @@ aiohttp>=3.7
 aiofiles>=0.7.0
 fastapi>=0.66.0
 pydantic>=1.8.2
+python-jose>=3.3.0
+python-multipart==0.0.5
 requests>=2.26.0
 SQLAlchemy>=1.4.20
 ujson>=4.0

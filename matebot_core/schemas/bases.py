@@ -18,6 +18,11 @@ class BaseModel(pydantic.BaseModel):
     __allowed_updates__ = []
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class Alias(BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
@@ -44,6 +49,7 @@ class Application(BaseModel):
 
 class ApplicationCreation(BaseModel):
     name: pydantic.constr(max_length=255)
+    password: pydantic.constr(min_length=8, max_length=64)
     community_user_name: pydantic.constr(max_length=255)
 
 

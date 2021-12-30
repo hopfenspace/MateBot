@@ -3,12 +3,13 @@ MateBot router module for /applications requests
 """
 
 import logging
+import secrets
 from typing import List
 
 from fastapi import APIRouter, Depends
 
 from ..dependency import LocalRequestData
-from .. import helpers, versioning
+from .. import auth, helpers, versioning
 from ...persistence import models
 from ... import schemas
 
@@ -57,7 +58,10 @@ async def add_new_application(
 
     community = await helpers.return_unique(models.User, local.session, special=True)
     await helpers.expect_none(models.Application, local.session, name=application.name)
-    app = models.Application(name=application.name)
+    salt = secrets.token_urlsafe(16)
+    passwd = models.Password(salt=salt, passwd=auth.hash_password(application.password, salt))
+    app = models.Application(name=application.name, password=passwd)
+
     alias = models.UserAlias(
         user_id=community.id,
         app_user_id=application.community_user_name,

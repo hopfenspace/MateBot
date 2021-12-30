@@ -4,16 +4,18 @@ MateBot database unit tests
 
 import datetime
 import unittest as _unittest
-from typing import Type
+from typing import List, Type
 
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.exc
+from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas
+from matebot_core.api import auth
 from matebot_core.persistence import models
 
-from . import utils
+from . import conf, utils
 
 
 persistence_suite = _unittest.TestSuite()
@@ -24,6 +26,45 @@ def _tested(cls: Type):
     for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
         persistence_suite.addTest(cls(fixture))
     return cls
+
+
+def _mk_passwd(passwd: str = "password", salt: str = "salt") -> models.Password:
+    return models.Password(salt=salt, passwd=auth.hash_password(passwd, salt))
+
+
+class _BaseDatabaseTests(utils.BaseTest):
+    engine: _Engine
+    session: sqlalchemy.orm.Session
+
+    def setUp(self) -> None:
+        super().setUp()
+        opts = {"echo": conf.SQLALCHEMY_ECHOING}
+        if self.database_url.startswith("sqlite:"):
+            opts = {"connect_args": {"check_same_thread": False}}
+        self.engine = sqlalchemy.create_engine(self.database_url, **opts)
+        self.session = sqlalchemy.orm.sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.engine
+        )()
+        models.Base.metadata.create_all(bind=self.engine)
+
+    def tearDown(self) -> None:
+        self.session.close()
+        self.engine.dispose()
+        super().tearDown()
+
+    @staticmethod
+    def get_sample_users() -> List[models.User]:
+        return [
+            models.User(name="user1", balance=-42, external=True),
+            models.User(name="user2", balance=51, external=False),
+            models.User(name="user3", external=True),
+            models.User(name="user4", balance=2, external=False),
+            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
+            models.User(external=False),
+            models.User(name="community", external=False, special=True, balance=2, permission=True)
+        ]
 
 
 @_tested
@@ -98,8 +139,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
 
-        app1 = models.Application(name="app1")
-        app2 = models.Application(name="app2")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -125,8 +166,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(0, len(self.session.query(models.UserAlias).all()))
 
     def test_add_applications_and_aliases(self):
-        app1 = models.Application(name="app1")
-        app2 = models.Application(name="app2")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -162,7 +203,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
 
     def test_applications_and_callbacks(self):
-        app1 = models.Application(name="app1")
+        app1 = models.Application(name="app1", password=_mk_passwd("password1"))
         self.session.add(app1)
         self.session.commit()
 
@@ -183,7 +224,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertTrue(isinstance(app1.callbacks, list))
         self.assertEqual([], app1.callbacks)
 
-        app2 = models.Application(name="app2")
+        app2 = models.Application(name="app2", password=_mk_passwd("password2"))
         self.session.add(app2)
         self.session.commit()
 
@@ -419,7 +460,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
 
         # Everything fine
         self.session.add_all(self.get_sample_users())
-        self.session.add(models.Application(name="app"))
+        self.session.add(models.Application(name="app", password=_mk_passwd("password")))
         self.session.commit()
         self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
         self.session.commit()

@@ -23,8 +23,9 @@ import sqlalchemy.orm
 from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas as _schemas, settings as _settings
+from matebot_core.api import auth
 from matebot_core.api.api import create_app
-from matebot_core.persistence import models
+from matebot_core.persistence import database, models
 
 from . import conf
 
@@ -167,6 +168,8 @@ class BaseAPITests(BaseTest):
 
     server_port: Optional[int] = None
     server_thread: Optional[threading.Thread] = None
+
+    auth: Optional[Tuple[str, str]] = None
 
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
@@ -330,6 +333,18 @@ class BaseAPITests(BaseTest):
 
         return response
 
+    def _init_project_data(self):
+        self.auth = ("application", secrets.token_urlsafe(16))
+        config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+        database.init(config.database.connection, config.database.echo)
+        session = database.get_new_session()
+        salt = secrets.token_urlsafe(16)
+        password = models.Password(salt=salt, passwd=auth.hash_password(self.auth[1], salt))
+        session.add(models.Application(name=self.auth[0], password=password))
+        session.commit()
+        session.flush()
+        session.close()
+
     def _run_api_server(self):
         self.server_port = random.randint(10000, 64000)
 
@@ -341,6 +356,8 @@ class BaseAPITests(BaseTest):
         config.server.port = self.server_port
         with open(self.config_file, "w") as f:
             f.write(config.json())
+
+        self._init_project_data()
 
         app = create_app(
             settings=_settings.Settings(),

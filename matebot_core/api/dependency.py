@@ -7,13 +7,16 @@ from typing import Generator, Optional
 
 import sqlalchemy.exc
 from fastapi import BackgroundTasks, Depends, Request, Response
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
 from sqlalchemy.orm import Session
 
+from . import base
 from ..persistence import database
 from ..settings import Settings
 
 
-def _get_session() -> Generator[Session, None, bool]:
+def get_session() -> Generator[Session, None, bool]:
     """
     Return a generator to handle database sessions gracefully
     """
@@ -39,7 +42,54 @@ def _get_session() -> Generator[Session, None, bool]:
     return True
 
 
-class LocalRequestData:
+class MinimalRequestData:
+    """
+    Collection of minimal dependencies used only for internal functionalities
+    """
+
+    def __init__(
+            self,
+            request: Request,
+            response: Response,
+            session: Session = Depends(get_session)
+    ):
+        self.request = request
+        self.response = response
+        self.headers = request.headers
+        self.session = session
+
+        self._config: Optional[Settings] = None
+
+    @property
+    def config(self) -> Settings:
+        if self._config is None:
+            self._config = Settings()
+        return self._config
+
+
+async def check_auth_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="login"))):
+    credentials_exception = base.APIException(
+        status_code=401,
+        detail=f"token={token!r}",
+        message="Failed to validate token successfully",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+    try:
+        payload = jwt.decode(
+            token,
+            base.runtime_key,
+            algorithms=[jwt.ALGORITHMS.HS256],
+            options={"require_exp": True, "require_iat": True}
+        )
+        username = payload.get("sub", None)
+        if username is None:
+            raise credentials_exception
+    except jwt.JWTError as exc:
+        raise credentials_exception from exc
+
+
+class LocalRequestData(MinimalRequestData):
     """
     Collection of core dependencies used by all path operations
 
@@ -47,19 +97,6 @@ class LocalRequestData:
     will almost certainly be used by request handlers (path operations).
     Note that any dependency added here will be added to the OpenAPI
     definition, if it refers to a Query, Header, Path or Cookie.
-
-    Just add a single dependency for this class to your path operation
-    to be able to use its attributes in a well-defined manner. It also
-    supports the attachment of the ``ETag`` header as well as specific
-    extra headers to the response using just one additional method call:
-
-    .. code-block:: python3
-
-        @app.get("/user")
-        def get_user(local: LocalRequestData = Depends(LocalRequestData)):
-            ...
-            return local.attach_headers(model)
-
     """
 
     def __init__(
@@ -67,14 +104,14 @@ class LocalRequestData:
             request: Request,
             response: Response,
             tasks: BackgroundTasks,
-            session: Session = Depends(_get_session),
+            session: Session = Depends(get_session),
+            token: str = Depends(check_auth_token)
     ):
-        self.request = request
-        self.response = response
+        super().__init__(request, response, session)
         self.tasks = tasks
+        self._token = token
         self.headers = request.headers
         self.session = session
-
         self._config: Optional[Settings] = None
 
     @property

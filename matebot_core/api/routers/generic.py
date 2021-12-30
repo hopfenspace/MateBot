@@ -6,9 +6,11 @@ import logging
 import datetime
 
 from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestFormStrict
 
-from ..dependency import LocalRequestData
-from .. import versioning
+from ..base import APIException
+from ..dependency import LocalRequestData, MinimalRequestData
+from .. import auth, versioning
 from ...schemas import config
 from ... import schemas, __version__
 
@@ -20,10 +22,26 @@ router = APIRouter(
 )
 
 
-@router.get(
-    "/status",
-    response_model=schemas.Status
-)
+@router.post("/login", response_model=schemas.Token)
+@versioning.versions(1)
+async def login(
+        data: OAuth2PasswordRequestFormStrict = Depends(),
+        local: MinimalRequestData = Depends(MinimalRequestData)
+):
+    if not await auth.check_app_credentials(data.username, data.password, local.session):
+        raise APIException(
+            status_code=401,
+            detail=f"username={data.username!r}, password=?",
+            message="Invalid credentials"
+        )
+
+    return {
+        "access_token": auth.create_access_token(data.username),
+        "token_type": "bearer"
+    }
+
+
+@router.get("/status", response_model=schemas.Status)
 @versioning.versions(1)
 async def get_status():
     """
@@ -45,10 +63,7 @@ async def get_status():
     )
 
 
-@router.get(
-    "/settings",
-    response_model=config.GeneralConfig
-)
+@router.get("/settings", response_model=config.GeneralConfig)
 @versioning.versions(minimal=1)
 async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     """

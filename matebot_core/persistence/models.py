@@ -14,6 +14,17 @@ from .database import Base
 from .. import schemas
 
 
+class Password(Base):
+    __tablename__ = "passwords"
+
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    salt = Column(String(255), nullable=False)
+    passwd = Column(String(255), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"Password(id={self.id})"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -61,9 +72,11 @@ class Application(Base):
     name = Column(String(255), unique=True, nullable=False)
     community_user_alias_id = Column(Integer, ForeignKey("aliases.id"), nullable=True)
     created = Column(DateTime, server_default=func.now())
+    password_id = Column(Integer, ForeignKey("passwords.id"), unique=True, nullable=False)
 
     community_user_alias = relationship("UserAlias", foreign_keys=[community_user_alias_id])
     callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
+    password = relationship("Password", cascade="all,delete")
 
     @property
     def schema(self) -> schemas.Application:
@@ -423,4 +436,5 @@ assert not any(
     True
     for mapper in Base.registry.mappers
     if not hasattr(mapper.class_, "schema")
+    and mapper.class_.__name__ not in ["Password"]
 )
