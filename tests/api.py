@@ -903,6 +903,7 @@ class WorkingAPITests(utils.BaseAPITests):
 @_tested
 class FailingAPITests(utils.BaseAPITests):
     def test_communism_schema_checks(self):
+        self.login()
         sample_data = [
             {},
             {
@@ -962,6 +963,12 @@ class APICallbackTests(utils.BaseAPITests):
         self.assertEqual(0, self.callback_request_list.qsize())
         self.assertQuery(
             ("POST", "/callbacks"),
+            401,
+            json={"base": f"http://localhost:{self.callback_server_port}/"}
+        )
+        self.login()
+        self.assertQuery(
+            ("POST", "/callbacks"),
             201,
             json={"base": f"http://localhost:{self.callback_server_port}/"},
             recent_callbacks=[("GET", "/refresh")]
@@ -976,7 +983,7 @@ class APICallbackTests(utils.BaseAPITests):
         )
         self.assertQuery(
             ("POST", "/callbacks"),
-            404,
+            201,
             json={"base": "http://localhost:65000", "app": 1}
         )
 
