@@ -78,7 +78,7 @@ async def create_new_alias(
         user_id=user.id,
         app_id=application.id,
         app_user_id=alias.app_user_id,
-        confirmed=False
+        confirmed=alias.confirmed
     )
     return await helpers.create_new_of_model(model, local, logger)
 
