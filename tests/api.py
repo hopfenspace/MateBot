@@ -44,7 +44,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200 if success else [403, 404, 409],
             json=user,
             r_schema=_schemas.User if success else None,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/update/user/{uid}")] if success else None
+            recent_callbacks=[("GET", f"/update/user/{uid}")] if success else None
         ).json()
 
     def test_basic_endpoints_and_redirects_to_docs(self):
@@ -100,7 +100,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/callbacks"),
             201,
             json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+            recent_callbacks=[("GET", "/create/callback/1")]
         )
         time.sleep(1)
 
@@ -114,7 +114,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 204,
                 json=users[-1],
                 r_none=True,
-                recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{len(users)}")]
+                recent_callbacks=[("GET", f"/delete/user/{len(users)}")]
             )
             self.assertQuery(("GET", f"/users/{len(users)}"), 404, r_schema=_schemas.APIError)
             users.pop(-1)
@@ -168,7 +168,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "amount": 42,
                 "reason": "test"
             },
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/transaction/1")]
+            recent_callbacks=[("GET", f"/create/transaction/1")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
@@ -188,7 +188,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "reason": "reverse"
             },
             skip_callbacks=2,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/transaction/2")]
+            recent_callbacks=[("GET", f"/create/transaction/2")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user1 = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
@@ -199,7 +199,7 @@ class WorkingAPITests(utils.BaseAPITests):
             204,
             json=user0,
             r_none=True,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0['id']}")]
+            recent_callbacks=[("GET", f"/delete/user/{user0['id']}")]
         )
         users.pop(0)
 
@@ -216,7 +216,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "active": True,
                 "participants": [{"quantity": 1, "user": user1["id"]}]
             },
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/communism/1")]
+            recent_callbacks=[("GET", f"/create/communism/1")]
         ).json()
         self.assertQuery(("DELETE", "/users"), 409, json=user0, recent_callbacks=[])
         self.assertEqual(communism, self.assertQuery(("GET", "/communisms/1"), 200).json())
@@ -232,7 +232,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_none=True,
             skip_callbacks=2,
             skip_callback_timeout=0.1,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user1['id']}")]
+            recent_callbacks=[("GET", f"/delete/user/{user1['id']}")]
         )
         users.pop(1)
 
@@ -255,7 +255,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_none=True,
             skip_callbacks=4,
             skip_callback_timeout=0.1,
-            recent_callbacks=[("GET", "/refresh"), ("GET", f"/delete/user/{user0['id']}")]
+            recent_callbacks=[("GET", f"/delete/user/{user0['id']}")]
         )
         users.pop(0)
 
@@ -270,7 +270,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/callbacks"),
             201,
             json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+            recent_callbacks=[("GET", "/create/callback/1")]
         )
 
         # User referenced by 'user_id' doesn't exist, then it's created
@@ -284,7 +284,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user1", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/1")]
+            recent_callbacks=[("GET", "/create/user/1")]
         ).json()
 
         # Poll referenced by 'poll_id' doesn't exist, then it's created
@@ -298,7 +298,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"question": "Is this a question?", "changeable": True},
             r_schema=_schemas.Poll,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/poll/1")]
+            recent_callbacks=[("GET", "/create/poll/1")]
         ).json()
         self.assertEqual(poll1["question"], "Is this a question?")
 
@@ -307,7 +307,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/polls"),
             201,
             json={"question": "Are you sure?", "changeable": False},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/poll/2")]
+            recent_callbacks=[("GET", "/create/poll/2")]
         ).json()
         self.assertEqual(poll2["votes"], [])
         self.assertEqual(poll2["changeable"], False)
@@ -318,7 +318,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"user_id": 1, "poll_id": 1, "vote": 1},
             r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/1")]
+            recent_callbacks=[("GET", "/create/vote/1")]
         )
         self.assertEqual(vote1.json()["vote"], 1)
         for v in [1, 0, -1]:
@@ -336,7 +336,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=vote1_json,
             r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/vote/1")]
+            recent_callbacks=[("GET", "/update/vote/1")]
         ).json()
         self.assertEqual(vote1_json_updated["vote"], -1)
 
@@ -346,14 +346,14 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user2", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
+            recent_callbacks=[("GET", "/create/user/2")]
         )
         self.assertQuery(
             ("POST", "/votes"),
             201,
             json={"user_id": 2, "poll_id": 1, "vote": -1},
             r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/2")]
+            recent_callbacks=[("GET", "/create/vote/2")]
         )
 
         # Don't allow to change a vote of a restricted (unchangeable) poll
@@ -362,7 +362,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"user_id": 2, "poll_id": 2, "vote": -1},
             r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/vote/3")]
+            recent_callbacks=[("GET", "/create/vote/3")]
         )
         vote3_json = vote3.json()
         vote3_json["vote"] = 1
@@ -396,7 +396,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=poll1,
             r_schema=_schemas.Poll,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/poll/1")]
+            recent_callbacks=[("GET", "/update/poll/1")]
         ).json()
         self.assertNotEqual(poll1, poll1_updated)
         self.assertEqual(poll1_updated["result"], -2)
@@ -450,7 +450,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/callbacks"),
             201,
             json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+            recent_callbacks=[("GET", "/create/callback/1")]
         )
 
         # Special users shouldn't create refunds or post votes
@@ -476,7 +476,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user2", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
+            recent_callbacks=[("GET", "/create/user/2")]
         ).json()
 
         # Poll referenced by 'poll_id' doesn't exist, then it's created by the refund
@@ -490,7 +490,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"description": "Foo", "amount": 1337, "creator": 2},
             r_schema=_schemas.Refund,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/refund/1")]
+            recent_callbacks=[("GET", "/create/refund/1")]
         ).json()
         self.assertTrue(refund1["active"])
         self.assertIsNone(refund1["allowed"])
@@ -509,7 +509,7 @@ class WorkingAPITests(utils.BaseAPITests):
             204,
             json=self.assertQuery(("GET", "/refunds/1"), 200).json(),
             r_is_json=False,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/delete/refund/1")]
+            recent_callbacks=[("GET", "/delete/refund/1")]
         )
         poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
         self.assertFalse(poll1["active"])
@@ -519,8 +519,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/refunds"),
             201,
             json={"description": "Bar", "amount": 1337, "creator": 2},
-            r_schema=_schemas.Refund,
-            recent_callbacks=[("GET", "/refresh")]
+            r_schema=_schemas.Refund
         ).json()
         self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=1).json()["votes"], [])
         self.assertEqual(2, len(self.assertQuery(("GET", "/polls"), 200).json()))
@@ -532,21 +531,21 @@ class WorkingAPITests(utils.BaseAPITests):
                 201,
                 json={"name": f"user{i+2}", "permission": True, "external": False},
                 r_schema=_schemas.User,
-                recent_callbacks=[("GET", "/refresh"), ("GET", f"/create/user/{i+3}")]
+                recent_callbacks=[("GET", f"/create/user/{i+3}")]
             ).json()
         self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user7", "permission": False, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/7")]
+            recent_callbacks=[("GET", "/create/user/7")]
         ).json()
         self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user8", "permission": False, "external": True},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/8")]
+            recent_callbacks=[("GET", "/create/user/8")]
         ).json()
 
         # Reject users without permission for participation in refunds
@@ -584,9 +583,9 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Vote,
             skip_callbacks=2,
             recent_callbacks=[
-                ("GET", "/refresh"), ("GET", "/create/vote/2"),
-                ("GET", "/refresh"), ("GET", "/create/transaction/1"),
-                ("GET", "/refresh"), ("GET", "/update/refund/1")
+                ("GET", "/create/vote/2"),
+                ("GET", "/create/transaction/1"),
+                ("GET", "/update/refund/1")
             ]
         )
         new_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
@@ -638,7 +637,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/callbacks"),
             201,
             json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/1")]
+            recent_callbacks=[("GET", "/create/callback/1")]
         )
 
         # User referenced by 'creator' doesn't exist, then it's created
@@ -652,7 +651,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user1", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/1")]
+            recent_callbacks=[("GET", "/create/user/1")]
         )
 
         # Create and get the first communism object
@@ -661,7 +660,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json=sample_data[0],
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/1")]
+            recent_callbacks=[("GET", "/create/communism/1")]
         ).json()
         self.assertQuery(
             ("GET", "/communisms/1"),
@@ -680,7 +679,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user2", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/2")]
+            recent_callbacks=[("GET", "/create/user/2")]
         )
 
         # Create and get the second communism object
@@ -689,7 +688,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json=sample_data[1],
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/2")]
+            recent_callbacks=[("GET", "/create/communism/2")]
         )
         communism2 = response2.json()
         self.assertQuery(
@@ -702,7 +701,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism2,
             r_schema=_schemas.Communism(**communism2),
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
+            recent_callbacks=[("GET", "/update/communism/2")]
         ).json()
 
         # Create and get the third communism object
@@ -711,7 +710,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json=sample_data[2],
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/communism/3")]
+            recent_callbacks=[("GET", "/create/communism/3")]
         )
         communism3 = response3.json()
         self.assertQuery(
@@ -726,7 +725,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism2,
             r_schema=communism2,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/2")]
+            recent_callbacks=[("GET", "/update/communism/2")]
         )
 
         # Add new users to the third communism
@@ -739,7 +738,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+            recent_callbacks=[("GET", "/update/communism/3")]
         )
         communism3_changed = response3_changed.json()
         self.assertEqual(communism3_changed, communism3)
@@ -758,7 +757,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+            recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
         self.assertEqual(communism3_changed, communism3)
         self.assertQuery(
@@ -776,7 +775,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism(**communism3),
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+            recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
 
         # Add and modify users from the third communism
@@ -795,7 +794,7 @@ class WorkingAPITests(utils.BaseAPITests):
             201,
             json={"name": "user3", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/user/3")]
+            recent_callbacks=[("GET", "/create/user/3")]
         )
         communism3 = self.assertQuery(
             ("PUT", "/communisms"),
@@ -803,7 +802,7 @@ class WorkingAPITests(utils.BaseAPITests):
             json=communism3,
             r_schema=_schemas.Communism(**communism3),
             r_schema_ignored_fields=["accessed", "created"],
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/update/communism/3")]
+            recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
 
         # Do not allow to delete communisms
@@ -841,8 +840,8 @@ class WorkingAPITests(utils.BaseAPITests):
             json=communism3,
             r_schema=_schemas.Communism,
             recent_callbacks=[
-                ("GET", "/refresh"), ("GET", "/update/communism/3"),
-                ("GET", "/refresh"), ("GET", "/create/multitransaction/1")
+                ("GET", "/update/communism/3"),
+                ("GET", "/create/multitransaction/1")
             ]
         ).json()
         self.assertFalse(communism3_changed["active"])
@@ -943,14 +942,14 @@ class FailingAPITests(utils.BaseAPITests):
 class APICallbackTests(utils.BaseAPITests):
     def test_callback_testing(self):
         self.assertEqual(0, self.callback_request_list.qsize())
-        requests.get(f"{self.callback_server_uri}refresh")
-        self.assertEqual(("GET", "/refresh"), self.callback_request_list.get(timeout=1))
-        requests.get(f"{self.callback_server_uri}refresh")
-        requests.get(f"{self.callback_server_uri}refresh")
-        requests.get(f"{self.callback_server_uri}refresh")
-        self.assertEqual(("GET", "/refresh"), self.callback_request_list.get(timeout=1))
-        self.assertEqual(("GET", "/refresh"), self.callback_request_list.get(timeout=0))
-        self.assertEqual(("GET", "/refresh"), self.callback_request_list.get(timeout=0))
+        requests.get(f"{self.callback_server_uri}test")
+        self.assertEqual(("GET", "/test"), self.callback_request_list.get(timeout=1))
+        requests.get(f"{self.callback_server_uri}foo")
+        requests.get(f"{self.callback_server_uri}bar")
+        requests.get(f"{self.callback_server_uri}baz")
+        self.assertEqual(("GET", "/foo"), self.callback_request_list.get(timeout=1))
+        self.assertEqual(("GET", "/bar"), self.callback_request_list.get(timeout=0))
+        self.assertEqual(("GET", "/baz"), self.callback_request_list.get(timeout=0))
 
         requests.get(f"{self.callback_server_uri}create/poll/7")
         requests.get(f"{self.callback_server_uri}update/user/3")
@@ -970,14 +969,13 @@ class APICallbackTests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/refresh")]
+            json={"base": f"http://localhost:{self.callback_server_port}/"}
         )
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
             json={"base": "http://localhost:64000"},
-            recent_callbacks=[("GET", "/refresh"), ("GET", "/create/callback/2")],
+            recent_callbacks=[("GET", "/create/callback/2")],
             skip_callbacks=1,
             skip_callback_timeout=0.2
         )
