@@ -19,7 +19,7 @@ try:
 except ImportError:
     StaticFiles = None
 
-from . import api_v1, base, versioning
+from . import base, versioning
 from .routers import all_routers
 from .. import schemas, __version__
 from ..persistence import database
@@ -38,6 +38,31 @@ LICENSE_INFO = {
     "name": "GNU General Public License v3",
     "url": "https://www.gnu.org/licenses/gpl-3.0.html"
 }
+
+
+API_V1_DOC = """MateBot core REST API definition version 1
+
+This API requires authentication using OAuth2. Logging in with username
+and password (see `POST /login`) yields a token that should be included
+in the `Authorization` header with the type `Bearer`. It's an all-or-nothing
+API without restrictions on queries, provided the query is valid and the
+HTTP authorization with the bearer token was successful as well.
+
+The API tries to always return JSON-encoded data to any kind of request,
+if return data is necessary for that response, which is not the case for
+redirects, for example. The only exception is `500` (Internal Server Error),
+where no assumptions of the returned values can be made, even though even
+those responses _should_ use the schema of the `APIError`, which is used
+by all error responses issued by this API. This allows user agents to make
+certain assumptions about the returned response, if the returned status
+code equals the expected status code for that operation, usually `200` (OK).
+Note that the `422` (Unprocessable Entity) error response means a problem in
+the implementation in the user agent -- clients should never see any data
+of the Unprocessable Entity responses, since the `details` field may
+contain arbitrary data which is usually not user-friendly.
+
+Take a look at the individual methods and endpoints for more information.
+"""
 
 
 def _make_app(
@@ -170,7 +195,7 @@ def create_app(
             1: _make_app(
                 title="MateBot core REST API v1",
                 version="1.0",
-                description=api_v1.__doc__,
+                description=API_V1_DOC,
                 static_directory=static_directory
             )
         },
