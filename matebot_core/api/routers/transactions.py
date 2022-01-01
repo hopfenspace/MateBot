@@ -18,10 +18,7 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/transactions",
-    tags=["Transactions"]
-)
+router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
 @router.get(

@@ -17,9 +17,7 @@ from ... import schemas, __version__
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    tags=["Generic"]
-)
+router = APIRouter(tags=["Generic"])
 
 
 @router.post("/login", response_model=schemas.Token)

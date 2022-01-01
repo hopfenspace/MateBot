@@ -16,9 +16,7 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-callback_router = APIRouter(
-    tags=["Announcements"]
-)
+callback_router = APIRouter(tags=["Announcements"])
 
 
 @callback_router.get("/create/{model}/{id}")
@@ -69,10 +67,7 @@ def announce_deleted_model():
     """
 
 
-router = APIRouter(
-    prefix="/callbacks",
-    tags=["Callbacks"]
-)
+router = APIRouter(prefix="/callbacks", tags=["Callbacks"])
 
 
 @router.get(

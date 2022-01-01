@@ -18,10 +18,7 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/communisms",
-    tags=["Communisms"]
-)
+router = APIRouter(prefix="/communisms", tags=["Communisms"])
 
 
 @router.get(
