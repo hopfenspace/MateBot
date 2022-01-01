@@ -146,24 +146,24 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
 
         user1 = self.session.query(models.User).get(3)
         user2 = self.session.query(models.User).get(5)
-        alias1 = models.UserAlias(app_user_id="alias1", app_id=app1.id, user_id=3, confirmed=True)
-        alias2 = models.UserAlias(app_user_id="alias2", app_id=app2.id)
+        alias1 = models.Alias(app_username="alias1", application_id=app1.id, user_id=3, confirmed=True)
+        alias2 = models.Alias(app_username="alias2", application_id=app2.id)
         alias2.user = user2
 
         self.session.add_all([alias1, alias2])
         self.session.commit()
         self.assertFalse(alias2.confirmed)
-        self.assertEqual(2, len(self.session.query(models.UserAlias).all()))
+        self.assertEqual(2, len(self.session.query(models.Alias).all()))
 
         self.session.delete(user1)
         self.session.commit()
-        self.assertIsNone(self.session.query(models.UserAlias).get(alias1.id))
-        self.assertEqual(1, len(self.session.query(models.UserAlias).all()))
+        self.assertIsNone(self.session.query(models.Alias).get(alias1.id))
+        self.assertEqual(1, len(self.session.query(models.Alias).all()))
 
         self.session.delete(user2)
         self.session.commit()
-        self.assertIsNone(self.session.query(models.UserAlias).get(alias2.id))
-        self.assertEqual(0, len(self.session.query(models.UserAlias).all()))
+        self.assertIsNone(self.session.query(models.Alias).get(alias2.id))
+        self.assertEqual(0, len(self.session.query(models.Alias).all()))
 
     def test_add_applications_and_aliases(self):
         app1 = models.Application(name="app1", password=_mk_passwd("password1"))
@@ -178,30 +178,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.add(community_user)
         self.session.commit()
 
-        community_alias1 = models.UserAlias(
-            app_id=app1.id,
-            user_id=community_user.id,
-            app_user_id="community_alias1",
-            confirmed=True
-        )
-        community_alias2 = models.UserAlias(
-            app_id=app2.id,
-            app_user_id="community_alias2"
-        )
-        community_alias2.user = community_user
-        self.session.add_all([community_alias1, community_alias2])
-        self.session.commit()
-
-        self.assertSetEqual(set(community_user.aliases), {community_alias1, community_alias2})
-
-        app1.community_user_alias = community_alias1
-        app2.community_user_alias = community_alias2
-        self.session.commit()
-
-        self.assertEqual(app1.community_user_alias_id, community_alias1.id)
-        self.assertEqual(app2.community_user_alias_id, community_alias2.id)
-        self.assertEqual(app1.community_user_alias.user_id, app2.community_user_alias.user_id)
-
     def test_applications_and_callbacks(self):
         app1 = models.Application(name="app1", password=_mk_passwd("password1"))
         self.session.add(app1)
@@ -210,7 +186,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertTrue(isinstance(app1.callbacks, list))
         self.assertEqual([], app1.callbacks)
 
-        callback = models.Callback(base="http://example.com", app_id=app1.id)
+        callback = models.Callback(base="http://example.com", application_id=app1.id)
         self.session.add(callback)
         self.session.commit()
 
@@ -228,7 +204,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.add(app2)
         self.session.commit()
 
-        callback = models.Callback(base="http://example.net", app_id=app2.id)
+        callback = models.Callback(base="http://example.net", application_id=app2.id)
         self.session.add(callback)
         self.session.commit()
 
@@ -432,13 +408,13 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
 
     def test_user_alias_constraints(self):
         # Missing all required fields
-        self.session.add(models.UserAlias())
+        self.session.add(models.Alias())
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Missing user, if foreign key constraints are enforced
-        self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=1, app_id=1))
+        self.session.add(models.Alias(app_username="app-alias1", user_id=1, application_id=1))
         try:
             self.session.commit()
         except sqlalchemy.exc.DatabaseError:
@@ -447,7 +423,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             self.session.rollback()
 
         # Same alias in same application again
-        self.session.add(models.UserAlias(app_user_id="app-alias1", user_id=6, app_id=1))
+        self.session.add(models.Alias(app_username="app-alias1", user_id=6, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
@@ -456,17 +432,17 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.add_all(self.get_sample_users())
         self.session.add(models.Application(name="app", password=_mk_passwd("password")))
         self.session.commit()
-        self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=1))
+        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
         self.session.commit()
 
         # Same user in same application again
-        self.session.add(models.UserAlias(app_user_id="app-alias5", user_id=2, app_id=1))
+        self.session.add(models.Alias(app_username="app-alias5", user_id=2, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Missing application, if foreign key constraints are enforced
-        self.session.add(models.UserAlias(app_user_id="app-alias2", user_id=2, app_id=6))
+        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=6))
         try:
             self.session.commit()
         except sqlalchemy.exc.DatabaseError:

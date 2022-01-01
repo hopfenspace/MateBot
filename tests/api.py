@@ -129,9 +129,10 @@ class WorkingAPITests(utils.BaseAPITests):
         self._set_user_attrs(user1["id"], False, aliases=[{
             "id": 1,
             "user_id": user1["id"],
-            "application": "none",
-            "app_user_id": "unknown@none",
-            "confirmed": True
+            "application_id": 1,
+            "app_username": "unknown@none",
+            "confirmed": True,
+            "unique": False
         }])
         self._set_user_attrs(user1["id"], True)
 
@@ -139,9 +140,9 @@ class WorkingAPITests(utils.BaseAPITests):
         self._set_user_attrs(user1["id"], False, external=True)
         self._set_user_attrs(user1["id"], True, permission=False)
         self._set_user_attrs(user1["id"], True, external=True)
-        self._set_user_attrs(user1["id"], True, voucher=user0["id"])
+        self._set_user_attrs(user1["id"], True, voucher_id=user0["id"])
         # self._set_user_attrs(user1["id"], False, active=True)
-        self._set_user_attrs(user1["id"], True, voucher=None)
+        self._set_user_attrs(user1["id"], True, voucher_id=None)
         self._set_user_attrs(user1["id"], True, active=True)
         self._set_user_attrs(user1["id"], True, active=False)
         self._set_user_attrs(user1["id"], False, active=True)
@@ -151,8 +152,8 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             409,
             json={
-                "sender": user1["id"],
-                "receiver": user2["id"],
+                "sender_id": user1["id"],
+                "receiver_id": user2["id"],
                 "amount": 42,
                 "reason": "test"
             }
@@ -161,8 +162,8 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             409,
             json={
-                "sender": user2["id"],
-                "receiver": user1["id"],
+                "sender_id": user2["id"],
+                "receiver_id": user1["id"],
                 "amount": 42,
                 "reason": "test"
             }
@@ -175,8 +176,8 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender": user0["id"],
-                "receiver": user2["id"],
+                "sender_id": user0["id"],
+                "receiver_id": user2["id"],
                 "amount": 42,
                 "reason": "test"
             },
@@ -194,8 +195,8 @@ class WorkingAPITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender": user2["id"],
-                "receiver": user0["id"],
+                "sender_id": user2["id"],
+                "receiver_id": user0["id"],
                 "amount": 42,
                 "reason": "reverse"
             },
@@ -220,9 +221,9 @@ class WorkingAPITests(utils.BaseAPITests):
             json={
                 "amount": 1337,
                 "description": "description",
-                "creator": user0["id"],
+                "creator": user0,
                 "active": True,
-                "participants": [{"quantity": 1, "user": user1["id"]}]
+                "participants": [{"quantity": 1, "user_id": user1["id"]}]
             },
             recent_callbacks=[("GET", f"/create/communism/1")]
         ).json()
@@ -453,10 +454,11 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Special users shouldn't create refunds or post votes
+        community = self.assertQuery(("GET", "/users/community"), 200).json()
         self.assertQuery(
             ("POST", "/refunds"),
             [403, 409],
-            json={"description": "Foo", "amount": 1337, "creator": 1}
+            json={"description": "Foo", "amount": 1337, "creator_id": community["id"]}
         )
         self.assertQuery(
             ("POST", "/votes"),
@@ -468,7 +470,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds"),
             404,
-            json={"description": "Foo", "amount": 1337, "creator": 2}
+            json={"description": "Foo", "amount": 1337, "creator_id": 2}
         ).json()
         self.assertQuery(
             ("POST", "/users"),
@@ -487,7 +489,7 @@ class WorkingAPITests(utils.BaseAPITests):
         refund1 = self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Foo", "amount": 1337, "creator": 2},
+            json={"description": "Foo", "amount": 1337, "creator_id": 2},
             r_schema=_schemas.Refund,
             recent_callbacks=[("GET", "/create/refund/1")]
         ).json()
@@ -517,7 +519,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Bar", "amount": 1337, "creator": 2},
+            json={"description": "Bar", "amount": 1337, "creator_id": 2},
             r_schema=_schemas.Refund
         ).json()
         self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=1).json()["votes"], [])
@@ -591,10 +593,10 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(new_balance, old_balance + 1337, "refund failed somehow")
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
         self.assertEqual(1, len(transactions))
-        self.assertEqual(transactions[0]["sender"], 1)
-        self.assertEqual(transactions[0]["receiver"], 2)
+        self.assertEqual(transactions[0]["sender"], self.assertQuery(("GET", "/users/1"), 200).json())
+        self.assertEqual(transactions[0]["receiver"], self.assertQuery(("GET", "/users/2"), 200).json())
         self.assertEqual(transactions[0]["amount"], 1337)
-        self.assertIsNone(transactions[0]["multi_transaction"])
+        self.assertIsNone(transactions[0]["multi_transaction_id"])
 
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
@@ -604,22 +606,22 @@ class WorkingAPITests(utils.BaseAPITests):
             {
                 "amount": 1,
                 "description": "description1",
-                "creator": 1,
+                "creator": None,  # will be inserted later
                 "active": True,
                 "participants": []
             },
             {
                 "amount": 42,
                 "description": "description2",
-                "creator": 1,
+                "creator": None,  # will be inserted later
                 "active": True,
                 "participants": [
                     {
-                        "user": 1,
+                        "user_id": 1,
                         "quantity": 1
                     },
                     {
-                        "user": 2,
+                        "user_id": 2,
                         "quantity": 2
                     }
                 ]
@@ -627,8 +629,13 @@ class WorkingAPITests(utils.BaseAPITests):
             {
                 "amount": 1337,
                 "description": "description3",
-                "creator": 2
-            }
+                "creator": None  # will be inserted later
+            },
+            {
+                "amount": 1337,
+                "description": "description4",
+                "creator": 42
+            },
         ]
 
         # Adding the callback server for testing
@@ -639,19 +646,21 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
-        # User referenced by 'creator' doesn't exist, then it's created
+        # The 'creator' field is not valid
         self.assertQuery(
             ("POST", "/communisms"),
-            404,
-            json=sample_data[0]
+            422,
+            json=sample_data[3]
         )
-        self.assertQuery(
+        user1 = self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user1", "permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/1")]
-        )
+        ).json()
+        sample_data[0]["creator"] = user1
+        sample_data[1]["creator"] = user1
 
         # Create and get the first communism object
         communism1 = self.assertQuery(
@@ -673,13 +682,14 @@ class WorkingAPITests(utils.BaseAPITests):
             404,
             json=sample_data[1]
         ).json()
-        self.assertQuery(
+        user2 = self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user2", "permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
-        )
+        ).json()
+        sample_data[2]["creator"] = user2
 
         # Create and get the second communism object
         response2 = self.assertQuery(
@@ -729,8 +739,8 @@ class WorkingAPITests(utils.BaseAPITests):
 
         # Add new users to the third communism
         communism3["participants"] = [
-            _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
-            _schemas.CommunismUserBinding(user=2, quantity=20).dict()
+            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict(),
+            _schemas.CommunismUserBinding(user_id=2, quantity=20).dict()
         ]
         response3_changed = self.assertQuery(
             ("PUT", "/communisms"),
@@ -749,7 +759,7 @@ class WorkingAPITests(utils.BaseAPITests):
 
         # Remove a user from the third communism
         communism3["participants"] = [
-            _schemas.CommunismUserBinding(user=1, quantity=10).dict()
+            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict()
         ]
         communism3_changed = self.assertQuery(
             ("PUT", "/communisms"),
@@ -767,7 +777,7 @@ class WorkingAPITests(utils.BaseAPITests):
 
         # Modify the quantity of a user from the third communism
         communism3["participants"] = [
-            _schemas.CommunismUserBinding(user=1, quantity=40).dict()
+            _schemas.CommunismUserBinding(user_id=1, quantity=40).dict()
         ]
         communism3 = self.assertQuery(
             ("PUT", "/communisms"),
@@ -779,9 +789,9 @@ class WorkingAPITests(utils.BaseAPITests):
 
         # Add and modify users from the third communism
         communism3["participants"] = [
-            _schemas.CommunismUserBinding(user=1, quantity=10).dict(),
-            _schemas.CommunismUserBinding(user=2, quantity=3).dict(),
-            _schemas.CommunismUserBinding(user=3, quantity=7).dict()
+            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict(),
+            _schemas.CommunismUserBinding(user_id=2, quantity=3).dict(),
+            _schemas.CommunismUserBinding(user_id=3, quantity=7).dict()
         ]
         self.assertQuery(
             ("PUT", "/communisms"),
@@ -817,10 +827,10 @@ class WorkingAPITests(utils.BaseAPITests):
         # Forbid to update a communism if a user is mentioned twice or more
         communism3_broken = communism3.copy()
         communism3_broken["participants"] = [
-            {"user": 1, "quantity": 10},
-            {"user": 1, "quantity": 10},
-            {"user": 1, "quantity": 10},
-            {"user": 2, "quantity": 20}
+            {"user_id": 1, "quantity": 10},
+            {"user_id": 1, "quantity": 10},
+            {"user_id": 1, "quantity": 10},
+            {"user_id": 2, "quantity": 20}
         ]
         self.assertQuery(
             ("PUT", "/communisms"),
@@ -853,6 +863,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(1, len(multi_transactions))
         m = multi_transactions[0]
         del m["timestamp"], m["transactions"][0]["timestamp"], m["transactions"][1]["timestamp"]
+        user1, user2, user3 = [self.assertQuery(("GET", f"/users/{i+1}")).json() for i in range(3)]
         self.assertEqual(m, {
             "id": 1,
             "base_amount": 67,
@@ -860,19 +871,19 @@ class WorkingAPITests(utils.BaseAPITests):
             "transactions": [
                 {
                     "id": 1,
-                    "sender": 1,
-                    "receiver": 2,
+                    "sender": user1,
+                    "receiver": user2,
                     "amount": 670,
                     "reason": "communism[1]: description3",
-                    "multi_transaction": 1
+                    "multi_transaction_id": 1
                 },
                 {
                     "id": 2,
-                    "sender": 3,
-                    "receiver": 2,
+                    "sender": user3,
+                    "receiver": user2,
                     "amount": 469,
                     "reason": "communism[2]: description3",
-                    "multi_transaction": 1
+                    "multi_transaction_id": 1
                 }
             ]
         })
