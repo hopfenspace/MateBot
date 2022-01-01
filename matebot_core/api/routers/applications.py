@@ -44,39 +44,16 @@ async def add_new_application(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Add a new "empty" application and create a new ID for it.
-
-    This will also create a new alias for the community user,
-    taking the `community_user_name` as the app's user ID. This
-    special user will be used to e.g. pay refunds to individual users.
+    Add a new application and its password for it.
 
     A 409 error will be returned if the application name is already taken.
     """
 
-    community = await helpers.return_unique(models.User, local.session, special=True)
     await helpers.expect_none(models.Application, local.session, name=application.name)
     salt = secrets.token_urlsafe(16)
     passwd = models.Password(salt=salt, passwd=auth.hash_password(application.password, salt))
     app = models.Application(name=application.name, password=passwd)
-
-    alias = models.UserAlias(
-        user_id=community.id,
-        app_user_id=application.community_user_name,
-        app=app
-    )
-
-    def hook(*_):
-        app.community_user_alias = alias
-        local.session.add(app)
-        local.session.commit()
-
-    return await helpers.create_new_of_model(
-        app,
-        local,
-        logger,
-        more_models=[alias],
-        hook_func=hook
-    )
+    return await helpers.create_new_of_model(app, local, logger)
 
 
 @router.get(

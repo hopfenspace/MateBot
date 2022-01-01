@@ -30,7 +30,7 @@ async def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestDa
     Return a list of all known user aliases of all applications.
     """
 
-    return await helpers.get_all_of_model(models.UserAlias, local)
+    return await helpers.get_all_of_model(models.Alias, local)
 
 
 @router.post(
@@ -50,20 +50,16 @@ async def create_new_alias(
     The `app_user_id` field should reflect the unique internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
 
-    A 404 error will be returned if the `user_id` or `application` is not known.
+    A 404 error will be returned if the `user_id` or `application_id` is not known.
     A 409 error will be returned when the combination of those already exists.
     """
 
     user = await helpers.return_one(alias.user_id, models.User, local.session)
-    application = await helpers.return_unique(
-        models.Application,
-        local.session,
-        name=alias.application
-    )
+    application = await helpers.return_one(alias.application_id, models.Application, local.session)
 
-    existing_alias = local.session.query(models.UserAlias).filter_by(
-        app_id=application.id,
-        app_user_id=alias.app_user_id
+    existing_alias = local.session.query(models.Alias).filter_by(
+        application_id=application.id,
+        app_username=alias.app_username
     ).first()
     if existing_alias is not None:
         raise Conflict(
@@ -71,10 +67,10 @@ async def create_new_alias(
             f"Alias: {existing_alias!r}"
         )
 
-    model = models.UserAlias(
+    model = models.Alias(
         user_id=user.id,
         app_id=application.id,
-        app_user_id=alias.app_user_id,
+        app_user_id=alias.app_username,
         confirmed=alias.confirmed
     )
     return await helpers.create_new_of_model(model, local, logger)
@@ -95,15 +91,15 @@ async def update_existing_alias(
 
     A 403 error will be returned if any other attribute than `app_user_id` or
     `confirmed` has been changed. A 404 error will be returned if at least one
-    of the `alias_id`, `application` or `user_id` doesn't exist.
+    of the `alias_id`, `application_id` or `user_id` doesn't exist.
     """
 
-    model = await helpers.return_one(alias.id, models.UserAlias, local.session)
+    model = await helpers.return_one(alias.id, models.Alias, local.session)
     helpers.restrict_updates(alias, model.schema)
     await helpers.return_one(alias.user_id, models.User, local.session)
-    await helpers.return_unique(models.Application, local.session, name=alias.application)
+    await helpers.return_one(alias.application_id, models.Application, local.session)
 
-    model.app_user_id = alias.app_user_id
+    model.app_user_id = alias.app_username
     model.confirmed = alias.confirmed
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
@@ -128,7 +124,7 @@ async def delete_existing_alias(
 
     await helpers.delete_one_of_model(
         alias.id,
-        models.UserAlias,
+        models.Alias,
         local,
         schema=alias,
         logger=logger
@@ -151,7 +147,7 @@ async def get_alias_by_id(
     A 404 error will be returned in case the alias ID is unknown.
     """
 
-    return await helpers.get_one_of_model(alias_id, models.UserAlias, local)
+    return await helpers.get_one_of_model(alias_id, models.Alias, local)
 
 
 @router.get(
@@ -173,4 +169,4 @@ async def get_aliases_by_application_name(
     app = local.session.query(models.Application).filter_by(name=application).first()
     if app is None:
         raise NotFound(f"Application name {application!r}")
-    return await helpers.get_all_of_model(models.UserAlias, local, app_id=app.id)
+    return await helpers.get_all_of_model(models.Alias, local, app_id=app.id)

@@ -48,7 +48,6 @@ async def create_new_user(
     """
 
     values = user.dict()
-    values["voucher_id"] = values.pop("voucher")
     values["active"] = True
     model = models.User(**values)
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
@@ -83,11 +82,11 @@ async def update_existing_user(
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
     if model.special:
         raise Conflict("The community user can't be updated via this endpoint.", str(user))
-    if model.id == user.voucher:
+    if model.id == user.voucher_id:
         raise Conflict("A user can't vouch for itself.", str(user))
-    if user.voucher and not user.external:
+    if user.voucher_id and not user.external:
         raise Conflict("An internal user can't have a voucher user.", str(user))
-    if model.external and model.balance < 0 and not user.voucher:
+    if model.external and model.balance < 0 and not user.voucher_id:
         raise Conflict("An external user with negative balance can't loose its voucher.", str(user))
     if user.external and user.permission:
         raise Conflict("An external user can't have extended permissions", str(user))
@@ -127,14 +126,14 @@ async def update_existing_user(
                         str(participant)
                     )
 
-        if user.voucher is not None:
+        if user.voucher_id is not None:
             raise Conflict(f"User {model.id} should vouch for someone else. Can't disable user.", str(user))
         if model.voucher_user is not None:
             raise Conflict(f"User {model.id} currently vouches for someone else. Can't disable user.", str(user))
 
     voucher_user = None
-    if user.voucher is not None:
-        voucher_user = await helpers.return_one(user.voucher, models.User, local.session)
+    if user.voucher_id is not None:
+        voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
 
     model.name = user.name
     model.permission = user.permission
@@ -146,7 +145,7 @@ async def update_existing_user(
         for alias in model.aliases:
             await helpers.delete_one_of_model(
                 alias.id,
-                models.UserAlias,
+                models.Alias,
                 local,
                 schema=alias,
                 logger=logger

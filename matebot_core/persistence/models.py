@@ -146,8 +146,8 @@ class Transaction(Base):
     def schema(self) -> schemas.Transaction:
         return schemas.Transaction(
             id=self.id,
-            sender=self.sender,
-            receiver=self.receiver,
+            sender=self.sender.schema,
+            receiver=self.receiver.schema,
             amount=self.amount,
             reason=self.reason,
             multi_transaction_id=self.multi_transaction_id,
@@ -262,7 +262,7 @@ class Refund(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator,
+            creator=self.creator.schema,
             active=self.active,
             allowed=None if self.active else self.transaction is not None,
             poll_id=self.poll_id,
@@ -363,7 +363,7 @@ class Communism(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator,
+            creator=self.creator.schema,
             active=self.active,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp(),
@@ -409,7 +409,7 @@ class Callback(Base):
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     base = Column(String(255), unique=False, nullable=False)
-    app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
+    application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
     username = Column(String(255), nullable=True)
     password = Column(String(255), nullable=True)
     app = relationship("Application", back_populates="callbacks")
@@ -419,13 +419,13 @@ class Callback(Base):
         return schemas.Callback(
             id=self.id,
             base=self.base,
-            app=self.app_id,
+            application_id=self.application_id,
             username=self.username,
             password=self.password
         )
 
     def __repr__(self) -> str:
-        return f"Callback(id={self.id}, base={self.base}, app_id={self.app_id})"
+        return f"Callback(id={self.id}, base={self.base}, application_id={self.application_id})"
 
 
 # Asserting that every database model has a `schema` attribute

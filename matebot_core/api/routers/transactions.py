@@ -8,7 +8,7 @@ from typing import List, Union
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict, NotFound
+from ..base import APIException, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -81,7 +81,7 @@ async def make_a_new_transaction(
     if isinstance(transaction, schemas.Consumption):
         consumption = transaction
 
-        user = await helpers.return_one(consumption.user, models.User, local.session)
+        user = await helpers.return_one(consumption.user_id, models.User, local.session)
         if user.special:
             raise APIException(
                 status_code=400,
@@ -117,29 +117,29 @@ async def make_a_new_transaction(
     elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
-    def _get_user(data, target: str) -> models.User:
-        if isinstance(data, schemas.Alias):
-            alias = local.session.get(models.UserAlias, data.id)
-            if alias is None:
-                raise NotFound(f"Alias ID {data.id!r}")
-            if alias.schema != transaction.sender:
-                raise Conflict(
-                    "Invalid state of the user alias. Query the aliases to update.",
-                    f"Expected: {alias.schema!r}; actual: {transaction.sender!r}"
-                )
-            user_id = alias.user_id
-        elif isinstance(data, int):
-            user_id = data
-        else:
-            raise TypeError(f"Unexpected type {type(data)} for {data!r}")
+    # def _get_user(data, target: str) -> models.User:
+    #     if isinstance(data, schemas.Alias):
+    #         alias = local.session.get(models.Alias, data.id)
+    #         if alias is None:
+    #             raise NotFound(f"Alias ID {data.id!r}")
+    #         if alias.schema != transaction.sender_id:
+    #             raise Conflict(
+    #                 "Invalid state of the user alias. Query the aliases to update.",
+    #                 f"Expected: {alias.schema!r}; actual: {transaction.sender_id!r}"
+    #             )
+    #         user_id = alias.user_id
+    #     elif isinstance(data, int):
+    #         user_id = data
+    #     else:
+    #         raise TypeError(f"Unexpected type {type(data)} for {data!r}")
+    #
+    #     found_user = local.session.get(models.User, user_id)
+    #     if found_user is None:
+    #         raise NotFound(f"User ID {user_id} as {target}")
+    #     return found_user
 
-        found_user = local.session.get(models.User, user_id)
-        if found_user is None:
-            raise NotFound(f"User ID {user_id} as {target}")
-        return found_user
-
-    sender = _get_user(transaction.sender, "sender")
-    receiver = _get_user(transaction.receiver, "receiver")
+    sender = await helpers.return_one(transaction.sender_id, models.User, local.session)
+    receiver = await helpers.return_one(transaction.receiver_id, models.User, local.session)
     amount = transaction.amount
     reason = transaction.reason
 

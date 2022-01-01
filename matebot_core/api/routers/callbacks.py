@@ -104,14 +104,14 @@ async def create_new_callback(
     has already been registered for any application.
     """
 
-    if callback.app is not None:
-        await helpers.return_one(callback.app, models.Application, local.session)
+    if callback.application_id is not None:
+        await helpers.return_one(callback.application_id, models.Application, local.session)
     uri = callback.base + ("/" if not callback.base.endswith("/") else "")
     await helpers.expect_none(models.Callback, local.session, base=uri)
 
     model = models.Callback(
         base=uri,
-        app_id=callback.app,
+        application_id=callback.application_id,
         username=callback.username,
         password=callback.password
     )

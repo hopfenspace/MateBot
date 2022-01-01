@@ -53,7 +53,7 @@ async def create_new_refund(
     A 409 error will be returned if the special community user is the creator.
     """
 
-    creator = await helpers.return_one(refund.creator, models.User, local.session)
+    creator = await helpers.return_one(refund.creator_id, models.User, local.session)
     if creator.special:
         raise Conflict("Community user can't create a refund")
 

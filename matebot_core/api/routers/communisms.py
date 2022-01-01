@@ -53,9 +53,9 @@ async def create_new_communism(
     of the `creator` or any mentioned participant is unknown.
     """
 
-    creator = await helpers.return_one(communism.creator, models.User, local.session)
+    creator = await helpers.return_one(communism.creator.id, models.User, local.session)
     if len(communism.participants) != len({
-        p.user: await helpers.return_one(p.user, models.User, local.session)
+        p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
         for p in communism.participants
     }):
         raise APIException(
@@ -74,7 +74,7 @@ async def create_new_communism(
 
     async def hook(*_):
         local.session.add_all([
-            models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity)
+            models.CommunismUsers(communism_id=model.id, user_id=p.user_id, quantity=p.quantity)
             for p in communism.participants
         ])
         local.session.commit()
@@ -110,7 +110,7 @@ async def update_existing_communism(
     helpers.restrict_updates(communism, model.schema)
 
     if len(communism.participants) != len({
-        p.user: await helpers.return_one(p.user, models.User, local.session)
+        p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
         for p in communism.participants
     }):
         raise APIException(
@@ -125,14 +125,14 @@ async def update_existing_communism(
     remaining = list(communism.participants)[:]
     for c_u in model.participants:
         for p in communism.participants:
-            if c_u.user_id == p.user:
+            if c_u.user_id == p.user_id:
                 c_u.quantity = p.quantity
                 remaining.remove(p)
                 break
         else:
             local.session.delete(c_u)
     for p in remaining:
-        local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user, quantity=p.quantity))
+        local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user_id, quantity=p.quantity))
 
     model = await helpers.update_model(model, local, logger, helpers.ReturnType.MODEL)
     if communism.active:
