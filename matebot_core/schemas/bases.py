@@ -6,12 +6,9 @@ applications and the transactions between the users as
 well as the schemas needed for managing and consuming goods.
 """
 
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import pydantic
-
-
-UUID_REGEX = r"^\b[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}\b$"
 
 
 class BaseModel(pydantic.BaseModel):
@@ -26,31 +23,31 @@ class Token(BaseModel):
 class Alias(BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
-    application: pydantic.constr(max_length=255)
-    app_user_id: pydantic.constr(max_length=255)
+    application_id: pydantic.NonNegativeInt
+    app_username: pydantic.constr(max_length=255)
     confirmed: bool
+    unique: bool
 
-    __allowed_updates__ = ["app_user_id", "confirmed"]
+    __allowed_updates__ = ["app_username", "confirmed"]
 
 
 class AliasCreation(BaseModel):
     user_id: pydantic.NonNegativeInt
-    application: pydantic.constr(max_length=255)
-    app_user_id: pydantic.constr(max_length=255)
+    application_id: pydantic.NonNegativeInt
+    app_username: pydantic.constr(max_length=255)
     confirmed: bool = False
+    unique: bool = True
 
 
 class Application(BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
-    community_user: Alias
     created: pydantic.NonNegativeInt
 
 
 class ApplicationCreation(BaseModel):
     name: pydantic.constr(max_length=255)
     password: pydantic.constr(min_length=8, max_length=64)
-    community_user_name: pydantic.constr(max_length=255)
 
 
 class User(BaseModel):
@@ -60,34 +57,34 @@ class User(BaseModel):
     permission: bool
     active: bool
     external: bool
-    voucher: Optional[pydantic.NonNegativeInt]
+    voucher_id: Optional[pydantic.NonNegativeInt]
     aliases: List[Alias]
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
 
-    __allowed_updates__ = ["name", "permission", "active", "external", "voucher"]
+    __allowed_updates__ = ["name", "permission", "active", "external", "voucher_id"]
 
 
 class UserCreation(BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
     external: bool
-    voucher: Optional[pydantic.NonNegativeInt]
+    voucher_id: Optional[pydantic.NonNegativeInt]
 
 
 class Transaction(BaseModel):
     id: pydantic.NonNegativeInt
-    sender: pydantic.NonNegativeInt
-    receiver: pydantic.NonNegativeInt
+    sender: User
+    receiver: User
     amount: pydantic.NonNegativeInt
     reason: Optional[pydantic.constr(max_length=255)]
-    multi_transaction: Optional[pydantic.NonNegativeInt]
+    multi_transaction_id: Optional[pydantic.NonNegativeInt]
     timestamp: pydantic.NonNegativeInt
 
 
 class TransactionCreation(BaseModel):
-    sender: Union[pydantic.NonNegativeInt, Alias]
-    receiver: Union[pydantic.NonNegativeInt, Alias]
+    sender_id: pydantic.NonNegativeInt
+    receiver_id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
 
@@ -123,7 +120,7 @@ class ConsumableCreation(BaseModel):
 
 
 class Consumption(BaseModel):
-    user: pydantic.NonNegativeInt
+    user_id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     consumable_id: pydantic.NonNegativeInt
     adjust_stock: bool = True

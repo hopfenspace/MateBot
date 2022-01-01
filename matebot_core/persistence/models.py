@@ -39,7 +39,7 @@ class User(Base):
     created = Column(DateTime, server_default=func.now())
     accessed = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
 
-    aliases = relationship("UserAlias", cascade="all,delete", backref="user")
+    aliases = relationship("Alias", cascade="all,delete", backref="user")
     vouching_for = relationship("User", backref=backref("voucher_user", remote_side=[id]))
 
     __table_args__ = (
@@ -55,7 +55,7 @@ class User(Base):
             permission=self.permission,
             active=self.active,
             external=self.external,
-            voucher=self.voucher_id,
+            voucher_id=self.voucher_id,
             aliases=[alias.schema for alias in self.aliases],
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()
@@ -70,11 +70,9 @@ class Application(Base):
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name = Column(String(255), unique=True, nullable=False)
-    community_user_alias_id = Column(Integer, ForeignKey("aliases.id"), nullable=True)
     created = Column(DateTime, server_default=func.now())
     password_id = Column(Integer, ForeignKey("passwords.id"), unique=True, nullable=False)
 
-    community_user_alias = relationship("UserAlias", foreign_keys=[community_user_alias_id])
     callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
     password = relationship("Password", cascade="all,delete")
 
@@ -83,7 +81,6 @@ class Application(Base):
         return schemas.Application(
             id=self.id,
             name=self.name,
-            community_user=getattr(self.community_user_alias, "schema", None),
             created=self.created.timestamp()
         )
 
@@ -91,20 +88,21 @@ class Application(Base):
         return f"Application(id={self.id}, name={self.name})"
 
 
-class UserAlias(Base):
+class Alias(Base):
     __tablename__ = "aliases"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    app_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
-    app_user_id = Column(String(255), nullable=False)
+    application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
+    app_username = Column(String(255), nullable=False)
     confirmed = Column(Boolean, nullable=False, default=False)
+    unique = Column(Boolean, nullable=False, default=True)
 
-    app = relationship("Application", foreign_keys=[app_id])
+    application = relationship("Application", foreign_keys=[application_id])
 
     __table_args__ = (
-        UniqueConstraint("app_id", "app_user_id"),
-        UniqueConstraint("app_id", "user_id")
+        UniqueConstraint("application_id", "app_username"),
+        UniqueConstraint("application_id", "user_id")
     )
 
     @property
@@ -112,14 +110,15 @@ class UserAlias(Base):
         return schemas.Alias(
             id=self.id,
             user_id=self.user_id,
-            application=self.app.name,
-            app_user_id=self.app_user_id,
-            confirmed=self.confirmed
+            application_id=self.application_id,
+            app_username=self.app_username,
+            confirmed=self.confirmed,
+            unique=self.unique
         )
 
     def __repr__(self) -> str:
-        return "UserAlias(id={}, user_id={}, app_id={}, app_user_id={})".format(
-            self.id, self.user_id, self.app_id, self.app_user_id
+        return "Alias(id={}, user_id={}, application_id={}, app_username={})".format(
+            self.id, self.user_id, self.application_id, self.app_username
         )
 
 
@@ -147,11 +146,11 @@ class Transaction(Base):
     def schema(self) -> schemas.Transaction:
         return schemas.Transaction(
             id=self.id,
-            sender=self.sender_id,
-            receiver=self.receiver_id,
+            sender=self.sender,
+            receiver=self.receiver,
             amount=self.amount,
             reason=self.reason,
-            multi_transaction=self.multi_transaction_id,
+            multi_transaction_id=self.multi_transaction_id,
             timestamp=self.registered.timestamp()
         )
 
@@ -179,7 +178,7 @@ class MultiTransaction(Base):
         )
 
     def __repr__(self) -> str:
-        return "MultiTransaction(id={}, base={})".format(
+        return "MultiTransaction(id={}, base_amount={})".format(
             self.id, self.base_amount
         )
 
@@ -263,10 +262,10 @@ class Refund(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator_id,
+            creator=self.creator,
             active=self.active,
-            allowed=self.poll.result,
-            poll=self.poll_id,
+            allowed=None if self.active else self.transaction is not None,
+            poll_id=self.poll_id,
             transactions=self.transaction,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()
@@ -364,12 +363,12 @@ class Communism(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator_id,
+            creator=self.creator,
             active=self.active,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp(),
             participants=[
-                schemas.CommunismUserBinding(user=p.user_id, quantity=p.quantity)
+                schemas.CommunismUserBinding(user_id=p.user_id, quantity=p.quantity)
                 for p in self.participants
             ]
         )

@@ -49,7 +49,7 @@ class Status(pydantic.BaseModel):
 class Callback(BaseModel):
     id: pydantic.NonNegativeInt
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
-    app: Optional[pydantic.NonNegativeInt]
+    application_id: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]
 
@@ -58,6 +58,6 @@ class Callback(BaseModel):
 
 class CallbackCreation(BaseModel):
     base: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
-    app: Optional[pydantic.NonNegativeInt]
+    application_id: Optional[pydantic.NonNegativeInt]
     username: Optional[pydantic.constr(max_length=255)]
     password: Optional[pydantic.constr(max_length=255)]

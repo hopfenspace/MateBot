@@ -49,10 +49,10 @@ class Refund(BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: pydantic.NonNegativeInt
+    creator: _User
     active: bool
     allowed: Optional[bool]
-    poll: pydantic.NonNegativeInt
+    poll_id: pydantic.NonNegativeInt
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
     accessed: Optional[pydantic.NonNegativeInt]
@@ -63,12 +63,12 @@ class Refund(BaseModel):
 class RefundCreation(BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: pydantic.NonNegativeInt
+    creator_id: pydantic.NonNegativeInt
     active: bool = True
 
 
 class CommunismUserBinding(BaseModel):
-    user: pydantic.NonNegativeInt
+    user_id: pydantic.NonNegativeInt
     quantity: pydantic.NonNegativeInt
 
 
@@ -76,9 +76,8 @@ class Communism(BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: pydantic.NonNegativeInt
+    creator: _User
     active: bool
-    accepted: Optional[bool]
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
     participants: List[CommunismUserBinding]
@@ -90,7 +89,7 @@ class Communism(BaseModel):
 class CommunismCreation(BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: pydantic.NonNegativeInt
+    creator: _User
     active: bool = True
     participants: List[CommunismUserBinding] = []
 
