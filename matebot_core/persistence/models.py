@@ -102,7 +102,6 @@ class Alias(Base):
 
     __table_args__ = (
         UniqueConstraint("application_id", "app_username"),
-        UniqueConstraint("application_id", "user_id")
     )
 
     @property
