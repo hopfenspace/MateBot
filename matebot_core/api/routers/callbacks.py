@@ -24,10 +24,8 @@ def announce_created_model():
     """
     Announce a created object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -40,10 +38,8 @@ def announce_updated_model():
     """
     Announce an updated object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -56,10 +52,8 @@ def announce_deleted_model():
     """
     Announce a deleted object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -152,7 +146,7 @@ async def update_existing_callback(
 @router.delete(
     "",
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)},
+    responses={k: {"model": schemas.APIError} for k in (404, 409)},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)

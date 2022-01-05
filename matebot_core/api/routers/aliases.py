@@ -3,7 +3,7 @@ MateBot router module for /aliases requests
 """
 
 import logging
-from typing import List
+from typing import List, Union
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -82,7 +82,7 @@ async def create_new_alias(
 @router.put(
     "",
     response_model=schemas.Alias,
-    responses={k: {"model": schemas.APIError} for k in (403, 404)}
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_alias(
@@ -92,7 +92,7 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    A 403 error will be returned if any other attribute than `app_user_id` or
+    A 409 error will be returned if any other attribute than `app_username` or
     `confirmed` has been changed. A 404 error will be returned if at least one
     of the `alias_id`, `application_id` or `user_id` doesn't exist.
     """
@@ -160,16 +160,23 @@ async def get_alias_by_id(
 )
 @versioning.versions(1)
 async def get_aliases_by_application_name(
-        application: pydantic.constr(max_length=255),
+        application: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return a list of all users aliases for a given application name.
+    Return a list of all users aliases for a given application ID or application name.
 
     A 404 error will be returned for unknown `application` arguments.
+    A 409 error will be returned when the path parameter `{application}`
+    is neither a valid ID nor a valid application name.
     """
 
-    app = local.session.query(models.Application).filter_by(name=application).first()
-    if app is None:
-        raise NotFound(f"Application name {application!r}")
-    return await helpers.get_all_of_model(models.Alias, local, app_id=app.id)
+    if isinstance(application, str):
+        app = local.session.query(models.Application).filter_by(name=application).first()
+        if app is None:
+            raise NotFound(f"Application name {application!r}")
+    elif isinstance(application, int):
+        app = await helpers.return_one(application, models.Application, local.session)
+    else:
+        raise Conflict(f"Invalid application identifier: {application!r}", str(application))
+    return await helpers.get_all_of_model(models.Alias, local, application_id=app.id)
