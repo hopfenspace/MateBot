@@ -45,13 +45,15 @@ async def create_new_alias(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Create a new alias if no combination of `app_user_id` and `application` exists.
+    Create a new alias if no combination of `app_username` and `application_id` exists.
 
-    The `app_user_id` field should reflect the unique internal username in the
+    The `app_username` field should reflect the unique internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
+    The `unique` flag determines whether the username is globally unique in the given
+    application and that nobody else can claim this username in the future (note that
+    this flag doesn't impose any restrictions, it's only valid in the client logic).
 
     A 404 error will be returned if the `user_id` or `application_id` is not known.
-    A 409 error will be returned when the combination of those already exists.
     """
 
     user = await helpers.return_one(alias.user_id, models.User, local.session)
@@ -63,15 +65,16 @@ async def create_new_alias(
     ).first()
     if existing_alias is not None:
         raise Conflict(
-            "User alias can't be created since it already exists.",
+            f"User alias {alias.app_username!r} can't be created since it already exists.",
             f"Alias: {existing_alias!r}"
         )
 
     model = models.Alias(
         user_id=user.id,
-        app_id=application.id,
-        app_user_id=alias.app_username,
-        confirmed=alias.confirmed
+        application_id=application.id,
+        app_username=alias.app_username,
+        confirmed=alias.confirmed,
+        unique=alias.unique
     )
     return await helpers.create_new_of_model(model, local, logger)
 
