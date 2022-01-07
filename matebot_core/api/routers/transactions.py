@@ -8,7 +8,7 @@ from typing import List, Union
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict
+from ..base import APIException, BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -83,11 +83,7 @@ async def make_a_new_transaction(
 
         user = await helpers.return_one(consumption.user_id, models.User, local.session)
         if user.special:
-            raise APIException(
-                status_code=400,
-                message="The special community user can't consume goods.",
-                detail=str(user.schema)
-            )
+            raise Conflict("The special community user can't consume goods.", str(user.schema))
         consumable: models.Consumable = await helpers.return_one(
             consumption.consumable_id,
             models.Consumable,
@@ -97,10 +93,9 @@ async def make_a_new_transaction(
         wastage = 0
         if consumption.respect_stock:
             if consumable.stock < consumption.amount:
-                raise Conflict(
+                raise BadRequest(
                     f"Not enough {consumable.name} in stock to consume the goods.",
                     f"requested={consumption.amount}, stock={consumable.stock}",
-                    repeat=True
                 )
             if consumption.adjust_stock:
                 wastage = consumption.amount
@@ -143,10 +138,12 @@ async def make_a_new_transaction(
     amount = transaction.amount
     reason = transaction.reason
 
+    if sender.id == receiver.id:
+        raise BadRequest("You can't send money to yourself.", str(transaction))
     if not sender.active:
-        raise Conflict(f"Disabled user {sender.id} can't make transactions", str(sender))
+        raise BadRequest(f"Disabled user {sender.id} can't make transactions", str(sender))
     if not receiver.active:
-        raise Conflict(f"Disabled user {receiver.id} can't get transactions", str(receiver))
+        raise BadRequest(f"Disabled user {receiver.id} can't get transactions", str(receiver))
 
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
