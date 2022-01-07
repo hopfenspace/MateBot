@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, InternalServerException
+from ..base import BadRequest, Conflict, InternalServerException
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -83,7 +83,7 @@ async def update_existing_user(
     if model.special:
         raise Conflict("The community user can't be updated via this endpoint.", str(user))
     if model.id == user.voucher_id:
-        raise Conflict("A user can't vouch for itself.", str(user))
+        raise BadRequest("A user can't vouch for itself.", str(user))
     if user.voucher_id and not user.external:
         raise Conflict("An internal user can't have a voucher user.", str(user))
     if model.external and model.balance < 0 and not user.voucher_id:
@@ -95,14 +95,14 @@ async def update_existing_user(
         if model.balance != 0:
             info = ""
             if model.voucher_id and model.external:
-                info = f" User {model.voucher_id} vouches for this user and may handle this."
-            raise Conflict(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
+                info = f" User {model.name} vouches for this user and may handle this."
+            raise BadRequest(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
 
         active_created_refunds = local.session.query(models.Refund).filter_by(
             active=True, creator_id=model.id
         ).all()
         if active_created_refunds:
-            raise Conflict(
+            raise BadRequest(
                 f"User {user.name} has at least one active refund requests. Can't disable user.",
                 str(active_created_refunds)
             )
@@ -111,7 +111,7 @@ async def update_existing_user(
             active=True, creator_id=model.id
         ).all()
         if active_created_communisms:
-            raise Conflict(
+            raise BadRequest(
                 f"User {user.name} has created at least one active communism. Can't disable user.",
                 str(active_created_communisms)
             )
@@ -121,15 +121,15 @@ async def update_existing_user(
                 if participant.user_id == model.id:
                     if participant.quantity == 0:
                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
-                    raise Conflict(
+                    raise BadRequest(
                         f"User {user.name} is participant of at least one active communism. Can't disable user.",
                         str(participant)
                     )
 
         if user.voucher_id is not None:
-            raise Conflict(f"User {model.id} should vouch for someone else. Can't disable user.", str(user))
+            raise BadRequest(f"User {model.name} should vouch for someone else. Can't disable user.", str(user))
         if model.voucher_user is not None:
-            raise Conflict(f"User {model.id} currently vouches for someone else. Can't disable user.", str(user))
+            raise BadRequest(f"User {model.name} currently vouches for someone else. Can't disable user.", str(user))
 
     voucher_user = None
     if user.voucher_id is not None:

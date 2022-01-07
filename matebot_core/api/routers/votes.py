@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, ReturnType
+from ..base import BadRequest, Conflict, ReturnType
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -38,7 +38,7 @@ async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     "",
     status_code=201,
     response_model=schemas.Vote,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(minimal=1)
 async def add_new_vote(
@@ -49,7 +49,7 @@ async def add_new_vote(
     Add a new vote to some open poll.
 
     A 404 error will be returned if either the user ID or the poll ID was
-    not found. A 409 error will be returned if either the poll has already
+    not found. A 400 error will be returned if either the poll has already
     been closed, the user has already voted in the poll (use `PUT` to change
     votes), the user is not active or the poll refers to a refund request
     and the user is not marked as permitted to participate in refund request.
@@ -70,8 +70,8 @@ async def add_new_vote(
     if poll.closed is not None:
         raise Conflict("Adding votes to already closed polls is illegal")
     if await helpers.return_all(models.Vote, local.session, poll=poll, user=user):
-        raise Conflict(
-            f"User {user.name!r} has already voted in this poll",
+        raise BadRequest(
+            f"You have already voted in this poll. You can't vote twice.",
             str({"user": user, "poll": poll})
         )
     if not user.active:
@@ -81,7 +81,7 @@ async def add_new_vote(
         )
 
     refunds = await helpers.return_all(models.Refund, local.session, poll_id=poll.id)
-    if len(refunds) == 0:  # no refund linked to this ballot
+    if len(refunds) == 0:  # no refund linked to this poll
         model = models.Vote(
             user=user,
             poll=poll,
@@ -90,10 +90,7 @@ async def add_new_vote(
         return await helpers.create_new_of_model(model, local, logger)
 
     if not user.permission:
-        raise Conflict(
-            f"User {user.name!r} is not permitted to participate in refund polls.",
-            str({"user": user, "poll": poll})
-        )
+        raise BadRequest(f"You are not permitted to participate in refund polls.", str({"user": user, "poll": poll}))
 
     model = models.Vote(
         user=user,
@@ -133,7 +130,7 @@ async def change_existing_vote(
     helpers.restrict_updates(vote, model.schema)
 
     if not model.poll.changeable:
-        raise Conflict("Updating the vote of a restricted poll is illegal", str(model.poll))
+        raise BadRequest("You can't update the vote of a restricted (unchangeable) poll.", str(model.poll))
 
     model.vote = vote.vote
     return await helpers.update_model(model, local, logger, ReturnType.SCHEMA)
@@ -142,7 +139,7 @@ async def change_existing_vote(
 @router.delete(
     "",
     status_code=204,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}, 404: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_vote(
@@ -152,7 +149,7 @@ async def delete_existing_vote(
     """
     Delete an existing vote model.
 
-    A 404 error will be returned if the vote can't be found. A 409 error
+    A 404 error will be returned if the vote can't be found. A 400 error
     will be returned if the poll is restricted, i.e. votes can't be
     removed from the ongoing poll as soon as they have been created,
     or if the poll has already been closed and the result was determined.
@@ -160,9 +157,9 @@ async def delete_existing_vote(
 
     def hook(model: models.Vote, *_):
         if not model.poll.changeable:
-            raise Conflict("Deleting the vote of a restricted poll is illegal", str(model.poll))
+            raise BadRequest("You can't delete the vote of a restricted (unchangeable) poll.", str(model.poll))
         if model.poll.closed or not model.poll.active:
-            raise Conflict("Deleting the vote of a closed poll is illegal", str(model.poll))
+            raise BadRequest("You can't delete the vote of a closed poll.", str(model.poll))
 
     await helpers.delete_one_of_model(vote.id, models.Vote, local, logger=logger, hook_func=hook)
 

@@ -187,7 +187,7 @@ async def get_transaction_by_id(
     responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
-async def get_all_transactions_of_sender(
+async def get_all_transactions_of_user(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

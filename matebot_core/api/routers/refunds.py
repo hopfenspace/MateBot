@@ -9,7 +9,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, ForbiddenChange
+from ..base import BadRequest, Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -56,6 +56,10 @@ async def create_new_refund(
     creator = await helpers.return_one(refund.creator_id, models.User, local.session)
     if creator.special:
         raise Conflict("Community user can't create a refund")
+    if not creator.active:
+        raise BadRequest("A disabled user can't create refund requests.", str(refund))
+    if creator.external and not creator.voucher_id:
+        raise BadRequest("You can't create a refund request without voucher.", str(refund))
 
     return await helpers.create_new_of_model(
         models.Refund(

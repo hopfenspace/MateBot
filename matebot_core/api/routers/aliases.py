@@ -59,6 +59,9 @@ async def create_new_alias(
     user = await helpers.return_one(alias.user_id, models.User, local.session)
     application = await helpers.return_one(alias.application_id, models.Application, local.session)
 
+    if not user.active:
+        raise Conflict("A disabled user can't get new aliases.", str(alias))
+
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=application.id,
         app_username=alias.app_username
@@ -159,7 +162,7 @@ async def get_alias_by_id(
     responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
-async def get_aliases_by_application_name(
+async def get_aliases_by_application(
         application: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
         local: LocalRequestData = Depends(LocalRequestData)
 ):
