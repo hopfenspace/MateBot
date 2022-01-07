@@ -3,12 +3,12 @@ MateBot router module for /communisms requests
 """
 
 import logging
-from typing import List
+from typing import List, Union
 
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, BadRequest, Conflict
+from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -19,6 +19,23 @@ from ... import schemas
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/communisms", tags=["Communisms"])
+
+
+def _check_participants(communism: Union[schemas.Communism, schemas.CommunismCreation], local: LocalRequestData):
+    participants = {
+        p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
+        for p in communism.participants
+    }
+    if [
+        k for k in participants
+        if not participants[k].active or (participants[k].external and participants[k].voucher is None)
+    ]:
+        raise BadRequest("Disabled users or externals without voucher can't participate in communisms.")
+    if len(communism.participants) != len(participants):
+        raise Conflict(
+            message="At least one user was mentioned more than once in the communism member list",
+            detail=str(communism.participants)
+        )
 
 
 @router.get(
@@ -54,15 +71,12 @@ async def create_new_communism(
     """
 
     creator = await helpers.return_one(communism.creator.id, models.User, local.session)
-    if len(communism.participants) != len({
-        p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
-        for p in communism.participants
-    }):
-        raise APIException(
-            status_code=400,
-            message="At least one user was mentioned more than once in the communism member list",
-            detail=str(communism.participants)
-        )
+    if not creator.active:
+        raise BadRequest("A disabled user can't create communisms.")
+    if creator.external and creator.voucher_id is None:
+        raise BadRequest("You can't create communisms without having a voucher user.")
+
+    _check_participants(communism, local)
 
     model = models.Communism(
         amount=communism.amount,
@@ -96,7 +110,9 @@ async def update_existing_communism(
     Change certain pieces of mutable information about an already existing communism.
 
     The field `participants` will be used as-is to overwrite the internal
-    state of the communism (which will be returned afterwards).
+    state of the communism (which will be returned afterwards). In
+    order to cancel a communism without accepting it, set the
+    `participants` to an empty list and the `active` flag to False.
 
     A 400 error will be returned if any participant was mentioned
     more than one time. A 403 error will be returned if any other
@@ -109,18 +125,10 @@ async def update_existing_communism(
     model = await helpers.return_one(communism.id, models.Communism, local.session)
     helpers.restrict_updates(communism, model.schema)
 
-    if len(communism.participants) != len({
-        p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
-        for p in communism.participants
-    }):
-        raise APIException(
-            status_code=400,
-            message="At least one user was mentioned more than once in the communism member list",
-            detail=str(communism.participants)
-        )
+    _check_participants(communism, local)
 
     if not model.active:
-        raise Conflict("Updating an already closed communism is illegal", detail=str(communism))
+        raise BadRequest("Updating an already closed communism is illegal", detail=str(communism))
 
     remaining = list(communism.participants)[:]
     for c_u in model.participants:
