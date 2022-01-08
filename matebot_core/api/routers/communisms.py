@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/communisms", tags=["Communisms"])
 
 
-def _check_participants(communism: Union[schemas.Communism, schemas.CommunismCreation], local: LocalRequestData):
+async def _check_participants(communism: Union[schemas.Communism, schemas.CommunismCreation], local: LocalRequestData):
     participants = {
         p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
         for p in communism.participants
@@ -70,13 +70,13 @@ async def create_new_communism(
     of the `creator` or any mentioned participant is unknown.
     """
 
-    creator = await helpers.return_one(communism.creator.id, models.User, local.session)
+    creator = await helpers.return_one(communism.creator_id, models.User, local.session)
     if not creator.active:
         raise BadRequest("A disabled user can't create communisms.")
     if creator.external and creator.voucher_id is None:
         raise BadRequest("You can't create communisms without having a voucher user.")
 
-    _check_participants(communism, local)
+    await _check_participants(communism, local)
 
     model = models.Communism(
         amount=communism.amount,
@@ -125,7 +125,7 @@ async def update_existing_communism(
     model = await helpers.return_one(communism.id, models.Communism, local.session)
     helpers.restrict_updates(communism, model.schema)
 
-    _check_participants(communism, local)
+    await _check_participants(communism, local)
 
     if not model.active:
         raise BadRequest("Updating an already closed communism is illegal", detail=str(communism))
