@@ -22,7 +22,7 @@ class ServerConfig(pydantic.BaseModel):
 
 class DatabaseConfig(pydantic.BaseModel):
     connection: str = "sqlite://"
-    echo: bool = True
+    debug_sql: bool = False
 
 
 class LoggingConfig(pydantic.BaseModel):

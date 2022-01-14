@@ -358,7 +358,7 @@ class BaseAPITests(BaseTest):
     def _init_project_data(self):
         self.auth = ("application", secrets.token_urlsafe(16))
         config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
-        database.init(config.database.connection, config.database.echo)
+        database.init(config.database.connection, config.database.debug_sql)
         session = database.get_new_session()
         salt = secrets.token_urlsafe(16)
         password = models.Password(salt=salt, passwd=auth.hash_password(self.auth[1], salt))
@@ -373,7 +373,7 @@ class BaseAPITests(BaseTest):
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
         if conf.SERVER_LOGGING_OVERWRITE:
             config.logging = conf.SERVER_LOGGING_OVERWRITE
-        config.database.echo = conf.SQLALCHEMY_ECHOING
+        config.database.debug_sql = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
         with open(self.config_file, "w") as f:
