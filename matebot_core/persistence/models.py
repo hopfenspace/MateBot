@@ -362,7 +362,7 @@ class Communism(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator.schema,
+            creator_id=self.creator_id,
             active=self.active,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp(),

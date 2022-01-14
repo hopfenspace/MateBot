@@ -463,7 +463,6 @@ async def delete_one_of_model(
         it's recommended that this function uses local values from the definition namespace
     :raises NotFound: when the specified ID can't be found for the given model
     :raises Conflict: when the given schema does not conform to the current state of the object
-    :raises PreconditionFailed: if no valid conditional request header has been set
     """
 
     logger = enforce_logger(logger)

@@ -76,7 +76,7 @@ class Communism(BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: _User
+    creator_id: pydantic.NonNegativeInt
     active: bool
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
@@ -89,7 +89,7 @@ class Communism(BaseModel):
 class CommunismCreation(BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator: _User
+    creator_id: pydantic.NonNegativeInt
     active: bool = True
     participants: List[CommunismUserBinding] = []
 
