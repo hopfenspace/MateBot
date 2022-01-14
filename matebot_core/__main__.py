@@ -136,9 +136,9 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Enable debug mode"
     )
     parser_run.add_argument(
-        "--echo",
+        "--debug-sql",
         action="store_true",
-        help="Enable echoing of database actions (overwrite config)"
+        help="Enable echoing of database actions (overwrites config)"
     )
     parser_run.add_argument(
         "--reload",
@@ -153,14 +153,14 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Number of worker processes (not valid with --reload)",
     )
     parser_run.add_argument(
-        "--access-log",
+        "--no-access-log",
         action="store_true",
-        help="Enable access logs"
+        help="Disable access logs"
     )
     parser_run.add_argument(
         "--use-colors",
         action="store_true",
-        help="Enable colorized output"
+        help="Enable colorized output (may break file logs!)"
     )
     parser_run.add_argument(
         "--root-path",
@@ -191,8 +191,8 @@ def run_server(args: argparse.Namespace):
         print("Do not start the server this way during production!", file=sys.stderr)
 
     settings = _settings.Settings()
-    if args.echo:
-        settings.database.echo = args.echo
+    if args.debug_sql:
+        settings.database.debug_sql = args.debug_sql
 
     port = args.port
     if port is None:
@@ -212,7 +212,8 @@ def run_server(args: argparse.Namespace):
         reload=args.reload,
         workers=args.workers,
         log_level="debug" if args.debug else "info",
-        access_log=args.access_log,
+        log_config=settings.logging.dict(),
+        access_log=not args.no_access_log,
         use_colors=args.use_colors,
         proxy_headers=True,
         root_path=args.root_path
@@ -243,7 +244,7 @@ def init_project(args: argparse.Namespace) -> int:
         print("A config file has been found. Consider removing it before continuing to avoid inconsistencies.")
 
     config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
-    database.init(config.database.connection, config.database.echo)
+    database.init(config.database.connection, config.database.debug_sql)
     session = database.get_new_session()
 
     if not args.no_community:

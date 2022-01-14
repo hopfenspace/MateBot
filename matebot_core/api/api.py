@@ -191,7 +191,7 @@ def create_app(
     logger.debug("Starting application...")
 
     if configure_database:
-        database.init(settings.database.connection, settings.database.echo)
+        database.init(settings.database.connection, settings.database.debug_sql)
 
     static_dirs = [
         static_directory for static_directory in [
