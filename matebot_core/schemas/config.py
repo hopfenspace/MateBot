@@ -27,34 +27,48 @@ class DatabaseConfig(pydantic.BaseModel):
 
 class LoggingConfig(pydantic.BaseModel):
     version: pydantic.conint(ge=1, le=1) = 1
-    disable_existing_loggers: bool = True
+    disable_existing_loggers: bool = False
     incremental: bool = False
     formatters: Dict[str, Dict[str, str]] = {
-        "access": {
-            "()": "uvicorn.logging.AccessFormatter",
-            "fmt": '%(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s',
-        }
-    }
-    loggers: Dict[str, dict] = {
-        "uvicorn.access": {
-            "handlers": ["access"]
-        }
-    }
-    handlers: Dict[str, Dict[str, str]] = {
         "default": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout"
+            "style": "{",
+            "format": "{asctime}: MateBot {process}: [{levelname}] {name}: {message}",
+            "datefmt": "%d.%m.%Y %H:%M:%S"
+        },
+        "file": {
+            "style": "{",
+            "format": "{asctime} ({process}): [{levelname}] {name}: {message}",
+            "datefmt": "%d.%m.%Y %H:%M"
         },
         "access": {
-            "formatter": "access",
+            "()": "uvicorn.logging.AccessFormatter",
+            "fmt": "%(asctime)s %(client_addr)s - \"%(request_line)s\" %(status_code)s"
+        }
+    }
+    loggers: Dict[str, dict] = {}
+    handlers: Dict[str, Dict[str, str]] = {
+        "default": {
+            "level": "INFO",
             "class": "logging.StreamHandler",
             "stream": "ext://sys.stdout",
+            "formatter": "default"
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "./matebot.log",
+            "formatter": "file"
+        },
+        "access": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "./access.log",
+            "formatter": "access"
         }
     }
     root: dict = {
-        "level": "DEBUG",
-        "handlers": ["default"]
+        "level": "INFO",
+        "handlers": ["default", "file"]
     }
 
 

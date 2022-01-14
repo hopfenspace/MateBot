@@ -133,7 +133,7 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser_run.add_argument(
         "--debug",
         action="store_true",
-        help="Enable debug mode"
+        help="Enable full debug mode including tracebacks via HTTP (probably insecure)"
     )
     parser_run.add_argument(
         "--debug-sql",
@@ -191,6 +191,10 @@ def run_server(args: argparse.Namespace):
         print("Do not start the server this way during production!", file=sys.stderr)
 
     settings = _settings.Settings()
+    if args.debug:
+        settings.logging.root["level"] = "DEBUG"
+        for handler in settings.logging.handlers:
+            settings.logging.handlers[handler]["level"] = "DEBUG"
     if args.debug_sql:
         settings.database.debug_sql = args.debug_sql
 
@@ -203,7 +207,7 @@ def run_server(args: argparse.Namespace):
 
     app = create_app(settings=settings)
 
-    logging.getLogger(__name__).info(f"Server at host {host} port {port}")
+    logging.getLogger("matebot_core").info(f"Server running at host {host} port {port}")
     uvicorn.run(
         "matebot_core.api:api.app" if args.reload else app,
         port=port,
