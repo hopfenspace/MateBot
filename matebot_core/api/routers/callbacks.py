@@ -133,7 +133,7 @@ async def update_existing_callback(
     model = await helpers.return_one(callback.id, models.Callback, local.session)
     helpers.restrict_updates(callback, model.schema)
 
-    if await helpers.expect_none(models.Callback, local.session, base=callback.base):
+    if [m for m in local.session.query(models.Callback).filter_by(base=callback.base).all() if m.id != model.id]:
         raise Conflict(f"Base URL {callback.base} already in use.", detail=str(callback))
 
     model.base = callback.base
