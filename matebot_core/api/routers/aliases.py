@@ -128,7 +128,7 @@ async def delete_existing_alias(
     means that the user agent needs to get the object before proceeding.
     """
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         alias.id,
         models.Alias,
         local,

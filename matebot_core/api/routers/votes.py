@@ -161,7 +161,7 @@ async def delete_existing_vote(
         if model.poll.closed or not model.poll.active:
             raise BadRequest("You can't delete the vote of a closed poll.", str(model.poll))
 
-    await helpers.delete_one_of_model(vote.id, models.Vote, local, logger=logger, hook_func=hook)
+    return await helpers.delete_one_of_model(vote.id, models.Vote, local, logger=logger, hook_func=hook)
 
 
 @router.get(
