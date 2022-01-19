@@ -42,7 +42,7 @@ LICENSE_INFO = {
 
 API_V1_DOC = """MateBot core REST API definition version 1
 
-This API requires authentication using OAuth2. Logging in with username
+This API requires authentication using JSON web tokens. Logging in with username
 and password (see `POST /login`) yields a token that should be included
 in the `Authorization` header with the type `Bearer`. It's an all-or-nothing
 API without restrictions on queries, provided the query is valid and the
