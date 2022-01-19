@@ -87,8 +87,6 @@ async def update_existing_user(
         raise BadRequest("A user can't vouch for itself.", str(user))
     if user.voucher_id and not user.external:
         raise Conflict("An internal user can't have a voucher user.", str(user))
-    if model.external and model.balance < 0 and not user.voucher_id:
-        raise Conflict("An external user with negative balance can't loose its voucher.", str(user))
     if user.external and user.permission:
         raise Conflict("An external user can't have extended permissions", str(user))
 
@@ -135,13 +133,15 @@ async def update_existing_user(
     voucher_user = None
     if user.voucher_id is not None:
         voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
+        if voucher_user.special:
+            raise Conflict("The community user can't vouch for anyone.", str(user))
 
     if user.voucher_id is None and model.voucher_user is not None:
         if model.balance > 0:
             transactions.create_transaction(
                 model,
                 model.voucher_user,
-                model.balance,
+                abs(model.balance),
                 "vouch: stopping vouching",
                 local.session,
                 logger,
@@ -151,7 +151,7 @@ async def update_existing_user(
             transactions.create_transaction(
                 model.voucher_user,
                 model,
-                model.balance,
+                abs(model.balance),
                 "vouch: stopping vouching",
                 local.session,
                 logger,
