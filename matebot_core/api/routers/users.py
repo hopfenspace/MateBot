@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends
 from ..base import BadRequest, Conflict, InternalServerException
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
+from ...misc import transactions
 from ...persistence import models
 from ... import schemas
 
@@ -134,6 +135,31 @@ async def update_existing_user(
     voucher_user = None
     if user.voucher_id is not None:
         voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
+
+    if user.voucher_id is None and model.voucher_user is not None:
+        if model.balance > 0:
+            transactions.create_transaction(
+                model,
+                model.voucher_user,
+                model.balance,
+                "vouch: stopping vouching",
+                local.session,
+                logger,
+                local.tasks
+            )
+        elif model.balance < 0:
+            transactions.create_transaction(
+                model.voucher_user,
+                model,
+                model.balance,
+                "vouch: stopping vouching",
+                local.session,
+                logger,
+                local.tasks
+            )
+
+    elif user.voucher_id is not None and model.voucher_user is not None and user.voucher_id != model.voucher_id:
+        raise BadRequest("Someone already vouches for this user, you can't vouch for it.", str(user))
 
     model.name = user.name
     model.permission = user.permission
