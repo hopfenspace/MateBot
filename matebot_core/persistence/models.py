@@ -264,7 +264,7 @@ class Refund(Base):
             creator=self.creator.schema,
             active=self.active,
             allowed=None if self.active else self.transaction is not None,
-            poll_id=self.poll_id,
+            poll=self.poll.schema,
             transactions=self.transaction,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()

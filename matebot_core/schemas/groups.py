@@ -52,7 +52,7 @@ class Refund(BaseModel):
     creator: _User
     active: bool
     allowed: Optional[bool]
-    poll_id: pydantic.NonNegativeInt
+    poll: Poll
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
     accessed: Optional[pydantic.NonNegativeInt]
