@@ -9,7 +9,7 @@ from typing import List, Optional
 
 import pydantic
 
-from .bases import Transaction as _Transaction, User as _User, BaseModel
+from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transaction, User as _User, BaseModel
 
 
 class Vote(BaseModel):
@@ -81,7 +81,7 @@ class Communism(BaseModel):
     created: pydantic.NonNegativeInt
     accessed: pydantic.NonNegativeInt
     participants: List[CommunismUserBinding]
-    transactions: Optional[List[_Transaction]]
+    multi_transaction: Optional[_MultiTransaction]
 
     __allowed_updates__ = ["active", "participants"]
 

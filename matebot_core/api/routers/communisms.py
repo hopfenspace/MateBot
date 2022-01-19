@@ -160,6 +160,7 @@ async def update_existing_communism(
             local.tasks
         )
 
+    model.multi_transaction = m
     logger.debug(f"Closing communism {model} (created multi transaction {m} with {len(ts)} parts)")
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 

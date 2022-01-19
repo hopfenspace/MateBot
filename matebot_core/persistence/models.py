@@ -348,9 +348,11 @@ class Communism(Base):
     created = Column(DateTime, nullable=False, server_default=func.now())
     accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
     creator = relationship("User")
     participants = relationship("CommunismUsers", cascade="all,delete", backref="communism")
+    multi_transaction = relationship("MultiTransaction")
 
     __table_args__ = (
         CheckConstraint("amount >= 1"),
@@ -369,7 +371,8 @@ class Communism(Base):
             participants=[
                 schemas.CommunismUserBinding(user_id=p.user_id, quantity=p.quantity)
                 for p in self.participants
-            ]
+            ],
+            multi_transaction=self.multi_transaction and self.multi_transaction.schema
         )
 
     def __repr__(self) -> str:
