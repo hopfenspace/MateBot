@@ -181,7 +181,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "amount": 42,
                 "reason": "test"
             },
-            recent_callbacks=[("GET", f"/create/transaction/1")]
+            recent_callbacks=[("GET", "/create/transaction/1")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user2 = self.assertQuery(("GET", f"/users/{user2['id']}"), 200).json()
@@ -201,7 +201,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "reason": "reverse"
             },
             skip_callbacks=2,
-            recent_callbacks=[("GET", f"/create/transaction/2")]
+            recent_callbacks=[("GET", "/create/transaction/2")]
         )
         user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
         user2 = self.assertQuery(("GET", f"/users/{user2['id']}"), 200).json()
@@ -225,7 +225,7 @@ class WorkingAPITests(utils.BaseAPITests):
                 "active": True,
                 "participants": [{"quantity": 1, "user_id": user1["id"]}]
             },
-            recent_callbacks=[("GET", f"/create/communism/1")]
+            recent_callbacks=[("GET", "/create/communism/1")]
         ).json()
         self.assertQuery(("DELETE", "/users"), [404, 405, 409], json=user0, recent_callbacks=[])
         self.assertEqual(communism, self.assertQuery(("GET", "/communisms/1"), 200).json())
@@ -238,7 +238,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism,
             r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", f"/update/communism/1")]
+            recent_callbacks=[("GET", "/update/communism/1")]
         )
         self._set_user_attrs(user1["id"], True, active=False)
         users.pop(0)

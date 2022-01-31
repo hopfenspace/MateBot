@@ -115,7 +115,7 @@ def _make_simple_multi_transaction(
             raise ValueError(f"Total amount {total_amount} can't be negative or zero!")
         quantities = sum(q for r, q in receivers_uncompressed)
         if sum(q for r, q in receivers_uncompressed if r.id != sender.id) == 0:
-            raise ValueError(f"No participants with quantity > 1 given!")
+            raise ValueError("No participants with quantity > 1 given!")
         base_amount = math.ceil(total_amount / quantities)
     elif amount_type == _SimpleMultiTransactionAmount.BASE:
         base_amount = int(pre_amount)
