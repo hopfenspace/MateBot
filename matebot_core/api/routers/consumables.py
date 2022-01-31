@@ -105,7 +105,7 @@ async def update_existing_consumable(
 @router.delete(
     "",
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)}
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_consumable(
@@ -118,10 +118,9 @@ async def delete_existing_consumable(
     A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
-    A 412 error will be returned if the conditional request fails.
     """
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         consumable.id,
         models.Consumable,
         local,

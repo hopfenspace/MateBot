@@ -422,12 +422,6 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
                 raise
             self.session.rollback()
 
-        # Same alias in same application again
-        self.session.add(models.Alias(app_username="app-alias1", user_id=6, application_id=1))
-        with self.assertRaises(sqlalchemy.exc.DatabaseError):
-            self.session.commit()
-        self.session.rollback()
-
         # Everything fine
         self.session.add_all(self.get_sample_users())
         self.session.add(models.Application(name="app", password=_mk_passwd("password")))
@@ -435,8 +429,12 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
         self.session.commit()
 
-        # Same user in same application again
-        self.session.add(models.Alias(app_username="app-alias5", user_id=2, application_id=1))
+        # Same alias in same application again
+        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
+            self.session.commit()
+        self.session.rollback()
+        self.session.add(models.Alias(app_username="app-alias2", user_id=3, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()

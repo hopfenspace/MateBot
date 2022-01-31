@@ -134,31 +134,19 @@ class APIException(HTTPException):
         )), status_code=status_code, headers=exc.headers)
 
 
-class NotModified(APIException):
+class BadRequest(APIException):
     """
-    Exception when a requested resource hasn't changed since last request
+    Exception when the user probably messed something up
+
+    The `message` field must be user-friendly and not too informative!
     """
 
-    def __init__(self, resource: str, detail: Optional[str] = None):
+    def __init__(self, message: str, detail: Optional[str] = None):
         super().__init__(
-            status_code=304,
+            status_code=400,
             detail=detail,
             repeat=True,
-            message=f"Resource '{str(resource)}' has not been modified."
-        )
-
-
-class ForbiddenChange(APIException):
-    """
-    Exception when a resource was requested to be changed which is forbidden
-    """
-
-    def __init__(self, resource: str, detail: Optional[str] = None):
-        super().__init__(
-            status_code=403,
-            detail=detail,
-            repeat=False,
-            message=f"Resource '{resource}' may not be modified."
+            message=message
         )
 
 
@@ -190,17 +178,17 @@ class Conflict(APIException):
         )
 
 
-class PreconditionFailed(APIException):
+class ForbiddenChange(APIException):
     """
-    Exception when the precondition of a conditional request failed
+    Exception when a resource was requested to be changed which is forbidden
     """
 
     def __init__(self, resource: str, detail: Optional[str] = None):
         super().__init__(
-            status_code=412,
+            status_code=409,
             detail=detail,
             repeat=False,
-            message=f"Precondition failed for resource {resource!r}."
+            message=f"Resource '{resource}' may not be modified."
         )
 
 

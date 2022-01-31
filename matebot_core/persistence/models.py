@@ -47,6 +47,10 @@ class User(Base):
     )
 
     @property
+    def username(self) -> str:
+        return self.name or f"user {self.id}"
+
+    @property
     def schema(self) -> schemas.User:
         return schemas.User(
             id=self.id,
@@ -102,7 +106,6 @@ class Alias(Base):
 
     __table_args__ = (
         UniqueConstraint("application_id", "app_username"),
-        UniqueConstraint("application_id", "user_id")
     )
 
     @property
@@ -265,7 +268,7 @@ class Refund(Base):
             creator=self.creator.schema,
             active=self.active,
             allowed=None if self.active else self.transaction is not None,
-            poll_id=self.poll_id,
+            poll=self.poll.schema,
             transactions=self.transaction,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp()
@@ -349,9 +352,11 @@ class Communism(Base):
     created = Column(DateTime, nullable=False, server_default=func.now())
     accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
     creator = relationship("User")
     participants = relationship("CommunismUsers", cascade="all,delete", backref="communism")
+    multi_transaction = relationship("MultiTransaction")
 
     __table_args__ = (
         CheckConstraint("amount >= 1"),
@@ -363,14 +368,15 @@ class Communism(Base):
             id=self.id,
             amount=self.amount,
             description=self.description,
-            creator=self.creator.schema,
+            creator_id=self.creator_id,
             active=self.active,
             created=self.created.timestamp(),
             accessed=self.accessed.timestamp(),
             participants=[
                 schemas.CommunismUserBinding(user_id=p.user_id, quantity=p.quantity)
                 for p in self.participants
-            ]
+            ],
+            multi_transaction=self.multi_transaction and self.multi_transaction.schema
         )
 
     def __repr__(self) -> str:

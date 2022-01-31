@@ -3,13 +3,12 @@ MateBot router module for /refunds requests
 """
 
 import logging
-import datetime
 from typing import List
 
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, ForbiddenChange
+from ..base import BadRequest, Conflict, ForbiddenChange
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -56,6 +55,10 @@ async def create_new_refund(
     creator = await helpers.return_one(refund.creator_id, models.User, local.session)
     if creator.special:
         raise Conflict("Community user can't create a refund")
+    if not creator.active:
+        raise BadRequest("A disabled user can't create refund requests.", str(refund))
+    if creator.external and not creator.voucher_id:
+        raise BadRequest("You can't create a refund request without voucher.", str(refund))
 
     return await helpers.create_new_of_model(
         models.Refund(
@@ -124,57 +127,10 @@ async def close_refund_by_id(
     if refund.active:
         return await helpers.get_one_of_model(refund.id, models.Refund, local)
 
-    sum_of_votes = sum(v.vote for v in poll.votes)
+    # Fix to ignore the restriction of 'close_refund' and just close the refund without transaction
     min_approves = local.config.general.min_refund_approves
-    min_disapproves = local.config.general.min_refund_disapproves
-    if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
-        raise Conflict(
-            repeat=True,
-            message=f"Not enough approving/disapproving votes for refund {refund.id}",
-            detail=f"refund={refund}, sum={sum_of_votes}, required=({min_approves}, {min_disapproves})"
-        )
-
+    min_disapproves = -min_approves
     return close_refund(model, local.session, (min_approves, min_disapproves), logger, local.tasks).schema
-
-
-@router.delete(
-    "",
-    status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (403, 404, 409, 412)}
-)
-@versioning.versions(minimal=1)
-async def abort_open_refund(
-        refund: schemas.Refund,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Abort an open refund request without performing any transactions,
-    discarding the poll or votes. However, the refund object will be deleted.
-
-    A 403 error will be returned if the refund was already closed.
-    A 404 error will be returned if the requested `id` doesn't exist.
-    A 409 error will be returned if the object is not up-to-date, which
-    means that the user agent needs to get the object before proceeding.
-    A 412 error will be returned if the conditional request fails.
-    """
-
-    def hook(model, *_):
-        if not model.active:
-            raise ForbiddenChange("Refund", str(refund))
-
-        model.poll.result = 0
-        model.poll.active = False
-        model.poll.closed = datetime.datetime.now().replace(microsecond=0)
-        local.session.add(model.poll)
-
-    return await helpers.delete_one_of_model(
-        refund.id,
-        models.Refund,
-        local,
-        schema=refund,
-        logger=logger,
-        hook_func=hook
-    )
 
 
 @router.get(

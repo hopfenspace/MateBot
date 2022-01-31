@@ -24,10 +24,8 @@ def announce_created_model():
     """
     Announce a created object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -40,10 +38,8 @@ def announce_updated_model():
     """
     Announce an updated object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -56,10 +52,8 @@ def announce_deleted_model():
     """
     Announce a deleted object of the `model` with the `id`.
 
-    This endpoint may be seen as optional, since the external API is not
-    strictly required to implement this endpoint (but a meaningful error,
-    like 404, should be returned, of course). The endpoint will be called
-    after the response to the `/trigger` request has arrived.
+    It's up to the developer of the application that wants to use
+    callbacks to implement this endpoint. Those requests may be ignored.
 
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
@@ -99,7 +93,7 @@ async def create_new_callback(
     """
     Add a new callback API which should implement all required endpoints.
 
-    A 404 error will be returned if the `app_id` is not known.
+    A 404 error will be returned if the `application_id` is not known.
     A 409 error will be returned when the exact same base URL
     has already been registered for any application.
     """
@@ -139,7 +133,7 @@ async def update_existing_callback(
     model = await helpers.return_one(callback.id, models.Callback, local.session)
     helpers.restrict_updates(callback, model.schema)
 
-    if await helpers.expect_none(models.Callback, local.session, base=callback.base):
+    if [m for m in local.session.query(models.Callback).filter_by(base=callback.base).all() if m.id != model.id]:
         raise Conflict(f"Base URL {callback.base} already in use.", detail=str(callback))
 
     model.base = callback.base
@@ -152,7 +146,7 @@ async def update_existing_callback(
 @router.delete(
     "",
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409, 412)},
+    responses={k: {"model": schemas.APIError} for k in (404, 409)},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -166,10 +160,9 @@ async def delete_existing_callback(
     A 404 error will be returned if the requested `id` doesn't exist.
     A 409 error will be returned if the object is not up-to-date, which
     means that the user agent needs to get the object before proceeding.
-    A 412 error will be returned if the conditional request fails.
     """
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         callback.id,
         models.Callback,
         local,

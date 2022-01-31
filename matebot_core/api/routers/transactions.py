@@ -8,7 +8,7 @@ from typing import List, Union
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import APIException, Conflict
+from ..base import APIException, BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -83,11 +83,11 @@ async def make_a_new_transaction(
 
         user = await helpers.return_one(consumption.user_id, models.User, local.session)
         if user.special:
-            raise APIException(
-                status_code=400,
-                message="The special community user can't consume goods.",
-                detail=str(user.schema)
-            )
+            raise Conflict("The special community user can't consume goods.", str(user.schema))
+        if not user.active:
+            raise Conflict(f"User {user.nameusername!r} can't consume goods.", str(user.schema))
+        if user.external and user.voucher_id is None:
+            raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
         consumable: models.Consumable = await helpers.return_one(
             consumption.consumable_id,
             models.Consumable,
@@ -97,10 +97,9 @@ async def make_a_new_transaction(
         wastage = 0
         if consumption.respect_stock:
             if consumable.stock < consumption.amount:
-                raise Conflict(
+                raise BadRequest(
                     f"Not enough {consumable.name} in stock to consume the goods.",
                     f"requested={consumption.amount}, stock={consumable.stock}",
-                    repeat=True
                 )
             if consumption.adjust_stock:
                 wastage = consumption.amount
@@ -117,36 +116,26 @@ async def make_a_new_transaction(
     elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
-    # def _get_user(data, target: str) -> models.User:
-    #     if isinstance(data, schemas.Alias):
-    #         alias = local.session.get(models.Alias, data.id)
-    #         if alias is None:
-    #             raise NotFound(f"Alias ID {data.id!r}")
-    #         if alias.schema != transaction.sender_id:
-    #             raise Conflict(
-    #                 "Invalid state of the user alias. Query the aliases to update.",
-    #                 f"Expected: {alias.schema!r}; actual: {transaction.sender_id!r}"
-    #             )
-    #         user_id = alias.user_id
-    #     elif isinstance(data, int):
-    #         user_id = data
-    #     else:
-    #         raise TypeError(f"Unexpected type {type(data)} for {data!r}")
-    #
-    #     found_user = local.session.get(models.User, user_id)
-    #     if found_user is None:
-    #         raise NotFound(f"User ID {user_id} as {target}")
-    #     return found_user
-
     sender = await helpers.return_one(transaction.sender_id, models.User, local.session)
     receiver = await helpers.return_one(transaction.receiver_id, models.User, local.session)
     amount = transaction.amount
     reason = transaction.reason
 
+    if sender.id == receiver.id:
+        raise BadRequest("You can't send money to yourself.", str(transaction))
     if not sender.active:
-        raise Conflict(f"Disabled user {sender.id} can't make transactions", str(sender))
+        raise BadRequest(f"Disabled user {sender.username!r} can't make transactions", str(sender))
     if not receiver.active:
-        raise Conflict(f"Disabled user {receiver.id} can't get transactions", str(receiver))
+        raise BadRequest(f"Disabled user {receiver.username!r} can't get transactions", str(receiver))
+    if sender.special:
+        raise Conflict("The community mustn't send money to other users directly; use refunds instead!", str(sender))
+    if sender.external and sender.voucher_id is None:
+        raise BadRequest("You can't send money to others, since you are an external user without voucher.", str(sender))
+    if receiver.external and receiver.voucher_id is None:
+        raise BadRequest(
+            f"You can't send money to {receiver.username}, since nobody vouches for {receiver.username}.",
+            str(receiver)
+        )
 
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
@@ -190,7 +179,7 @@ async def get_transaction_by_id(
     responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
-async def get_all_transactions_of_sender(
+async def get_all_transactions_of_user(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

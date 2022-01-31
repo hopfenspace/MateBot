@@ -3,7 +3,7 @@ MateBot router module for /aliases requests
 """
 
 import logging
-from typing import List
+from typing import List, Union
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -45,17 +45,22 @@ async def create_new_alias(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Create a new alias if no combination of `app_user_id` and `application` exists.
+    Create a new alias if no combination of `app_username` and `application_id` exists.
 
-    The `app_user_id` field should reflect the unique internal username in the
+    The `app_username` field should reflect the unique internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
+    The `unique` flag determines whether the username is globally unique in the given
+    application and that nobody else can claim this username in the future (note that
+    this flag doesn't impose any restrictions, it's only valid in the client logic).
 
     A 404 error will be returned if the `user_id` or `application_id` is not known.
-    A 409 error will be returned when the combination of those already exists.
     """
 
     user = await helpers.return_one(alias.user_id, models.User, local.session)
     application = await helpers.return_one(alias.application_id, models.Application, local.session)
+
+    if not user.active:
+        raise Conflict("A disabled user can't get new aliases.", str(alias))
 
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=application.id,
@@ -63,15 +68,16 @@ async def create_new_alias(
     ).first()
     if existing_alias is not None:
         raise Conflict(
-            "User alias can't be created since it already exists.",
+            f"User alias {alias.app_username!r} can't be created since it already exists.",
             f"Alias: {existing_alias!r}"
         )
 
     model = models.Alias(
         user_id=user.id,
-        app_id=application.id,
-        app_user_id=alias.app_username,
-        confirmed=alias.confirmed
+        application_id=application.id,
+        app_username=alias.app_username,
+        confirmed=alias.confirmed,
+        unique=alias.unique
     )
     return await helpers.create_new_of_model(model, local, logger)
 
@@ -79,7 +85,7 @@ async def create_new_alias(
 @router.put(
     "",
     response_model=schemas.Alias,
-    responses={k: {"model": schemas.APIError} for k in (403, 404)}
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_alias(
@@ -89,7 +95,7 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    A 403 error will be returned if any other attribute than `app_user_id` or
+    A 409 error will be returned if any other attribute than `app_username` or
     `confirmed` has been changed. A 404 error will be returned if at least one
     of the `alias_id`, `application_id` or `user_id` doesn't exist.
     """
@@ -122,7 +128,7 @@ async def delete_existing_alias(
     means that the user agent needs to get the object before proceeding.
     """
 
-    await helpers.delete_one_of_model(
+    return await helpers.delete_one_of_model(
         alias.id,
         models.Alias,
         local,
@@ -156,17 +162,24 @@ async def get_alias_by_id(
     responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
-async def get_aliases_by_application_name(
-        application: pydantic.constr(max_length=255),
+async def get_aliases_by_application(
+        application: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return a list of all users aliases for a given application name.
+    Return a list of all users aliases for a given application ID or application name.
 
     A 404 error will be returned for unknown `application` arguments.
+    A 409 error will be returned when the path parameter `{application}`
+    is neither a valid ID nor a valid application name.
     """
 
-    app = local.session.query(models.Application).filter_by(name=application).first()
-    if app is None:
-        raise NotFound(f"Application name {application!r}")
-    return await helpers.get_all_of_model(models.Alias, local, app_id=app.id)
+    if isinstance(application, str):
+        app = local.session.query(models.Application).filter_by(name=application).first()
+        if app is None:
+            raise NotFound(f"Application name {application!r}")
+    elif isinstance(application, int):
+        app = await helpers.return_one(application, models.Application, local.session)
+    else:
+        raise Conflict(f"Invalid application identifier: {application!r}", str(application))
+    return await helpers.get_all_of_model(models.Alias, local, application_id=app.id)
