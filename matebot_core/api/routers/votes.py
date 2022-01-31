@@ -76,7 +76,7 @@ async def add_new_vote(
         )
     if not user.active:
         raise Conflict(
-            f"User {user.name!r} is not active and can't participate in polls.",
+            f"User {user.username} is not active and can't participate in polls.",
             str({"user": user, "poll": poll})
         )
 
