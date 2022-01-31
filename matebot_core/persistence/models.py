@@ -47,6 +47,10 @@ class User(Base):
     )
 
     @property
+    def username(self) -> str:
+        return self.name or f"user {self.id}"
+
+    @property
     def schema(self) -> schemas.User:
         return schemas.User(
             id=self.id,
