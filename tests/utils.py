@@ -358,6 +358,7 @@ class BaseAPITests(BaseTest):
     def _init_project_data(self):
         self.auth = ("application", secrets.token_urlsafe(16))
         config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+        database.PRINT_SQLITE_WARNING = False
         database.init(config.database.connection, config.database.debug_sql)
         session = database.get_new_session()
         salt = secrets.token_urlsafe(16)

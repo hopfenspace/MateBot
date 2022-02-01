@@ -10,7 +10,9 @@ from sqlalchemy.engine import Engine as _Engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 
-DEFAULT_DATABASE_URL = "sqlite://"
+DEFAULT_DATABASE_URL: str = "sqlite://"
+PRINT_SQLITE_WARNING: bool = True
+
 Base = declarative_base()
 _engine: Optional[_Engine] = None
 _make_session: Optional[sessionmaker] = None
@@ -47,6 +49,12 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
             echo=echo,
             connect_args={"check_same_thread": False}
         )
+        if PRINT_SQLITE_WARNING:
+            print(
+                "Using a sqlite database is supported for development and testing environments "
+                "only. You should use a production-grade database server for deployment.",
+                file=sys.stderr
+            )
 
     else:
         _engine = create_engine(
