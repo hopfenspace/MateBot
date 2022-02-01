@@ -315,7 +315,6 @@ async def _handle_data_changes(
             callback_operation,
             model_type.__name__.lower(),
             model_id,
-            logger,
             await return_all(models.Callback, local.session)
         )
 
@@ -396,7 +395,6 @@ async def create_new_of_model(
         Callback.created,
         type(model).__name__.lower(),
         model.id,
-        logger,
         await return_all(models.Callback, local.session)
     )
     headers = kwargs
@@ -434,7 +432,6 @@ async def update_model(
         Callback.updated,
         type(model).__name__.lower(),
         model.id,
-        logger,
         await return_all(models.Callback, local.session)
     )
 
@@ -488,7 +485,6 @@ async def delete_one_of_model(
         Callback.deleted,
         cls_name.lower(),
         instance_id,
-        logger,
         await return_all(models.Callback, local.session)
     )
 
