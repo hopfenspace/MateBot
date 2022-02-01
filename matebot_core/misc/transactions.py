@@ -80,7 +80,6 @@ def create_transaction(
             Callback.created,
             type(model).__name__.lower(),
             model.id,
-            logger,
             session.query(models.Callback).all()
         )
 
@@ -198,7 +197,6 @@ def _make_simple_multi_transaction(
             Callback.created,
             type(multi).__name__.lower(),
             multi.id,
-            logger,
             session.query(models.Callback).all()
         )
 

@@ -60,7 +60,6 @@ def close_refund(
             Callback.updated,
             type(refund).__name__.lower(),
             refund.id,
-            logger,
             session.query(models.Callback).all()
         )
 

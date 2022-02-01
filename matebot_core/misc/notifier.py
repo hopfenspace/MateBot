@@ -63,16 +63,25 @@ class Callback:
     async def created(cls, model_name: str, model_id: int, clients: List[models.Callback]):
         if not cls.thread:
             cls._run_thread()
-        cls.queue.put(([f"create/{model_name.lower()}/{model_id}"], [(c.base, c.app.name) for c in clients]))
+        cls.queue.put((
+            [f"create/{model_name.lower()}/{model_id}"],
+            [(c.base, getattr(c.app, "name", "<unknown app>")) for c in clients]
+        ))
 
     @classmethod
     async def updated(cls, model_name: str, model_id: int, clients: List[models.Callback]):
         if not cls.thread:
             cls._run_thread()
-        cls.queue.put(([f"update/{model_name.lower()}/{model_id}"], [(c.base, c.app.name) for c in clients]))
+        cls.queue.put((
+            [f"update/{model_name.lower()}/{model_id}"],
+            [(c.base, getattr(c.app, "name", "<unknown app>")) for c in clients]
+        ))
 
     @classmethod
     async def deleted(cls, model_name: str, model_id: int, clients: List[models.Callback]):
         if not cls.thread:
             cls._run_thread()
-        cls.queue.put(([f"delete/{model_name.lower()}/{model_id}"], [(c.base, c.app.name) for c in clients]))
+        cls.queue.put((
+            [f"delete/{model_name.lower()}/{model_id}"],
+            [(c.base, getattr(c.app, "name", "<unknown app>")) for c in clients]
+        ))
