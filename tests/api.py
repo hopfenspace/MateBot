@@ -41,7 +41,7 @@ class WorkingAPITests(utils.BaseAPITests):
         user.update(**kwargs)
         return self.assertQuery(
             ("PUT", "/users"),
-            200 if success else [403, 404, 409],
+            200 if success else [400, 403, 404, 409],
             json=user,
             r_schema=_schemas.User if success else None,
             recent_callbacks=[("GET", f"/update/user/{uid}")] if success else None
@@ -150,7 +150,7 @@ class WorkingAPITests(utils.BaseAPITests):
         # Transactions from/to disabled users should fail
         self.assertQuery(
             ("POST", "/transactions"),
-            409,
+            400,
             json={
                 "sender_id": user1["id"],
                 "receiver_id": user2["id"],
@@ -160,7 +160,7 @@ class WorkingAPITests(utils.BaseAPITests):
         )
         self.assertQuery(
             ("POST", "/transactions"),
-            409,
+            400,
             json={
                 "sender_id": user2["id"],
                 "receiver_id": user1["id"],
@@ -221,7 +221,7 @@ class WorkingAPITests(utils.BaseAPITests):
             json={
                 "amount": 1337,
                 "description": "description",
-                "creator": user0,
+                "creator_id": user0["id"],
                 "active": True,
                 "participants": [{"quantity": 1, "user_id": user1["id"]}]
             },
@@ -324,7 +324,7 @@ class WorkingAPITests(utils.BaseAPITests):
         for v in [1, 0, -1]:
             self.assertQuery(
                 ("POST", "/votes"),
-                409,
+                400,
                 json={"user_id": 1, "poll_id": 1, "vote": v}
             )
 
@@ -368,12 +368,12 @@ class WorkingAPITests(utils.BaseAPITests):
         vote3_json["vote"] = 1
         self.assertQuery(
             ("PUT", "/votes"),
-            409,
+            400,
             json=vote3_json
         )
         self.assertQuery(
             ("PUT", "/votes"),
-            409,
+            400,
             json=vote3_json
         )
 
@@ -381,7 +381,7 @@ class WorkingAPITests(utils.BaseAPITests):
         poll1["active"] = False
         self.assertQuery(
             ("PUT", "/polls"),
-            403,
+            409,
             json=poll1
         )
 
@@ -504,14 +504,9 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertTrue(poll1["active"])
         self.assertQuery(("PUT", "/refunds"), 200, json=refund1)
         refund1["active"] = False
-        self.assertQuery(("PUT", "/refunds"), 409, json=refund1)
-        self.assertQuery(
-            ("DELETE", "/refunds"),
-            204,
-            json=self.assertQuery(("GET", "/refunds/1"), 200).json(),
-            r_is_json=False,
-            recent_callbacks=[("GET", "/delete/refund/1")]
-        )
+        self.assertEqual(1, len(self.assertQuery(("GET", "/refunds"), 200).json()))
+        self.assertQuery(("PUT", "/refunds"), 200, json=refund1)
+        self.assertEqual(1, len(self.assertQuery(("GET", "/refunds"), 200).json()))
         poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
         self.assertFalse(poll1["active"])
 
@@ -522,8 +517,9 @@ class WorkingAPITests(utils.BaseAPITests):
             json={"description": "Bar", "amount": 1337, "creator_id": 2},
             r_schema=_schemas.Refund
         ).json()
-        self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=1).json()["votes"], [])
+        self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=2).json()["votes"], [])
         self.assertEqual(2, len(self.assertQuery(("GET", "/polls"), 200).json()))
+        self.assertEqual(2, len(self.assertQuery(("GET", "/refunds"), 200).json()))
 
         # Create some new users to participate in the refund
         for i in range(4):
@@ -552,12 +548,12 @@ class WorkingAPITests(utils.BaseAPITests):
         # Reject users without permission for participation in refunds
         self.assertQuery(
             ("POST", "/votes"),
-            409,
+            400,
             json={"user_id": 7, "poll_id": 2, "vote": 1}
         )
         self.assertQuery(
             ("POST", "/votes"),
-            409,
+            400,
             json={"user_id": 8, "poll_id": 2, "vote": 1}
         )
         self.assertQuery(
@@ -575,7 +571,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Vote
         )
         self.assertEqual(old_balance, self.assertQuery(("GET", "/users/2"), 200).json()["balance"])
-        self.assertEqual(1, len(self.assertQuery(("GET", "/refunds"), 200).json()))
+        self.assertEqual(2, len(self.assertQuery(("GET", "/refunds"), 200).json()))
         self.assertEqual(0, len(self.assertQuery(("GET", "/transactions"), 200).json()))
         self.assertQuery(
             ("POST", "/votes"),
@@ -586,7 +582,7 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[
                 ("GET", "/create/vote/2"),
                 ("GET", "/create/transaction/1"),
-                ("GET", "/update/refund/1")
+                ("GET", "/update/refund/2")
             ]
         )
         new_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
@@ -606,14 +602,14 @@ class WorkingAPITests(utils.BaseAPITests):
             {
                 "amount": 1,
                 "description": "description1",
-                "creator": None,  # will be inserted later
+                "creator_id": None,  # will be inserted later
                 "active": True,
                 "participants": []
             },
             {
                 "amount": 42,
                 "description": "description2",
-                "creator": None,  # will be inserted later
+                "creator_id": None,  # will be inserted later
                 "active": True,
                 "participants": [
                     {
@@ -629,12 +625,12 @@ class WorkingAPITests(utils.BaseAPITests):
             {
                 "amount": 1337,
                 "description": "description3",
-                "creator": None  # will be inserted later
+                "creator_id": None  # will be inserted later
             },
             {
                 "amount": 1337,
                 "description": "description4",
-                "creator": 42
+                "creator_id": 42
             },
         ]
 
@@ -646,10 +642,10 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
-        # The 'creator' field is not valid
+        # The user mentioned in the 'creator_id' field is not found
         self.assertQuery(
             ("POST", "/communisms"),
-            422,
+            404,
             json=sample_data[3]
         )
         user1 = self.assertQuery(
@@ -659,8 +655,8 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/1")]
         ).json()
-        sample_data[0]["creator"] = user1
-        sample_data[1]["creator"] = user1
+        sample_data[0]["creator_id"] = user1["id"]
+        sample_data[1]["creator_id"] = user1["id"]
 
         # Create and get the first communism object
         communism1 = self.assertQuery(
@@ -689,7 +685,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
         ).json()
-        sample_data[2]["creator"] = user2
+        sample_data[2]["creator_id"] = user2["id"]
 
         # Create and get the second communism object
         response2 = self.assertQuery(
@@ -834,7 +830,7 @@ class WorkingAPITests(utils.BaseAPITests):
         ]
         self.assertQuery(
             ("PUT", "/communisms"),
-            400,
+            409,
             json=communism3_broken
         )
 
@@ -894,7 +890,7 @@ class WorkingAPITests(utils.BaseAPITests):
         # Updating a closed communism should yield HTTP 409
         self.assertQuery(
             ("PUT", "/communisms"),
-            409,
+            400,
             json=communism3_changed
         )
 
