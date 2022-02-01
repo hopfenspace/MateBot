@@ -2,6 +2,7 @@
 MateBot API callback library to handle remote push notifications
 """
 
+import asyncio
 import logging
 from typing import List
 
@@ -24,7 +25,7 @@ class Callback:
                 for client in clients:
                     url = client.base + ("/" if not client.base.endswith("/") else "") + p
                     try:
-                        response = await session.get(url, timeout=aiohttp.ClientTimeout(total=10))
+                        response = await session.get(url, timeout=aiohttp.ClientTimeout(total=2))
                         if response.status != 200:
                             logger.info(
                                 f"Callback for {getattr(client.app, 'name', '<unknown app>')!r} "
@@ -36,6 +37,8 @@ class Callback:
                             f"{getattr(client.app, 'name', '<unknown app>')!r} "
                             f"at {url!r}: {', '.join(map(repr, exc.args))}"
                         )
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Timeout while trying 'GET {url}'")
 
     @classmethod
     async def created(
