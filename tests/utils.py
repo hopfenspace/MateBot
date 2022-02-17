@@ -145,6 +145,13 @@ class BasePersistenceTests(BaseTest):
         )()
         models.Base.metadata.create_all(bind=self.engine)
 
+        config = _schemas.config.CoreConfig(**_settings.get_default_config())
+        config.database.debug_sql = conf.SQLALCHEMY_ECHOING
+        config.database.connection = self.database_url
+        config.server.password_iterations = 1
+        with open(self.config_file, "w") as f:
+            f.write(config.json())
+
     def tearDown(self) -> None:
         self.session.close()
         self.engine.dispose()
@@ -360,7 +367,6 @@ class BaseAPITests(BaseTest):
         config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
         database.PRINT_SQLITE_WARNING = False
         database.init(config.database.connection, config.database.debug_sql)
-        config.server.password_iterations = 1
         session = database.get_new_session()
         salt = secrets.token_urlsafe(16)
         session.add(models.Application(name=self.auth[0], password=auth.hash_password(self.auth[1], salt), salt=salt))
@@ -377,6 +383,7 @@ class BaseAPITests(BaseTest):
         config.database.debug_sql = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
         config.server.port = self.server_port
+        config.server.password_iterations = 1
         with open(self.config_file, "w") as f:
             f.write(config.json())
 

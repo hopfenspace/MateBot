@@ -408,8 +408,6 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
 
         # Everything fine
         self.session.add_all(self.get_sample_users())
-        app1 = models.Application(name="app1", password=auth.hash_password("password1", "salt"), salt="salt")
-        self.session.commit()
         self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
         self.session.commit()
 
