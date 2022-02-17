@@ -299,8 +299,7 @@ def init_project(args: argparse.Namespace) -> int:
             print("No new application account created!")
         elif name and passwd:
             salt = secrets.token_urlsafe(16)
-            password = models.Password(salt=salt, passwd=auth.hash_password(passwd, salt))
-            session.add(models.Application(name=name, password=password))
+            session.add(models.Application(name=name, password=auth.hash_password(passwd, salt), salt=salt))
             session.commit()
 
     session.flush()

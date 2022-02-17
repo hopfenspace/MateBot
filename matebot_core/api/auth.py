@@ -16,7 +16,7 @@ from ..settings import Settings
 
 def hash_password(password: str, salt: str) -> str:
     h = hashlib.sha512(hashlib.sha512(password.encode("UTF-8")).digest() + salt.encode("UTF-8"))
-    for _ in range(Settings.server.password_iterations):
+    for _ in range(Settings().server.password_iterations):
         h = hashlib.sha512(h.digest())
     return h.hexdigest()
 
@@ -28,8 +28,8 @@ async def check_app_credentials(application: str, password: str, session: Sessio
     app = apps[0]
     if not getattr(app, "password", None):
         return False
-    salted_hash = hash_password(password, app.password.salt)
-    return secrets.compare_digest(salted_hash, app.password.passwd)
+    salted_hash = hash_password(password, app.salt)
+    return secrets.compare_digest(salted_hash, app.password)
 
 
 def create_access_token(username: str, expiration_minutes: int = 120) -> str:

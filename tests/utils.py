@@ -353,17 +353,17 @@ class BaseAPITests(BaseTest):
         if response.ok:
             self.token = response.json()["access_token"]
         else:
-            self.fail(f"Failed to login ({response.status_code}")
+            self.fail(f"Failed to login ({response.status_code})")
 
     def _init_project_data(self):
         self.auth = ("application", secrets.token_urlsafe(16))
         config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
         database.PRINT_SQLITE_WARNING = False
         database.init(config.database.connection, config.database.debug_sql)
+        config.server.password_iterations = 1
         session = database.get_new_session()
         salt = secrets.token_urlsafe(16)
-        password = models.Password(salt=salt, passwd=auth.hash_password(self.auth[1], salt))
-        session.add(models.Application(name=self.auth[0], password=password))
+        session.add(models.Application(name=self.auth[0], password=auth.hash_password(self.auth[1], salt), salt=salt))
         session.commit()
         session.flush()
         session.close()
