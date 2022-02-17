@@ -102,21 +102,6 @@ class Consumable(BaseModel):
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255)
     price: pydantic.PositiveInt
-    messages: List[pydantic.constr(max_length=255)]
-    symbol: pydantic.constr(min_length=1, max_length=1)
-    stock: pydantic.NonNegativeInt
-    modified: pydantic.NonNegativeInt
-
-    __allowed_updates__ = ["name", "description", "price", "messages", "symbol", "stock"]
-
-
-class ConsumableCreation(BaseModel):
-    name: pydantic.constr(max_length=255)
-    description: pydantic.constr(max_length=255) = ""
-    price: pydantic.PositiveInt
-    messages: List[pydantic.constr(max_length=255)]
-    symbol: pydantic.constr(min_length=1, max_length=1)
-    stock: pydantic.NonNegativeInt
 
 
 class Consumption(BaseModel):

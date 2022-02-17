@@ -11,7 +11,6 @@ import sqlalchemy.orm
 import sqlalchemy.exc
 from sqlalchemy.engine import Engine as _Engine
 
-from matebot_core import schemas
 from matebot_core.api import auth
 from matebot_core.persistence import models
 
@@ -301,31 +300,20 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
             self.session.commit()
             self.assertIsNone(new_communism.creator)
 
-    def test_delete_consumable_with_messages_cascading(self):
+    def test_add_and_delete_consumable(self):
         consumable = models.Consumable(
             name="Mate",
             description="everyone hates Mate",
-            price=9000,
-            symbol="X",
-            stock=42
+            price=9000
         )
         self.session.add(consumable)
         self.session.commit()
         self.assertIs(self.session.query(models.Consumable).first(), consumable)
         self.assertEqual(1, len(self.session.query(models.Consumable).all()))
 
-        self.session.add_all([
-            models.ConsumableMessage(message="A", consumable_id=consumable.id),
-            models.ConsumableMessage(message="B", consumable_id=consumable.id),
-            models.ConsumableMessage(message="C", consumable_id=consumable.id),
-        ])
-        self.session.commit()
-        self.assertEqual(3, len(self.session.query(models.ConsumableMessage).all()))
-
         self.session.delete(consumable)
         self.session.commit()
         self.assertEqual(0, len(self.session.query(models.Consumable).all()))
-        self.assertEqual(0, len(self.session.query(models.ConsumableMessage).all()))
 
     def test_multi_transactions(self):
         self.session.add_all(self.get_sample_users())
@@ -575,41 +563,6 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
-
-
-@_tested
-class DatabaseSchemaTests(utils.BasePersistenceTests):
-    """
-    Database test cases checking the usability of schemas together with the models
-    """
-
-    def test_create_consumable(self):
-        incoming_consumable = schemas.ConsumableCreation(
-            name="Cola Mate",
-            price=100,
-            messages=["Together tastes better", "Taste the feeling", "Open happiness"],
-            symbol="\U0001F9C9",
-            stock=42
-        )
-
-        info = incoming_consumable.dict()
-        msgs = info.pop("messages")
-        model = models.Consumable(**info)
-        self.session.add(model)
-        self.session.commit()
-
-        for i, msg in enumerate(msgs):
-            msg_model = models.ConsumableMessage(message=msg)
-            msg_model.consumable = model
-            self.session.add(msg_model)
-            self.session.commit()
-            self.assertEqual(i+1, msg_model.id)
-            self.assertEqual(i+1, len(model.messages))
-
-        for k in incoming_consumable.dict():
-            self.assertEqual(getattr(incoming_consumable, k), getattr(model.schema, k))
-        self.assertTrue("id" in model.schema.dict())
-        self.assertTrue("modified" in model.schema.dict())
 
 
 if __name__ == '__main__':

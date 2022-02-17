@@ -2,7 +2,6 @@
 MateBot core database models
 """
 
-import pydantic
 from sqlalchemy import (
     Boolean, DateTime, Integer, SmallInteger, String,
     CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
@@ -193,15 +192,9 @@ class Consumable(Base):
     name = Column(String(255), unique=True)
     description = Column(String(255), nullable=False, default="")
     price = Column(Integer, nullable=False)
-    symbol = Column(String(15), nullable=False)
-    stock = Column(Integer, nullable=False)
-    modified = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
-
-    messages = relationship("ConsumableMessage", back_populates="consumable", cascade="all,delete")
 
     __table_args__ = (
         CheckConstraint("price > 0"),
-        CheckConstraint("stock >= 0")
     )
 
     @property
@@ -210,32 +203,11 @@ class Consumable(Base):
             id=self.id,
             name=self.name,
             description=self.description,
-            price=self.price,
-            messages=[msg.schema for msg in self.messages],
-            symbol=self.symbol,
-            stock=self.stock,
-            modified=self.modified.timestamp()
+            price=self.price
         )
 
     def __repr__(self) -> str:
         return f"Consumable(id={self.id}, name={self.name}, price={self.price})"
-
-
-class ConsumableMessage(Base):
-    __tablename__ = "consumables_messages"
-
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    consumable_id = Column(Integer, ForeignKey("consumables.id", ondelete="CASCADE"), nullable=False)
-    message = Column(String(255), nullable=False)
-
-    consumable = relationship("Consumable", back_populates="messages")
-
-    @property
-    def schema(self) -> pydantic.constr(max_length=255):
-        return self.message
-
-    def __repr__(self) -> str:
-        return f"ConsumableMessage(id={self.id}, message={self.message!r})"
 
 
 class Refund(Base):
