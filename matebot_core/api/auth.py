@@ -11,12 +11,14 @@ from sqlalchemy.orm import Session
 
 from . import base, helpers
 from ..persistence import models
+from ..settings import Settings
 
 
 def hash_password(password: str, salt: str) -> str:
-    return hashlib.sha512(
-        hashlib.sha512(password.encode("UTF-8")).digest() + salt.encode("UTF-8")
-    ).hexdigest()
+    h = hashlib.sha512(hashlib.sha512(password.encode("UTF-8")).digest() + salt.encode("UTF-8"))
+    for _ in range(Settings.server.password_iterations):
+        h = hashlib.sha512(h.digest())
+    return h.hexdigest()
 
 
 async def check_app_credentials(application: str, password: str, session: Session) -> bool:

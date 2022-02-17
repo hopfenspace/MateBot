@@ -51,8 +51,8 @@ async def add_new_application(
 
     await helpers.expect_none(models.Application, local.session, name=application.name)
     salt = secrets.token_urlsafe(16)
-    passwd = models.Password(salt=salt, passwd=auth.hash_password(application.password, salt))
-    app = models.Application(name=application.name, password=passwd)
+    password = auth.hash_password(application.password, salt)
+    app = models.Application(name=application.name, salt=salt, password=password)
     return await helpers.create_new_of_model(app, local, logger)
 
 

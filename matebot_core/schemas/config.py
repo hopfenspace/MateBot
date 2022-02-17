@@ -18,6 +18,7 @@ class GeneralConfig(pydantic.BaseModel):
 class ServerConfig(pydantic.BaseModel):
     host: str = "127.0.0.1"
     port: pydantic.conint(gt=0, lt=65536) = 8000
+    password_iterations: int = 2**20
 
 
 class DatabaseConfig(pydantic.BaseModel):
