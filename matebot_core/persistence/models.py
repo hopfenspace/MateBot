@@ -25,7 +25,7 @@ class User(Base):
     external = Column(Boolean, nullable=False)
     voucher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created = Column(DateTime, server_default=func.now())
-    accessed = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
+    modified = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
 
     aliases = relationship("Alias", cascade="all,delete", backref="user")
     vouching_for = relationship("User", backref=backref("voucher_user", remote_side=[id]))
@@ -50,7 +50,7 @@ class User(Base):
             voucher_id=self.voucher_id,
             aliases=[alias.schema for alias in self.aliases],
             created=self.created.timestamp(),
-            accessed=self.accessed.timestamp()
+            modified=self.modified.timestamp()
         )
 
     def __repr__(self) -> str:
@@ -88,7 +88,6 @@ class Alias(Base):
     application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
     app_username = Column(String(255), nullable=False)
     confirmed = Column(Boolean, nullable=False, default=False)
-    unique = Column(Boolean, nullable=False, default=True)
 
     application = relationship("Application", foreign_keys=[application_id])
 
@@ -121,7 +120,7 @@ class Transaction(Base):
     receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=True)
-    registered = Column(DateTime, nullable=False, server_default=func.now())
+    timestamp = Column(DateTime, nullable=False, server_default=func.now())
     multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
     sender = relationship("User", foreign_keys=[sender_id])
@@ -142,7 +141,7 @@ class Transaction(Base):
             amount=self.amount,
             reason=self.reason,
             multi_transaction_id=self.multi_transaction_id,
-            timestamp=self.registered.timestamp()
+            timestamp=self.timestamp.timestamp()
         )
 
     def __repr__(self) -> str:
@@ -207,7 +206,7 @@ class Refund(Base):
     description = Column(String(255), nullable=True)
     active = Column(Boolean, nullable=False, default=True)
     created = Column(DateTime, nullable=False, server_default=func.now())
-    accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
     poll_id = Column(Integer, ForeignKey("polls.id"), nullable=False)
@@ -232,7 +231,7 @@ class Refund(Base):
             poll=self.poll.schema,
             transactions=self.transaction,
             created=self.created.timestamp(),
-            accessed=self.accessed.timestamp()
+            modified=self.modified.timestamp()
         )
 
     def __repr__(self) -> str:
@@ -311,7 +310,7 @@ class Communism(Base):
     amount = Column(Integer, nullable=False)
     description = Column(String(255), nullable=False)
     created = Column(DateTime, nullable=False, server_default=func.now())
-    accessed = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
 
@@ -332,7 +331,7 @@ class Communism(Base):
             creator_id=self.creator_id,
             active=self.active,
             created=self.created.timestamp(),
-            accessed=self.accessed.timestamp(),
+            modified=self.modified.timestamp(),
             participants=[
                 schemas.CommunismUserBinding(user_id=p.user_id, quantity=p.quantity)
                 for p in self.participants

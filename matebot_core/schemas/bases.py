@@ -60,7 +60,7 @@ class User(BaseModel):
     voucher_id: Optional[pydantic.NonNegativeInt]
     aliases: List[Alias]
     created: pydantic.NonNegativeInt
-    accessed: pydantic.NonNegativeInt
+    modified: pydantic.NonNegativeInt
 
     __allowed_updates__ = ["name", "permission", "active", "external", "voucher_id"]
 

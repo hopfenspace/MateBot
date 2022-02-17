@@ -125,7 +125,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self._set_user_attrs(user1["id"], True, balance=0)
         self._set_user_attrs(user1["id"], False, balance=1)
         self._set_user_attrs(user1["id"], False, created=1337)
-        self._set_user_attrs(user1["id"], False, accessed=42)
+        self._set_user_attrs(user1["id"], False, modified=42)
         self._set_user_attrs(user1["id"], False, aliases=[{
             "id": 1,
             "user_id": user1["id"],
@@ -497,7 +497,7 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertIsNone(refund1["allowed"])
         self.assertIsNone(refund1["transaction"])
         self.assertIsNotNone(refund1["created"])
-        self.assertIsNotNone(refund1["accessed"])
+        self.assertIsNotNone(refund1["modified"])
 
         # The refund should not be closed now but can be deleted
         poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
@@ -806,7 +806,7 @@ class WorkingAPITests(utils.BaseAPITests):
             200,
             json=communism3,
             r_schema=_schemas.Communism(**communism3),
-            r_schema_ignored_fields=["accessed", "created"],
+            r_schema_ignored_fields=["modified", "created"],
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
 
@@ -850,7 +850,7 @@ class WorkingAPITests(utils.BaseAPITests):
             ]
         ).json()
         self.assertFalse(communism3_changed["active"])
-        self.assertIsNotNone(communism3_changed["accessed"])
+        self.assertIsNotNone(communism3_changed["modified"])
         self.assertIsNotNone(communism3_changed["created"])
         users_updated = self.assertQuery(("GET", "/users"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()

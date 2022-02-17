@@ -55,7 +55,7 @@ class Refund(BaseModel):
     poll: Poll
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
-    accessed: Optional[pydantic.NonNegativeInt]
+    modified: Optional[pydantic.NonNegativeInt]
 
     __allowed_updates__ = ["active"]
 
@@ -79,7 +79,7 @@ class Communism(BaseModel):
     creator_id: pydantic.NonNegativeInt
     active: bool
     created: pydantic.NonNegativeInt
-    accessed: pydantic.NonNegativeInt
+    modified: pydantic.NonNegativeInt
     participants: List[CommunismUserBinding]
     multi_transaction: Optional[_MultiTransaction]
 

@@ -88,8 +88,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(self.session.get(models.User, 1).name, "name")
         self.assertEqual(self.session.get(models.User, 1).balance, 42)
         now = int(datetime.datetime.now().timestamp())
-        accessed = self.session.get(models.User, 1).accessed.timestamp()
-        self.assertLessEqual((now - accessed) % 3600, 1)
+        modified = self.session.get(models.User, 1).modified.timestamp()
+        self.assertLessEqual((now - modified) % 3600, 1)
 
     def test_create_users(self):
         user1, user2, user3, user4, _, _, _ = self.get_sample_users()
