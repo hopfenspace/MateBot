@@ -62,7 +62,7 @@ class User(BaseModel):
     created: pydantic.NonNegativeInt
     modified: pydantic.NonNegativeInt
 
-    __allowed_updates__ = ["name", "permission", "active", "external", "voucher_id"]
+    __allowed_updates__ = ["name", "permission", "external"]
 
 
 class UserCreation(BaseModel):

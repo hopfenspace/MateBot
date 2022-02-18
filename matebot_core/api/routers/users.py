@@ -54,6 +54,8 @@ async def create_new_user(
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
 
+# TODO: Do not update User models using PUT and some changed state, but use a bunch of
+#  much simpler POST methods instead (aka switch from REST-style API to Verb-style API)
 @router.put(
     "",
     response_model=schemas.User,
@@ -67,13 +69,13 @@ async def update_existing_user(
     """
     Update an existing user model identified by the `user_id`.
 
-    A 403 error will be returned when any other field than the allowed fields
-    have been changed: `name`, `permission` `active`, `external` or `voucher`.
+    This endpoint only allows to change the name, permissions and
+    external flag of a user. Use the specialised POST endpoints for
+    other user-related actions like disabling or vouching.
+
+    A 403 error will be returned when any other field has been changed.
     A 404 error will be returned if the `user_id` or `voucher` is not known.
-    A 409 error will be returned if the voucher ID equals the user ID, if an
-    internal user should get a voucher, if an external user should loose its
-    voucher without also having a positive balance, a disabled user is updated or
-    some other restrictions on user updates get applied to make the request fail.
+    A 409 error will be returned if an inactive or the special user was changed.
     """
 
     model = await helpers.return_one(user.id, models.User, local.session)
@@ -83,99 +85,99 @@ async def update_existing_user(
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
     if model.special:
         raise Conflict("The community user can't be updated via this endpoint.", str(user))
-    if model.id == user.voucher_id:
-        raise BadRequest("A user can't vouch for itself.", str(user))
-    if user.voucher_id and not user.external:
-        raise Conflict("An internal user can't have a voucher user.", str(user))
+    # if model.id == user.voucher_id:
+    #     raise BadRequest("A user can't vouch for itself.", str(user))
+    # if user.voucher_id and not user.external:
+    #     raise Conflict("An internal user can't have a voucher user.", str(user))
     if user.external and user.permission:
         raise Conflict("An external user can't have extended permissions", str(user))
 
-    if not user.active:
-        if model.balance != 0:
-            info = ""
-            if model.voucher_id and model.external:
-                info = f" User {model.name} vouches for this user and may handle this."
-            raise BadRequest(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
+    # TODO: disabling the user should be done with another POST endpoint instead
+    # if not user.active:
+    #     if model.balance != 0:
+    #         info = ""
+    #         if model.voucher_id and model.external:
+    #             info = f" User {model.name} vouches for this user and may handle this."
+    #         raise BadRequest(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
+    #
+    #     active_created_refunds = local.session.query(models.Refund).filter_by(
+    #         active=True, creator_id=model.id
+    #     ).all()
+    #     if active_created_refunds:
+    #         raise BadRequest(
+    #             f"User {user.name} has at least one active refund requests. Can't disable user.",
+    #             str(active_created_refunds)
+    #         )
+    #
+    #     active_created_communisms = local.session.query(models.Communism).filter_by(
+    #         active=True, creator_id=model.id
+    #     ).all()
+    #     if active_created_communisms:
+    #         raise BadRequest(
+    #             f"User {user.name} has created at least one active communism. Can't disable user.",
+    #             str(active_created_communisms)
+    #         )
+    #
+    #     for communism in local.session.query(models.Communism).filter_by(active=True).all():
+    #         for participant in communism.participants:
+    #             if participant.user_id == model.id:
+    #                 if participant.quantity == 0:
+    #                     logger.warning(f"Quantity 0 for {participant} of {communism}.")
+    #                 raise BadRequest(
+    #                     f"User {user.name} is participant of at least one active communism. Can't disable user.",
+    #                     str(participant)
+    #                 )
+    #
+    #     if user.voucher_id is not None:
+    #         raise BadRequest(f"User {model.name} should vouch for someone else. Can't disable user.", str(user))
+    #     if model.voucher_user is not None:
+    #         raise BadRequest(f"User {model.name} currently vouches for someone else. Can't disable user.", str(user))
 
-        active_created_refunds = local.session.query(models.Refund).filter_by(
-            active=True, creator_id=model.id
-        ).all()
-        if active_created_refunds:
-            raise BadRequest(
-                f"User {user.name} has at least one active refund requests. Can't disable user.",
-                str(active_created_refunds)
-            )
+    # TODO: manipulating the voucher user should be done using a separate API endpoint instead
+    # voucher_user = None
+    # if user.voucher_id is not None:
+    #     voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
+    #     if voucher_user.special:
+    #         raise Conflict("The community user can't vouch for anyone.", str(user))
 
-        active_created_communisms = local.session.query(models.Communism).filter_by(
-            active=True, creator_id=model.id
-        ).all()
-        if active_created_communisms:
-            raise BadRequest(
-                f"User {user.name} has created at least one active communism. Can't disable user.",
-                str(active_created_communisms)
-            )
-
-        for communism in local.session.query(models.Communism).filter_by(active=True).all():
-            for participant in communism.participants:
-                if participant.user_id == model.id:
-                    if participant.quantity == 0:
-                        logger.warning(f"Quantity 0 for {participant} of {communism}.")
-                    raise BadRequest(
-                        f"User {user.name} is participant of at least one active communism. Can't disable user.",
-                        str(participant)
-                    )
-
-        if user.voucher_id is not None:
-            raise BadRequest(f"User {model.name} should vouch for someone else. Can't disable user.", str(user))
-        if model.voucher_user is not None:
-            raise BadRequest(f"User {model.name} currently vouches for someone else. Can't disable user.", str(user))
-
-    voucher_user = None
-    if user.voucher_id is not None:
-        voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
-        if voucher_user.special:
-            raise Conflict("The community user can't vouch for anyone.", str(user))
-
-    if user.voucher_id is None and model.voucher_user is not None:
-        if model.balance > 0:
-            transactions.create_transaction(
-                model,
-                model.voucher_user,
-                abs(model.balance),
-                "vouch: stopping vouching",
-                local.session,
-                logger,
-                local.tasks
-            )
-        elif model.balance < 0:
-            transactions.create_transaction(
-                model.voucher_user,
-                model,
-                abs(model.balance),
-                "vouch: stopping vouching",
-                local.session,
-                logger,
-                local.tasks
-            )
-
-    elif user.voucher_id is not None and model.voucher_user is not None and user.voucher_id != model.voucher_id:
-        raise BadRequest("Someone already vouches for this user, you can't vouch for it.", str(user))
+    # if user.voucher_id is None and model.voucher_user is not None:
+    #     if model.balance > 0:
+    #         transactions.create_transaction(
+    #             model,
+    #             model.voucher_user,
+    #             abs(model.balance),
+    #             "vouch: stopping vouching",
+    #             local.session,
+    #             logger,
+    #             local.tasks
+    #         )
+    #     elif model.balance < 0:
+    #         transactions.create_transaction(
+    #             model.voucher_user,
+    #             model,
+    #             abs(model.balance),
+    #             "vouch: stopping vouching",
+    #             local.session,
+    #             logger,
+    #             local.tasks
+    #         )
+    #
+    # elif user.voucher_id is not None and model.voucher_user is not None and user.voucher_id != model.voucher_id:
+    #     raise BadRequest("Someone already vouches for this user, you can't vouch for it.", str(user))
 
     model.name = user.name
     model.permission = user.permission
-    model.active = user.active
     model.external = user.external
-    model.voucher_user = voucher_user
 
-    if not user.active:
-        for alias in model.aliases:
-            await helpers.delete_one_of_model(
-                alias.id,
-                models.Alias,
-                local,
-                schema=alias,
-                logger=logger
-            )
+    # if not user.active:
+    #     for alias in model.aliases:
+    #         await helpers.delete_one_of_model(
+    #             alias.id,
+    #             models.Alias,
+    #             local,
+    #             schema=alias,
+    #             logger=logger
+    #         )
 
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
