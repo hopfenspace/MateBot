@@ -3,7 +3,7 @@ MateBot core database models
 """
 
 from sqlalchemy import (
-    Boolean, DateTime, Integer, SmallInteger, String,
+    Boolean, DateTime, Integer, String,
     CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, backref
@@ -203,17 +203,16 @@ class Refund(Base):
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     amount = Column(Integer, nullable=False)
-    description = Column(String(255), nullable=True)
+    description = Column(String(255), nullable=False)
     active = Column(Boolean, nullable=False, default=True)
     created = Column(DateTime, nullable=False, server_default=func.now())
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
-    poll_id = Column(Integer, ForeignKey("polls.id"), nullable=False)
 
     creator = relationship("User", backref="refunds")
     transaction = relationship("Transaction")
-    poll = relationship("Poll")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -228,8 +227,8 @@ class Refund(Base):
             creator=self.creator.schema,
             active=self.active,
             allowed=None if self.active else self.transaction is not None,
-            poll=self.poll.schema,
-            transactions=self.transaction,
+            votes=[vote.schema for vote in self.votes],
+            transaction=self.transaction,
             created=self.created.timestamp(),
             modified=self.modified.timestamp()
         )
@@ -240,50 +239,48 @@ class Refund(Base):
         )
 
 
-class Poll(Base):
-    __tablename__ = "polls"
-
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    question = Column(String(255), nullable=False)
-    changeable = Column(Boolean, nullable=False)
-    active = Column(Boolean, nullable=False, default=True)
-    result = Column(Integer, nullable=True, default=None)
-    closed = Column(DateTime, nullable=True, default=None)
-
-    @property
-    def schema(self) -> schemas.Poll:
-        return schemas.Poll(
-            id=self.id,
-            question=self.question,
-            changeable=self.changeable,
-            active=self.active,
-            votes=[vote.schema for vote in self.votes],
-            result=self.result,
-            closed=self.closed and self.closed.timestamp()
-        )
-
-    def __repr__(self) -> str:
-        return "Poll(id={}, votes={})".format(
-            self.id, [v.vote for v in self.votes]
-        )
+# class Poll(Base):
+#     __tablename__ = "polls"
+#
+#     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+#     question = Column(String(255), nullable=False)
+#     changeable = Column(Boolean, nullable=False)
+#     active = Column(Boolean, nullable=False, default=True)
+#     result = Column(Integer, nullable=True, default=None)
+#     closed = Column(DateTime, nullable=True, default=None)
+#
+#     @property
+#     def schema(self) -> schemas.Poll:
+#         return schemas.Poll(
+#             id=self.id,
+#             question=self.question,
+#             changeable=self.changeable,
+#             active=self.active,
+#             votes=[vote.schema for vote in self.votes],
+#             result=self.result,
+#             closed=self.closed and self.closed.timestamp()
+#         )
+#
+#     def __repr__(self) -> str:
+#         return "Poll(id={}, votes={})".format(
+#             self.id, [v.vote for v in self.votes]
+#         )
 
 
 class Vote(Base):
     __tablename__ = "votes"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    poll_id = Column(Integer, ForeignKey("polls.id", ondelete="CASCADE"), nullable=False)
+    refund_id = Column(Integer, ForeignKey("refunds.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    vote = Column(SmallInteger, nullable=False)
+    vote = Column(Boolean, nullable=False)
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    poll = relationship("Poll", backref="votes")
+    refund = relationship("Refund", backref="votes")
     user = relationship("User", backref="votes")
 
     __table_args__ = (
-        CheckConstraint("vote <= 1"),
-        CheckConstraint("vote >= -1"),
-        UniqueConstraint("user_id", "poll_id"),
+        UniqueConstraint("user_id", "refund_id"),
     )
 
     @property
@@ -291,14 +288,14 @@ class Vote(Base):
         return schemas.Vote(
             id=self.id,
             user_id=self.user_id,
-            poll_id=self.poll_id,
+            refund_id=self.refund_id,
             vote=self.vote,
             modified=self.modified.timestamp()
         )
 
     def __repr__(self) -> str:
-        return "Vote(id={}, poll_id={}, user_id={}, vote={})".format(
-            self.id, self.poll_id, self.user_id, self.vote
+        return "Vote(id={}, refund_id={}, user_id={}, vote={})".format(
+            self.id, self.refund_id, self.user_id, self.vote
         )
 
 

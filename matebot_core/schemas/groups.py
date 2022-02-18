@@ -28,21 +28,21 @@ class VoteCreation(BaseModel):
     vote: pydantic.conint(ge=-1, le=1)
 
 
-class Poll(BaseModel):
-    id: pydantic.NonNegativeInt
-    question: pydantic.constr(max_length=255)
-    changeable: bool
-    active: bool
-    votes: List[Vote]
-    result: Optional[int]
-    closed: Optional[pydantic.NonNegativeInt]
-
-    __allowed_updates__ = ["active"]
-
-
-class PollCreation(BaseModel):
-    question: pydantic.constr(max_length=255)
-    changeable: bool
+# class Poll(BaseModel):
+#     id: pydantic.NonNegativeInt
+#     question: pydantic.constr(max_length=255)
+#     changeable: bool
+#     active: bool
+#     votes: List[Vote]
+#     result: Optional[int]
+#     closed: Optional[pydantic.NonNegativeInt]
+#
+#     __allowed_updates__ = ["active"]
+#
+#
+# class PollCreation(BaseModel):
+#     question: pydantic.constr(max_length=255)
+#     changeable: bool
 
 
 class Refund(BaseModel):
@@ -52,7 +52,7 @@ class Refund(BaseModel):
     creator: _User
     active: bool
     allowed: Optional[bool]
-    poll: Poll
+    votes: List[Vote]
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
     modified: Optional[pydantic.NonNegativeInt]
