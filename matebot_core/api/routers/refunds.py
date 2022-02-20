@@ -128,3 +128,30 @@ async def vote_for_refund_request(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("vote_for_refund_request")
+
+
+@router.post(
+    "/abort/{refund_id}",
+    response_model=schemas.Refund,
+    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+)
+@versioning.versions(1)
+async def abort_open_refund_request(
+        refund_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Abort an ongoing refund request (closing it without performing the transaction)
+
+    A 400 error will be returned if the refund is already closed.
+    A 404 error will be returned if the refund ID is unknown.
+    """
+
+    model = await helpers.return_one(refund_id, models.Refund, local.session)
+
+    if not model.active:
+        raise BadRequest("Updating an already closed refund is not possible.", detail=str(model))
+
+    model.active = False
+    logger.debug(f"Aborting refund {model}")
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)

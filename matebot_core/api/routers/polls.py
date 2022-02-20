@@ -130,3 +130,30 @@ async def vote_for_membership_request(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     raise MissingImplementation("vote_for_membership_request")
+
+
+@router.post(
+    "/abort/{poll_id}",
+    response_model=schemas.Poll,
+    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+)
+@versioning.versions(1)
+async def abort_open_membership_poll(
+        poll_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Abort an ongoing poll request (closing it without performing the transaction)
+
+    A 400 error will be returned if the poll is already closed.
+    A 404 error will be returned if the poll ID is unknown.
+    """
+
+    model = await helpers.return_one(poll_id, models.Poll, local.session)
+
+    if not model.active:
+        raise BadRequest("Updating an already closed poll is not possible.", detail=str(model))
+
+    model.active = False
+    logger.debug(f"Aborting poll {model}")
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
