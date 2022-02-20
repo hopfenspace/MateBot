@@ -284,3 +284,70 @@ async def get_user_by_id(
     """
 
     return await helpers.get_one_of_model(user_id, models.User, local)
+
+
+@router.post(
+    "/disable/{user_id}",
+    response_model=schemas.User,
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+)
+@versioning.versions(1)
+async def set_voucher_of_user(
+        user_id: pydantic.NonNegativeInt,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Disable a user account, without the possibility to effectively re-enable it (= deletion)
+
+    A 400 error will be returned if the given user actively vouches for
+    someone else, has a non-zero balance or has created / participates
+    in any open communisms or refund requests.
+    A 404 error will be returned if the `user_id` is not found.
+    A 409 error will be returned if an already inactive or the special user was given.
+    """
+
+    model = await helpers.return_one(user_id, models.User, local.session)
+
+    if not model.active:
+        raise Conflict(f"User {model.id} is already disabled.", str(model))
+    if model.special:
+        raise Conflict("The community user can't be disabled.", str(model))
+
+    if local.session.query(models.Communism).filter_by(creator=model, active=True).all():
+        raise BadRequest(
+            "You have created at least one communism which is still open. "
+            "Therefore, your user account can't be deleted."
+        )
+
+    # TODO: ensure that this works as expected and returns active communism memberships
+    if local.session.query(models.Communism).filter_by(active=True).join(models.CommunismUsers) \
+            .filter(models.CommunismUsers.user_id == model.id).all():
+        raise BadRequest(
+            "You are currently participating in an open communism. "
+            "Therefore, your user account can't be deleted."
+        )
+
+    if local.session.query(models.Refund).filter_by(creator=model, active=True).all():
+        raise BadRequest(
+            "You have created at least one refund request which is still open. "
+            "Therefore, your user account can't be deleted."
+        )
+
+    if not model.external and local.session.query(models.User).filter_by(voucher=model, active=True).all():
+        raise BadRequest(
+            "You are currently vouching for at least one other user. "
+            "Therefore, your user account can't be deleted."
+        )
+
+    if model.balance != 0:
+        info = ""
+        if model.voucher and model.external:
+            info = f" User {model.voucher.name!r} vouches for you and may help you to handle this."
+        raise BadRequest(
+            f"Your balance is not zero. You need a zero balance before you can delete your user account.{info}"
+        )
+
+    model.aliases = []
+    model.active = False
+
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
