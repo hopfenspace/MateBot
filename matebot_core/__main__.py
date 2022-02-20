@@ -67,7 +67,7 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=program)
 
     commands = parser.add_subparsers(
-        description="Available sub-commands: init, run, systemd",
+        description="Available sub-commands: init, add-app, run, systemd",
         dest="command",
         required=True,
         metavar="<command>",
@@ -77,6 +77,10 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser_init = commands.add_parser(
         "init",
         description="Initialize the project by creating config files and some database models"
+    )
+    parser_add_app = commands.add_parser(
+        "add-app",
+        description="Add a new application with a password for the login & authentication process"
     )
     parser_run = commands.add_parser(
         "run",
@@ -116,6 +120,20 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         type=str,
         metavar="passwd",
         help="Password for the new app account (see --application)"
+    )
+
+    parser_add_app.add_argument(
+        "--app",
+        type=str,
+        metavar="name",
+        required=True,
+        help="Name of the newly created application account"
+    )
+    parser_add_app.add_argument(
+        "--password",
+        type=str,
+        metavar="passwd",
+        help="Password for the new app account (will be asked interactively if omitted)"
     )
 
     parser_run.add_argument(
@@ -293,7 +311,7 @@ def init_project(args: argparse.Namespace) -> int:
                 "Make sure that the password meets good length & strength standards. "
                 "Note that pressing Enter will not create the new application!"
             )
-            passwd = input("> ")
+            passwd = getpass.getpass()
 
         if name and not passwd:
             print("No new application account created!")
@@ -309,6 +327,37 @@ def init_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def add_app(args: argparse.Namespace) -> int:
+    if not args.app:
+        print("Empty app names are not allowed.", file=sys.stderr)
+        return 1
+
+    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    database.init(config.database.connection, config.database.debug_sql)
+    session = database.get_new_session()
+
+    if session.query(models.Application).filter_by(name=args.app).all():
+        print(
+            f"An application with the given name {args.app!r} already "
+            f"exists. Therefore, it can't be created. Exiting.",
+            file=sys.stderr
+        )
+        session.flush()
+        session.close()
+        return 1
+
+    passwd = args.password or getpass.getpass()
+    if not passwd:
+        print("A password is mandatory. No new application account created!", file=sys.stderr)
+        return 1
+    elif args.app and passwd:
+        salt = secrets.token_urlsafe(16)
+        session.add(models.Application(name=args.app, password=auth.hash_password(passwd, salt), salt=salt))
+        session.commit()
+        print(f"Successfully created new application {args.app!r}.")
+        return 0
+
+
 if __name__ == '__main__':
     program_name = sys.argv[0] if not sys.argv[0].endswith("__main__.py") else "matebot_core"
     namespace = get_parser(program_name).parse_args(sys.argv[1:])
@@ -316,6 +365,7 @@ if __name__ == '__main__':
     command_functions = {
         "run": run_server,
         "init": init_project,
+        "add-app": add_app,
         "systemd": handle_systemd
     }
     exit(command_functions[namespace.command](namespace))
