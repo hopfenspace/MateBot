@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, BadRequest
+from ..base import BadRequest, Conflict, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -117,3 +117,16 @@ async def get_poll_by_id(
     """
 
     return await helpers.get_one_of_model(poll_id, models.Poll, local)
+
+
+@router.post(
+    "/vote",
+    response_model=schemas.PollVoteResponse,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+)
+@versioning.versions(1)
+async def vote_for_membership_request(
+        vote: schemas.VoteCreation,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    raise MissingImplementation("vote_for_membership_request")

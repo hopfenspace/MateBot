@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import BadRequest, Conflict, ForbiddenChange
+from ..base import BadRequest, Conflict, ForbiddenChange, MissingImplementation
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -76,61 +76,6 @@ async def create_new_refund(
     )
 
 
-@router.put(
-    "",
-    response_model=schemas.Refund,
-    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
-)
-@versioning.versions(minimal=1)
-async def close_refund_by_id(
-        refund: schemas.Refund,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Update an existing refund, possibly calculating the result of all votes and
-    eventually paying back money in case the refund got approved properly.
-
-    Note that closing the refund by setting `active` to False also closes
-    its associated poll to finally calculate the result of all votes.
-    If the total of approving votes fulfills the minimum limit of necessary
-    approves, the refund will be accepted. All transactions related to this
-    particular refund will be executed. If the total of disapproving votes
-    fulfills the minimum limit of necessary disapproves, the refund will be
-    rejected. However, trying to close a refund that didn't reach any of those
-    two minimum number of votes in either direction won't be allowed.
-    Of course, the associated poll will always be closed when the refund it
-    refers to gets closed, for whatever reason, in order to prevent changes.
-    To abort an open refund, use `DELETE /refunds` instead of this method.
-
-    A 403 error will be returned if any other attribute than `active` has
-    been changed or if a try to re-open a refund was attempted. A 404 error
-    will be returned if the refund ID is not found. A 409 error will be
-    returned if the refund could not be accepted or rejected, because
-    it didn't reach any of the minimum limits for particular actions.
-    """
-
-    model = await helpers.return_one(refund.id, models.Refund, local.session)
-    helpers.restrict_updates(refund, model.schema)
-    poll = model.poll
-
-    if not model.active:
-        if refund.active:
-            logger.warning(f"Request to re-open a closed refund blocked: {model!r}")
-            raise ForbiddenChange(
-                "Refund.active",
-                detail=f"{model!r} has already been closed, it can't be reopened again!"
-            )
-        if poll.closed is None:
-            logger.error(f"Inconsistent data detected: {poll}, {refund}")
-        return await helpers.get_one_of_model(refund.id, models.Refund, local)
-
-    if refund.active:
-        return await helpers.get_one_of_model(refund.id, models.Refund, local)
-
-    # Fix to ignore the restriction of 'close_refund' and just close the refund without transaction
-    min_approves = local.config.general.min_refund_approves
-    min_disapproves = -min_approves
-    return close_refund(model, local.session, (min_approves, min_disapproves), logger, local.tasks).schema
 
 
 @router.get(
@@ -170,3 +115,16 @@ async def get_refunds_by_creator(
 
     await helpers.return_one(user_id, models.User, local.session)
     return await helpers.get_all_of_model(models.Refund, local, creator_id=user_id)
+
+
+@router.post(
+    "/vote",
+    response_model=schemas.RefundVoteResponse,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+)
+@versioning.versions(1)
+async def vote_for_refund_request(
+        vote: schemas.VoteCreation,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    raise MissingImplementation("vote_for_refund_request")
