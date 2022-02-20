@@ -287,12 +287,81 @@ async def get_user_by_id(
 
 
 @router.post(
-    "/disable/{user_id}",
-    response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+    "/setVoucher",
+    response_model=schemas.VoucherUpdateResponse,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(1)
 async def set_voucher_of_user(
+        update: schemas.VoucherUpdateRequest,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Set (or unset) the voucher of a particular debtor user
+
+    This endpoint will adjust the balance of the debtor user accordingly by creating
+    a new transaction, if the voucher has been changed to None (= unset).
+
+    A 400 error will be returned if changing the voucher is not possible for
+    various reasons (e.g. someone already vouches for the particular user).
+    A 404 error will be returned in case any user ID is unknown.
+    A 409 error will be returned if the community user was used in the query.
+    """
+
+    debtor = await helpers.return_one(update.debtor, models.User, local.session)
+    voucher = update.voucher and await helpers.return_one(update.voucher, models.User, local.session)
+
+    if debtor.special:
+        raise Conflict("Nobody can vouch for the community user.")
+    if voucher and voucher.special:
+        raise Conflict("The community user can't vouch for anyone.")
+
+    if debtor.voucher_user is not None and voucher and debtor.voucher_user != voucher:
+        raise BadRequest(f"Someone already vouches for {debtor.name}, you can't vouch for it.", str(debtor))
+
+    if debtor == voucher:
+        raise BadRequest("You can't vouch for yourself.", str(voucher))
+    if not debtor.external:
+        raise BadRequest("You can't vouch for {debtor.name}, since it's an internal user.", str(debtor))
+
+    transaction = None
+    if debtor.voucher_user is not None and voucher is None:
+        if debtor.balance > 0:
+            transaction = transactions.create_transaction(
+                debtor,
+                debtor.voucher_user,
+                abs(debtor.balance),
+                "vouch: stopping vouching",
+                local.session,
+                logger,
+                local.tasks
+            )
+        elif debtor.balance < 0:
+            transaction = transactions.create_transaction(
+                debtor.voucher_user,
+                debtor,
+                abs(debtor.balance),
+                "vouch: stopping vouching",
+                local.session,
+                logger,
+                local.tasks
+            )
+
+    debtor.voucher_user = voucher
+    return schemas.VoucherUpdateResponse(
+        debtor=debtor,
+        voucher=voucher,
+        transaction=transaction
+    )
+
+
+@router.post(
+    "/disable/{user_id}",
+    response_model=schemas.User,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+)
+@versioning.versions(1)
+async def disable_user_permanently(
         user_id: pydantic.NonNegativeInt,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -347,6 +416,14 @@ async def set_voucher_of_user(
             f"Your balance is not zero. You need a zero balance before you can delete your user account.{info}"
         )
 
+    # Deleting aliases using this helper method is preferred to trigger callbacks correctly
+    for alias in model.aliases:
+        await helpers.delete_one_of_model(
+            alias.id,
+            models.Alias,
+            local,
+            logger=logger
+        )
     model.aliases = []
     model.active = False
 
