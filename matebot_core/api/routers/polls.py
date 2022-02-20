@@ -8,7 +8,7 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import BadRequest, Conflict, MissingImplementation
+from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -129,7 +129,61 @@ async def vote_for_membership_request(
         vote: schemas.VoteCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("vote_for_membership_request")
+    """
+    Add a new vote for an open membership poll
+
+    This endpoint will take care of promoting the creator to an internal
+    user if enough votes for it have been created. On the other hand, it
+    will also close the membership poll if enough votes against the proposal
+    have been created. The limits are set in the server's configuration.
+
+    A 400 error will be returned if the poll is not active anymore, the user has
+    already voted in the specified ballot, the user is not active or unprivileged.
+    A 404 error will be returned if the user ID or ballot ID is unknown.
+    A 409 error will be returned if the voter is the community user, if an
+    invalid state has been detected or the ballot referenced by the newly
+    created vote is actually about a refund request instead of a membership poll.
+    """
+
+    user = await helpers.return_one(vote.user_id, models.User, local.session)
+    ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
+
+    if user.special:
+        raise Conflict("The community user can't vote in membership polls.")
+    if ballot.refunds:
+        raise Conflict("This endpoint ('POST /polls/vote') can't be used to vote on refund requests.")
+    if not ballot.polls:
+        raise Conflict("The ballot didn't reference any membership poll. Please file a bug report.", str(ballot))
+    if len(ballot.polls) != 1:
+        raise Conflict("The ballot didn't reference exactly one refund request. Please file a bug report.", str(ballot))
+    poll: models.Poll = ballot.polls[0]
+
+    if not poll.active:
+        raise BadRequest("You can't vote on already closed membership polls.")
+    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user):
+        raise BadRequest("You have already voted for this membership poll. You can't vote twice.")
+    if not user.active:
+        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this membership poll.")
+    if not user.permission:
+        raise BadRequest("You are not permitted to participate in ballots about membership polls.")
+
+    model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
+    await helpers.create_new_of_model(model, local, logger)
+
+    result_of_ballot = ballot.result
+    if result_of_ballot >= local.config.general.min_membership_approves:
+        poll.active = False
+        poll.accepted = True
+        poll.creator.external = False
+        await helpers.update_model(poll, local, logger)
+        await helpers.update_model(poll.creator, local, logger)
+
+    elif -result_of_ballot >= local.config.general.min_membership_disapproves:
+        poll.active = False
+        poll.accepted = False
+        await helpers.update_model(poll, local, logger)
+
+    return schemas.PollVoteResponse(poll=poll.schema, vote=model.schema)
 
 
 @router.post(
