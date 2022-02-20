@@ -12,7 +12,7 @@ from .callbacks import router as callbacks_router
 from .communisms import router as communisms_router
 from .consumables import router as consumables_router
 from .generic import router as generic_router
-# from .polls import router as polls_router
+from .polls import router as polls_router
 from .refunds import router as refunds_router
 from .transactions import router as transactions_router
 from .users import router as users_router
@@ -26,7 +26,7 @@ all_routers = [
     callbacks_router,
     communisms_router,
     consumables_router,
-    # polls_router,
+    polls_router,
     refunds_router,
     transactions_router,
     users_router,
