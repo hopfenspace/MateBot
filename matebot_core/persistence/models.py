@@ -228,6 +228,7 @@ class Refund(Base):
             creator=self.creator.schema,
             active=self.active,
             allowed=None if self.active else self.transaction is not None,
+            ballot_id=self.ballot_id,
             votes=[vote.schema for vote in self.ballot.votes],
             transaction=self.transaction,
             created=self.created.timestamp(),
@@ -263,6 +264,7 @@ class Poll(Base):
             created=self.created.timestamp(),
             modified=self.modified.timestamp(),
             creator=self.creator.schema,
+            ballot_id=self.ballot_id,
             votes=[v.schema for v in self.ballot.votes]
         )
 

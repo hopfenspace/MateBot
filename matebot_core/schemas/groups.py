@@ -37,6 +37,7 @@ class Poll(BaseModel):
     active: bool
     accepted: Optional[bool]
     creator: _User
+    ballot_id: pydantic.NonNegativeInt
     votes: List[Vote]
     created: pydantic.NonNegativeInt
     modified: pydantic.NonNegativeInt
@@ -46,6 +47,11 @@ class PollCreation(BaseModel):
     creator_id: pydantic.NonNegativeInt
 
 
+class PollVoteResponse(BaseModel):
+    poll: Poll
+    vote: Vote
+
+
 class Refund(BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
@@ -53,6 +59,7 @@ class Refund(BaseModel):
     creator: _User
     active: bool
     allowed: Optional[bool]
+    ballot_id: pydantic.NonNegativeInt
     votes: List[Vote]
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
@@ -64,6 +71,11 @@ class RefundCreation(BaseModel):
     description: pydantic.constr(max_length=255)
     creator_id: pydantic.NonNegativeInt
     active: bool = True
+
+
+class RefundVoteResponse(BaseModel):
+    refund: Refund
+    vote: Vote
 
 
 class CommunismUserBinding(BaseModel):

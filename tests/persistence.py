@@ -502,25 +502,33 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
                 self.session.commit()
 
     def test_vote_constraints(self):
-        # Missing required field 'refund_id'
+        # Missing required field 'ballot_id'
         self.session.add(models.Vote(user_id=2, vote=True))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Missing required field 'user_id'
-        self.session.add(models.Vote(refund_id=12, vote=False))
+        self.session.add(models.Vote(ballot_id=12, vote=False))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
+        # Intermediate ballot required
+        self.session.add(models.Refund(description="Why not?", active=True, amount=3, creator_id=1))
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
+            self.session.commit()
+        self.session.rollback()
+        self.session.add(models.Ballot())
+        self.session.commit()
+
         # Everything fine
-        refund = models.Refund(description="Why not?", active=True, amount=3, creator_id=1)
+        refund = models.Refund(description="Why not?", active=True, amount=3, creator_id=1, ballot_id=1)
         self.session.add(refund)
         self.session.commit()
 
         # Invalid 'vote' value
-        self.session.add(models.Vote(refund=refund, user_id=42, vote=1337))
+        self.session.add(models.Vote(ballot_id=1, user_id=42, vote=1337))
         with self.assertRaises(sqlalchemy.exc.StatementError):
             self.session.commit()
         self.session.rollback()
@@ -535,19 +543,19 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         # Everything fine
         self.session.add_all(self.get_sample_users())
         self.session.commit()
-        v1 = models.Vote(refund=refund, user_id=2, vote=True)
-        v2 = models.Vote(refund=refund, user_id=4, vote=False)
+        v1 = models.Vote(ballot_id=1, user_id=2, vote=True)
+        v2 = models.Vote(ballot=refund.ballot, user_id=4, vote=False)
         self.session.add_all([v1, v2])
         self.session.commit()
 
         # Second vote of same user in the same poll with a different vote
-        self.session.add(models.Vote(refund=refund, user_id=4, vote=True))
+        self.session.add(models.Vote(ballot=refund.ballot, user_id=4, vote=True))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Second vote of same user in the same poll with the same vote
-        self.session.add(models.Vote(refund=refund, user_id=4, vote=False))
+        self.session.add(models.Vote(ballot=refund.ballot, user_id=4, vote=False))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
