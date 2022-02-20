@@ -26,7 +26,6 @@ class Alias(BaseModel):
     application_id: pydantic.NonNegativeInt
     app_username: pydantic.constr(max_length=255)
     confirmed: bool
-    unique: bool
 
     __allowed_updates__ = ["app_username", "confirmed"]
 
@@ -36,7 +35,6 @@ class AliasCreation(BaseModel):
     application_id: pydantic.NonNegativeInt
     app_username: pydantic.constr(max_length=255)
     confirmed: bool = False
-    unique: bool = True
 
 
 class Application(BaseModel):

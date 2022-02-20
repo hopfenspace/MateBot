@@ -47,11 +47,8 @@ async def create_new_alias(
     """
     Create a new alias if no combination of `app_username` and `application_id` exists.
 
-    The `app_username` field should reflect the unique internal username in the
+    The `app_username` field should reflect the internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
-    The `unique` flag determines whether the username is globally unique in the given
-    application and that nobody else can claim this username in the future (note that
-    this flag doesn't impose any restrictions, it's only valid in the client logic).
 
     A 404 error will be returned if the `user_id` or `application_id` is not known.
     """
@@ -76,8 +73,7 @@ async def create_new_alias(
         user_id=user.id,
         application_id=application.id,
         app_username=alias.app_username,
-        confirmed=alias.confirmed,
-        unique=alias.unique
+        confirmed=alias.confirmed
     )
     return await helpers.create_new_of_model(model, local, logger)
 

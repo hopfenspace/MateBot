@@ -102,8 +102,7 @@ class Alias(Base):
             user_id=self.user_id,
             application_id=self.application_id,
             app_username=self.app_username,
-            confirmed=self.confirmed,
-            unique=self.unique
+            confirmed=self.confirmed
         )
 
     def __repr__(self) -> str:
