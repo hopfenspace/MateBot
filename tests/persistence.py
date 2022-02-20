@@ -296,6 +296,46 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
             self.session.commit()
             self.assertIsNone(new_communism.creator)
 
+    def test_ballots(self):
+        ballot = models.Ballot()
+        self.session.add(ballot)
+        self.session.commit()
+        self.assertEqual(ballot.result, 0)
+
+        self.session.add_all(self.get_sample_users())
+        self.session.commit()
+
+        self.session.add(models.Vote(vote=False, user_id=1, ballot=ballot))
+        self.session.commit()
+        self.assertEqual(ballot.result, -1)
+
+        self.session.add(models.Vote(vote=False, user_id=2, ballot=ballot))
+        self.session.commit()
+        self.assertEqual(ballot.result, -2)
+
+        self.session.add(models.Vote(vote=True, user_id=3, ballot=ballot))
+        self.session.commit()
+        self.assertEqual(ballot.result, -1)
+
+        self.session.add(models.Vote(vote=True, user_id=4, ballot=ballot))
+        self.session.commit()
+        self.assertEqual(ballot.result, 0)
+
+        self.session.add(models.Vote(vote=True, user_id=5, ballot=ballot))
+        self.session.commit()
+        self.assertEqual(ballot.result, 1)
+
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
+            self.session.add(models.Vote(vote=True, user_id=5, ballot=ballot))
+            self.session.commit()
+        self.session.rollback()
+        self.assertEqual(ballot.result, 1)
+
+        ballot = models.Ballot()
+        self.session.add(ballot)
+        self.session.commit()
+        self.assertEqual(ballot.result, 0)
+
     def test_add_and_delete_consumable(self):
         consumable = models.Consumable(
             name="Mate",
