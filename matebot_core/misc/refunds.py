@@ -41,15 +41,13 @@ def attempt_closing_refund(
         logger.warning(f"Refund {refund.id} is already closed, it can't be attempted to be closed!")
         return False
 
-    sum_of_votes = sum(v.vote for v in refund.ballot.votes)
-    min_approves = limits[0]
-    min_disapproves = limits[1]
-    if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
+    result_of_ballot = refund.ballot.result
+    if result_of_ballot < limits[0] and -result_of_ballot < limits[1]:
         return False
 
     refund.active = False
 
-    if sum_of_votes >= min_approves:
+    if result_of_ballot >= limits[0]:
         logger.info(f"The refund {refund.id} will be accepted")
         sender = session.query(models.User).filter_by(special=True).all()[0]
         receiver = refund.creator

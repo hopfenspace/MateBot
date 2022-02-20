@@ -279,6 +279,10 @@ class Ballot(Base):
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     @property
+    def result(self) -> int:
+        return -len(self.votes) + 2 * sum(v.vote for v in self.votes)
+
+    @property
     def schema(self) -> schemas.Ballot:
         return schemas.Ballot(
             id=self.id,
