@@ -110,3 +110,14 @@ class Consumption(BaseModel):
     consumable_id: pydantic.NonNegativeInt
     adjust_stock: bool = True
     respect_stock: bool = True
+
+
+class VoucherUpdateResponse(BaseModel):
+    debtor: User
+    voucher: Optional[User]
+    transaction: Transaction
+
+
+class VoucherUpdateRequest(BaseModel):
+    debtor: pydantic.NonNegativeInt
+    voucher: Optional[pydantic.NonNegativeInt]
