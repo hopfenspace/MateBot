@@ -54,8 +54,6 @@ async def create_new_user(
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
 
-# TODO: Do not update User models using PUT and some changed state, but use a bunch of
-#  much simpler POST methods instead (aka switch from REST-style API to Verb-style API)
 @router.put(
     "",
     response_model=schemas.User,
@@ -85,170 +83,14 @@ async def update_existing_user(
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
     if model.special:
         raise Conflict("The community user can't be updated via this endpoint.", str(user))
-    # if model.id == user.voucher_id:
-    #     raise BadRequest("A user can't vouch for itself.", str(user))
-    # if user.voucher_id and not user.external:
-    #     raise Conflict("An internal user can't have a voucher user.", str(user))
     if user.external and user.permission:
         raise Conflict("An external user can't have extended permissions", str(user))
-
-    # TODO: disabling the user should be done with another POST endpoint instead
-    # if not user.active:
-    #     if model.balance != 0:
-    #         info = ""
-    #         if model.voucher_id and model.external:
-    #             info = f" User {model.name} vouches for this user and may handle this."
-    #         raise BadRequest(f"Balance of {user.name} is not zero.{info} Can't disable user.", str(user))
-    #
-    #     active_created_refunds = local.session.query(models.Refund).filter_by(
-    #         active=True, creator_id=model.id
-    #     ).all()
-    #     if active_created_refunds:
-    #         raise BadRequest(
-    #             f"User {user.name} has at least one active refund requests. Can't disable user.",
-    #             str(active_created_refunds)
-    #         )
-    #
-    #     active_created_communisms = local.session.query(models.Communism).filter_by(
-    #         active=True, creator_id=model.id
-    #     ).all()
-    #     if active_created_communisms:
-    #         raise BadRequest(
-    #             f"User {user.name} has created at least one active communism. Can't disable user.",
-    #             str(active_created_communisms)
-    #         )
-    #
-    #     for communism in local.session.query(models.Communism).filter_by(active=True).all():
-    #         for participant in communism.participants:
-    #             if participant.user_id == model.id:
-    #                 if participant.quantity == 0:
-    #                     logger.warning(f"Quantity 0 for {participant} of {communism}.")
-    #                 raise BadRequest(
-    #                     f"User {user.name} is participant of at least one active communism. Can't disable user.",
-    #                     str(participant)
-    #                 )
-    #
-    #     if user.voucher_id is not None:
-    #         raise BadRequest(f"User {model.name} should vouch for someone else. Can't disable user.", str(user))
-    #     if model.voucher_user is not None:
-    #         raise BadRequest(f"User {model.name} currently vouches for someone else. Can't disable user.", str(user))
-
-    # TODO: manipulating the voucher user should be done using a separate API endpoint instead
-    # voucher_user = None
-    # if user.voucher_id is not None:
-    #     voucher_user = await helpers.return_one(user.voucher_id, models.User, local.session)
-    #     if voucher_user.special:
-    #         raise Conflict("The community user can't vouch for anyone.", str(user))
-
-    # if user.voucher_id is None and model.voucher_user is not None:
-    #     if model.balance > 0:
-    #         transactions.create_transaction(
-    #             model,
-    #             model.voucher_user,
-    #             abs(model.balance),
-    #             "vouch: stopping vouching",
-    #             local.session,
-    #             logger,
-    #             local.tasks
-    #         )
-    #     elif model.balance < 0:
-    #         transactions.create_transaction(
-    #             model.voucher_user,
-    #             model,
-    #             abs(model.balance),
-    #             "vouch: stopping vouching",
-    #             local.session,
-    #             logger,
-    #             local.tasks
-    #         )
-    #
-    # elif user.voucher_id is not None and model.voucher_user is not None and user.voucher_id != model.voucher_id:
-    #     raise BadRequest("Someone already vouches for this user, you can't vouch for it.", str(user))
 
     model.name = user.name
     model.permission = user.permission
     model.external = user.external
 
-    # if not user.active:
-    #     for alias in model.aliases:
-    #         await helpers.delete_one_of_model(
-    #             alias.id,
-    #             models.Alias,
-    #             local,
-    #             schema=alias,
-    #             logger=logger
-    #         )
-
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
-
-
-# TODO: Do not delete users. Just update their names to null/empty string and disable
-#  them (active = False). Using or re-enabling it shouldn't be possible again.
-#  For the moment, this endpoint is just disabled. Patches for `PUT` are pending.
-# @router.delete(
-#     "",
-#     status_code=204,
-#     responses={k: {"model": schemas.APIError} for k in (404, 409)}
-# )
-# @versioning.versions(minimal=1)
-# async def delete_existing_user(
-#         user: schemas.User,
-#         local: LocalRequestData = Depends(LocalRequestData)
-# ):
-#     """
-#     Delete an existing user model.
-#
-#     This operation will delete the user aliases, but no user history or transactions.
-#
-#     A 404 error will be returned if the user's `id` doesn't exist.
-#     A 409 error will be returned if the object is not up-to-date, the balance
-#     of the user is not zero or if there are any open refund requests or communisms
-#     that were either created by that user or which this user participates in.
-#     """
-#
-#     def hook(model, *_):
-#         if model.balance != 0:
-#             info = ""
-#             if model.voucher_id and model.external:
-#                 info = f" User {model.voucher_id} vouches for this user and may handle this."
-#             raise Conflict(f"Balance of {user.name} is not zero.{info} Can't delete user.", str(user))
-#
-#         active_created_refunds = local.session.query(models.Refund).filter_by(
-#             active=True, creator_id=model.id
-#         ).all()
-#         if active_created_refunds:
-#             raise Conflict(
-#                 f"User {user.name} has at least one active refund requests. Can't delete user.",
-#                 str(active_created_refunds)
-#             )
-#
-#         active_created_communisms = local.session.query(models.Communism).filter_by(
-#             active=True, creator_id=model.id
-#         ).all()
-#         if active_created_communisms:
-#             raise Conflict(
-#                 f"User {user.name} has created at least one active communism. Can't delete user.",
-#                 str(active_created_communisms)
-#             )
-#
-#         for communism in local.session.query(models.Communism).filter_by(active=True).all():
-#             for participant in communism.participants:
-#                 if participant.user_id == model.id:
-#                     if participant.quantity == 0:
-#                         logger.warning(f"Quantity 0 for {participant} of {communism}.")
-#                     raise Conflict(
-#                         f"User {user.name} is participant of at least one active communism. Can't delete user.",
-#                         str(participant)
-#                     )
-#
-#     return await helpers.delete_one_of_model(
-#         user.id,
-#         models.User,
-#         local,
-#         schema=user,
-#         logger=logger,
-#         hook_func=hook
-#     )
 
 
 @router.get(
@@ -348,6 +190,7 @@ async def set_voucher_of_user(
             )
 
     debtor.voucher_user = voucher
+    await helpers.update_model(debtor, local, logger, helpers.ReturnType.NONE)
     return schemas.VoucherUpdateResponse(
         debtor=debtor,
         voucher=voucher,
@@ -367,6 +210,8 @@ async def disable_user_permanently(
 ):
     """
     Disable a user account, without the possibility to effectively re-enable it (= deletion)
+
+    This operation will delete the user aliases, but no user history or transactions.
 
     A 400 error will be returned if the given user actively vouches for
     someone else, has a non-zero balance or has created / participates
