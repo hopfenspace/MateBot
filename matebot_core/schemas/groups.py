@@ -1,8 +1,8 @@
 """
 MateBot schemas for group actions
 
-This module contains schemas for polls and its
-votes as well as communisms and refunds.
+This module contains schemas for refunds
+and its votes as well as communisms.
 """
 
 from typing import List, Optional
@@ -15,17 +15,15 @@ from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transa
 class Vote(BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
-    poll_id: pydantic.NonNegativeInt
-    vote: pydantic.conint(ge=-1, le=1)
+    refund_id: pydantic.NonNegativeInt
+    vote: bool
     modified: pydantic.NonNegativeInt
-
-    __allowed_updates__ = ["vote"]
 
 
 class VoteCreation(BaseModel):
     user_id: pydantic.NonNegativeInt
-    poll_id: pydantic.NonNegativeInt
-    vote: pydantic.conint(ge=-1, le=1)
+    refund_id: pydantic.NonNegativeInt
+    vote: bool
 
 
 # class Poll(BaseModel):
