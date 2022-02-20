@@ -15,32 +15,35 @@ from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transa
 class Vote(BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
-    refund_id: pydantic.NonNegativeInt
+    ballot_id: pydantic.NonNegativeInt
     vote: bool
     modified: pydantic.NonNegativeInt
 
 
 class VoteCreation(BaseModel):
     user_id: pydantic.NonNegativeInt
-    refund_id: pydantic.NonNegativeInt
+    ballot_id: pydantic.NonNegativeInt
     vote: bool
 
 
-# class Poll(BaseModel):
-#     id: pydantic.NonNegativeInt
-#     question: pydantic.constr(max_length=255)
-#     changeable: bool
-#     active: bool
-#     votes: List[Vote]
-#     result: Optional[int]
-#     closed: Optional[pydantic.NonNegativeInt]
-#
-#     __allowed_updates__ = ["active"]
-#
-#
-# class PollCreation(BaseModel):
-#     question: pydantic.constr(max_length=255)
-#     changeable: bool
+class Ballot(BaseModel):
+    id: pydantic.NonNegativeInt
+    modified: pydantic.NonNegativeInt
+    votes: List[Vote]
+
+
+class Poll(BaseModel):
+    id: pydantic.NonNegativeInt
+    active: bool
+    accepted: Optional[bool]
+    creator: _User
+    votes: List[Vote]
+    created: pydantic.NonNegativeInt
+    modified: pydantic.NonNegativeInt
+
+
+class PollCreation(BaseModel):
+    creator_id: pydantic.NonNegativeInt
 
 
 class Refund(BaseModel):
@@ -54,8 +57,6 @@ class Refund(BaseModel):
     transaction: Optional[_Transaction]
     created: Optional[pydantic.NonNegativeInt]
     modified: Optional[pydantic.NonNegativeInt]
-
-    __allowed_updates__ = ["active"]
 
 
 class RefundCreation(BaseModel):
@@ -80,8 +81,6 @@ class Communism(BaseModel):
     modified: pydantic.NonNegativeInt
     participants: List[CommunismUserBinding]
     multi_transaction: Optional[_MultiTransaction]
-
-    __allowed_updates__ = ["active", "participants"]
 
 
 class CommunismCreation(BaseModel):

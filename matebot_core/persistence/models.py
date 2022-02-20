@@ -245,6 +245,7 @@ class Poll(Base):
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     active = Column(Boolean, nullable=False, default=True)
+    accepted = Column(Boolean, nullable=True, default=None)
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     ballot_id = Column(Integer, ForeignKey("ballots.id"), nullable=False)
     created = Column(DateTime, nullable=False, server_default=func.now())
@@ -258,6 +259,7 @@ class Poll(Base):
         return schemas.Poll(
             id=self.id,
             active=self.active,
+            accepted=self.accepted,
             created=self.created.timestamp(),
             modified=self.modified.timestamp(),
             creator=self.creator.schema,
