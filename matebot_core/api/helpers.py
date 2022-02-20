@@ -262,69 +262,69 @@ async def get_all_of_model(
     return all_schemas
 
 
-async def _handle_data_changes(
-        local: LocalRequestData,
-        operation: Operations,
-        returns: ReturnType,
-        model: Optional[models.Base] = None,
-        model_type: Optional[Type[models.Base]] = None,
-        model_id: Optional[int] = None,
-        more_models: Optional[List[models.Base]] = None,
-        logger: Optional[logging.Logger] = None,
-        location_format: Optional[str] = None,
-        content_location: bool = False,
-        trigger_callback: bool = False,
-        callback_operation: Optional[_CallbackType] = None,
-        hook_before: Optional[HookType] = None,
-        hook_after: Optional[HookType] = None,
-        extra_headers: Optional[Dict[str, Any]] = None,
-) -> Optional[pydantic.BaseModel]:
-
-    # Make sure that all required variables are set & checked properly
-    if model is None:
-        if model_type is None or model_id is None:
-            raise InternalServerException("ValueError", "Missing model or model type with ID")
-        model = await return_one(model_id, model_type, local.session)
-    if model_type is None:
-        model_type = type(model)
-    if model_id is not None and model_id != model.id:
-        raise InternalServerException("ValueError", f"Model {model} doesn't match ID {model_id}")
-    if not isinstance(model, model_type):
-        raise InternalServerException("TypeError", f"Model {model} doesn't match {model_type}")
-    if not isinstance(operation, Operations):
-        raise InternalServerException("TypeError", f"{operation} is no {Operations} object")
-    if not isinstance(local, LocalRequestData):
-        raise InternalServerException("TypeError", f"{local} is no {LocalRequestData} object")
-
-    # Enforce to have a logger
-    logger = enforce_logger(logger)
-
-    # Execute the 'before' hook function or coroutine
-    await _call_hook(hook_before, model, local, logger)
-
-    # Add the model(s) to the database transaction and commit it
-    logger.info(f"{operation.value} models: {', '.join(map(repr, [model] + more_models))}...")
-    await _commit(local.session, model, *more_models or [], logger=logger)
-
-    # Execute the 'after' hook function or coroutine
-    await _call_hook(hook_after, model, local, logger)
-
-    # Add the callback operation to the list of background tasks to execute after the request
-    if trigger_callback and isinstance(callback_operation, Callable):
-        local.tasks.add_task(
-            callback_operation,
-            model_type.__name__.lower(),
-            model_id,
-            await return_all(models.Callback, local.session)
-        )
-
-    # Add the specified headers to the resulting response (even if they are omitted)
-    headers = extra_headers.copy()
-    if location_format is not None:
-        headers["Location"] = location_format.format(model.id)
-        if content_location:
-            headers["Content-Location"] = headers["Location"]
-    return _return_expected(returns, model, local, headers)
+# async def _handle_data_changes(
+#         local: LocalRequestData,
+#         operation: Operations,
+#         returns: ReturnType,
+#         model: Optional[models.Base] = None,
+#         model_type: Optional[Type[models.Base]] = None,
+#         model_id: Optional[int] = None,
+#         more_models: Optional[List[models.Base]] = None,
+#         logger: Optional[logging.Logger] = None,
+#         location_format: Optional[str] = None,
+#         content_location: bool = False,
+#         trigger_callback: bool = False,
+#         callback_operation: Optional[_CallbackType] = None,
+#         hook_before: Optional[HookType] = None,
+#         hook_after: Optional[HookType] = None,
+#         extra_headers: Optional[Dict[str, Any]] = None,
+# ) -> Optional[pydantic.BaseModel]:
+#
+#     # Make sure that all required variables are set & checked properly
+#     if model is None:
+#         if model_type is None or model_id is None:
+#             raise InternalServerException("ValueError", "Missing model or model type with ID")
+#         model = await return_one(model_id, model_type, local.session)
+#     if model_type is None:
+#         model_type = type(model)
+#     if model_id is not None and model_id != model.id:
+#         raise InternalServerException("ValueError", f"Model {model} doesn't match ID {model_id}")
+#     if not isinstance(model, model_type):
+#         raise InternalServerException("TypeError", f"Model {model} doesn't match {model_type}")
+#     if not isinstance(operation, Operations):
+#         raise InternalServerException("TypeError", f"{operation} is no {Operations} object")
+#     if not isinstance(local, LocalRequestData):
+#         raise InternalServerException("TypeError", f"{local} is no {LocalRequestData} object")
+#
+#     # Enforce to have a logger
+#     logger = enforce_logger(logger)
+#
+#     # Execute the 'before' hook function or coroutine
+#     await _call_hook(hook_before, model, local, logger)
+#
+#     # Add the model(s) to the database transaction and commit it
+#     logger.info(f"{operation.value} models: {', '.join(map(repr, [model] + more_models))}...")
+#     await _commit(local.session, model, *more_models or [], logger=logger)
+#
+#     # Execute the 'after' hook function or coroutine
+#     await _call_hook(hook_after, model, local, logger)
+#
+#     # Add the callback operation to the list of background tasks to execute after the request
+#     if trigger_callback and isinstance(callback_operation, Callable):
+#         local.tasks.add_task(
+#             callback_operation,
+#             model_type.__name__.lower(),
+#             model_id,
+#             await return_all(models.Callback, local.session)
+#         )
+#
+#     # Add the specified headers to the resulting response (even if they are omitted)
+#     headers = extra_headers.copy()
+#     if location_format is not None:
+#         headers["Location"] = location_format.format(model.id)
+#         if content_location:
+#             headers["Content-Location"] = headers["Location"]
+#     return _return_expected(returns, model, local, headers)
 
 
 async def create_new_of_model(

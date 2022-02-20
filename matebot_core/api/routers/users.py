@@ -57,7 +57,7 @@ async def create_new_user(
 @router.put(
     "",
     response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_user(
@@ -71,13 +71,12 @@ async def update_existing_user(
     external flag of a user. Use the specialised POST endpoints for
     other user-related actions like disabling or vouching.
 
-    A 403 error will be returned when any other field has been changed.
-    A 404 error will be returned if the `user_id` or `voucher` is not known.
-    A 409 error will be returned if an inactive or the special user was changed.
+    A 404 error will be returned if the user ID is not known.
+    A 409 error will be returned if an inactive or the special
+    user was changed or an external user was granted permissions.
     """
 
     model = await helpers.return_one(user.id, models.User, local.session)
-    helpers.restrict_updates(user, model.schema)
 
     if not model.active:
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
