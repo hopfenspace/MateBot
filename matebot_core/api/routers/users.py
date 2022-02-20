@@ -232,13 +232,13 @@ async def disable_user_permanently(
             "Therefore, your user account can't be deleted."
         )
 
-    # TODO: ensure that this works as expected and returns active communism memberships
-    if local.session.query(models.Communism).filter_by(active=True).join(models.CommunismUsers) \
-            .filter(models.CommunismUsers.user_id == model.id).all():
-        raise BadRequest(
-            "You are currently participating in an open communism. "
-            "Therefore, your user account can't be deleted."
-        )
+    for communism in local.session.query(models.Communism).filter_by(active=True).all():
+        for participant in communism.participants:
+            if participant.user_id == model.id:
+                raise BadRequest(
+                    "You are currently participating in an open communism. "
+                    "Therefore, your user account can't be deleted."
+                )
 
     if local.session.query(models.Refund).filter_by(creator=model, active=True).all():
         raise BadRequest(
