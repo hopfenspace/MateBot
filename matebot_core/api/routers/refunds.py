@@ -76,8 +76,6 @@ async def create_new_refund(
     )
 
 
-
-
 @router.get(
     "/{refund_id}",
     response_model=schemas.Refund,

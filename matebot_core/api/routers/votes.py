@@ -8,11 +8,9 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import BadRequest, Conflict, ReturnType
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
-from ...misc.refunds import close_refund
 from ... import schemas
 
 
@@ -32,8 +30,6 @@ async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
     """
 
     return await helpers.get_all_of_model(models.Vote, local)
-
-
 
 
 @router.get(
