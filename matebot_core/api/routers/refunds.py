@@ -8,11 +8,11 @@ from typing import List
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import BadRequest, Conflict, ForbiddenChange, MissingImplementation
+from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
-from ...misc.refunds import close_refund
+from ...misc.refunds import attempt_closing_refund
 from ... import schemas
 
 
@@ -127,7 +127,56 @@ async def vote_for_refund_request(
         vote: schemas.VoteCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
-    raise MissingImplementation("vote_for_refund_request")
+    """
+    Add a new vote for an open refund request
+
+    This endpoint will take care of closing the refund request if
+    enough votes for or against it have been created. The limits
+    are set in the server's configuration. The newly transaction can
+    be found in the refund's transaction attribute (if the refund
+    request has been accepted, otherwise this attribute is null).
+
+    A 400 error will be returned if the refund is not active anymore, the user has
+    already voted in the specified ballot, the user is not active or unprivileged.
+    A 404 error will be returned if the user ID or ballot ID is unknown.
+    A 409 error will be returned if the voter is the community user, if an
+    invalid state has been detected or the ballot referenced by the newly
+    created vote is actually about a membership poll instead of a refund request.
+    """
+
+    user = await helpers.return_one(vote.user_id, models.User, local.session)
+    ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
+
+    if user.special:
+        raise Conflict("The community user can't vote in refund requests.")
+    if ballot.polls:
+        raise Conflict("This endpoint ('POST /refunds/vote') can't be used to vote on polls.")
+    if not ballot.refunds:
+        raise Conflict("The ballot didn't reference any refund request. Please file a bug report.", str(ballot))
+    if len(ballot.refunds) != 1:
+        raise Conflict("The ballot didn't reference exactly one refund request. Please file a bug report.", str(ballot))
+    refund: models.Refund = ballot.refunds[0]
+
+    if not refund.active:
+        raise BadRequest("You can't vote on already closed refund requests.")
+    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user):
+        raise BadRequest("You have already voted for this refund request. You can't vote twice.")
+    if not user.active:
+        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this refund request.")
+    if not user.permission:
+        raise BadRequest("You are not permitted to participate in ballots about refund requests.")
+
+    model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
+    await helpers.create_new_of_model(model, local, logger)
+
+    attempt_closing_refund(
+        refund,
+        local.session,
+        (local.config.general.min_refund_approves, local.config.general.min_refund_disapproves),
+        logger,
+        local.tasks
+    )
+    return schemas.RefundVoteResponse(refund=refund.schema, vote=model.schema)
 
 
 @router.post(

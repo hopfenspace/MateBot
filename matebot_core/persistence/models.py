@@ -212,7 +212,7 @@ class Refund(Base):
     transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
 
     creator = relationship("User", backref="refunds")
-    ballot = relationship("Ballot", backref="refund")
+    ballot = relationship("Ballot", backref="refunds")
     transaction = relationship("Transaction")
 
     __table_args__ = (
@@ -252,8 +252,8 @@ class Poll(Base):
     created = Column(DateTime, nullable=False, server_default=func.now())
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    creator = relationship("User", backref="poll")
-    ballot = relationship("Ballot", backref="poll")
+    creator = relationship("User", backref="polls")
+    ballot = relationship("Ballot", backref="polls")
 
     @property
     def schema(self) -> schemas.Poll:

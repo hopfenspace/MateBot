@@ -3,7 +3,6 @@ MateBot library to easily manage refunds
 """
 
 import logging
-import datetime
 from typing import Optional, Tuple
 
 from sqlalchemy.orm.session import Session
@@ -15,43 +14,53 @@ from .transactions import create_transaction
 from ..persistence import models
 
 
-def close_refund(
+def attempt_closing_refund(
         refund: models.Refund,
         session: Session,
         limits: Tuple[int, int],
         logger: logging.Logger,
         tasks: Optional[BackgroundTasks] = None
-) -> models.Refund:
-    """"""
+) -> bool:
+    """
+    Attempt to close an open refund request
+
+    :param refund: existing model of an open refund request
+    :param session: SQLAlchemy session used to perform database operations
+    :param limits: tuple defining the limits for approving & disapproving a refund request
+    :param logger: logger that should be used for DEBUG and WARNING messages
+    :param tasks: optional background tasks collection
+    :return: indicator whether the refund was closed (the refund won't be closed
+        when the limit of approving or disapproving votes hasn't been reached)
+    """
 
     logger = enforce_logger(logger)
-    logger.debug(f"Closing refund {refund.id}: {str(refund)}")
-    logger.debug(f"Linked poll: {str(refund.poll)}")
+    logger.debug(f"Checking whether refund {refund.id} should be closed...")
+    logger.debug(f"Linked ballot: {str(refund.ballot)}")
 
     if not refund.active:
-        raise RuntimeError("Refund is not active, can't be closed")
+        logger.warning(f"Refund {refund.id} is already closed, it can't be attempted to be closed!")
+        return False
 
-    sum_of_votes = sum(v.vote for v in refund.poll.votes)
+    sum_of_votes = sum(v.vote for v in refund.ballot.votes)
     min_approves = limits[0]
     min_disapproves = limits[1]
     if sum_of_votes < min_approves and -sum_of_votes < min_disapproves:
-        raise ValueError(f"Not enough approving/disapproving votes for refund {refund.id}")
+        return False
 
     refund.active = False
-    refund.poll.result = sum_of_votes
-    refund.poll.active = False
-    refund.poll.closed = datetime.datetime.now().replace(microsecond=0)
 
     if sum_of_votes >= min_approves:
-        logger.debug(f"The refund {refund.id} will be accepted!")
+        logger.info(f"The refund {refund.id} will be accepted")
         sender = session.query(models.User).filter_by(special=True).all()[0]
         receiver = refund.creator
         refund.transaction = create_transaction(
             sender, receiver, refund.amount, refund.description, session, logger, tasks
         )
+        logger.debug(f"Successfully created transaction {refund.transaction.id} for refund {refund.id}")
+    else:
+        logger.debug(f"The refund {refund.id} will be closed without performing transactions.")
 
     session.add(refund)
-    session.add(refund.poll)
     session.commit()
     logger.debug(f"Successfully closed refund {refund.id}")
 
@@ -63,4 +72,4 @@ def close_refund(
             session.query(models.Callback).all()
         )
 
-    return refund
+    return True
