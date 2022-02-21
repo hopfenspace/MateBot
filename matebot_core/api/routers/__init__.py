@@ -7,30 +7,24 @@ is the first in the list, whereas all others are sorted alphabetically.
 """
 
 from .aliases import router as aliases_router
-from .applications import router as applications_router
-from .ballots import router as ballots_router
 from .callbacks import router as callbacks_router
 from .communisms import router as communisms_router
-from .consumables import router as consumables_router
-from .generic import router as generic_router
+from .login import router as login_router
 from .polls import router as polls_router
+from .readonly import router as readonly_router
 from .refunds import router as refunds_router
 from .transactions import router as transactions_router
 from .users import router as users_router
-from .votes import router as votes_router
 
 
 all_routers = [
-    generic_router,
+    login_router,
+    readonly_router,
     aliases_router,
-    applications_router,
-    ballots_router,
     callbacks_router,
     communisms_router,
-    consumables_router,
     polls_router,
     refunds_router,
     transactions_router,
-    users_router,
-    votes_router
+    users_router
 ]
