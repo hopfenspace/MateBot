@@ -256,7 +256,7 @@ class BaseAPITests(BaseTest):
         :param skip_callbacks: optional number of callback requests that will be dropped and
             not checked in the recent callback check later (no problem if the number is too high)
         :param skip_callback_timeout: maximal waiting time for the skip operation
-        :param recent_callbacks: optional list of the most recent ("rightmost") callbacks
+        :param recent_callbacks: optional, unsorted list of the most recent ("rightmost") callbacks
             that arrived at the local callback HTTP server (which only works when its
             callback server URI has been registered in the API during the same unit test)
         :param callback_timeout: maximal waiting time until a callback request arrived
@@ -337,10 +337,11 @@ class BaseAPITests(BaseTest):
 
         if recent_callbacks is not None:
             while recent_callbacks:
-                self.assertEqual(
-                    recent_callbacks.pop(0),
-                    self.callback_request_list.get(timeout=callback_timeout)
-                )
+                obj = self.callback_request_list.get(timeout=callback_timeout)
+                if obj in recent_callbacks:
+                    recent_callbacks.remove(obj)
+                else:
+                    self.fail(f"Unexpected callback {obj!r} is not in {recent_callbacks}")
 
         return response
 
