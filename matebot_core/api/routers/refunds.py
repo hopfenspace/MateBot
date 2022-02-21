@@ -154,7 +154,7 @@ async def vote_for_refund_request(
 
     if not refund.active:
         raise BadRequest("You can't vote on already closed refund requests.")
-    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user):
+    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this refund request. You can't vote twice.")
     if not user.active:
         raise BadRequest("Your user account was disabled. Therefore, you can't vote for this refund request.")

@@ -230,7 +230,7 @@ class Refund(Base):
             allowed=None if self.active else self.transaction is not None,
             ballot_id=self.ballot_id,
             votes=[vote.schema for vote in self.ballot.votes],
-            transaction=self.transaction,
+            transaction=self.transaction and self.transaction.schema,
             created=self.created.timestamp(),
             modified=self.modified.timestamp()
         )

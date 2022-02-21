@@ -160,7 +160,7 @@ async def vote_for_membership_request(
 
     if not poll.active:
         raise BadRequest("You can't vote on already closed membership polls.")
-    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user):
+    if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this membership poll. You can't vote twice.")
     if not user.active:
         raise BadRequest("Your user account was disabled. Therefore, you can't vote for this membership poll.")
