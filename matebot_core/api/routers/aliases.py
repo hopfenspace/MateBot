@@ -153,13 +153,13 @@ async def get_alias_by_id(
 
 
 @router.get(
-    "/application/{application}",
+    "/application/{application_id}",
     response_model=List[schemas.Alias],
     responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def get_aliases_by_application(
-        application: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
+        application_id: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -170,12 +170,12 @@ async def get_aliases_by_application(
     is neither a valid ID nor a valid application name.
     """
 
-    if isinstance(application, str):
-        app = local.session.query(models.Application).filter_by(name=application).first()
+    if isinstance(application_id, str):
+        app = local.session.query(models.Application).filter_by(name=application_id).first()
         if app is None:
-            raise NotFound(f"Application name {application!r}")
-    elif isinstance(application, int):
-        app = await helpers.return_one(application, models.Application, local.session)
+            raise NotFound(f"Application name {application_id!r}")
+    elif isinstance(application_id, int):
+        app = await helpers.return_one(application_id, models.Application, local.session)
     else:
-        raise Conflict(f"Invalid application identifier: {application!r}", str(application))
+        raise Conflict(f"Invalid application identifier: {application_id!r}", str(application_id))
     return await helpers.get_all_of_model(models.Alias, local, application_id=app.id)
