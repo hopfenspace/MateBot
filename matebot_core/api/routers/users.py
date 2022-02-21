@@ -294,7 +294,7 @@ async def disable_user_permanently(
             "Therefore, your user account can't be deleted."
         )
 
-    if not model.external and local.session.query(models.User).filter_by(voucher=model, active=True).all():
+    if not model.external and local.session.query(models.User).filter_by(voucher_user=model, active=True).all():
         raise BadRequest(
             "You are currently vouching for at least one other user. "
             "Therefore, your user account can't be deleted."
@@ -302,8 +302,8 @@ async def disable_user_permanently(
 
     if model.balance != 0:
         info = ""
-        if model.voucher and model.external:
-            info = f" User {model.voucher.name!r} vouches for you and may help you to handle this."
+        if model.voucher_user and model.external:
+            info = f" User {model.voucher_user.name!r} vouches for you and may help you to handle this."
         raise BadRequest(
             f"Your balance is not zero. You need a zero balance before you can delete your user account.{info}"
         )

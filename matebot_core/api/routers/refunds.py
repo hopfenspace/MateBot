@@ -66,10 +66,7 @@ async def create_new_refund(
             description=refund.description,
             creator=creator,
             active=refund.active,
-            poll=models.Poll(
-                question=f"Accept refund request for {refund.description!r}?",
-                changeable=False
-            )
+            ballot=models.Ballot()
         ),
         local,
         logger
@@ -163,6 +160,8 @@ async def vote_for_refund_request(
         raise BadRequest("Your user account was disabled. Therefore, you can't vote for this refund request.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about refund requests.")
+    if user.id == refund.creator_id:
+        raise BadRequest("You can't vote on your own refund requests.")
 
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
     await helpers.create_new_of_model(model, local, logger)

@@ -60,7 +60,7 @@ async def create_new_membership_poll(
     if not creator.external:
         raise BadRequest("You are already an internal user. Membership request polls can only be created by externals.")
 
-    return await helpers.create_new_of_model(models.Poll(creator=creator), local, logger)
+    return await helpers.create_new_of_model(models.Poll(creator=creator, ballot=models.Ballot()), local, logger)
 
 
 # @router.put(
@@ -166,6 +166,8 @@ async def vote_for_membership_request(
         raise BadRequest("Your user account was disabled. Therefore, you can't vote for this membership poll.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about membership polls.")
+    if user.id == poll.creator_id:
+        raise BadRequest("You can't vote on your own membership polls.")
 
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
     await helpers.create_new_of_model(model, local, logger)
