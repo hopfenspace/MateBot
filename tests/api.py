@@ -3,7 +3,6 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import time
-import datetime
 import unittest as _unittest
 from typing import Type
 
@@ -261,8 +260,11 @@ class WorkingAPITests(utils.BaseAPITests):
 
         self.assertEqual(len(self.assertQuery(("GET", "/users"), 200).json()), 10, "Might I miss something?")
 
-    def test_polls_and_votes(self):
-        self.assertListEqual([], self.assertQuery(("GET", "/polls"), 200).json())
+    def test_refunds(self):
+        self.make_special_user()
+        community = self.assertQuery(("GET", "/users/community"), 200).json()
+        self.assertListEqual([], self.assertQuery(("GET", "/refunds"), 200).json())
+        self.assertEqual(len(self.assertQuery(("GET", "/votes"), 200).json()), 0)
 
         # Adding the callback server for testing
         self.assertQuery(
@@ -272,326 +274,185 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
-        # User referenced by 'user_id' doesn't exist, then it's created
-        self.assertQuery(
-            ("POST", "/votes"),
-            404,
-            json={"user_id": 1, "poll_id": 1, "vote": 1}
-        )
+        # Adding the creator user
         self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user1", "permission": True, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/1")]
+            recent_callbacks=[("GET", "/create/user/2")]
         ).json()
 
-        # Poll referenced by 'poll_id' doesn't exist, then it's created
-        self.assertQuery(
-            ("POST", "/votes"),
-            404,
-            json={"user_id": 1, "poll_id": 1, "vote": 1}
-        )
-        poll1 = self.assertQuery(
-            ("POST", "/polls"),
+        # Create the first refund request
+        refund1 = self.assertQuery(
+            ("POST", "/refunds"),
             201,
-            json={"question": "Is this a question?", "changeable": True},
-            r_schema=_schemas.Poll,
-            recent_callbacks=[("GET", "/create/poll/1")]
+            json={"description": "Do you like this?", "amount": 42, "creator_id": 2},
+            r_schema=_schemas.Refund,
+            recent_callbacks=[("GET", "/create/refund/1")]
         ).json()
-        self.assertEqual(poll1["question"], "Is this a question?")
+        self.assertEqual(refund1["id"], 1)
+        self.assertEqual(refund1["active"], True)
+        self.assertEqual(refund1["ballot_id"], 1)
+        self.assertEqual(refund1["votes"], [])
 
-        # Add another poll to be sure
-        poll2 = self.assertQuery(
-            ("POST", "/polls"),
+        # Add another refund request to be sure
+        refund2 = self.assertQuery(
+            ("POST", "/refunds"),
             201,
-            json={"question": "Are you sure?", "changeable": False},
-            recent_callbacks=[("GET", "/create/poll/2")]
+            json={"description": "Are you sure?", "amount": 1337, "creator_id": 2},
+            recent_callbacks=[("GET", "/create/refund/2")]
         ).json()
-        self.assertEqual(poll2["votes"], [])
-        self.assertEqual(poll2["changeable"], False)
+        self.assertEqual(refund2["id"], 2)
+        self.assertEqual(refund2["votes"], [])
+        self.assertEqual(refund2["allowed"], None)
+        self.assertEqual(refund2["transaction"], None)
+        self.assertEqual(refund2["active"], True)
 
-        # Add the vote once, but not twice, even not with another vote
-        vote1 = self.assertQuery(
-            ("POST", "/votes"),
-            201,
-            json={"user_id": 1, "poll_id": 1, "vote": 1},
-            r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/create/vote/1")]
-        )
-        self.assertEqual(vote1.json()["vote"], 1)
-        for v in [1, 0, -1]:
-            self.assertQuery(
-                ("POST", "/votes"),
-                400,
-                json={"user_id": 1, "poll_id": 1, "vote": v}
-            )
-
-        # Update the vote to become negative
-        vote1_json = vote1.json()
-        vote1_json["vote"] = -1
-        vote1_json_updated = self.assertQuery(
-            ("PUT", "/votes"),
+        # Abort the second refund request
+        refund2 = self.assertQuery(
+            ("POST", "/refunds/abort/2"),
             200,
-            json=vote1_json,
-            r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/update/vote/1")]
+            recent_callbacks=[("GET", "/update/refund/2")]
         ).json()
-        self.assertEqual(vote1_json_updated["vote"], -1)
+        self.assertEqual(refund2["allowed"], False)
+        self.assertEqual(refund2["transaction"], None)
+        self.assertEqual(refund2["active"], False)
 
-        # Add another user for testing a second voting user
+        # A user can't vote on its own refund requests
+        self.assertQuery(
+            ("POST", "/refunds/vote"),
+            400,
+            json={"user_id": 2, "ballot_id": 1, "vote": True}
+        )
+
+        # Adding an unprivileged user
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2", "permission": True, "external": False},
+            json={"name": "user2", "permission": False, "external": False},
             r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/2")]
-        )
+            recent_callbacks=[("GET", "/create/user/3")]
+        ).json()
         self.assertQuery(
-            ("POST", "/votes"),
-            201,
-            json={"user_id": 2, "poll_id": 1, "vote": -1},
-            r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/create/vote/2")]
-        )
-
-        # Don't allow to change a vote of a restricted (unchangeable) poll
-        vote3 = self.assertQuery(
-            ("POST", "/votes"),
-            201,
-            json={"user_id": 2, "poll_id": 2, "vote": -1},
-            r_schema=_schemas.Vote,
-            recent_callbacks=[("GET", "/create/vote/3")]
-        )
-        vote3_json = vote3.json()
-        vote3_json["vote"] = 1
-        self.assertQuery(
-            ("PUT", "/votes"),
+            ("POST", "/refunds/vote"),
             400,
-            json=vote3_json
+            json={"user_id": 3, "ballot_id": 1, "vote": True}
         )
+
+        # Adding a privileged user which gets disabled first, though
         self.assertQuery(
-            ("PUT", "/votes"),
+            ("POST", "/users"),
+            201,
+            json={"name": "user3", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/create/user/4")]
+        ).json()
+        self.assertQuery(("POST", "/users/disable/4"), 200, recent_callbacks=[("GET", "/update/user/4")])
+        self.assertQuery(
+            ("POST", "/refunds/vote"),
             400,
-            json=vote3_json
+            json={"user_id": 4, "ballot_id": 1, "vote": True}
         )
 
-        # Try to close the poll with an old model
-        poll1["active"] = False
+        # Adding a new user to actually vote on the refund for the first time
         self.assertQuery(
-            ("PUT", "/polls"),
-            409,
-            json=poll1
-        )
-
-        # Close the poll, then try closing it again
-        poll1 = self.assertQuery(
-            ("GET", "/polls/1"),
-            200
-        ).json()
-        poll1["active"] = False
-        poll1_updated = self.assertQuery(
-            ("PUT", "/polls"),
-            200,
-            json=poll1,
-            r_schema=_schemas.Poll,
-            recent_callbacks=[("GET", "/update/poll/1")]
-        ).json()
-        self.assertNotEqual(poll1, poll1_updated)
-        self.assertEqual(poll1_updated["result"], -2)
-        self.assertGreaterEqual(poll1_updated["closed"], int(datetime.datetime.now().timestamp()) - 1)
-        self.assertEqual(poll1_updated["votes"], [
-            self.assertQuery(("GET", "/votes/1"), 200).json(),
-            self.assertQuery(("GET", "/votes/2"), 200).json(),
-        ])
-        self.assertQuery(
-            ("PUT", "/polls"),
-            200,
-            json=poll1_updated,
-            r_schema=_schemas.Poll(**poll1_updated),
-            recent_callbacks=[]
-        ).json()
-
-        # Try adding new votes with another user to the closed poll
-        self.assertQuery(
-            ("POST", "/votes"),
-            409,
-            json={"user_id": 2, "poll_id": 1, "vote": -1}
-        )
-
-        # Open a new poll and close it immediately
-        poll3 = self.assertQuery(
-            ("POST", "/polls"),
+            ("POST", "/users"),
             201,
-            json={"question": "Why did you even open this poll?", "changeable": False},
-            r_schema=_schemas.Poll
-        )
-        poll3_json = poll3.json()
-        self.assertTrue(poll3_json["active"])
-        poll3_json["active"] = False
-        poll3_closed = self.assertQuery(
-            ("PUT", "/polls"),
-            200,
-            json=poll3_json,
-            r_schema=_schemas.Poll
+            json={"name": "user4", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/create/user/5")]
         ).json()
-        self.assertEqual(poll3_closed["result"], 0)
-        self.assertEqual(poll3_closed["active"], False)
-        self.assertEqual(poll3_closed["changeable"], False)
-        self.assertEqual(poll3_closed["votes"], [])
+        vote1 = self.assertQuery(
+            ("POST", "/refunds/vote"),
+            200,
+            json={"user_id": 5, "ballot_id": 1, "vote": True},
+            r_schema=_schemas.RefundVoteResponse,
+            recent_callbacks=[("GET", "/create/vote/1")]
+        ).json()
+        self.assertEqual(vote1["vote"]["vote"], True)
+        self.assertEqual(vote1["vote"]["ballot_id"], 1)
+        self.assertIsNone(vote1["refund"]["transaction"])
+        self.assertGreaterEqual(vote1["refund"]["modified"], refund1["created"])
+        self.assertListEqual(vote1["refund"]["votes"], [vote1["vote"]])
 
-    def test_refunds(self):
-        self.make_special_user()
-        self.assertListEqual([], self.assertQuery(("GET", "/refunds"), 200).json())
-
-        # Adding the callback server for testing
+        # The community user shouldn't vote on refund requests
         self.assertQuery(
-            ("POST", "/callbacks"),
-            201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/create/callback/1")]
+            ("POST", "/refunds/vote"),
+            [400, 409],
+            json={"user_id": community["id"], "ballot_id": 1, "vote": True}
         )
 
-        # Special users shouldn't create refunds or post votes
-        community = self.assertQuery(("GET", "/users/community"), 200).json()
+        # Add another user to accept the refund request
+        old_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user5", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/create/user/6")]
+        )
+        vote2 = self.assertQuery(
+            ("POST", "/refunds/vote"),
+            200,
+            json={"user_id": 6, "ballot_id": 1, "vote": True},
+            r_schema=_schemas.RefundVoteResponse,
+            recent_callbacks=[("GET", "/create/vote/2"), ("GET", "/create/transaction/1"), ("GET", "/update/refund/1")]
+        ).json()
+        self.assertListEqual(vote2["refund"]["votes"], [vote1["vote"], vote2["vote"]])
+        self.assertIsNotNone(vote2["refund"]["transaction"])
+        transaction = _schemas.Transaction(**vote2["refund"]["transaction"])
+        self.assertEqual(transaction.amount, 42)
+        self.assertEqual(transaction.sender.id, 1)
+        self.assertEqual(transaction.receiver.id, 2)
+        self.assertIsNone(transaction.multi_transaction_id)
+        self.assertEqual(vote2["refund"]["allowed"], True)
+        self.assertEqual(vote2["refund"]["active"], False)
+
+        new_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
+        self.assertGreater(new_balance, old_balance)
+        self.assertEqual(new_balance, old_balance + 42)
+        transactions = self.assertQuery(("GET", "/transactions"), 200).json()
+        self.assertListEqual([transaction], transactions)
+
+        # Don't allow to add votes to already closed refund requests
+        self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user6", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/create/user/7")]
+        )
+        self.assertQuery(("POST", "/refunds/vote"), 400, json={"user_id": 7, "ballot_id": 1, "vote": True})
+
+        # The community user shouldn't create refunds
         self.assertQuery(
             ("POST", "/refunds"),
-            [403, 409],
+            409,
             json={"description": "Foo", "amount": 1337, "creator_id": community["id"]}
-        )
-        self.assertQuery(
-            ("POST", "/votes"),
-            [403, 404, 409],
-            json={"user_id": 1, "poll_id": 1, "vote": 1}
         )
 
         # User referenced by 'creator' doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/refunds"),
             404,
-            json={"description": "Foo", "amount": 1337, "creator_id": 2}
+            json={"description": "Foo", "amount": 1337, "creator_id": 8}
         ).json()
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/2")]
-        ).json()
-
-        # Poll referenced by 'poll_id' doesn't exist, then it's created by the refund
-        self.assertQuery(
-            ("POST", "/votes"),
-            404,
-            json={"user_id": 2, "poll_id": 1, "vote": 1}
-        )
-        refund1 = self.assertQuery(
-            ("POST", "/refunds"),
-            201,
-            json={"description": "Foo", "amount": 1337, "creator_id": 2},
-            r_schema=_schemas.Refund,
-            recent_callbacks=[("GET", "/create/refund/1")]
-        ).json()
-        self.assertTrue(refund1["active"])
-        self.assertIsNone(refund1["allowed"])
-        self.assertIsNone(refund1["transaction"])
-        self.assertIsNotNone(refund1["created"])
-        self.assertIsNotNone(refund1["modified"])
-
-        # The refund should not be closed now but can be deleted
-        poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
-        self.assertTrue(poll1["active"])
-        self.assertQuery(("PUT", "/refunds"), 200, json=refund1)
-        refund1["active"] = False
-        self.assertEqual(1, len(self.assertQuery(("GET", "/refunds"), 200).json()))
-        self.assertQuery(("PUT", "/refunds"), 200, json=refund1)
-        self.assertEqual(1, len(self.assertQuery(("GET", "/refunds"), 200).json()))
-        poll1 = self.assertQuery(("GET", "/polls/1"), 200).json()
-        self.assertFalse(poll1["active"])
-
-        # A new refund creates a new poll as well
-        self.assertQuery(
-            ("POST", "/refunds"),
-            201,
-            json={"description": "Bar", "amount": 1337, "creator_id": 2},
-            r_schema=_schemas.Refund
-        ).json()
-        self.assertEqual(self.assertQuery(("GET", "/polls/2"), 200, skip_callbacks=2).json()["votes"], [])
-        self.assertEqual(2, len(self.assertQuery(("GET", "/polls"), 200).json()))
-        self.assertEqual(2, len(self.assertQuery(("GET", "/refunds"), 200).json()))
-
-        # Create some new users to participate in the refund
-        for i in range(4):
-            self.assertQuery(
-                ("POST", "/users"),
-                201,
-                json={"name": f"user{i+2}", "permission": True, "external": False},
-                r_schema=_schemas.User,
-                recent_callbacks=[("GET", f"/create/user/{i+3}")]
-            ).json()
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"name": "user7", "permission": False, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/7")]
-        ).json()
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"name": "user8", "permission": False, "external": True},
+            json={"name": "user7", "permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/8")]
         ).json()
-
-        # Reject users without permission for participation in refunds
         self.assertQuery(
-            ("POST", "/votes"),
-            400,
-            json={"user_id": 7, "poll_id": 2, "vote": 1}
-        )
-        self.assertQuery(
-            ("POST", "/votes"),
-            400,
-            json={"user_id": 8, "poll_id": 2, "vote": 1}
-        )
-        self.assertQuery(
-            ("POST", "/votes"),
-            404,
-            json={"user_id": 9, "poll_id": 2, "vote": 1}
-        )
-
-        # Ensure that the refund gets accepted by two new votes
-        old_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
-        self.assertQuery(
-            ("POST", "/votes"),
+            ("POST", "/refunds"),
             201,
-            json={"user_id": 3, "poll_id": 2, "vote": 1},
-            r_schema=_schemas.Vote
-        )
-        self.assertEqual(old_balance, self.assertQuery(("GET", "/users/2"), 200).json()["balance"])
-        self.assertEqual(2, len(self.assertQuery(("GET", "/refunds"), 200).json()))
-        self.assertEqual(0, len(self.assertQuery(("GET", "/transactions"), 200).json()))
-        self.assertQuery(
-            ("POST", "/votes"),
-            201,
-            json={"user_id": 4, "poll_id": 2, "vote": 1},
-            r_schema=_schemas.Vote,
-            skip_callbacks=2,
-            recent_callbacks=[
-                ("GET", "/create/vote/2"),
-                ("GET", "/create/transaction/1"),
-                ("GET", "/update/refund/2")
-            ]
-        )
-        new_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
-        self.assertEqual(new_balance, old_balance + 1337, "refund failed somehow")
-        transactions = self.assertQuery(("GET", "/transactions"), 200).json()
-        self.assertEqual(1, len(transactions))
-        self.assertEqual(transactions[0]["sender"], self.assertQuery(("GET", "/users/1"), 200).json())
-        self.assertEqual(transactions[0]["receiver"], self.assertQuery(("GET", "/users/2"), 200).json())
-        self.assertEqual(transactions[0]["amount"], 1337)
-        self.assertIsNone(transactions[0]["multi_transaction_id"])
+            json={"description": "Foo", "amount": 1337, "creator_id": 8}
+        ).json()
+
+        # Don't send votes for memberships polls to the refund endpoint
+        # TODO
 
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
