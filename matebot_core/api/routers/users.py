@@ -3,7 +3,7 @@ MateBot router module for /users requests
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -25,13 +25,61 @@ router = APIRouter(prefix="/users", tags=["Users"])
     "",
     response_model=List[schemas.User]
 )
-@versioning.versions(minimal=1)
-async def get_all_users(local: LocalRequestData = Depends(LocalRequestData)):
+@versioning.versions(1)
+async def get_all_users(
+        user_id: Optional[pydantic.NonNegativeInt] = None,
+        user_name: Optional[pydantic.constr(max_length=255)] = None,
+        user_permission: Optional[bool] = None,
+        user_active: Optional[bool] = None,
+        user_external: Optional[bool] = None,
+        user_voucher_id: Optional[pydantic.NonNegativeInt] = None,
+        alias_id: Optional[pydantic.NonNegativeInt] = None,
+        alias_app_username: Optional[pydantic.constr(max_length=255)] = None,
+        alias_confirmed: Optional[bool] = None,
+        alias_application_id: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all internal user models with their aliases.
+    Return all users that fulfill *all* constraints given as query parameters
+
+    Query parameters prefixed with `user_` are treated as direct filters on
+    the user model. Query parameters prefixed with `alias_` are treated as
+    filters for users that have an alias fulfilling the given parameters. If
+    a user model has no aliases at all, it will be filtered out if at least
+    one `alias_` query parameter has been set. If no query parameters are
+    given, this endpoint will just return all currently known user models.
     """
 
-    return await helpers.get_all_of_model(models.User, local)
+    query = local.session.query(models.User)
+    if user_id is not None:
+        query = query.filter_by(id=user_id)
+    if user_name is not None:
+        query = query.filter_by(name=user_name)
+    if user_permission is not None:
+        query = query.filter_by(permission=user_permission)
+    if user_active is not None:
+        query = query.filter_by(active=user_active)
+    if user_external is not None:
+        query = query.filter_by(external=user_external)
+    if user_voucher_id is not None:
+        query = query.filter_by(external=True, voucher_id=user_voucher_id)
+
+    hits = []
+    users = [u for u in query.all() if (alias_id is None or alias_id in [a.id for a in u.aliases])]
+    for u in users:
+        valid_alias = False
+        for a in u.aliases:
+            if alias_app_username is not None and a.app_username != alias_app_username:
+                continue
+            if alias_confirmed is not None and a.confirmed != alias_confirmed:
+                continue
+            if alias_application_id is not None and a.application_id != alias_application_id:
+                continue
+            valid_alias = True
+        if valid_alias or (not u.aliases and [alias_app_username, alias_confirmed, alias_application_id] == [None] * 3):
+            hits.append(u)
+
+    return [m.schema for m in hits]
 
 
 @router.post(
