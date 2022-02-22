@@ -31,7 +31,7 @@ setuptools.setup(
     description="MateBot core API",
     long_description=get_content("README.md"),
     long_description_content_type="text/markdown",
-    licsense="GLPv3",
+    license="GLPv3",
     install_requires=[
         "aiohttp>=3.7",
         "fastapi>=0.66",
