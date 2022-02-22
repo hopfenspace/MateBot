@@ -27,12 +27,12 @@ router = APIRouter(prefix="/transactions", tags=["Transactions"])
 )
 @versioning.versions(minimal=1)
 async def get_all_transactions(
-        transaction_id: Optional[pydantic.NonNegativeInt] = None,
-        transaction_sender_id: Optional[pydantic.NonNegativeInt] = None,
-        transaction_receiver_id: Optional[pydantic.NonNegativeInt] = None,
-        transaction_member_id: Optional[pydantic.NonNegativeInt] = None,
-        transaction_amount: Optional[pydantic.NonNegativeInt] = None,
-        transaction_reason: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        sender_id: Optional[pydantic.NonNegativeInt] = None,
+        receiver_id: Optional[pydantic.NonNegativeInt] = None,
+        member_id: Optional[pydantic.NonNegativeInt] = None,
+        amount: Optional[pydantic.NonNegativeInt] = None,
+        reason: Optional[pydantic.NonNegativeInt] = None,
         has_multi_transaction: Optional[bool] = None,
         multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -42,8 +42,7 @@ async def get_all_transactions(
     """
 
     def extended_filter(transaction: models.Transaction) -> bool:
-        if transaction_member_id is not None \
-                and transaction_member_id not in (transaction.sender_id, transaction.receiver_id):
+        if member_id is not None and member_id not in (transaction.sender_id, transaction.receiver_id):
             return False
         if has_multi_transaction is not None and (transaction.multi_transaction_id is None) == has_multi_transaction:
             return False
@@ -55,11 +54,11 @@ async def get_all_transactions(
         models.Transaction,
         local,
         specialized_item_filter=extended_filter,
-        id=transaction_id,
-        sender_id=transaction_sender_id,
-        receiver_id=transaction_receiver_id,
-        amount=transaction_amount,
-        reason=transaction_reason
+        id=id,
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        amount=amount,
+        reason=reason
     )
 
 

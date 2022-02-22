@@ -27,12 +27,12 @@ router = APIRouter(prefix="/users", tags=["Users"])
 )
 @versioning.versions(1)
 async def search_for_users(
-        user_id: Optional[pydantic.NonNegativeInt] = None,
-        user_name: Optional[pydantic.constr(max_length=255)] = None,
-        user_permission: Optional[bool] = None,
-        user_active: Optional[bool] = None,
-        user_external: Optional[bool] = None,
-        user_voucher_id: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        name: Optional[pydantic.constr(max_length=255)] = None,
+        permission: Optional[bool] = None,
+        active: Optional[bool] = None,
+        external: Optional[bool] = None,
+        voucher_id: Optional[pydantic.NonNegativeInt] = None,
         alias_id: Optional[pydantic.NonNegativeInt] = None,
         alias_app_username: Optional[pydantic.constr(max_length=255)] = None,
         alias_confirmed: Optional[bool] = None,
@@ -67,12 +67,12 @@ async def search_for_users(
         models.User,
         local,
         specialized_item_filter=extended_filter,
-        id=user_id,
-        name=user_name,
-        permission=user_permission,
-        active=user_active,
-        external=user_external,
-        voucher_id=user_voucher_id
+        id=id,
+        name=name,
+        permission=permission,
+        active=active,
+        external=external,
+        voucher_id=voucher_id
     )
 
 
