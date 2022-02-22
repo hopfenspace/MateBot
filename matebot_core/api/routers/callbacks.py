@@ -8,6 +8,7 @@ from typing import List, Optional
 import pydantic
 from fastapi import APIRouter, Depends
 
+from ._router import router
 from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 callback_router = APIRouter(tags=["Announcements"])
 
 
-@callback_router.get("/create/{model}/{id}")
+@callback_router.get("/create/{model}/{id}", name="Announce-Creation")
 def announce_created_model():
     """
     Announce a created object of the `model` with the `id`.
@@ -34,7 +35,7 @@ def announce_created_model():
     """
 
 
-@callback_router.get("/update/{model}/{id}")
+@callback_router.get("/update/{model}/{id}", name="Announce-Update")
 def announce_updated_model():
     """
     Announce an updated object of the `model` with the `id`.
@@ -48,7 +49,7 @@ def announce_updated_model():
     """
 
 
-@callback_router.get("/delete/{model}/{id}")
+@callback_router.get("/delete/{model}/{id}", name="Announce-Deletion")
 def announce_deleted_model():
     """
     Announce a deleted object of the `model` with the `id`.
@@ -62,14 +63,7 @@ def announce_deleted_model():
     """
 
 
-router = APIRouter(prefix="/callbacks", tags=["Callbacks"])
-
-
-@router.get(
-    "",
-    response_model=List[schemas.Callback],
-    callbacks=callback_router.routes
-)
+@router.get("/callbacks", tags=["Callbacks"], response_model=List[schemas.Callback], callbacks=callback_router.routes)
 @versioning.versions(minimal=1)
 async def search_for_callbacks(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -91,7 +85,8 @@ async def search_for_callbacks(
 
 
 @router.post(
-    "",
+    "/callbacks",
+    tags=["Callbacks"],
     status_code=201,
     response_model=schemas.Callback,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
@@ -126,7 +121,8 @@ async def create_new_callback(
 
 
 @router.put(
-    "",
+    "/callbacks",
+    tags=["Callbacks"],
     response_model=schemas.Callback,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
@@ -156,7 +152,8 @@ async def update_existing_callback(
 
 
 @router.delete(
-    "",
+    "/callbacks",
+    tags=["Callbacks"],
     status_code=204,
     responses={k: {"model": schemas.APIError} for k in (404, 409)},
     callbacks=callback_router.routes

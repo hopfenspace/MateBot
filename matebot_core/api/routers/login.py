@@ -4,9 +4,10 @@ MateBot router module for authentication
 
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestFormStrict
 
+from ._router import router
 from ..base import APIException
 from ..dependency import MinimalRequestData
 from .. import auth, versioning
@@ -15,10 +16,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["Authentication"])
 
-
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", tags=["Authentication"], response_model=schemas.Token)
 @versioning.versions(1)
 async def login(
         data: OAuth2PasswordRequestFormStrict = Depends(),

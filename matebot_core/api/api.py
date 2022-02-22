@@ -20,7 +20,7 @@ except ImportError:
     StaticFiles = None
 
 from . import base, versioning
-from .routers import all_routers
+from .routers import router
 from .. import schemas, __version__
 from ..persistence import database
 from ..settings import Settings
@@ -232,8 +232,7 @@ def create_app(
     )
 
     assert isinstance(app, versioning.VersionedFastAPI), "'VersionedFastAPI' instance required"
-    for router in all_routers:
-        app.add_router(router)
+    app.add_router(router)
 
     app.finish()
     return app

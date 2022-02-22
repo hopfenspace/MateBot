@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import BadRequest, Conflict, InternalServerException
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -18,13 +19,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["Users"])
 
-
-@router.get(
-    "",
-    response_model=List[schemas.User]
-)
+@router.get("/users", tags=["Users"], response_model=List[schemas.User])
 @versioning.versions(1)
 async def search_for_users(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -77,7 +73,8 @@ async def search_for_users(
 
 
 @router.post(
-    "",
+    "/users",
+    tags=["Users"],
     status_code=201,
     response_model=schemas.User
 )
@@ -97,7 +94,8 @@ async def create_new_user(
 
 
 @router.get(
-    "/community",
+    "/users/community",
+    tags=["Users"],
     response_model=schemas.User
 )
 @versioning.versions(1)
@@ -113,7 +111,8 @@ async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)
 
 
 @router.post(
-    "/setFlags",
+    "/users/setFlags",
+    tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
@@ -145,7 +144,8 @@ async def set_flags_of_user(
 
 
 @router.post(
-    "/setName",
+    "/users/setName",
+    tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
@@ -171,7 +171,8 @@ async def set_name_of_user(
 
 
 @router.post(
-    "/setVoucher",
+    "/users/setVoucher",
+    tags=["Users"],
     response_model=schemas.VoucherUpdateResponse,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
@@ -241,7 +242,8 @@ async def set_voucher_of_user(
 
 
 @router.post(
-    "/disable/{user_id}",
+    "/users/disable/{user_id}",
+    tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )

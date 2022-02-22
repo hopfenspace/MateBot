@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -18,13 +19,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/refunds", tags=["Refunds"])
 
-
-@router.get(
-    "",
-    response_model=List[schemas.Refund]
-)
+@router.get("/refunds", tags=["Refunds"], response_model=List[schemas.Refund])
 @versioning.versions(minimal=1)
 async def search_for_refunds(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -54,7 +50,8 @@ async def search_for_refunds(
 
 
 @router.post(
-    "",
+    "/refunds",
+    tags=["Refunds"],
     status_code=201,
     response_model=schemas.Refund,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
@@ -94,7 +91,8 @@ async def create_new_refund(
 
 
 @router.post(
-    "/vote",
+    "/refunds/vote",
+    tags=["Refunds"],
     response_model=schemas.RefundVoteResponse,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
@@ -158,7 +156,8 @@ async def vote_for_refund_request(
 
 
 @router.post(
-    "/abort/{refund_id}",
+    "/refunds/abort/{refund_id}",
+    tags=["Refunds"],
     response_model=schemas.Refund,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )

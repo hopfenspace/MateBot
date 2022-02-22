@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -17,13 +18,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/polls", tags=["Polls"])
 
-
-@router.get(
-    "",
-    response_model=List[schemas.Poll]
-)
+@router.get("/polls", tags=["Polls"], response_model=List[schemas.Poll])
 @versioning.versions(minimal=1)
 async def search_for_polls(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -49,7 +45,8 @@ async def search_for_polls(
 
 
 @router.post(
-    "",
+    "/polls",
+    tags=["Polls"],
     status_code=201,
     response_model=schemas.Poll,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
@@ -116,7 +113,8 @@ async def create_new_membership_poll(
 
 
 @router.post(
-    "/vote",
+    "/polls/vote",
+    tags=["Polls"],
     response_model=schemas.PollVoteResponse,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
@@ -185,7 +183,8 @@ async def vote_for_membership_request(
 
 
 @router.post(
-    "/abort/{poll_id}",
+    "/polls/abort/{poll_id}",
+    tags=["Polls"],
     response_model=schemas.Poll,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )

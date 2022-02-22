@@ -18,7 +18,7 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/communisms", tags=["Communisms"])
+router = APIRouter(prefix="/communisms", tags=["Communisms"],)
 
 
 def _compress_participants(participants: List[schemas.CommunismUserBinding]) -> List[schemas.CommunismUserBinding]:
@@ -50,10 +50,7 @@ async def _check_participants(participants: List[schemas.CommunismUserBinding], 
         )
 
 
-@router.get(
-    "",
-    response_model=List[schemas.Communism]
-)
+@router.get("/communisms", tags=["Communisms"], response_model=List[schemas.Communism])
 @versioning.versions(minimal=1)
 async def search_for_communisms(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -92,7 +89,8 @@ async def search_for_communisms(
 
 
 @router.post(
-    "",
+    "/communisms",
+    tags=["Communisms"],
     status_code=201,
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
@@ -137,7 +135,8 @@ async def create_new_communism(
 
 
 @router.post(
-    "/abort/{communism_id}",
+    "/communisms/abort/{communism_id}",
+    tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
@@ -164,7 +163,8 @@ async def abort_open_communism(
 
 
 @router.post(
-    "/close/{communism_id}",
+    "/communisms/close/{communism_id}",
+    tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
@@ -204,7 +204,8 @@ async def close_open_communism(
 
 
 @router.post(
-    "/setParticipants/{communism_id}",
+    "/communisms/setParticipants/{communism_id}",
+    tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )

@@ -6,8 +6,9 @@ import datetime
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...schemas import config
@@ -15,18 +16,12 @@ from ...persistence import models
 from ... import schemas, __version__
 
 
-router = APIRouter(tags=["Readonly"])
-
-
 ################
 # APPLICATIONS #
 ################
 
 
-@router.get(
-    "/applications",
-    response_model=List[schemas.Application]
-)
+@router.get("/applications", tags=["Readonly"], response_model=List[schemas.Application])
 @versioning.versions(minimal=1)
 async def search_for_applications(
         application_id: Optional[pydantic.NonNegativeInt] = None,
@@ -55,10 +50,7 @@ async def search_for_applications(
 ###########
 
 
-@router.get(
-    "/ballots",
-    response_model=List[schemas.Ballot]
-)
+@router.get("/ballots", tags=["Readonly"], response_model=List[schemas.Ballot])
 @versioning.versions(minimal=1)
 async def search_for_ballots(
         ballot_id: Optional[pydantic.NonNegativeInt] = None,
@@ -93,10 +85,7 @@ async def search_for_ballots(
 ###############
 
 
-@router.get(
-    "/consumables",
-    response_model=List[schemas.Consumable]
-)
+@router.get("/consumables", tags=["Readonly"], response_model=List[schemas.Consumable])
 @versioning.versions(minimal=1)
 async def search_for_consumables(
         consumable_id: Optional[pydantic.NonNegativeInt] = None,
@@ -124,7 +113,7 @@ async def search_for_consumables(
 #########################
 
 
-@router.get("/settings", response_model=config.GeneralConfig)
+@router.get("/settings", tags=["Readonly"], response_model=config.GeneralConfig)
 @versioning.versions(minimal=1)
 async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     """
@@ -134,7 +123,7 @@ async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     return local.config.general
 
 
-@router.get("/status", response_model=schemas.Status)
+@router.get("/status", tags=["Readonly"], response_model=schemas.Status)
 @versioning.versions(1)
 async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
     """
@@ -161,10 +150,7 @@ async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
 #########
 
 
-@router.get(
-    "/votes",
-    response_model=List[schemas.Vote]
-)
+@router.get("/votes", tags=["Readonly"], response_model=List[schemas.Vote])
 @versioning.versions(minimal=1)
 async def search_for_votes(
         vote_id: Optional[pydantic.NonNegativeInt] = None,

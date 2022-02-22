@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -17,13 +18,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/aliases", tags=["Aliases"])
 
-
-@router.get(
-    "",
-    response_model=List[schemas.Alias]
-)
+@router.get("/aliases", tags=["Aliases"], response_model=List[schemas.Alias])
 @versioning.versions(minimal=1)
 async def search_for_aliases(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -49,7 +45,8 @@ async def search_for_aliases(
 
 
 @router.post(
-    "",
+    "/aliases",
+    tags=["Aliases"],
     status_code=201,
     response_model=schemas.Alias,
     responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
@@ -95,7 +92,8 @@ async def create_new_alias(
 
 
 @router.put(
-    "",
+    "/aliases",
+    tags=["Aliases"],
     response_model=schemas.Alias,
     responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
@@ -135,7 +133,8 @@ async def update_existing_alias(
 
 
 @router.delete(
-    "",
+    "/aliases",
+    tags=["Aliases"],
     status_code=204,
     responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )

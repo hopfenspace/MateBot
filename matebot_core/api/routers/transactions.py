@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional, Union
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import APIException, BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -18,13 +19,8 @@ from ... import schemas
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
-
-@router.get(
-    "",
-    response_model=List[schemas.Transaction]
-)
+@router.get("/transactions", tags=["Transactions"], response_model=List[schemas.Transaction])
 @versioning.versions(minimal=1)
 async def search_for_transactions(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
@@ -63,7 +59,8 @@ async def search_for_transactions(
 
 
 @router.post(
-    "",
+    "/transactions",
+    tags=["Transactions"],
     status_code=201,
     response_model=schemas.Transaction,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
@@ -152,10 +149,7 @@ async def make_a_new_transaction(
     return create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks).schema
 
 
-@router.get(
-    "/multi",
-    response_model=List[schemas.MultiTransaction]
-)
+@router.get("/transactions/multi", tags=["Transactions"], response_model=List[schemas.MultiTransaction])
 @versioning.versions(1)
 async def search_for_multi_transactions(
         multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
