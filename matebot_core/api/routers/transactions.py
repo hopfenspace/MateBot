@@ -3,7 +3,7 @@ MateBot router module for /transactions requests
 """
 
 import logging
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -26,12 +26,63 @@ router = APIRouter(prefix="/transactions", tags=["Transactions"])
     response_model=List[schemas.Transaction]
 )
 @versioning.versions(minimal=1)
-async def get_all_transactions(local: LocalRequestData = Depends(LocalRequestData)):
+async def get_all_transactions(
+        transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        transaction_sender_id: Optional[pydantic.NonNegativeInt] = None,
+        transaction_receiver_id: Optional[pydantic.NonNegativeInt] = None,
+        transaction_member_id: Optional[pydantic.NonNegativeInt] = None,
+        transaction_amount: Optional[pydantic.NonNegativeInt] = None,
+        transaction_reason: Optional[pydantic.NonNegativeInt] = None,
+        has_multi_transaction: Optional[bool] = None,
+        multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all transactions in the system.
+    Return all transactions that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Transaction, local)
+    def extended_filter(transaction: models.Transaction) -> bool:
+        if transaction_member_id is not None \
+                and transaction_member_id not in (transaction.sender_id, transaction.receiver_id):
+            return False
+        if has_multi_transaction is not None and (transaction.multi_transaction_id is None) == has_multi_transaction:
+            return False
+        if multi_transaction_id is not None and transaction.multi_transaction_id != multi_transaction_id:
+            return False
+        return True
+
+    return helpers.search_models(
+        models.Transaction,
+        local,
+        specialized_item_filter=extended_filter,
+        id=transaction_id,
+        sender_id=transaction_sender_id,
+        receiver_id=transaction_receiver_id,
+        amount=transaction_amount,
+        reason=transaction_reason
+    )
+
+
+@router.get(
+    "/multi",
+    response_model=List[schemas.MultiTransaction]
+)
+@versioning.versions(1)
+async def search_for_multi_transactions(
+        multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        multi_transaction_base_amount: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Return all multi transactions that fulfill *all* constraints given as query parameters
+    """
+
+    return helpers.search_models(
+        models.MultiTransaction,
+        local,
+        id=multi_transaction_id,
+        base_amount=multi_transaction_base_amount
+    )
 
 
 @router.post(
@@ -139,19 +190,6 @@ async def make_a_new_transaction(
 
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
-
-
-@router.get(
-    "/multi",
-    response_model=List[schemas.MultiTransaction]
-)
-@versioning.versions(1)
-async def get_all_multi_transactions(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return a list of all multi transactions in the system.
-    """
-
-    return await helpers.get_all_of_model(models.MultiTransaction, local)
 
 
 @router.get(
