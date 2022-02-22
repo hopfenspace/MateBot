@@ -62,28 +62,6 @@ async def search_for_transactions(
     )
 
 
-@router.get(
-    "/multi",
-    response_model=List[schemas.MultiTransaction]
-)
-@versioning.versions(1)
-async def search_for_multi_transactions(
-        multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
-        multi_transaction_base_amount: Optional[pydantic.NonNegativeInt] = None,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return all multi transactions that fulfill *all* constraints given as query parameters
-    """
-
-    return helpers.search_models(
-        models.MultiTransaction,
-        local,
-        id=multi_transaction_id,
-        base_amount=multi_transaction_base_amount
-    )
-
-
 @router.post(
     "",
     status_code=201,
@@ -189,3 +167,25 @@ async def make_a_new_transaction(
 
     t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
     return await helpers.get_one_of_model(t.id, models.Transaction, local)
+
+
+@router.get(
+    "/multi",
+    response_model=List[schemas.MultiTransaction]
+)
+@versioning.versions(1)
+async def search_for_multi_transactions(
+        multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        multi_transaction_base_amount: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Return all multi transactions that fulfill *all* constraints given as query parameters
+    """
+
+    return helpers.search_models(
+        models.MultiTransaction,
+        local,
+        id=multi_transaction_id,
+        base_amount=multi_transaction_base_amount
+    )
