@@ -3,7 +3,7 @@ MateBot router module for various read-only endpoints
 """
 
 import datetime
-from typing import List
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -28,31 +28,26 @@ router = APIRouter(tags=["Readonly"])
     response_model=List[schemas.Application]
 )
 @versioning.versions(minimal=1)
-async def get_all_applications(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return a list of all known applications
-    """
-
-    return await helpers.get_all_of_model(models.Application, local)
-
-
-@router.get(
-    "/applications/{application_id}",
-    response_model=schemas.Application,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_application_by_id(
-        application_id: int,
+async def search_for_applications(
+        application_id: Optional[pydantic.NonNegativeInt] = None,
+        application_name: Optional[pydantic.constr(max_length=255)] = None,
+        callback_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return the application model specified by its application ID
-
-    A 404 error will be returned in case the ID is not found.
+    Return all applications that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_one_of_model(application_id, models.Application, local)
+    def extended_filter(a: models.Application) -> bool:
+        return callback_id is None or callback_id in [c.id for c in a.callbacks]
+
+    return helpers.search_models(
+        models.Application,
+        local,
+        specialized_item_filter=extended_filter,
+        id=application_id,
+        name=application_name
+    )
 
 
 ###########
@@ -65,31 +60,32 @@ async def get_application_by_id(
     response_model=List[schemas.Ballot]
 )
 @versioning.versions(minimal=1)
-async def get_all_ballots(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return a list of all known ballots
-    """
-
-    return await helpers.get_all_of_model(models.Ballot, local)
-
-
-@router.get(
-    "/ballots/{ballot_id}",
-    response_model=schemas.Ballot,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_ballot_by_id(
-        ballot_id: pydantic.NonNegativeInt,
+async def search_for_ballots(
+        ballot_id: Optional[pydantic.NonNegativeInt] = None,
+        vote_id: Optional[pydantic.NonNegativeInt] = None,
+        ballot_for_poll: Optional[bool] = None,
+        ballot_for_refund: Optional[bool] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return details about a specific ballot identified by its `ballot_id`
-
-    A 404 error will be returned if that ID is unknown.
+    Return all ballots that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_one_of_model(ballot_id, models.Ballot, local)
+    def extended_filter(b: models.Ballot) -> bool:
+        if vote_id is not None and vote_id not in [v.id for v in b.votes]:
+            return False
+        if ballot_for_poll is not None and bool(b.polls) != ballot_for_poll:
+            return False
+        if ballot_for_refund is not None and bool(b.refunds) != ballot_for_refund:
+            return False
+        return True
+
+    return helpers.search_models(
+        models.Ballot,
+        local,
+        specialized_item_filter=extended_filter,
+        id=ballot_id
+    )
 
 
 ###############
@@ -102,12 +98,25 @@ async def get_ballot_by_id(
     response_model=List[schemas.Consumable]
 )
 @versioning.versions(minimal=1)
-async def get_all_consumables(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_consumables(
+        consumable_id: Optional[pydantic.NonNegativeInt] = None,
+        consumable_name: Optional[pydantic.NonNegativeInt] = None,
+        consumable_description: Optional[pydantic.NonNegativeInt] = None,
+        consumable_price: Optional[pydantic.PositiveInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all current consumables.
+    Return all ballots that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Consumable, local)
+    return helpers.search_models(
+        models.Consumable,
+        local,
+        id=consumable_id,
+        name=consumable_name,
+        description=consumable_description,
+        price=consumable_price
+    )
 
 
 #########################
@@ -157,28 +166,32 @@ async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
     response_model=List[schemas.Vote]
 )
 @versioning.versions(minimal=1)
-async def get_all_votes(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return a list of all known votes
-    """
-
-    return await helpers.get_all_of_model(models.Vote, local)
-
-
-@router.get(
-    "/votes/{vote_id}",
-    response_model=schemas.Vote,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_vote_by_id(
-        vote_id: pydantic.NonNegativeInt,
+async def search_for_votes(
+        vote_id: Optional[pydantic.NonNegativeInt] = None,
+        vote: Optional[bool] = None,
+        ballot_id: Optional[pydantic.NonNegativeInt] = None,
+        user_id: Optional[pydantic.NonNegativeInt] = None,
+        vote_for_poll: Optional[bool] = None,
+        vote_for_refund: Optional[bool] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return details about a specific vote identified by its `vote_id`
-
-    A 404 error will be returned if that ID is unknown.
+    Return all votes that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_one_of_model(vote_id, models.Vote, local)
+    def extended_filter(v: models.Vote) -> bool:
+        if vote_for_poll is not None and bool(v.ballot.polls) != vote_for_poll:
+            return False
+        if vote_for_refund is not None and bool(v.ballot.refunds) != vote_for_refund:
+            return False
+        return True
+
+    return helpers.search_models(
+        models.Vote,
+        local,
+        specialized_item_filter=extended_filter,
+        id=vote_id,
+        vote=vote,
+        ballot_id=ballot_id,
+        user_id=user_id
+    )

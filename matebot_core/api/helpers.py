@@ -265,7 +265,7 @@ async def get_all_of_model(
 def search_models(
         model: Type[models.Base],
         local: LocalRequestData,
-        specialized_item_filter: Callable[[models.Base], bool],
+        specialized_item_filter: Callable[[models.Base], bool] = None,
         **kwargs
 ) -> List[pydantic.BaseModel]:
     """
@@ -284,7 +284,7 @@ def search_models(
     for k in kwargs:
         if kwargs[k] is not None:
             query = query.filter_by(**{k: kwargs[k]})
-    return [obj.schema for obj in query.all() if specialized_item_filter(obj)]
+    return [obj.schema for obj in query.all() if specialized_item_filter is None or specialized_item_filter(obj)]
 
 
 # async def _handle_data_changes(
