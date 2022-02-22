@@ -3,7 +3,7 @@ MateBot router module for /polls requests
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -25,12 +25,27 @@ router = APIRouter(prefix="/polls", tags=["Polls"])
     response_model=List[schemas.Poll]
 )
 @versioning.versions(minimal=1)
-async def get_all_polls(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_polls(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        active: Optional[bool] = None,
+        accepted: Optional[bool] = None,
+        creator_id: Optional[pydantic.NonNegativeInt] = None,
+        ballot_id: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all polls with all associated data, including the votes
+    Return all polls that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Poll, local)
+    return helpers.search_models(
+        models.Poll,
+        local,
+        id=id,
+        active=active,
+        accepted=accepted,
+        creator_id=creator_id,
+        ballot_id=ballot_id
+    )
 
 
 @router.post(
@@ -98,25 +113,6 @@ async def create_new_membership_poll(
 #         return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 #
 #     return await helpers.get_one_of_model(poll.id, models.Poll, local)
-
-
-@router.get(
-    "/{poll_id}",
-    response_model=schemas.Poll,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_poll_by_id(
-        poll_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return the poll identified by a specific poll ID.
-
-    A 404 error will be returned in case the poll ID is unknown.
-    """
-
-    return await helpers.get_one_of_model(poll_id, models.Poll, local)
 
 
 @router.post(

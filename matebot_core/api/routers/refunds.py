@@ -3,7 +3,7 @@ MateBot router module for /refunds requests
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -26,12 +26,31 @@ router = APIRouter(prefix="/refunds", tags=["Refunds"])
     response_model=List[schemas.Refund]
 )
 @versioning.versions(minimal=1)
-async def get_all_refunds(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_refunds(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        amount: Optional[pydantic.PositiveInt] = None,
+        description: Optional[pydantic.constr(max_length=255)] = None,
+        active: Optional[bool] = None,
+        creator_id: Optional[pydantic.NonNegativeInt] = None,
+        ballot_id: Optional[pydantic.NonNegativeInt] = None,
+        transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all known refunds.
+    Return all refunds that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Refund, local)
+    return helpers.search_models(
+        models.Refund,
+        local,
+        id=id,
+        amount=amount,
+        description=description,
+        active=active,
+        creator_id=creator_id,
+        ballot_id=ballot_id,
+        transaction_id=transaction_id
+    )
 
 
 @router.post(
@@ -71,45 +90,6 @@ async def create_new_refund(
         local,
         logger
     )
-
-
-@router.get(
-    "/{refund_id}",
-    response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_refund_by_id(
-        refund_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return an existing refund.
-
-    A 404 error will be returned if the specified refund ID was not found.
-    """
-
-    return await helpers.get_one_of_model(refund_id, models.Refund, local)
-
-
-@router.get(
-    "/creator/{user_id}",
-    response_model=List[schemas.Refund],
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_refunds_by_creator(
-        user_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return a list of all refunds which have been created by the specified user.
-
-    A 404 error will be returned if the user ID is unknown.
-    """
-
-    await helpers.return_one(user_id, models.User, local.session)
-    return await helpers.get_all_of_model(models.Refund, local, creator_id=user_id)
 
 
 @router.post(
