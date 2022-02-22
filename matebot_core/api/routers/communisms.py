@@ -3,7 +3,7 @@ MateBot router module for /communisms requests
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
@@ -55,12 +55,40 @@ async def _check_participants(participants: List[schemas.CommunismUserBinding], 
     response_model=List[schemas.Communism]
 )
 @versioning.versions(minimal=1)
-async def get_all_communisms(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_communisms(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        active: Optional[bool] = None,
+        amount: Optional[pydantic.PositiveInt] = None,
+        description: Optional[pydantic.constr(max_length=255)] = None,
+        creator_id: Optional[pydantic.NonNegativeInt] = None,
+        participant_id: Optional[pydantic.NonNegativeInt] = None,
+        total_participants: Optional[pydantic.NonNegativeInt] = None,
+        unique_participants: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all communisms in the system.
+    Return all communisms that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Communism, local)
+    def extended_filter(communism: models.Communism) -> bool:
+        if participant_id is not None and participant_id not in [p.user_id for p in communism.participants]:
+            return False
+        if total_participants is not None and total_participants != sum(p.quantity for p in communism.participants):
+            return False
+        if unique_participants is not None and unique_participants != len({p.user_id for p in communism.participants}):
+            return False
+        return True
+
+    return helpers.search_models(
+        models.Communism,
+        local,
+        specialized_item_filter=extended_filter,
+        id=id,
+        active=active,
+        amount=amount,
+        description=description,
+        creator_id=creator_id
+    )
 
 
 @router.post(
@@ -107,66 +135,6 @@ async def create_new_communism(
     )
 
     return await helpers.create_new_of_model(model, local, logger)
-
-
-@router.get(
-    "/{communism_id}",
-    response_model=schemas.Communism,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_communism_by_id(
-        communism_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return an existing communism by its `communism_id`.
-
-    A 404 error will be returned if the specified ID was not found.
-    """
-
-    return await helpers.get_one_of_model(communism_id, models.Communism, local)
-
-
-@router.get(
-    "/creator/{user_id}",
-    response_model=List[schemas.Communism],
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_communisms_by_creator(
-        user_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return a list of all communisms which have been created by the specified user
-
-    A 404 error will be returned if the user ID is unknown.
-    """
-
-    user = await helpers.return_one(user_id, models.User, local.session)
-    return await helpers.get_all_of_model(models.Communism, local, creator=user)
-
-
-@router.get(
-    "/participant/{user_id}",
-    response_model=List[schemas.Communism],
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_communisms_by_participant(
-        user_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return a list of all communisms where the specified user has participated in.
-
-    A 404 error will be returned if the user ID is unknown.
-    """
-
-    user = await helpers.return_one(user_id, models.User, local.session)
-    memberships = await helpers.return_all(models.CommunismUsers, local.session, user=user)
-    return [membership.communism.schema for membership in memberships]
 
 
 @router.post(

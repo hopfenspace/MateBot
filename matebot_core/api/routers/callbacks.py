@@ -3,8 +3,9 @@ MateBot router for the callback API and for /callbacks requests
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
+import pydantic
 from fastapi import APIRouter, Depends
 
 from ..base import Conflict
@@ -70,12 +71,23 @@ router = APIRouter(prefix="/callbacks", tags=["Callbacks"])
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
-async def get_all_callbacks(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_callbacks(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        base: Optional[pydantic.constr(max_length=255)] = None,
+        application_id: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all currently registered (and therefore enabled) callback APIs.
+    Return all callbacks that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Callback, local)
+    return helpers.search_models(
+        models.Callback,
+        local,
+        id=id,
+        base=base,
+        application_id=application_id
+    )
 
 
 @router.post(
