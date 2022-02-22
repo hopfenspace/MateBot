@@ -262,6 +262,31 @@ async def get_all_of_model(
     return all_schemas
 
 
+def search_models(
+        model: Type[models.Base],
+        local: LocalRequestData,
+        specialized_item_filter: Callable[[models.Base], bool],
+        **kwargs
+) -> List[pydantic.BaseModel]:
+    """
+    Return the schemas of all user models that equal all kwargs and pass the special filter function
+
+    :param model: class of a SQLAlchemy model
+    :param local: contextual local data
+    :param specialized_item_filter: callable function to filter the list of models
+        explicitly with some specialized metrics (e.g. custom fields or relations)
+    :param kwargs: dict of extra attribute checks on the model (empty values in the
+        dict are ignored and won't be treated as check for ``None`` in the model)
+    :return: list of schemas of all models that equal all kwargs and passed the filter function
+    """
+
+    query = local.session.query(model)
+    for k in kwargs:
+        if kwargs[k] is not None:
+            query = query.filter_by(**{k: kwargs[k]})
+    return [obj.schema for obj in query.all() if specialized_item_filter(obj)]
+
+
 # async def _handle_data_changes(
 #         local: LocalRequestData,
 #         operation: Operations,

@@ -50,36 +50,30 @@ async def search_for_users(
     given, this endpoint will just return all currently known user models.
     """
 
-    query = local.session.query(models.User)
-    if user_id is not None:
-        query = query.filter_by(id=user_id)
-    if user_name is not None:
-        query = query.filter_by(name=user_name)
-    if user_permission is not None:
-        query = query.filter_by(permission=user_permission)
-    if user_active is not None:
-        query = query.filter_by(active=user_active)
-    if user_external is not None:
-        query = query.filter_by(external=user_external)
-    if user_voucher_id is not None:
-        query = query.filter_by(external=True, voucher_id=user_voucher_id)
-
-    hits = []
-    users = [u for u in query.all() if (alias_id is None or alias_id in [a.id for a in u.aliases])]
-    for u in users:
-        valid_alias = False
-        for a in u.aliases:
+    def extended_filter(user: models.User) -> bool:
+        if not (alias_id is None or alias_id in [a.id for a in user.aliases]):
+            return False
+        for a in user.aliases:
             if alias_app_username is not None and a.app_username != alias_app_username:
                 continue
             if alias_confirmed is not None and a.confirmed != alias_confirmed:
                 continue
             if alias_application_id is not None and a.application_id != alias_application_id:
                 continue
-            valid_alias = True
-        if valid_alias or (not u.aliases and [alias_app_username, alias_confirmed, alias_application_id] == [None] * 3):
-            hits.append(u)
+            return True
+        return not user.aliases and [alias_app_username, alias_confirmed, alias_application_id] == [None] * 3
 
-    return [m.schema for m in hits]
+    return helpers.search_models(
+        models.User,
+        local,
+        specialized_item_filter=extended_filter,
+        id=user_id,
+        name=user_name,
+        permission=user_permission,
+        active=user_active,
+        external=user_external,
+        voucher_id=user_voucher_id
+    )
 
 
 @router.post(
