@@ -22,7 +22,7 @@ def hash_password(password: str, salt: str) -> str:
 
 
 async def check_app_credentials(application: str, password: str, session: Session) -> bool:
-    apps = await helpers.return_all(models.Application, session, name=application)
+    apps = session.query(models.Application).filter_by(name=application).all()
     if len(apps) != 1:
         return False
     app = apps[0]

@@ -132,14 +132,15 @@ async def make_a_new_transaction(
             if consumption.adjust_stock:
                 wastage = consumption.amount
 
-        community = await helpers.return_unique(models.User, local.session, special=True)
+        community = local.session.query(models.User).filter_by(special=True).first()
+        if community is None:
+            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
 
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
         consumable.stock -= wastage
         local.session.add(consumable)
-        t = create_transaction(user, community, total, reason, local.session, logger, local.tasks)
-        return await helpers.get_one_of_model(t.id, models.Transaction, local)
+        return create_transaction(user, community, total, reason, local.session, logger, local.tasks).schema
 
     elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
@@ -165,8 +166,7 @@ async def make_a_new_transaction(
             str(receiver)
         )
 
-    t = create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks)
-    return await helpers.get_one_of_model(t.id, models.Transaction, local)
+    return create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks).schema
 
 
 @router.get(

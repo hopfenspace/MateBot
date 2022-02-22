@@ -113,7 +113,9 @@ async def create_new_callback(
     if callback.application_id is not None:
         await helpers.return_one(callback.application_id, models.Application, local.session)
     uri = callback.base + ("/" if not callback.base.endswith("/") else "")
-    await helpers.expect_none(models.Callback, local.session, base=uri)
+    matches = local.session.query(models.Callback).filter_by(base=uri).all()
+    if matches:
+        raise Conflict(f"A callback with that base URI already exists, but the base URI must be unique.", str(matches))
 
     model = models.Callback(
         base=uri,
