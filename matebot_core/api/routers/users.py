@@ -106,7 +106,7 @@ async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)
     Return the user model of the community user.
     """
 
-    objs = await helpers.return_all(models.User, local.session, special=True)
+    objs = local.session.query(models.User).filter_by(special=True).all()
     if len(objs) != 1:
         raise InternalServerException("Multiple community users found. Please file a bug report.", str(objs))
     return objs[0].schema
@@ -126,13 +126,16 @@ async def set_flags_of_user(
     Set & unset the flags of an existing user
 
     A 404 error will be returned if the user ID is not known.
-    A 409 error will be returned if an inactive user was changed.
+    A 409 error will be returned if an inactive user was changed
+    or if both `external=true` and `permission=true` were set.
     """
 
     model = await helpers.return_one(change.user_id, models.User, local.session)
 
     if not model.active:
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
+    if change.external and change.permission:
+        raise Conflict("An external user can't get extended permissions.", str(change))
 
     if change.external is not None:
         model.external = change.external
@@ -210,7 +213,7 @@ async def set_voucher_of_user(
         if debtor.balance > 0:
             transaction = transactions.create_transaction(
                 debtor,
-                debtor.voucher_user,
+                debtor.voucher_user,  # noqa
                 abs(debtor.balance),
                 "vouch: stopping vouching",
                 local.session,
@@ -219,7 +222,7 @@ async def set_voucher_of_user(
             )
         elif debtor.balance < 0:
             transaction = transactions.create_transaction(
-                debtor.voucher_user,
+                debtor.voucher_user,  # noqa
                 debtor,
                 abs(debtor.balance),
                 "vouch: stopping vouching",
