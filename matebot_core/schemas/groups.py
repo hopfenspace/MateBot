@@ -9,10 +9,10 @@ from typing import List, Optional
 
 import pydantic
 
-from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transaction, User as _User, BaseModel
+from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transaction, User as _User
 
 
-class Vote(BaseModel):
+class Vote(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     ballot_id: pydantic.NonNegativeInt
@@ -20,19 +20,19 @@ class Vote(BaseModel):
     modified: pydantic.NonNegativeInt
 
 
-class VoteCreation(BaseModel):
+class VoteCreation(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     ballot_id: pydantic.NonNegativeInt
     vote: bool
 
 
-class Ballot(BaseModel):
+class Ballot(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     modified: pydantic.NonNegativeInt
     votes: List[Vote]
 
 
-class Poll(BaseModel):
+class Poll(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     active: bool
     accepted: Optional[bool]
@@ -43,16 +43,16 @@ class Poll(BaseModel):
     modified: pydantic.NonNegativeInt
 
 
-class PollCreation(BaseModel):
+class PollCreation(pydantic.BaseModel):
     creator_id: pydantic.NonNegativeInt
 
 
-class PollVoteResponse(BaseModel):
+class PollVoteResponse(pydantic.BaseModel):
     poll: Poll
     vote: Vote
 
 
-class Refund(BaseModel):
+class Refund(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
@@ -66,24 +66,24 @@ class Refund(BaseModel):
     modified: Optional[pydantic.NonNegativeInt]
 
 
-class RefundCreation(BaseModel):
+class RefundCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator_id: pydantic.NonNegativeInt
     active: bool = True
 
 
-class RefundVoteResponse(BaseModel):
+class RefundVoteResponse(pydantic.BaseModel):
     refund: Refund
     vote: Vote
 
 
-class CommunismUserBinding(BaseModel):
+class CommunismUserBinding(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     quantity: pydantic.NonNegativeInt
 
 
-class Communism(BaseModel):
+class Communism(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
@@ -95,7 +95,7 @@ class Communism(BaseModel):
     multi_transaction: Optional[_MultiTransaction]
 
 
-class CommunismCreation(BaseModel):
+class CommunismCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator_id: pydantic.NonNegativeInt
@@ -103,7 +103,7 @@ class CommunismCreation(BaseModel):
     participants: List[CommunismUserBinding] = []
 
 
-class CommunismUser(BaseModel):
+class CommunismUser(pydantic.BaseModel):
     communism: Communism
     user: _User
     quantity: pydantic.NonNegativeInt

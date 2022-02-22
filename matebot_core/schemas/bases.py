@@ -11,44 +11,38 @@ from typing import List, Optional
 import pydantic
 
 
-class BaseModel(pydantic.BaseModel):
-    __allowed_updates__ = []
-
-
-class Token(BaseModel):
+class Token(pydantic.BaseModel):
     access_token: str
     token_type: str
 
 
-class Alias(BaseModel):
+class Alias(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application_id: pydantic.NonNegativeInt
     app_username: pydantic.constr(max_length=255)
     confirmed: bool
 
-    __allowed_updates__ = ["app_username", "confirmed"]
 
-
-class AliasCreation(BaseModel):
+class AliasCreation(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     application_id: pydantic.NonNegativeInt
     app_username: pydantic.constr(max_length=255)
     confirmed: bool = False
 
 
-class Application(BaseModel):
+class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     created: pydantic.NonNegativeInt
 
 
-class ApplicationCreation(BaseModel):
+class ApplicationCreation(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     password: pydantic.constr(min_length=8, max_length=64)
 
 
-class User(BaseModel):
+class User(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: Optional[pydantic.constr(max_length=255)]
     balance: int
@@ -60,17 +54,15 @@ class User(BaseModel):
     created: pydantic.NonNegativeInt
     modified: pydantic.NonNegativeInt
 
-    __allowed_updates__ = ["name", "permission", "external"]
 
-
-class UserCreation(BaseModel):
+class UserCreation(pydantic.BaseModel):
     name: Optional[pydantic.constr(max_length=255)]
     permission: bool
     external: bool
     voucher_id: Optional[pydantic.NonNegativeInt]
 
 
-class Transaction(BaseModel):
+class Transaction(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     sender: User
     receiver: User
@@ -80,14 +72,14 @@ class Transaction(BaseModel):
     timestamp: pydantic.NonNegativeInt
 
 
-class TransactionCreation(BaseModel):
+class TransactionCreation(pydantic.BaseModel):
     sender_id: pydantic.NonNegativeInt
     receiver_id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
 
 
-class MultiTransaction(BaseModel):
+class MultiTransaction(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     base_amount: pydantic.NonNegativeInt
     total_amount: pydantic.NonNegativeInt
@@ -95,14 +87,14 @@ class MultiTransaction(BaseModel):
     timestamp: pydantic.NonNegativeInt
 
 
-class Consumable(BaseModel):
+class Consumable(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255)
     price: pydantic.PositiveInt
 
 
-class Consumption(BaseModel):
+class Consumption(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     amount: pydantic.PositiveInt
     consumable_id: pydantic.NonNegativeInt
@@ -110,23 +102,23 @@ class Consumption(BaseModel):
     respect_stock: bool = True
 
 
-class VoucherUpdateResponse(BaseModel):
+class VoucherUpdateResponse(pydantic.BaseModel):
     debtor: User
     voucher: Optional[User]
     transaction: Transaction
 
 
-class VoucherUpdateRequest(BaseModel):
+class VoucherUpdateRequest(pydantic.BaseModel):
     debtor: pydantic.NonNegativeInt
     voucher: Optional[pydantic.NonNegativeInt]
 
 
-class UsernameChangeRequest(BaseModel):
+class UsernameChangeRequest(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     username: Optional[pydantic.constr(max_length=255)]
 
 
-class UserFlagsChangeRequest(BaseModel):
+class UserFlagsChangeRequest(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     external: Optional[bool]
     permission: Optional[bool]

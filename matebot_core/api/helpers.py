@@ -520,22 +520,22 @@ async def delete_one_of_model(
     return Response(status_code=204)
 
 
-def restrict_updates(remote_schema: BaseModel, db_schema: BaseModel) -> bool:
-    """
-    Compare a remote schema with the local state's schema to enforce unmodified fields
-
-    :param remote_schema: incoming schema attached to a PUT request to be validated
-    :param db_schema: schema of the local database model prior to modification
-    :raises ForbiddenChange: in case the remote and local state of a "forbidden" field differs
-    :raises InternalServerException: in case the schema types don't match correctly
-    :return: True
-    """
-
-    if not isinstance(remote_schema, type(db_schema)):
-        raise InternalServerException("Schema types don't match", f"{type(remote_schema)}!={type(db_schema)}")
-    for k in db_schema.__fields__.keys():
-        if not hasattr(remote_schema, k):
-            raise InternalServerException("Invalid schema type", str(remote_schema))
-        if k not in db_schema.__allowed_updates__ and getattr(remote_schema, k) != getattr(db_schema, k):
-            raise ForbiddenChange(f"{type(db_schema).__name__}.{k}")
-    return True
+# def restrict_updates(remote_schema: BaseModel, db_schema: BaseModel) -> bool:
+#     """
+#     Compare a remote schema with the local state's schema to enforce unmodified fields
+#
+#     :param remote_schema: incoming schema attached to a PUT request to be validated
+#     :param db_schema: schema of the local database model prior to modification
+#     :raises ForbiddenChange: in case the remote and local state of a "forbidden" field differs
+#     :raises InternalServerException: in case the schema types don't match correctly
+#     :return: True
+#     """
+#
+#     if not isinstance(remote_schema, type(db_schema)):
+#         raise InternalServerException("Schema types don't match", f"{type(remote_schema)}!={type(db_schema)}")
+#     for k in db_schema.__fields__.keys():
+#         if not hasattr(remote_schema, k):
+#             raise InternalServerException("Invalid schema type", str(remote_schema))
+#         if k not in db_schema.__allowed_updates__ and getattr(remote_schema, k) != getattr(db_schema, k):
+#             raise ForbiddenChange(f"{type(db_schema).__name__}.{k}")
+#     return True
