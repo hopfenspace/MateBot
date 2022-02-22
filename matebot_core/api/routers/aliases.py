@@ -3,12 +3,12 @@ MateBot router module for /aliases requests
 """
 
 import logging
-from typing import List, Union
+from typing import List, Optional
 
 import pydantic
 from fastapi import APIRouter, Depends
 
-from ..base import Conflict, NotFound
+from ..base import Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -25,12 +25,27 @@ router = APIRouter(prefix="/aliases", tags=["Aliases"])
     response_model=List[schemas.Alias]
 )
 @versioning.versions(minimal=1)
-async def get_all_known_aliases(local: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_aliases(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        user_id: Optional[pydantic.NonNegativeInt] = None,
+        application_id: Optional[pydantic.NonNegativeInt] = None,
+        app_username: Optional[pydantic.constr(max_length=255)] = None,
+        confirmed: Optional[bool] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return a list of all known user aliases of all applications.
+    Return all aliases that fulfill *all* constraints given as query parameters
     """
 
-    return await helpers.get_all_of_model(models.Alias, local)
+    return helpers.search_models(
+        models.Transaction,
+        local,
+        id=id,
+        user_id=user_id,
+        application_id=application_id,
+        app_username=app_username,
+        confirmed=confirmed
+    )
 
 
 @router.post(
@@ -131,51 +146,3 @@ async def delete_existing_alias(
         schema=alias,
         logger=logger
     )
-
-
-@router.get(
-    "/{alias_id}",
-    response_model=schemas.Alias,
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_alias_by_id(
-        alias_id: pydantic.NonNegativeInt,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return the alias model of a specific alias ID.
-
-    A 404 error will be returned in case the alias ID is unknown.
-    """
-
-    return await helpers.get_one_of_model(alias_id, models.Alias, local)
-
-
-@router.get(
-    "/application/{application_id}",
-    response_model=List[schemas.Alias],
-    responses={404: {"model": schemas.APIError}}
-)
-@versioning.versions(1)
-async def get_aliases_by_application(
-        application_id: Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)],
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Return a list of all users aliases for a given application ID or application name.
-
-    A 404 error will be returned for unknown `application` arguments.
-    A 409 error will be returned when the path parameter `{application}`
-    is neither a valid ID nor a valid application name.
-    """
-
-    if isinstance(application_id, str):
-        app = local.session.query(models.Application).filter_by(name=application_id).first()
-        if app is None:
-            raise NotFound(f"Application name {application_id!r}")
-    elif isinstance(application_id, int):
-        app = await helpers.return_one(application_id, models.Application, local.session)
-    else:
-        raise Conflict(f"Invalid application identifier: {application_id!r}", str(application_id))
-    return await helpers.get_all_of_model(models.Alias, local, application_id=app.id)
