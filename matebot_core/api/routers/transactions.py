@@ -74,7 +74,7 @@ async def make_a_new_transaction(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Make a new transaction using the specified data and return it.
+    Make a new transaction or consumption
 
     Note that transactions can't be edited after being sent to this
     endpoint by design, so take care doing that. The frontend application
@@ -82,64 +82,47 @@ async def make_a_new_transaction(
 
     This endpoint allows both one-to-one and consumption transactions.
     A one-to-one transaction is the simplest form, where one user sends
-    money to another user. The latter form lets a user consume goods
-    (which are in stock, ideally), so they will be paid to the community.
+    money to another user. The latter form lets a user consume goods listed
+    via the `GET /consumables` endpoint, so they will be paid to the community.
 
     Specific information about one-to-one transactions:
 
-    A 404 error will be returned if the sender or receiver users can't be
-    determined. A 409 error will be returned if any supplied aliases are not
-    accurate (e.g. outdated), or when the sender equals the receiver.
+    A 400 error will be returned if the transaction is not allowed
+    for various reasons, e.g. sender equals receiver, either of those
+    users is disabled or is external but has no active voucher.
+    A 404 error will be returned if the sender or receiver user IDs are unknown.
+    A 409 error will be returned if the sender is the community user.
 
     Specific information about consumption transactions:
 
-    Using `adjust_stock=true` will be ignored when `respect_stock` is `false`.
-    Note that its the client's duty to select the appropriate response to
-    the successful consumption, since one consumable type may have any number
-    of consumable messages which may be used as a reply template to the user.
-
-    A 400 error will be returned when the specified user who should consume
-    the good is the special community user. A 404 error will be returned
-    if the sender user or consumable isn't found. A 409 error will be returned
-    when the good is out of stock (this is already the case when there's
-    not enough available to fit the needs, e.g. requesting four items
-    where only two items are in stock would lead to such an error).
+    A 400 error will be returned if the consuming user is disabled or has
+    no rights to consume goods (being an external user without voucher).
+    A 404 error will be returned if the sender user or consumable isn't found.
+    A 409 error will be returned if the consuming user is the community itself
+    or if no community user was found at all (meaning the DB wasn't set up).
     """
 
     if isinstance(transaction, schemas.Consumption):
         consumption = transaction
+        community = local.session.query(models.User).filter_by(special=True).first()
+        if community is None:
+            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
 
         user = await helpers.return_one(consumption.user_id, models.User, local.session)
         if user.special:
             raise Conflict("The special community user can't consume goods.", str(user.schema))
         if not user.active:
-            raise Conflict(f"User {user.nameusername!r} can't consume goods.", str(user.schema))
+            raise BadRequest(f"The disabled user {user.nameusername!r} can't consume goods.", str(user.schema))
         if user.external and user.voucher_id is None:
             raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
+
         consumable: models.Consumable = await helpers.return_one(
             consumption.consumable_id,
             models.Consumable,
             local.session
         )
-
-        wastage = 0
-        if consumption.respect_stock:
-            if consumable.stock < consumption.amount:
-                raise BadRequest(
-                    f"Not enough {consumable.name} in stock to consume the goods.",
-                    f"requested={consumption.amount}, stock={consumable.stock}",
-                )
-            if consumption.adjust_stock:
-                wastage = consumption.amount
-
-        community = local.session.query(models.User).filter_by(special=True).first()
-        if community is None:
-            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
-
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
-        consumable.stock -= wastage
-        local.session.add(consumable)
         return create_transaction(user, community, total, reason, local.session, logger, local.tasks).schema
 
     elif not isinstance(transaction, schemas.TransactionCreation):
