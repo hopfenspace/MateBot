@@ -12,12 +12,11 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 from fastapi.responses import Response
 
-from .base import APIException, Conflict, ForbiddenChange, InternalServerException, NotFound, ReturnType
+from .base import APIException, Conflict, NotFound, ReturnType
 from .dependency import LocalRequestData
 from ..persistence import models
 from ..misc.logger import enforce_logger
 from ..misc.notifier import Callback
-from ..schemas.bases import BaseModel
 
 
 _CallbackType = Callable[[str, str, logging.Logger, sqlalchemy.orm.Session], None]
