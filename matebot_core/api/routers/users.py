@@ -87,7 +87,7 @@ async def create_new_user(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Create a new "empty" user account with zero balance.
+    Create a new "empty" user account with zero balance
     """
 
     values = user.dict()
@@ -103,7 +103,7 @@ async def create_new_user(
 @versioning.versions(1)
 async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)):
     """
-    Return the user model of the community user.
+    Return the user model of the community user
     """
 
     objs = local.session.query(models.User).filter_by(special=True).all()
@@ -125,9 +125,9 @@ async def set_flags_of_user(
     """
     Set & unset the flags of an existing user
 
-    A 404 error will be returned if the user ID is not known.
-    A 409 error will be returned if an inactive user was changed
-    or if both `external=true` and `permission=true` were set.
+    * `404`: if the user ID is not known
+    * `409`: if an inactive user was changed or if both
+        `external=true` and `permission=true` were set
     """
 
     model = await helpers.return_one(change.user_id, models.User, local.session)
@@ -157,8 +157,8 @@ async def set_name_of_user(
     """
     Set (or unset) the username of an existing user
 
-    A 404 error will be returned if the user ID is not known.
-    A 409 error will be returned if an inactive user was changed.
+    * `404`: if the user ID is not known
+    * `409`: if an inactive user was changed
     """
 
     model = await helpers.return_one(change.user_id, models.User, local.session)
@@ -186,10 +186,10 @@ async def set_voucher_of_user(
     This endpoint will adjust the balance of the debtor user accordingly by creating
     a new transaction, if the voucher has been changed to None (= unset).
 
-    A 400 error will be returned if changing the voucher is not possible for
-    various reasons (e.g. someone already vouches for the particular user).
-    A 404 error will be returned in case any user ID is unknown.
-    A 409 error will be returned if the community user was used in the query.
+    * `400`: if changing the voucher is not possible for various reasons
+        (e.g. someone already vouches for the particular user)
+    * `404`: if any user ID is unknown
+    * `409`: if the community user was used in the query
     """
 
     debtor = await helpers.return_one(update.debtor, models.User, local.session)
@@ -255,17 +255,17 @@ async def disable_user_permanently(
 
     This operation will delete the user aliases, but no user history or transactions.
 
-    A 400 error will be returned if the given user actively vouches for
-    someone else, has a non-zero balance or has created / participates
-    in any open communisms or refund requests.
-    A 404 error will be returned if the `user_id` is not found.
-    A 409 error will be returned if an already inactive or the special user was given.
+    * `400`: if the given user actively vouches for someone else,
+        has a non-zero balance, has created / participates in any
+        open communisms or refund requests or is already disabled
+    * `404`: if the user ID is not found
+    * `409`: if the community user was given
     """
 
     model = await helpers.return_one(user_id, models.User, local.session)
 
     if not model.active:
-        raise Conflict(f"User {model.id} is already disabled.", str(model))
+        raise BadRequest(f"User {model.id} is already disabled.", str(model))
     if model.special:
         raise Conflict("The community user can't be disabled.", str(model))
 

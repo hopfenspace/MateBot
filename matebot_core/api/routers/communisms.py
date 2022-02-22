@@ -105,11 +105,10 @@ async def create_new_communism(
     """
     Create a new communism based on the specified data
 
-    A 400 error will be returned if the creator or any participant is an external
-    user without voucher, or if the creator or any participant is disabled.
-    A 404 error will be returned if the user ID of the
-    creator user or any mentioned participant is unknown.
-    A 409 error will be returned if the community user is part of it.
+    * `400`: if the creator or any participant is an external user
+        without voucher, or if the creator or any participant is disabled
+    * `404`: if the user ID of the creator user or any mentioned participant is unknown
+    * `409`: if the community user is part of the list of participants
     """
 
     creator = await helpers.return_one(communism.creator_id, models.User, local.session)
@@ -150,8 +149,8 @@ async def abort_open_communism(
     """
     Abort an open communism (closing it without performing transactions)
 
-    A 400 error will be returned if the communism is already closed.
-    A 404 error will be returned if the communism ID is unknown.
+    * `400`: if the communism is already closed
+    * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(communism_id, models.Communism, local.session)
@@ -177,8 +176,8 @@ async def close_open_communism(
     """
     Close an open communism (closing it with performing transactions)
 
-    A 400 error will be returned if the communism is already closed.
-    A 404 error will be returned if the communism ID is unknown.
+    * `400`: if the communism is already closed
+    * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(communism_id, models.Communism, local.session)
@@ -218,11 +217,10 @@ async def set_participants_of_open_communism(
     """
     Set the participants of an open communism
 
-    A 400 error will be returned if the communism is already closed or if
-    any participant is an external user without voucher or a disabled user.
-    A 404 error will be returned if the communism ID or the
-    user ID of any mentioned participant is unknown.
-    A 409 error will be returned if the community user is part of the participants.
+    * `400`: if the communism is already closed or if any participant
+        is an external user without voucher or a disabled user
+    * `404`: if the communism ID or the user ID of any mentioned participant is unknown
+    * `409`: if the community user is part of the participants
     """
 
     model = await helpers.return_one(communism_id, models.Communism, local.session)

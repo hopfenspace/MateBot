@@ -62,9 +62,9 @@ async def create_new_membership_poll(
     """
     Create a new membership request poll for the specified user
 
-    A 400 error will be returned if the creator is already internal or disabled.
-    A 404 error will be returned if the user ID of the `creator` is unknown.
-    A 409 error will be returned if the special community user is the creator.
+    * `400`: if the creator is already internal or disabled
+    * `404`: if the user ID of the `creator` is unknown.
+    * `409`: if the special community user is the creator
     """
 
     creator = await helpers.return_one(poll.creator_id, models.User, local.session)
@@ -133,12 +133,12 @@ async def vote_for_membership_request(
     will also close the membership poll if enough votes against the proposal
     have been created. The limits are set in the server's configuration.
 
-    A 400 error will be returned if the poll is not active anymore, the user has
-    already voted in the specified ballot, the user is not active or unprivileged.
-    A 404 error will be returned if the user ID or ballot ID is unknown.
-    A 409 error will be returned if the voter is the community user, if an
-    invalid state has been detected or the ballot referenced by the newly
-    created vote is actually about a refund request instead of a membership poll.
+    * `400`: if the poll is not active anymore, the user has already voted
+        in the specified ballot, the user is not active or unprivileged
+    * `404`: if the user ID or ballot ID is unknown.
+    * `409`: if the voter is the community user, an invalid state has
+        been detected or the ballot referenced by the newly created vote
+        is actually about a refund request instead of a membership poll
     """
 
     user = await helpers.return_one(vote.user_id, models.User, local.session)
@@ -197,8 +197,8 @@ async def abort_open_membership_poll(
     """
     Abort an ongoing poll request (closing it without performing the transaction)
 
-    A 400 error will be returned if the poll is already closed.
-    A 404 error will be returned if the poll ID is unknown.
+    * `400`: if the poll is already closed
+    * `404`: if the poll ID is unknown
     """
 
     model = await helpers.return_one(poll_id, models.Poll, local.session)

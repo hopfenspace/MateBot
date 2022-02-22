@@ -87,19 +87,19 @@ async def make_a_new_transaction(
 
     Specific information about one-to-one transactions:
 
-    A 400 error will be returned if the transaction is not allowed
-    for various reasons, e.g. sender equals receiver, either of those
-    users is disabled or is external but has no active voucher.
-    A 404 error will be returned if the sender or receiver user IDs are unknown.
-    A 409 error will be returned if the sender is the community user.
+    * `400`: if the transaction is not allowed for various reasons,
+        e.g. sender equals receiver, either of those users
+        is disabled or is external but has no active voucher
+    * `404`: if the sender or receiver user IDs are unknown
+    * `409`: if the sender is the community user
 
     Specific information about consumption transactions:
 
-    A 400 error will be returned if the consuming user is disabled or has
-    no rights to consume goods (being an external user without voucher).
-    A 404 error will be returned if the sender user or consumable isn't found.
-    A 409 error will be returned if the consuming user is the community itself
-    or if no community user was found at all (meaning the DB wasn't set up).
+    * `400`: if the consuming user is disabled or has no rights
+        to consume goods (being an external user without voucher)
+    * `404`: if the sender user or consumable isn't found
+    * `409`: if the consuming user is the community itself or if no community
+        user was found at all (meaning the DB wasn't set up properly)
     """
 
     if isinstance(transaction, schemas.Consumption):

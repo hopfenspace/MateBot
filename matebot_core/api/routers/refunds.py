@@ -67,8 +67,9 @@ async def create_new_refund(
     """
     Create a new refund based on the specified data.
 
-    A 404 error will be returned if the user ID of the `creator` is unknown.
-    A 409 error will be returned if the special community user is the creator.
+    * `400`: if the creator is an external user without voucher or disabled
+    * `404`: if the user ID of the creator is unknown
+    * `409`: if the special community user is the creator
     """
 
     creator = await helpers.return_one(refund.creator_id, models.User, local.session)
@@ -111,12 +112,12 @@ async def vote_for_refund_request(
     be found in the refund's transaction attribute (if the refund
     request has been accepted, otherwise this attribute is null).
 
-    A 400 error will be returned if the refund is not active anymore, the user has
-    already voted in the specified ballot, the user is not active or unprivileged.
-    A 404 error will be returned if the user ID or ballot ID is unknown.
-    A 409 error will be returned if the voter is the community user, if an
-    invalid state has been detected or the ballot referenced by the newly
-    created vote is actually about a membership poll instead of a refund request.
+    * `400`: if the refund is not active anymore, the user has already voted
+        in the specified ballot, the user is not active or unprivileged
+    * `404`: if the user ID or ballot ID is unknown.
+    * `409`: if the voter is the community user, an invalid state has
+        been detected or the ballot referenced by the newly created vote
+        is actually about a membership poll instead of a refund request
     """
 
     user = await helpers.return_one(vote.user_id, models.User, local.session)
@@ -169,8 +170,8 @@ async def abort_open_refund_request(
     """
     Abort an ongoing refund request (closing it without performing the transaction)
 
-    A 400 error will be returned if the refund is already closed.
-    A 404 error will be returned if the refund ID is unknown.
+    * `400`: if the refund is already closed
+    * `404`: if the refund ID is unknown
     """
 
     model = await helpers.return_one(refund_id, models.Refund, local.session)
