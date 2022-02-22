@@ -60,12 +60,13 @@ async def create_new_alias(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Create a new alias if no combination of `app_username` and `application_id` exists.
+    Create a new alias if no combination of `app_username` and `application_id` exists
 
     The `app_username` field should reflect the internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
 
-    A 404 error will be returned if the `user_id` or `application_id` is not known.
+    * `404`: if the user ID or application ID is unknown
+    * `409`: if the referenced user is disabled
     """
 
     user = await helpers.return_one(alias.user_id, models.User, local.session)
@@ -81,7 +82,7 @@ async def create_new_alias(
     if existing_alias is not None:
         raise Conflict(
             f"User alias {alias.app_username!r} can't be created since it already exists.",
-            f"Alias: {existing_alias!r}"
+            str(existing_alias)
         )
 
     model = models.Alias(
@@ -106,17 +107,29 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    A 409 error will be returned if any other attribute than `app_username` or
-    `confirmed` has been changed. A 404 error will be returned if at least one
-    of the `alias_id`, `application_id` or `user_id` doesn't exist.
+    * `404`: if the alias ID, user ID or application ID is unknown
+    * `409`: if the target user is disabled or the alias combination already exists
     """
 
     model = await helpers.return_one(alias.id, models.Alias, local.session)
-    helpers.restrict_updates(alias, model.schema)
-    await helpers.return_one(alias.user_id, models.User, local.session)
+    user = await helpers.return_one(alias.user_id, models.User, local.session)
+    if not user.active:
+        raise Conflict("A disabled user can't get new aliases.", str(alias))
     await helpers.return_one(alias.application_id, models.Application, local.session)
 
-    model.app_user_id = alias.app_username
+    existing_alias = local.session.query(models.Alias).filter_by(
+        application_id=alias.application_id,
+        app_username=alias.app_username
+    ).first()
+    if existing_alias is not None:
+        raise Conflict(
+            f"User alias {alias.app_username!r} can't be created since it already exists.",
+            str(existing_alias)
+        )
+
+    model.user_id = user.id
+    model.application_id = alias.application_id
+    model.app_username = alias.app_username
     model.confirmed = alias.confirmed
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
@@ -134,15 +147,7 @@ async def delete_existing_alias(
     """
     Delete an existing alias model.
 
-    A 404 error will be returned if the requested `id` doesn't exist.
-    A 409 error will be returned if the object is not up-to-date, which
-    means that the user agent needs to get the object before proceeding.
+    * `404`: if the requested alias ID doesn't exist
     """
 
-    return await helpers.delete_one_of_model(
-        alias.id,
-        models.Alias,
-        local,
-        schema=alias,
-        logger=logger
-    )
+    return await helpers.delete_one_of_model(alias.id, models.Alias, local, logger=logger)

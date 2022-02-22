@@ -103,11 +103,10 @@ async def create_new_callback(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Add a new callback API which should implement all required endpoints.
+    Add a new callback API which should implement all required endpoints
 
-    A 404 error will be returned if the `application_id` is not known.
-    A 409 error will be returned when the exact same base URL
-    has already been registered for any application.
+    * `404`: if the `application_id` is not known
+    * `409`: if the exact same base URL has already been registered for any other application
     """
 
     if callback.application_id is not None:
@@ -138,19 +137,18 @@ async def update_existing_callback(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Update an existing callback model identified by its `id`.
+    Update an existing callback model identified by its `id`
 
-    A 404 error will be returned if the callback `id` doesn't exist.
-    A 409 error will be returned when the exact same base URL is already in use.
+    * `404`: if the callback ID doesn't exist
+    * `409`: if the exact same base URL is already in use
     """
 
     model = await helpers.return_one(callback.id, models.Callback, local.session)
-    helpers.restrict_updates(callback, model.schema)
-
     if [m for m in local.session.query(models.Callback).filter_by(base=callback.base).all() if m.id != model.id]:
         raise Conflict(f"Base URL {callback.base} already in use.", detail=str(callback))
 
     model.base = callback.base
+    model.application_id = callback.application_id
     model.username = callback.username
     model.password = callback.password
 
@@ -169,17 +167,9 @@ async def delete_existing_callback(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Delete an existing callback model.
+    Delete an existing callback model
 
-    A 404 error will be returned if the requested `id` doesn't exist.
-    A 409 error will be returned if the object is not up-to-date, which
-    means that the user agent needs to get the object before proceeding.
+    * `404`: if the requested callback ID doesn't exist
     """
 
-    return await helpers.delete_one_of_model(
-        callback.id,
-        models.Callback,
-        local,
-        schema=callback,
-        logger=logger
-    )
+    return await helpers.delete_one_of_model(callback.id, models.Callback, local, logger=logger)
