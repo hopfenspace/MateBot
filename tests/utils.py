@@ -219,7 +219,7 @@ class BaseAPITests(BaseTest):
             self,
             endpoint: Union[Tuple[str, str], Tuple[str, str, int]],
             status_code: Union[int, Iterable[int]] = 200,
-            json: Optional[Union[dict, pydantic.BaseModel]] = None,
+            json: Optional[Union[dict, pydantic.BaseModel, List[Union[dict, pydantic.BaseModel]]]] = None,
             headers: Optional[dict] = None,
             r_none: bool = False,
             r_is_json: bool = True,
@@ -281,6 +281,8 @@ class BaseAPITests(BaseTest):
 
         if path.startswith("/"):
             path = path[1:]
+        if isinstance(json, list):
+            json = [e if not isinstance(e, pydantic.BaseModel) else e.dict() for e in json]
         if isinstance(json, pydantic.BaseModel):
             json = json.dict()
 
