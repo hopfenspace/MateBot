@@ -26,7 +26,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
     response_model=List[schemas.User]
 )
 @versioning.versions(1)
-async def get_all_users(
+async def search_for_users(
         user_id: Optional[pydantic.NonNegativeInt] = None,
         user_name: Optional[pydantic.constr(max_length=255)] = None,
         user_permission: Optional[bool] = None,
@@ -102,44 +102,6 @@ async def create_new_user(
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
 
 
-@router.put(
-    "",
-    response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
-)
-@versioning.versions(minimal=1)
-async def update_existing_user(
-        user: schemas.User,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Update an existing user model identified by the `user_id`.
-
-    This endpoint only allows to change the name, permissions and
-    external flag of a user. Use the specialised POST endpoints for
-    other user-related actions like disabling or vouching.
-
-    A 404 error will be returned if the user ID is not known.
-    A 409 error will be returned if an inactive or the special
-    user was changed or an external user was granted permissions.
-    """
-
-    model = await helpers.return_one(user.id, models.User, local.session)
-
-    if not model.active:
-        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(user))
-    if model.special:
-        raise Conflict("The community user can't be updated via this endpoint.", str(user))
-    if user.external and user.permission:
-        raise Conflict("An external user can't have extended permissions", str(user))
-
-    model.name = user.name
-    model.permission = user.permission
-    model.external = user.external
-
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
-
-
 @router.get(
     "/community",
     response_model=schemas.User
@@ -156,23 +118,59 @@ async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)
     return objs[0].schema
 
 
-@router.get(
-    "/{user_id}",
+@router.post(
+    "/setFlags",
     response_model=schemas.User,
-    responses={404: {"model": schemas.APIError}}
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
 )
-@versioning.versions(1)
-async def get_user_by_id(
-        user_id: pydantic.NonNegativeInt,
+@versioning.versions(minimal=1)
+async def set_flags_of_user(
+        change: schemas.UserFlagsChangeRequest,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return the internal model of the user specified by its user ID.
+    Set & unset the flags of an existing user
 
-    A 404 error will be returned in case the user ID is unknown.
+    A 404 error will be returned if the user ID is not known.
+    A 409 error will be returned if an inactive user was changed.
     """
 
-    return await helpers.get_one_of_model(user_id, models.User, local)
+    model = await helpers.return_one(change.user_id, models.User, local.session)
+
+    if not model.active:
+        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
+
+    if change.external is not None:
+        model.external = change.external
+    if change.permission is not None:
+        model.permission = change.permission
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+
+
+@router.post(
+    "/setName",
+    response_model=schemas.User,
+    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+)
+@versioning.versions(minimal=1)
+async def set_name_of_user(
+        change: schemas.UsernameChangeRequest,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Set (or unset) the username of an existing user
+
+    A 404 error will be returned if the user ID is not known.
+    A 409 error will be returned if an inactive user was changed.
+    """
+
+    model = await helpers.return_one(change.user_id, models.User, local.session)
+
+    if not model.active:
+        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
+
+    model.name = change.username
+    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 
 
 @router.post(

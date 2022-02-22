@@ -119,3 +119,14 @@ class VoucherUpdateResponse(BaseModel):
 class VoucherUpdateRequest(BaseModel):
     debtor: pydantic.NonNegativeInt
     voucher: Optional[pydantic.NonNegativeInt]
+
+
+class UsernameChangeRequest(BaseModel):
+    user_id: pydantic.NonNegativeInt
+    username: Optional[pydantic.constr(max_length=255)]
+
+
+class UserFlagsChangeRequest(BaseModel):
+    user_id: pydantic.NonNegativeInt
+    external: Optional[bool]
+    permission: Optional[bool]
