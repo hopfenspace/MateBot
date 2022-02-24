@@ -544,11 +544,7 @@ class WorkingAPITests(utils.BaseAPITests):
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/create/communism/1")]
         ).json()
-        self.assertQuery(
-            ("GET", "/communisms/1"),
-            200,
-            r_schema=_schemas.Communism(**communism1)
-        ).json()
+        self.assertListEqual([communism1], self.assertQuery(("GET", "/communisms?id=1"), 200).json())
 
         # User referenced by participant 2 doesn't exist, then it's created
         self.assertQuery(
@@ -574,18 +570,7 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/communism/2")]
         )
         communism2 = response2.json()
-        self.assertQuery(
-            ("GET", "/communisms/2"),
-            200,
-            r_schema=_schemas.Communism(**communism2)
-        ).json()
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            200,
-            json=communism2,
-            r_schema=_schemas.Communism(**communism2),
-            recent_callbacks=[("GET", "/update/communism/2")]
-        ).json()
+        self.assertListEqual([communism2], self.assertQuery(("GET", "/communisms?id=2"), 200).json())
 
         # Create and get the third communism object
         response3 = self.assertQuery(
@@ -596,96 +581,53 @@ class WorkingAPITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/communism/3")]
         )
         communism3 = response3.json()
-        self.assertQuery(
-            ("GET", "/communisms/3"),
-            200,
-            r_schema=_schemas.Communism(**communism3)
-        ).json()
-
-        # Perform a PUT operation with the same data (that shouldn't change anything)
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            200,
-            json=communism2,
-            r_schema=communism2,
-            recent_callbacks=[("GET", "/update/communism/2")]
-        )
+        self.assertListEqual([communism3], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
 
         # Add new users to the third communism
-        communism3["participants"] = [
-            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict(),
-            _schemas.CommunismUserBinding(user_id=2, quantity=20).dict()
-        ]
-        response3_changed = self.assertQuery(
-            ("PUT", "/communisms"),
+        communism3_changed = self.assertQuery(
+            ("POST", "/communisms/setParticipants/3"),
             200,
-            json=communism3,
+            json=[
+                _schemas.CommunismUserBinding(user_id=1, quantity=10),
+                _schemas.CommunismUserBinding(user_id=2, quantity=20)
+            ],
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
-        )
-        communism3_changed = response3_changed.json()
-        self.assertEqual(communism3_changed, communism3)
-        self.assertQuery(
-            ("GET", "/communisms/3"),
-            200,
-            r_schema=communism3_changed
-        )
+        ).json()
+        self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
+        self.assertEqual(len(communism3_changed["participants"]), 2)
 
         # Remove a user from the third communism
-        communism3["participants"] = [
-            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict()
-        ]
         communism3_changed = self.assertQuery(
-            ("PUT", "/communisms"),
+            ("POST", "/communisms/setParticipants/3"),
             200,
-            json=communism3,
+            json=[_schemas.CommunismUserBinding(user_id=1, quantity=10)],
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
-        self.assertEqual(communism3_changed, communism3)
-        self.assertQuery(
-            ("GET", "/communisms/3"),
-            200,
-            r_schema=communism3_changed
-        )
+        self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
+        self.assertEqual(len(communism3_changed["participants"]), 1)
+        self.assertEqual(communism3_changed["participants"][0]["quantity"], 10)
 
         # Modify the quantity of a user from the third communism
-        communism3["participants"] = [
-            _schemas.CommunismUserBinding(user_id=1, quantity=40).dict()
-        ]
-        communism3 = self.assertQuery(
-            ("PUT", "/communisms"),
+        communism3_changed = self.assertQuery(
+            ("POST", "/communisms/setParticipants/3"),
             200,
-            json=communism3,
-            r_schema=_schemas.Communism(**communism3),
+            json=[_schemas.CommunismUserBinding(user_id=1, quantity=40)],
+            r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
+        query = "/communisms?active=true&unique_participants=1"
+        self.assertListEqual([communism3_changed], self.assertQuery(("GET", query), 200).json())
+        self.assertEqual(len(communism3_changed["participants"]), 1)
+        self.assertEqual(communism3_changed["participants"][0]["quantity"], 40)
 
-        # Add and modify users from the third communism
-        communism3["participants"] = [
-            _schemas.CommunismUserBinding(user_id=1, quantity=10).dict(),
-            _schemas.CommunismUserBinding(user_id=2, quantity=3).dict(),
-            _schemas.CommunismUserBinding(user_id=3, quantity=7).dict()
-        ]
+        # The newly added participant doesn't exist
         self.assertQuery(
-            ("PUT", "/communisms"),
+            ("POST", "/communisms/setParticipants/3"),
             404,
-            json=communism3
-        ).json()
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"name": "user3", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/3")]
-        )
-        communism3 = self.assertQuery(
-            ("PUT", "/communisms"),
-            200,
-            json=communism3,
-            r_schema=_schemas.Communism(**communism3),
-            r_schema_ignored_fields=["modified", "created"],
-            recent_callbacks=[("GET", "/update/communism/3")]
+            json=[_schemas.CommunismUserBinding(user_id=4, quantity=40)],
+            recent_callbacks=[]
         ).json()
 
         # Do not allow to delete communisms
@@ -698,29 +640,37 @@ class WorkingAPITests(utils.BaseAPITests):
             [400, 404, 405]
         )
 
-        # Forbid to update a communism if a user is mentioned twice or more
-        communism3_broken = communism3.copy()
-        communism3_broken["participants"] = [
-            {"user_id": 1, "quantity": 10},
-            {"user_id": 1, "quantity": 10},
-            {"user_id": 1, "quantity": 10},
-            {"user_id": 2, "quantity": 20}
-        ]
-        self.assertQuery(
-            ("PUT", "/communisms"),
-            409,
-            json=communism3_broken
+        # Add another new user
+        user3 = self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user3", "permission": True, "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", "/create/user/3")]
+        ).json()
+
+        # Add the creator and the new user to the third communism again (note the doubled user 1)
+        communism3_changed = self.assertQuery(
+            ("POST", "/communisms/setParticipants/3"),
+            200,
+            json=[
+                {"user_id": 1, "quantity": 7}, {"user_id": 2, "quantity": 3},
+                {"user_id": 1, "quantity": 3}, {"user_id": 3, "quantity": 7}],
+            r_schema=_schemas.Communism,
+            recent_callbacks=[("GET", "/update/communism/3")]
+        ).json()
+        self.assertListEqual(
+            [{"user_id": 1, "quantity": 10}, {"user_id": 2, "quantity": 3}, {"user_id": 3, "quantity": 7}],
+            communism3_changed["participants"]
         )
 
         # Close the third communism and expect all balances to be adjusted (creator is participant!)
         users = self.assertQuery(("GET", "/users"), 200).json()
         self.assertEqual(self.assertQuery(("GET", "/transactions"), 200).json(), [])
         self.assertEqual(self.assertQuery(("GET", "/transactions/multi"), 200).json(), [])
-        communism3["active"] = False
         communism3_changed = self.assertQuery(
-            ("PUT", "/communisms"),
+            ("POST", "/communisms/close/3"),
             200,
-            json=communism3,
             r_schema=_schemas.Communism,
             recent_callbacks=[
                 ("GET", "/update/communism/3"),
@@ -737,7 +687,9 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(1, len(multi_transactions))
         m = multi_transactions[0]
         del m["timestamp"], m["transactions"][0]["timestamp"], m["transactions"][1]["timestamp"]
-        user1, user2, user3 = [self.assertQuery(("GET", f"/users/{i+1}")).json() for i in range(3)]
+
+        # Check that the multi transaction worked as expected
+        user1, user2, user3 = [self.assertQuery(("GET", f"/users?id={i+1}")).json()[0] for i in range(3)]
         self.assertEqual(m, {
             "id": 1,
             "base_amount": 67,
@@ -765,22 +717,19 @@ class WorkingAPITests(utils.BaseAPITests):
         self.assertEqual(users[1]["balance"], users_updated[1]["balance"] - 1139)
         self.assertEqual(users[2]["balance"], users_updated[2]["balance"] + 469)
 
-        # Updating a closed communism should yield HTTP 409
+        # Updating a communism that doesn't exist or that is already closed shouldn't work
+        self.assertListEqual([], self.assertQuery(("GET", "/communisms?id=4"), 200).json())
         self.assertQuery(
-            ("PUT", "/communisms"),
-            400,
-            json=communism3_changed
-        )
-
-        # Updating a communism that doesn't exist shouldn't work
-        self.assertQuery(("GET", "/communisms/4"), 404)
-        communism4 = communism3.copy()
-        communism4["id"] = 4
-        self.assertQuery(
-            ("PUT", "/communisms"),
+            ("POST", "/communisms/setParticipants/4"),
             404,
-            json=communism4
+            json=communism3["participants"]
         )
+        self.assertQuery(
+            ("POST", "/communisms/setParticipants/3"),
+            400,
+            json=[]
+        )
+        self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?active=false"), 200).json())
 
 
 @_tested
