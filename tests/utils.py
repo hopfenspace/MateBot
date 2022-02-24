@@ -436,17 +436,19 @@ class BaseAPITests(BaseTest):
 
         self.callback_server.serve_forever()
 
-    def make_special_user(self, community_name: str = "Community"):
+    def get_db_session(self) -> sqlalchemy.orm.Session:
         opts = {"echo": conf.SQLALCHEMY_ECHOING}
         if self.database_url.startswith("sqlite:"):
             opts = {"connect_args": {"check_same_thread": False}}
         engine = sqlalchemy.create_engine(self.database_url, **opts)
-        session = sqlalchemy.orm.sessionmaker(
+        return sqlalchemy.orm.sessionmaker(
             autocommit=False,
             autoflush=False,
             bind=engine
         )()
 
+    def make_special_user(self, community_name: str = "Community"):
+        session = self.get_db_session()
         specials = session.query(models.User).filter_by(special=True).all()
         if len(specials) > 1:
             self.fail("CRITICAL ERROR. Please drop a bug report.")

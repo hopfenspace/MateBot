@@ -9,6 +9,7 @@ from typing import Type
 import requests
 
 from matebot_core import schemas as _schemas
+from matebot_core.persistence import models
 
 from . import utils
 
@@ -24,13 +25,7 @@ def _tested(cls: Type):
 
 
 @_tested
-class UninitializedAPITests(utils.BaseAPITests):
-    def _init_project_data(self):
-        pass
-
-
-@_tested
-class WorkingAPITests(utils.BaseAPITests):
+class APITests(utils.BaseAPITests):
     def setUp(self) -> None:
         super().setUp()
         self.login()
@@ -641,7 +636,7 @@ class WorkingAPITests(utils.BaseAPITests):
         )
 
         # Add another new user
-        user3 = self.assertQuery(
+        self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user3", "permission": True, "external": False},
@@ -731,11 +726,7 @@ class WorkingAPITests(utils.BaseAPITests):
         )
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?active=false"), 200).json())
 
-
-@_tested
-class FailingAPITests(utils.BaseAPITests):
     def test_communism_schema_checks(self):
-        self.login()
         sample_data = [
             {},
             {
@@ -770,9 +761,88 @@ class FailingAPITests(utils.BaseAPITests):
                 json=entry
             )
 
+    def test_user_search(self):
+        def comp(x: int, query: str):
+            data = self.assertQuery(("GET", "/users" + (query and "?" + query)), 200).json()
+            self.assertEqual(x, len(data), str(data))
+
+        session = self.get_db_session()
+        comp(0, "")
+
+        session.add(models.User(active=False, external=False, permission=False))
+        session.commit()
+        comp(1, "")
+
+        session.add(models.User(active=True, external=True, name="foo"))
+        session.commit()
+        comp(2, "")
+
+        session.add(models.User(active=True, external=False, permission=True))
+        session.add(models.User(active=True, external=False, permission=True, name="bar"))
+        session.commit()
+        comp(4, "")
+
+        session.add(models.User(external=False, name="baz"))
+        session.commit()
+        comp(5, "")
+
+        session.add(models.User(active=False, external=False, name="baz"))
+        session.commit()
+        comp(6, "")
+
+        session.add(models.User(external=True, permission=False, voucher_id=3))
+        session.commit()
+        comp(7, "")
+
+        comp(1, "id=1")
+        comp(1, "id=2")
+        comp(1, "id=3")
+
+        comp(5, "active=true")
+        comp(2, "active=false")
+
+        comp(2, "external=true")
+        comp(5, "external=false")
+
+        comp(0, "name=foobar")
+        comp(1, "name=foo")
+        comp(2, "name=baz")
+
+        comp(2, "active=true&external=false&permission=true")
+        comp(1, "active=true&external=false&permission=true&name=bar")
+
+        comp(1, "voucher_id=3")
+        comp(0, "voucher_id=4")
+        comp(0, "voucher_id=3&active=false")
+
+        comp(2, "external=false&name=baz")
+        comp(1, "external=false&name=baz&active=true")
+        comp(1, "external=false&name=baz&active=false")
+
+        session.add(models.Application(name="app", password="password", salt="salt"))
+        session.commit()
+
+        session.add(models.Alias(user_id=3, application_id=1, app_username="foo"))
+        session.add(models.Alias(user_id=3, application_id=1, app_username="bar"))
+        session.add(models.Alias(user_id=4, application_id=1, app_username="baz", confirmed=True))
+        session.add(models.Alias(user_id=5, application_id=1, app_username="foobar", confirmed=True))
+        session.commit()
+
+        comp(7, "")
+        comp(1, "alias_id=1")
+        comp(1, "alias_id=2")
+        comp(3, "alias_application_id=1")
+        comp(0, "alias_application_id=2")
+        comp(1, "alias_confirmed=false")
+        comp(2, "alias_confirmed=true")
+        comp(1, "alias_confirmed=true&alias_app_username=baz")
+        comp(0, "alias_confirmed=true&alias_app_username=baz&id=1")
+
+        session.close()
+
 
 @_tested
-class APICallbackTests(utils.BaseAPITests):
+class CallbackTests(utils.BaseAPITests):
     def test_callback_testing(self):
         self.assertEqual(0, self.callback_request_list.qsize())
         requests.get(f"{self.callback_server_uri}test")
@@ -784,10 +854,10 @@ class APICallbackTests(utils.BaseAPITests):
         self.assertEqual(("GET", "/bar"), self.callback_request_list.get(timeout=0))
         self.assertEqual(("GET", "/baz"), self.callback_request_list.get(timeout=0))
 
-        requests.get(f"{self.callback_server_uri}create/poll/7")
+        requests.get(f"{self.callback_server_uri}create/refund/7")
         requests.get(f"{self.callback_server_uri}update/user/3")
         requests.get(f"{self.callback_server_uri}delete/vote/1")
-        self.assertEqual(("GET", "/create/poll/7"), self.callback_request_list.get(timeout=0.5))
+        self.assertEqual(("GET", "/create/refund/7"), self.callback_request_list.get(timeout=0.5))
         self.assertEqual(("GET", "/update/user/3"), self.callback_request_list.get(timeout=0))
         self.assertEqual(("GET", "/delete/vote/1"), self.callback_request_list.get(timeout=0))
 
