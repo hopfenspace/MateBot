@@ -6,8 +6,9 @@ import logging
 from typing import List, Optional
 
 import pydantic
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
+from ._router import router
 from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
@@ -17,8 +18,6 @@ from ... import schemas
 
 
 logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/communisms", tags=["Communisms"],)
 
 
 def _compress_participants(participants: List[schemas.CommunismUserBinding]) -> List[schemas.CommunismUserBinding]:
