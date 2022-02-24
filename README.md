@@ -11,7 +11,7 @@ by a community poll, where every user has the equal privileges and voting
 weight. Additionally, the API provides endpoints to easily consume any
 amount of predefined but modifiable consumables with different stocks.
 
-## Productive installation
+## Installation
 
 ### Pre-requirements
 
@@ -29,17 +29,23 @@ amount of predefined but modifiable consumables with different stocks.
    (e.g. `apt install python3-venv` on Debian-like system).
 3. Install the required packages:
    ```shell
-   pip3 install -r requirements.txt
+   venv/bin/pip3 install -r requirements.txt
    ```
 4. Initialize the MateBot core data once (`--help` to show the options first):
    ```shell
-   python3 -m matebot_core init --help
+   venv/bin/python3 -m matebot_core init --help
    ```
 5. Edit the newly created config file `config.json`. Important parts
    are the server and database settings, but you may want to change
    the general or logging settings as well. You should always use
    a persistent database, even if it's a sqlite database, since the
    in-memory sqlite database is currently not working properly.
+6. Create new application accounts to authenticate against the API
+   (use `--help` to show the options); the password may either be given
+   via the `--password` option or interactively via standard input:
+   ```shell
+   venv/bin/python3 -m matebot_core add-app --app <APPLICATION NAME>
+   ```
 
 ### Executing
 
@@ -57,7 +63,7 @@ the `systemd` command, add a symlink to it, reload the systemd daemon
 and finally enable the new service. All steps as an example below:
 
 ```shell
-python3 -m matebot_core systemd
+venv/bin/python3 -m matebot_core systemd
 sudo ln -vrs matebot_core.service /lib/systemd/system/matebot_core.service
 sudo systemctl daemon-reload
 sudo systemctl enable matebot_core
