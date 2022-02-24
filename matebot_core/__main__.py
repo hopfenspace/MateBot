@@ -109,18 +109,6 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         metavar="name",
         help="Optional name of the possibly new community user"
     )
-    parser_init.add_argument(
-        "--application",
-        type=str,
-        metavar="name",
-        help="Name of a newly created application account"
-    )
-    parser_init.add_argument(
-        "--password",
-        type=str,
-        metavar="passwd",
-        help="Password for the new app account (see --application)"
-    )
 
     parser_add_app.add_argument(
         "--app",
@@ -272,7 +260,9 @@ def init_project(args: argparse.Namespace) -> int:
     if not args.no_community:
         specials = session.query(models.User).filter_by(special=True).all()
         if len(specials) > 1:
-            raise RuntimeError("CRITICAL ERROR. Please drop a bug report.")
+            raise RuntimeError("Multiple community users found. Please drop a bug report.")
+        if not args.community:
+            print("Using an empty or no name for the community is discouraged! Continuing anyways...", file=sys.stderr)
         if len(specials) == 0:
             session.add(models.User(
                 active=True,
@@ -282,47 +272,18 @@ def init_project(args: argparse.Namespace) -> int:
                 name=args.community
             ))
             session.commit()
-
-    if len(session.query(models.Application).all()) == 0 or args.application:
-        name = args.application
-        if not name:
-            print(
-                "\nThere's no registered application yet. Nobody can use the API "
-                "without an application account. Skip this step by pressing Enter. "
-                "Otherwise type in the name of the new application account below."
-            )
-            name = input("> ")
-
-        if len(session.query(models.Application).filter_by(name=name).all()) > 0:
-            print(
-                f"An application with the given name {name!r} already "
-                f"exists. Therefore, it can't be created. Exiting.",
-                file=sys.stderr
-            )
             session.flush()
-            session.close()
-            return 1
 
-        passwd = args.password
-        if not passwd and name:
-            print(
-                f"\nThe new application {name!r} needs a password to properly authenticate "
-                "against the API in production later on. Enter the password below. "
-                "Make sure that the password meets good length & strength standards. "
-                "Note that pressing Enter will not create the new application!"
-            )
-            passwd = getpass.getpass()
+    if len(session.query(models.Application).all()) == 0:
+        print(
+            "\nThere's no registered application yet. Nobody can use the API "
+            "without an application account, because the authentication procedure "
+            "makes use of those accounts. Re-run this utility with the 'add-app' "
+            "option to add new application accounts to the database to be "
+            "able to login to the API via application name and password."
+        )
 
-        if name and not passwd:
-            print("No new application account created!")
-        elif name and passwd:
-            salt = secrets.token_urlsafe(16)
-            session.add(models.Application(name=name, password=auth.hash_password(passwd, salt), salt=salt))
-            session.commit()
-
-    session.flush()
     session.close()
-
     print("Done.")
     return 0
 
