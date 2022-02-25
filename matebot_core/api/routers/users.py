@@ -9,7 +9,7 @@ import pydantic
 from fastapi import Depends
 
 from ._router import router
-from ..base import BadRequest, Conflict, InternalServerException
+from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...misc import transactions
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 @versioning.versions(1)
 async def search_for_users(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        community: Optional[bool] = None,
         name: Optional[pydantic.constr(max_length=255)] = None,
         permission: Optional[bool] = None,
         active: Optional[bool] = None,
@@ -47,6 +48,8 @@ async def search_for_users(
     """
 
     def extended_filter(user: models.User) -> bool:
+        if community is not None and not community and user.special:
+            return False
         if not (alias_id is None or alias_id in [a.id for a in user.aliases]):
             return False
         for a in user.aliases:
@@ -64,6 +67,7 @@ async def search_for_users(
         local,
         specialized_item_filter=extended_filter,
         id=id,
+        special=community or None,
         name=name,
         permission=permission,
         active=active,
@@ -91,23 +95,6 @@ async def create_new_user(
     values["active"] = True
     model = models.User(**values)
     return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
-
-
-@router.get(
-    "/users/community",
-    tags=["Users"],
-    response_model=schemas.User
-)
-@versioning.versions(1)
-async def get_community_user(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return the user model of the community user
-    """
-
-    objs = local.session.query(models.User).filter_by(special=True).all()
-    if len(objs) != 1:
-        raise InternalServerException("Multiple community users found. Please file a bug report.", str(objs))
-    return objs[0].schema
 
 
 @router.post(
