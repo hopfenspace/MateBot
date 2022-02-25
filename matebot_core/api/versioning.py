@@ -7,6 +7,7 @@ from typing import Callable, Dict, Iterable, Optional
 
 import fastapi
 
+from . import base
 from .. import schemas
 
 
@@ -58,7 +59,7 @@ def versions(
     return decorator
 
 
-class VersionedFastAPI(fastapi.FastAPI):
+class VersionedFastAPI(base.APIWithoutValidationError):
     """
     Specialized FastAPI adding support for multiple versioned sub-APIs
 

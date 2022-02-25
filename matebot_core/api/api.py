@@ -110,7 +110,7 @@ def _make_app(
         license_info=license_info or LICENSE_INFO,
         docs_url=None if static_directory else "/docs",
         redoc_url=None if static_directory else "/redoc",
-        responses=responses or {422: {"model": schemas.APIError}},
+        responses=responses or {400: {"model": schemas.APIError}},
         **kwargs
     )
 
@@ -220,13 +220,14 @@ def create_app(
                 title="MateBot core REST API v1",
                 version="1.0",
                 description=API_V1_DOC,
-                static_directory=static_directory
+                static_directory=static_directory,
+                api_class=base.APIWithoutValidationError
             )
         },
         logger=logger,
         license_info=LICENSE_INFO,
         static_directory=static_directory,
-        responses={422: {"model": schemas.APIError}},
+        responses={400: {"model": schemas.APIError}},
         on_shutdown=[lambda: logger.info("Shutting down...")],
         api_class=versioning.VersionedFastAPI
     )

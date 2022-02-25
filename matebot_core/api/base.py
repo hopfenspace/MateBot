@@ -10,8 +10,10 @@ import secrets
 from typing import Any, Dict, List, Optional, Union
 
 import pydantic
-from fastapi import HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from .. import schemas
@@ -38,6 +40,31 @@ class ReturnType(enum.Enum):
     NONE = enum.auto()
     MODEL = enum.auto()
     SCHEMA = enum.auto()
+
+
+class APIWithoutValidationError(FastAPI):
+    """
+    FastAPI class that excludes 422 validation error responses in OpenAPI schema
+    """
+
+    def openapi(self) -> Dict[str, Any]:
+        if not self.openapi_schema:
+            self.openapi_schema = get_openapi(
+                title=self.title,
+                version=self.version,
+                openapi_version=self.openapi_version,
+                description=self.description,
+                terms_of_service=self.terms_of_service,
+                contact=self.contact,
+                license_info=self.license_info,
+                routes=self.routes,
+                tags=self.openapi_tags,
+                servers=self.servers,
+            )
+            for path, operations in self.openapi_schema["paths"].items():
+                for method, metadata in operations.items():
+                    metadata["responses"].pop("422", None)
+        return self.openapi_schema
 
 
 class APIException(HTTPException):
@@ -82,8 +109,8 @@ class APIException(HTTPException):
         status_code = 500
         if hasattr(exc, "status_code"):
             status_code = exc.status_code
-        elif isinstance(exc, pydantic.ValidationError):
-            status_code = 422
+        elif isinstance(exc, RequestValidationError):
+            status_code = 400
 
         if not isinstance(exc, HTTPException):
             details = jsonable_encoder(exc)
