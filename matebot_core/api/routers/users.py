@@ -229,14 +229,14 @@ async def set_voucher_of_user(
 
 
 @router.post(
-    "/users/disable/{user_id}",
+    "/users/disable",
     tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(1)
 async def disable_user_permanently(
-        user_id: pydantic.NonNegativeInt,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -251,7 +251,7 @@ async def disable_user_permanently(
     * `409`: if the community user was given
     """
 
-    model = await helpers.return_one(user_id, models.User, local.session)
+    model = await helpers.return_one(body.id, models.User, local.session)
 
     if not model.active:
         raise BadRequest(f"User {model.id} is already disabled.", str(model))

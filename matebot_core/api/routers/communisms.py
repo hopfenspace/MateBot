@@ -134,14 +134,14 @@ async def create_new_communism(
 
 
 @router.post(
-    "/communisms/abort/{communism_id}",
+    "/communisms/abort",
     tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(1)
 async def abort_open_communism(
-        communism_id: pydantic.NonNegativeInt,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -151,7 +151,7 @@ async def abort_open_communism(
     * `404`: if the communism ID is unknown
     """
 
-    model = await helpers.return_one(communism_id, models.Communism, local.session)
+    model = await helpers.return_one(body.id, models.Communism, local.session)
 
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
@@ -162,14 +162,14 @@ async def abort_open_communism(
 
 
 @router.post(
-    "/communisms/close/{communism_id}",
+    "/communisms/close",
     tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(1)
 async def close_open_communism(
-        communism_id: pydantic.NonNegativeInt,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -179,7 +179,7 @@ async def close_open_communism(
     * `404`: if the communism ID is unknown
     """
 
-    model = await helpers.return_one(communism_id, models.Communism, local.session)
+    model = await helpers.return_one(body.id, models.Communism, local.session)
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
 
@@ -203,15 +203,14 @@ async def close_open_communism(
 
 
 @router.post(
-    "/communisms/setParticipants/{communism_id}",
+    "/communisms/setParticipants",
     tags=["Communisms"],
     response_model=schemas.Communism,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(1)
 async def set_participants_of_open_communism(
-        communism_id: pydantic.NonNegativeInt,
-        participants: List[schemas.CommunismUserBinding],
+        body: schemas.CommunismUserUpdate,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -223,12 +222,12 @@ async def set_participants_of_open_communism(
     * `409`: if the community user is part of the participants
     """
 
-    model = await helpers.return_one(communism_id, models.Communism, local.session)
+    model = await helpers.return_one(body.id, models.Communism, local.session)
 
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
 
-    participants = _compress_participants(participants)
+    participants = _compress_participants(body.participants)
     await _check_participants(participants, local)
 
     remaining = list(participants)[:]

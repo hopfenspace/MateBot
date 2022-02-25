@@ -156,14 +156,14 @@ async def vote_for_refund_request(
 
 
 @router.post(
-    "/refunds/abort/{refund_id}",
+    "/refunds/abort",
     tags=["Refunds"],
     response_model=schemas.Refund,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(1)
 async def abort_open_refund_request(
-        refund_id: pydantic.NonNegativeInt,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -173,7 +173,7 @@ async def abort_open_refund_request(
     * `404`: if the refund ID is unknown
     """
 
-    model = await helpers.return_one(refund_id, models.Refund, local.session)
+    model = await helpers.return_one(body.id, models.Refund, local.session)
 
     if not model.active:
         raise BadRequest("Updating an already closed refund is not possible.", detail=str(model))

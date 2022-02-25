@@ -11,6 +11,10 @@ from typing import List, Optional
 import pydantic
 
 
+class IdBody(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+
+
 class Token(pydantic.BaseModel):
     access_token: str
     token_type: str

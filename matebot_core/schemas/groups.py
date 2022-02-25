@@ -103,6 +103,11 @@ class CommunismCreation(pydantic.BaseModel):
     participants: List[CommunismUserBinding] = []
 
 
+class CommunismUserUpdate(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    participants: List[CommunismUserBinding]
+
+
 class CommunismUser(pydantic.BaseModel):
     communism: Communism
     user: _User

@@ -183,14 +183,14 @@ async def vote_for_membership_request(
 
 
 @router.post(
-    "/polls/abort/{poll_id}",
+    "/polls/abort",
     tags=["Polls"],
     response_model=schemas.Poll,
     responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(1)
 async def abort_open_membership_poll(
-        poll_id: pydantic.NonNegativeInt,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -200,7 +200,7 @@ async def abort_open_membership_poll(
     * `404`: if the poll ID is unknown
     """
 
-    model = await helpers.return_one(poll_id, models.Poll, local.session)
+    model = await helpers.return_one(body.id, models.Poll, local.session)
 
     if not model.active:
         raise BadRequest("Updating an already closed poll is not possible.", detail=str(model))
