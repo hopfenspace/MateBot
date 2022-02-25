@@ -1,8 +1,7 @@
 """
-MateBot router module for various read-only endpoints
+MateBot router module for read-only search endpoints
 """
 
-import datetime
 from typing import List, Optional
 
 import pydantic
@@ -11,9 +10,8 @@ from fastapi import Depends
 from ._router import router
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
-from ...schemas import config
 from ...persistence import models
-from ... import schemas, __version__
+from ... import schemas
 
 
 ################
@@ -21,10 +19,10 @@ from ... import schemas, __version__
 ################
 
 
-@router.get("/applications", tags=["Readonly"], response_model=List[schemas.Application])
+@router.get("/applications", tags=["Searches"], response_model=List[schemas.Application])
 @versioning.versions(minimal=1)
 async def search_for_applications(
-        application_id: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         application_name: Optional[pydantic.constr(max_length=255)] = None,
         callback_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -40,7 +38,7 @@ async def search_for_applications(
         models.Application,
         local,
         specialized_item_filter=extended_filter,
-        id=application_id,
+        id=id,
         name=application_name
     )
 
@@ -50,10 +48,10 @@ async def search_for_applications(
 ###########
 
 
-@router.get("/ballots", tags=["Readonly"], response_model=List[schemas.Ballot])
+@router.get("/ballots", tags=["Searches"], response_model=List[schemas.Ballot])
 @versioning.versions(minimal=1)
 async def search_for_ballots(
-        ballot_id: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         vote_id: Optional[pydantic.NonNegativeInt] = None,
         ballot_for_poll: Optional[bool] = None,
         ballot_for_refund: Optional[bool] = None,
@@ -76,7 +74,7 @@ async def search_for_ballots(
         models.Ballot,
         local,
         specialized_item_filter=extended_filter,
-        id=ballot_id
+        id=id
     )
 
 
@@ -85,10 +83,10 @@ async def search_for_ballots(
 ###############
 
 
-@router.get("/consumables", tags=["Readonly"], response_model=List[schemas.Consumable])
+@router.get("/consumables", tags=["Searches"], response_model=List[schemas.Consumable])
 @versioning.versions(minimal=1)
 async def search_for_consumables(
-        consumable_id: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         consumable_name: Optional[pydantic.NonNegativeInt] = None,
         consumable_description: Optional[pydantic.NonNegativeInt] = None,
         consumable_price: Optional[pydantic.PositiveInt] = None,
@@ -101,47 +99,34 @@ async def search_for_consumables(
     return helpers.search_models(
         models.Consumable,
         local,
-        id=consumable_id,
+        id=id,
         name=consumable_name,
         description=consumable_description,
         price=consumable_price
     )
 
 
-#########################
-# GENERAL FUNCTIONALITY #
-#########################
+######################
+# MULTI TRANSACTIONS #
+######################
 
 
-@router.get("/settings", tags=["Readonly"], response_model=config.GeneralConfig)
-@versioning.versions(minimal=1)
-async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return the important MateBot core settings which directly affect the handling of requests
-    """
-
-    return local.config.general
-
-
-@router.get("/status", tags=["Readonly"], response_model=schemas.Status)
+@router.get("/multitransactions", tags=["Searches"], response_model=List[schemas.MultiTransaction])
 @versioning.versions(1)
-async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
+async def search_for_multi_transactions(
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        multi_transaction_base_amount: Optional[pydantic.NonNegativeInt] = None,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
     """
-    Return some information about the current status of the server, the database and whatsoever
+    Return all multi transactions that fulfill *all* constraints given as query parameters
     """
 
-    project_version_list = __version__.split(".") + [0, 0]
-    project_version = schemas.VersionInfo(
-        major=project_version_list[0],
-        minor=project_version_list[1],
-        micro=project_version_list[2]
-    )
-
-    return schemas.Status(
-        api_version=1,
-        project_version=project_version,
-        localtime=datetime.datetime.now(),
-        timestamp=datetime.datetime.now().timestamp()
+    return helpers.search_models(
+        models.MultiTransaction,
+        local,
+        id=id,
+        base_amount=multi_transaction_base_amount
     )
 
 
@@ -150,10 +135,10 @@ async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
 #########
 
 
-@router.get("/votes", tags=["Readonly"], response_model=List[schemas.Vote])
+@router.get("/votes", tags=["Searches"], response_model=List[schemas.Vote])
 @versioning.versions(minimal=1)
 async def search_for_votes(
-        vote_id: Optional[pydantic.NonNegativeInt] = None,
+        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         vote: Optional[bool] = None,
         ballot_id: Optional[pydantic.NonNegativeInt] = None,
         user_id: Optional[pydantic.NonNegativeInt] = None,
@@ -176,7 +161,7 @@ async def search_for_votes(
         models.Vote,
         local,
         specialized_item_filter=extended_filter,
-        id=vote_id,
+        id=id,
         vote=vote,
         ballot_id=ballot_id,
         user_id=user_id
