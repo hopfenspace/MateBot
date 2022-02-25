@@ -67,6 +67,21 @@ class APIWithoutValidationError(FastAPI):
         return self.openapi_schema
 
 
+async def handle_request_validation_error(request: Request, exc: RequestValidationError):
+    status_code = 400
+    msgs = "\n".join(["\t" + error["msg"] for error in exc.errors()])
+    message = f"Failed to process the request:\n{msgs}\nYou may want to file a bug report."
+
+    return JSONResponse(jsonable_encoder(schemas.APIError(
+        status=status_code,
+        method=request.method,
+        request=request.url.path,
+        repeat=False,
+        message=message,
+        details=str(exc.errors())
+    )), status_code=status_code)
+
+
 class APIException(HTTPException):
     """
     Base class for any kind of generic API exception
@@ -109,8 +124,6 @@ class APIException(HTTPException):
         status_code = 500
         if hasattr(exc, "status_code"):
             status_code = exc.status_code
-        elif isinstance(exc, RequestValidationError):
-            status_code = 400
 
         if not isinstance(exc, HTTPException):
             details = jsonable_encoder(exc)
@@ -123,6 +136,10 @@ class APIException(HTTPException):
                 })
             if "str" not in details:
                 details["str"] = str(exc)
+
+            if isinstance(exc, pydantic.ValidationError) and not isinstance(exc, RequestValidationError):
+                status_code = 500
+                details = "Please file a bug report. Thanks."
 
             logger.exception(
                 f"{type(exc).__name__}: {exc} @ '{request.method} "
