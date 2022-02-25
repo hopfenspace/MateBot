@@ -86,13 +86,13 @@ class Alias(Base):
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
-    app_username = Column(String(255), nullable=False)
+    username = Column(String(255), nullable=False)
     confirmed = Column(Boolean, nullable=False, default=False)
 
     application = relationship("Application", foreign_keys=[application_id])
 
     __table_args__ = (
-        UniqueConstraint("application_id", "app_username"),
+        UniqueConstraint("application_id", "username"),
     )
 
     @property
@@ -101,13 +101,13 @@ class Alias(Base):
             id=self.id,
             user_id=self.user_id,
             application_id=self.application_id,
-            app_username=self.app_username,
+            username=self.username,
             confirmed=self.confirmed
         )
 
     def __repr__(self) -> str:
-        return "Alias(id={}, user_id={}, application_id={}, app_username={})".format(
-            self.id, self.user_id, self.application_id, self.app_username
+        return "Alias(id={}, user_id={}, application_id={}, username={})".format(
+            self.id, self.user_id, self.application_id, self.username
         )
 
 

@@ -31,7 +31,7 @@ async def search_for_users(
         external: Optional[bool] = None,
         voucher_id: Optional[pydantic.NonNegativeInt] = None,
         alias_id: Optional[pydantic.NonNegativeInt] = None,
-        alias_app_username: Optional[pydantic.constr(max_length=255)] = None,
+        alias_username: Optional[pydantic.constr(max_length=255)] = None,
         alias_confirmed: Optional[bool] = None,
         alias_application_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -53,14 +53,14 @@ async def search_for_users(
         if not (alias_id is None or alias_id in [a.id for a in user.aliases]):
             return False
         for a in user.aliases:
-            if alias_app_username is not None and a.app_username != alias_app_username:
+            if alias_username is not None and a.username != alias_username:
                 continue
             if alias_confirmed is not None and a.confirmed != alias_confirmed:
                 continue
             if alias_application_id is not None and a.application_id != alias_application_id:
                 continue
             return True
-        return not user.aliases and [alias_app_username, alias_confirmed, alias_application_id] == [None] * 3
+        return not user.aliases and [alias_username, alias_confirmed, alias_application_id] == [None] * 3
 
     return helpers.search_models(
         models.User,

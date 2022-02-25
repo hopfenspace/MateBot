@@ -25,7 +25,7 @@ async def search_for_aliases(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         user_id: Optional[pydantic.NonNegativeInt] = None,
         application_id: Optional[pydantic.NonNegativeInt] = None,
-        app_username: Optional[pydantic.constr(max_length=255)] = None,
+        username: Optional[pydantic.constr(max_length=255)] = None,
         confirmed: Optional[bool] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -39,7 +39,7 @@ async def search_for_aliases(
         id=id,
         user_id=user_id,
         application_id=application_id,
-        app_username=app_username,
+        username=username,
         confirmed=confirmed
     )
 
@@ -57,9 +57,9 @@ async def create_new_alias(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Create a new alias if no combination of `app_username` and `application_id` exists
+    Create a new alias if no combination of `username` and `application_id` exists
 
-    The `app_username` field should reflect the internal username in the
+    The `username` field should reflect the internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
 
     * `404`: if the user ID or application ID is unknown
@@ -74,18 +74,18 @@ async def create_new_alias(
 
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=application.id,
-        app_username=alias.app_username
+        username=alias.username
     ).first()
     if existing_alias is not None:
         raise Conflict(
-            f"User alias {alias.app_username!r} can't be created since it already exists.",
+            f"User alias {alias.username!r} can't be created since it already exists.",
             str(existing_alias)
         )
 
     model = models.Alias(
         user_id=user.id,
         application_id=application.id,
-        app_username=alias.app_username,
+        username=alias.username,
         confirmed=alias.confirmed
     )
     return await helpers.create_new_of_model(model, local, logger)
@@ -117,17 +117,17 @@ async def update_existing_alias(
 
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=alias.application_id,
-        app_username=alias.app_username
+        username=alias.username
     ).first()
     if existing_alias is not None:
         raise Conflict(
-            f"User alias {alias.app_username!r} can't be created since it already exists.",
+            f"User alias {alias.username!r} can't be created since it already exists.",
             str(existing_alias)
         )
 
     model.user_id = user.id
     model.application_id = alias.application_id
-    model.app_username = alias.app_username
+    model.username = alias.username
     model.confirmed = alias.confirmed
     return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
 

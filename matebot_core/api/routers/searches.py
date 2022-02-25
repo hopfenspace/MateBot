@@ -23,7 +23,7 @@ from ... import schemas
 @versioning.versions(minimal=1)
 async def search_for_applications(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
-        application_name: Optional[pydantic.constr(max_length=255)] = None,
+        name: Optional[pydantic.constr(max_length=255)] = None,
         callback_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -39,7 +39,7 @@ async def search_for_applications(
         local,
         specialized_item_filter=extended_filter,
         id=id,
-        name=application_name
+        name=name
     )
 
 
@@ -87,9 +87,9 @@ async def search_for_ballots(
 @versioning.versions(minimal=1)
 async def search_for_consumables(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
-        consumable_name: Optional[pydantic.NonNegativeInt] = None,
-        consumable_description: Optional[pydantic.NonNegativeInt] = None,
-        consumable_price: Optional[pydantic.PositiveInt] = None,
+        name: Optional[pydantic.NonNegativeInt] = None,
+        description: Optional[pydantic.NonNegativeInt] = None,
+        price: Optional[pydantic.PositiveInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -100,9 +100,9 @@ async def search_for_consumables(
         models.Consumable,
         local,
         id=id,
-        name=consumable_name,
-        description=consumable_description,
-        price=consumable_price
+        name=name,
+        description=description,
+        price=price
     )
 
 
@@ -115,7 +115,7 @@ async def search_for_consumables(
 @versioning.versions(1)
 async def search_for_multi_transactions(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
-        multi_transaction_base_amount: Optional[pydantic.NonNegativeInt] = None,
+        base_amount: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -126,7 +126,7 @@ async def search_for_multi_transactions(
         models.MultiTransaction,
         local,
         id=id,
-        base_amount=multi_transaction_base_amount
+        base_amount=base_amount
     )
 
 

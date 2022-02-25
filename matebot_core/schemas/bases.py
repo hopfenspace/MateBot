@@ -24,14 +24,14 @@ class Alias(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
     application_id: pydantic.NonNegativeInt
-    app_username: pydantic.constr(max_length=255)
+    username: pydantic.constr(max_length=255)
     confirmed: bool
 
 
 class AliasCreation(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
     application_id: pydantic.NonNegativeInt
-    app_username: pydantic.constr(max_length=255)
+    username: pydantic.constr(max_length=255)
     confirmed: bool = False
 
 
