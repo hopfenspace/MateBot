@@ -136,7 +136,7 @@ async def update_existing_alias(
     "/aliases",
     tags=["Aliases"],
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+    responses={404: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(

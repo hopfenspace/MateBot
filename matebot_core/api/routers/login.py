@@ -23,6 +23,16 @@ async def login(
         data: OAuth2PasswordRequestFormStrict = Depends(),
         local: MinimalRequestData = Depends(MinimalRequestData)
 ):
+    """
+    Login using username and password via the OAuth Password Flow
+
+    Note that this endpoint is currently the only API endpoint that
+    uses URL-encoded form data instead of JSON bodies, since this
+    is enforced by the OAuth standard for the Password Flow.
+
+    See RFC 6749, section 1.3.3, for more details.
+    """
+
     logger.debug(f"Login request using username {data.username!r}...")
     if not await auth.check_app_credentials(data.username, data.password, local.session):
         raise APIException(

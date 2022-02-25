@@ -155,7 +155,7 @@ async def update_existing_callback(
     "/callbacks",
     tags=["Callbacks"],
     status_code=204,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)},
+    responses={404: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)

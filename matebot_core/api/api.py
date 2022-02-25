@@ -45,7 +45,7 @@ API_V1_DOC = """MateBot core REST API definition version 1
 This API requires authentication using JSON web tokens. Logging in with username
 and password (see `POST /login`) yields a token that should be included
 in the `Authorization` header with the type `Bearer`. It's an all-or-nothing
-API without restrictions on queries, provided the query is valid and the
+API without restrictions on queries, provided the request is valid and the
 HTTP authorization with the bearer token was successful as well.
 
 The API tries to always return JSON-encoded data to any kind of request,
@@ -58,32 +58,33 @@ certain assumptions about the returned response, if the returned status
 code equals the expected status code for that operation, usually `200` (OK).
 
 The following documentation provides in-depth information about the available
-endpoints, their calling convention and returned responses. Note that not all
-possible responses are listed there. Therefore, the following general rules apply:
+endpoints, their calling convention and returned responses. In general, the
+following four different `4xx` error responses are used in the API code:
 
-1. The `422` (Unprocessable Entity) error response means a problem in
-   the implementation in the user agent -- clients should never see any data
-    of the Unprocessable Entity responses, since the `details` field may
-    contain arbitrary data which is usually not user-friendly. Further
-2. The `401` (Unauthorized) error response means that the client didn't provide
-   valid authentication information. It should use the `POST /login` endpoint
-   with its username and password to gather a fresh API token. This token should
-   be included in the `Authorization` header field of any following requests.
-3. The `409` (Conflict) error response is usually not adequate for end users,
-   since it contains technical information. It may be seen if certain logical
+1. The `400` (Bad Request) error response is usually adequate to show to end
+   users. It contains few or none technical details in the `message` field,
+   which can be used to answer end user requests properly. Note that the
+   `400` (Bad Request) response will be used on invalid requests by the client,
+   too. This means that a client should validate user data as far as possible
+   before sending it to the API, if the error message should be customized.
+2. The `401` (Unauthorized) error response is encountered whenever a request
+   is not properly authorized and therefore rejected. Either the user didn't
+   supply an API token, the API token has already expired or is otherwise
+   invalid. If a client encounters such a response, it should use the
+   `POST /login` endpoint with its username and password to gather a fresh API
+   token, which should be included in the `Authorization` header field.
+3. The `404` (Not Found) error response usually indicates inadequate pre-checks
+   of user supplied input or commands or invalid state in the client app.
+   Client applications should avoid having a state and should be implemented as
+   lazy as possible, anyways. It's returned whenever a model ID can't be found.
+4. The `409` (Conflict) error response is usually not adequate for end users,
+   since it may contain technical information. It may be seen if certain logical
    or database constraints are violated. The user agent should usually try to
    debug the problems itself, since the error probably results from inadequate
    checks of user input or user commands. It may also be yielded if the user
    agent tries to perform an action that violates the business logic of the
    server, but which should never be accessible to an end user anyways. One
    such example is trying to send money from the community user without refund.
-4. The `400` (Bad Request) error response is usually adequate to show to end
-   users. It contains few or none technical details in the `message` field,
-   which can be used to answer end user requests properly.
-5. The `404` (Not Found) error response usually indicates inadequate pre-checks
-   of user supplied input or commands or invalid state in the client application.
-   Client applications should avoid having a state and should be implemented as
-   lazy as possible, anyways. It's returned whenever a model ID can't be found.
 
 Take a look at the individual methods and endpoints for more information.
 """
@@ -221,7 +222,8 @@ def create_app(
                 version="1.0",
                 description=API_V1_DOC,
                 static_directory=static_directory,
-                api_class=base.APIWithoutValidationError
+                api_class=base.APIWithoutValidationError,
+                responses={400: {"model": schemas.APIError}, 401: {"model": schemas.APIError}}
             )
         },
         logger=logger,

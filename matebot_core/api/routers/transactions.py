@@ -28,7 +28,7 @@ async def search_for_transactions(
         receiver_id: Optional[pydantic.NonNegativeInt] = None,
         member_id: Optional[pydantic.NonNegativeInt] = None,
         amount: Optional[pydantic.NonNegativeInt] = None,
-        reason: Optional[pydantic.NonNegativeInt] = None,
+        reason: Optional[pydantic.constr(max_length=255)] = None,
         has_multi_transaction: Optional[bool] = None,
         multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
