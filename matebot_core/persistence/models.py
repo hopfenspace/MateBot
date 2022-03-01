@@ -92,7 +92,7 @@ class Alias(Base):
     application = relationship("Application", foreign_keys=[application_id])
 
     __table_args__ = (
-        UniqueConstraint("application_id", "username"),
+        UniqueConstraint("application_id", "username", name="single_username_per_app"),
     )
 
     @property
@@ -120,7 +120,7 @@ class Transaction(Base):
     amount = Column(Integer, nullable=False)
     reason = Column(String(255), nullable=True)
     timestamp = Column(DateTime, nullable=False, server_default=func.now())
-    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
 
     sender = relationship("User", foreign_keys=[sender_id])
     receiver = relationship("User", foreign_keys=[receiver_id])
@@ -150,7 +150,7 @@ class Transaction(Base):
 
 
 class MultiTransaction(Base):
-    __tablename__ = "multi_transaction"
+    __tablename__ = "multi_transactions"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     base_amount = Column(Integer, nullable=False)
@@ -307,7 +307,7 @@ class Vote(Base):
     user = relationship("User", backref="votes")
 
     __table_args__ = (
-        UniqueConstraint("user_id", "ballot_id"),
+        UniqueConstraint("user_id", "ballot_id", name="single_vote_per_user"),
     )
 
     @property
@@ -336,7 +336,7 @@ class Communism(Base):
     created = Column(DateTime, nullable=False, server_default=func.now())
     modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    multi_transaction_id = Column(Integer, ForeignKey("multi_transaction.id"), nullable=True, default=None)
+    multi_transaction_id = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
 
     creator = relationship("User")
     participants = relationship("CommunismUsers", cascade="all,delete", backref="communism")
@@ -379,7 +379,7 @@ class CommunismUsers(Base):
 
     __table_args = (
         CheckConstraint("quantity >= 0"),
-        UniqueConstraint("user_id", "communism_id"),
+        UniqueConstraint("user_id", "communism_id", name="single_user_per_communism"),
     )
 
     @property
