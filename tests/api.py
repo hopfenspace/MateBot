@@ -2,7 +2,6 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
-import time
 import unittest as _unittest
 from typing import Type
 
@@ -47,12 +46,18 @@ class APITests(utils.BaseAPITests):
 
     def test_special_user(self):
         self.assertEqual([], self.assertQuery(("GET", "/users"), 200).json())
-        self.assertQuery(("GET", "/users/community"), 500)
+        self.assertEqual([], self.assertQuery(("GET", "/users?community=y"), 200).json())
         self.make_special_user()
-        self.assertQuery(("GET", "/users/community"), 200)
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
         self.make_special_user()
-        self.assertQuery(("GET", "/users/community"), 200)
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
 
     def test_users(self):
@@ -236,7 +241,9 @@ class APITests(utils.BaseAPITests):
 
     def test_refunds(self):
         self.make_special_user()
-        community = self.assertQuery(("GET", "/users/community"), 200).json()
+        community = self.assertQuery(("GET", "/users?community=1"), 200).json()
+        self.assertEqual(len(community), 1)
+        community = community[0]
         self.assertListEqual([], self.assertQuery(("GET", "/refunds"), 200).json())
         self.assertEqual(len(self.assertQuery(("GET", "/votes"), 200).json()), 0)
 
@@ -285,8 +292,9 @@ class APITests(utils.BaseAPITests):
 
         # Abort the second refund request
         refund2 = self.assertQuery(
-            ("POST", "/refunds/abort/2"),
+            ("POST", "/refunds/abort"),
             200,
+            json={"id": 2},
             recent_callbacks=[("GET", "/update/refund/2")]
         ).json()
         self.assertEqual(refund2["allowed"], False)
@@ -322,7 +330,7 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/4")]
         ).json()
-        self.assertQuery(("POST", "/users/disable/4"), 200, recent_callbacks=[("GET", "/update/user/4")])
+        self.assertQuery(("POST", "/users/disable"), 200, json={"id": 4}, recent_callbacks=[("GET", "/update/user/4")])
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -358,7 +366,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Add another user to accept the refund request
-        old_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
+        old_balance = self.assertQuery(("GET", "/users?id=2"), 200).json()[0]["balance"]
         self.assertQuery(
             ("POST", "/users"),
             201,
@@ -383,7 +391,7 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(vote2["refund"]["allowed"], True)
         self.assertEqual(vote2["refund"]["active"], False)
 
-        new_balance = self.assertQuery(("GET", "/users/2"), 200).json()["balance"]
+        new_balance = self.assertQuery(("GET", "/users?id=2"), 200).json()[0]["balance"]
         self.assertGreater(new_balance, old_balance)
         self.assertEqual(new_balance, old_balance + 42)
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
@@ -425,8 +433,7 @@ class APITests(utils.BaseAPITests):
             json={"description": "Foo", "amount": 1337, "creator_id": 8}
         ).json()
 
-        # Don't send votes for memberships polls to the refund endpoint
-        # TODO
+        # TODO: Don't send votes for memberships polls to the refund endpoint
 
     def test_communisms(self):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
@@ -541,12 +548,12 @@ class APITests(utils.BaseAPITests):
 
         # Add new users to the third communism
         communism3_changed = self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
+            ("POST", "/communisms/setParticipants"),
             200,
-            json=[
-                _schemas.CommunismUserBinding(user_id=1, quantity=10),
-                _schemas.CommunismUserBinding(user_id=2, quantity=20)
-            ],
+            json={"id": 3, "participants": [
+                {"user_id": 1, "quantity": 10},
+                {"user_id": 2, "quantity": 20}
+            ]},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
@@ -555,9 +562,9 @@ class APITests(utils.BaseAPITests):
 
         # Remove a user from the third communism
         communism3_changed = self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
+            ("POST", "/communisms/setParticipants"),
             200,
-            json=[_schemas.CommunismUserBinding(user_id=1, quantity=10)],
+            json={"id": 3, "participants": [{"user_id": 1, "quantity": 10}]},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
@@ -567,9 +574,9 @@ class APITests(utils.BaseAPITests):
 
         # Modify the quantity of a user from the third communism
         communism3_changed = self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
+            ("POST", "/communisms/setParticipants"),
             200,
-            json=[_schemas.CommunismUserBinding(user_id=1, quantity=40)],
+            json={"id": 3, "participants": [{"user_id": 1, "quantity": 40}]},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
@@ -607,11 +614,12 @@ class APITests(utils.BaseAPITests):
 
         # Add the creator and the new user to the third communism again (note the doubled user 1)
         communism3_changed = self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
+            ("POST", "/communisms/setParticipants"),
             200,
-            json=[
+            json={"id": 3, "participants": [
                 {"user_id": 1, "quantity": 7}, {"user_id": 2, "quantity": 3},
-                {"user_id": 1, "quantity": 3}, {"user_id": 3, "quantity": 7}],
+                {"user_id": 1, "quantity": 3}, {"user_id": 3, "quantity": 7}
+            ]},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/3")]
         ).json()
@@ -623,10 +631,11 @@ class APITests(utils.BaseAPITests):
         # Close the third communism and expect all balances to be adjusted (creator is participant!)
         users = self.assertQuery(("GET", "/users"), 200).json()
         self.assertEqual(self.assertQuery(("GET", "/transactions"), 200).json(), [])
-        self.assertEqual(self.assertQuery(("GET", "/transactions/multi"), 200).json(), [])
+        self.assertEqual(self.assertQuery(("GET", "/multitransactions"), 200).json(), [])
         communism3_changed = self.assertQuery(
-            ("POST", "/communisms/close/3"),
+            ("POST", "/communisms/close"),
             200,
+            json={"id": 3},
             r_schema=_schemas.Communism,
             recent_callbacks=[
                 ("GET", "/update/communism/3"),
@@ -638,7 +647,7 @@ class APITests(utils.BaseAPITests):
         self.assertIsNotNone(communism3_changed["created"])
         users_updated = self.assertQuery(("GET", "/users"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
-        multi_transactions = self.assertQuery(("GET", "/transactions/multi"), 200).json()
+        multi_transactions = self.assertQuery(("GET", "/multitransactions"), 200).json()
         self.assertEqual(2, len(transactions))
         self.assertEqual(1, len(multi_transactions))
         m = multi_transactions[0]
@@ -676,14 +685,14 @@ class APITests(utils.BaseAPITests):
         # Updating a communism that doesn't exist or that is already closed shouldn't work
         self.assertListEqual([], self.assertQuery(("GET", "/communisms?id=4"), 200).json())
         self.assertQuery(
-            ("POST", "/communisms/setParticipants/4"),
+            ("POST", "/communisms/setParticipants"),
             404,
-            json=communism3["participants"]
+            json={"id": 4, "participants": communism3["participants"]}
         )
         self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
+            ("POST", "/communisms/setParticipants"),
             400,
-            json=[]
+            json={"id": 3, "participants": []}
         )
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?active=false"), 200).json())
 
@@ -718,7 +727,7 @@ class APITests(utils.BaseAPITests):
         for entry in sample_data:
             self.assertQuery(
                 ("POST", "/communisms"),
-                422,
+                400,
                 json=entry
             )
 
@@ -783,10 +792,10 @@ class APITests(utils.BaseAPITests):
         session.add(models.Application(name="app", password="password", salt="salt"))
         session.commit()
 
-        session.add(models.Alias(user_id=3, application_id=1, app_username="foo"))
-        session.add(models.Alias(user_id=3, application_id=1, app_username="bar"))
-        session.add(models.Alias(user_id=4, application_id=1, app_username="baz", confirmed=True))
-        session.add(models.Alias(user_id=5, application_id=1, app_username="foobar", confirmed=True))
+        session.add(models.Alias(user_id=3, application_id=1, username="foo"))
+        session.add(models.Alias(user_id=3, application_id=1, username="bar"))
+        session.add(models.Alias(user_id=4, application_id=1, username="baz", confirmed=True))
+        session.add(models.Alias(user_id=5, application_id=1, username="foobar", confirmed=True))
         session.commit()
 
         comp(7, "")
@@ -796,8 +805,8 @@ class APITests(utils.BaseAPITests):
         comp(0, "alias_application_id=2")
         comp(1, "alias_confirmed=false")
         comp(2, "alias_confirmed=true")
-        comp(1, "alias_confirmed=true&alias_app_username=baz")
-        comp(0, "alias_confirmed=true&alias_app_username=baz&id=1")
+        comp(1, "alias_confirmed=true&alias_username=baz")
+        comp(0, "alias_confirmed=true&alias_username=baz&id=1")
 
         session.close()
 

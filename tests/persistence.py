@@ -141,8 +141,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
 
         user1 = self.session.query(models.User).get(3)
         user2 = self.session.query(models.User).get(5)
-        alias1 = models.Alias(app_username="alias1", application_id=app1.id, user_id=3, confirmed=True)
-        alias2 = models.Alias(app_username="alias2", application_id=app2.id)
+        alias1 = models.Alias(username="alias1", application_id=app1.id, user_id=3, confirmed=True)
+        alias2 = models.Alias(username="alias2", application_id=app2.id)
         alias2.user = user2
 
         self.session.add_all([alias1, alias2])
@@ -423,7 +423,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.rollback()
 
         # Missing user, if foreign key constraints are enforced
-        self.session.add(models.Alias(app_username="app-alias1", user_id=1, application_id=1))
+        self.session.add(models.Alias(username="app-alias1", user_id=1, application_id=1))
         try:
             self.session.commit()
         except sqlalchemy.exc.DatabaseError:
@@ -433,21 +433,21 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
 
         # Everything fine
         self.session.add_all(self.get_sample_users())
-        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
+        self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=1))
         self.session.commit()
 
         # Same alias in same application again
-        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=1))
+        self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
-        self.session.add(models.Alias(app_username="app-alias2", user_id=3, application_id=1))
+        self.session.add(models.Alias(username="app-alias2", user_id=3, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
         # Missing application, if foreign key constraints are enforced
-        self.session.add(models.Alias(app_username="app-alias2", user_id=2, application_id=6))
+        self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=6))
         try:
             self.session.commit()
         except sqlalchemy.exc.DatabaseError:
