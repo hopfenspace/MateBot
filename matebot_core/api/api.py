@@ -219,7 +219,7 @@ def create_app(
         apis={
             1: _make_app(
                 title="MateBot core REST API v1",
-                version="1.0",
+                version=__version__,
                 description=API_V1_DOC,
                 static_directory=static_directory,
                 api_class=base.APIWithoutValidationError,
