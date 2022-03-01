@@ -5,7 +5,7 @@ MateBot API callback library to handle remote push notifications
 import asyncio
 import logging
 import threading
-from queue import Queue
+from queue import Empty, Queue
 from typing import ClassVar, List, Optional, Tuple
 
 import aiohttp
@@ -19,7 +19,7 @@ class Callback:
     """
 
     loop: ClassVar[Optional[asyncio.AbstractEventLoop]] = None
-    queue: ClassVar[Queue[Tuple[List[str], List[Tuple[str, str]]]]] = Queue()
+    queue: ClassVar[Queue] = Queue()
     logger: ClassVar[logging.Logger] = logging.getLogger("callback")
     thread: ClassVar[Optional[threading.Thread]] = None
 
@@ -51,17 +51,22 @@ class Callback:
     @classmethod
     async def _run_worker(cls):
         while True:
-            item = cls.queue.get(block=True, timeout=30)
+            try:
+                item = cls.queue.get(block=True, timeout=30)
+            except Empty:
+                continue
             cls.logger.debug(f"Handling callback item {item} ...")
             await cls._get(item[0], item[1])
 
     @classmethod
     def _run_thread(cls):
-        threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=True).start()
+        if not cls.thread or not cls.thread.is_alive():
+            cls.thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=True)
+            cls.thread.start()
 
     @classmethod
     async def created(cls, model_name: str, model_id: int, clients: List[models.Callback]):
-        if not cls.thread:
+        if not cls.thread or not cls.thread.is_alive():
             cls._run_thread()
         cls.queue.put((
             [f"create/{model_name.lower()}/{model_id}"],
@@ -70,7 +75,7 @@ class Callback:
 
     @classmethod
     async def updated(cls, model_name: str, model_id: int, clients: List[models.Callback]):
-        if not cls.thread:
+        if not cls.thread or not cls.thread.is_alive():
             cls._run_thread()
         cls.queue.put((
             [f"update/{model_name.lower()}/{model_id}"],
@@ -79,7 +84,7 @@ class Callback:
 
     @classmethod
     async def deleted(cls, model_name: str, model_id: int, clients: List[models.Callback]):
-        if not cls.thread:
+        if not cls.thread or not cls.thread.is_alive():
             cls._run_thread()
         cls.queue.put((
             [f"delete/{model_name.lower()}/{model_id}"],
