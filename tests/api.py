@@ -30,21 +30,6 @@ class APITests(utils.BaseAPITests):
         super().setUp()
         self.login()
 
-    def _set_user_attrs(self, uid: int, success: bool, applied: bool, **kwargs) -> dict:
-        user = self.assertQuery(("GET", f"/users/{uid}"), 200).json()
-        user.update(**kwargs)
-        new_user = self.assertQuery(
-            ("PUT", "/users"),
-            200 if success else [400, 403, 404, 409],
-            json=user,
-            r_schema=_schemas.User if success else None,
-            recent_callbacks=[("GET", f"/update/user/{uid}")] if success else None
-        ).json()
-        if applied:
-            for k, v in kwargs.items():
-                self.assertEqual(new_user[k], v)
-        return new_user
-
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
@@ -85,7 +70,7 @@ class APITests(utils.BaseAPITests):
             self.assertEqual(i+1, user["id"])
             self.assertEqual(
                 user,
-                self.assertQuery(("GET", f"/users/{i+1}"), 200, r_schema=_schemas.User).json()
+                self.assertQuery(("GET", f"/users?id={i+1}"), 200).json()[0]
             )
             users.append(user)
             self.assertEqual(
@@ -100,10 +85,6 @@ class APITests(utils.BaseAPITests):
             json={"base": f"http://localhost:{self.callback_server_port}/"},
             recent_callbacks=[("GET", "/create/callback/1")]
         )
-        time.sleep(1)
-
-        for u in users:
-            self._set_user_attrs(u["id"], True, True)
 
         # Deleting users should not work by 'DELETE' but with disabling via 'POST'
         self.assertQuery(
@@ -113,53 +94,28 @@ class APITests(utils.BaseAPITests):
         )
         j = len(users) - 1
         self.assertQuery(
-            ("POST", f"/users/disable/{j}"),
+            ("POST", f"/users/disable"),
             200,
+            json={"id": j},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", f"/update/user/{j}")]
         )
-        users.pop()
 
         user0 = users[0]
         user1 = users[1]
         user2 = users[2]
 
-        # Updating the balance, special flag, access times or aliases of a user should fail
-        self._set_user_attrs(user1["id"], True, False, balance=0)
-        self._set_user_attrs(user1["id"], True, False, balance=1)
-        self._set_user_attrs(user1["id"], True, False, created=1337)
-        self._set_user_attrs(user1["id"], True, False, modified=42)
-        self._set_user_attrs(user1["id"], True, False, aliases=[{
-            "id": 1,
-            "user_id": user1["id"],
-            "application_id": 1,
-            "app_username": "unknown@none",
-            "confirmed": True
-        }])
-        self._set_user_attrs(user1["id"], True, True)
-        self.assertEqual(user1, self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json())
+        # TODO: Updating the name, and permission external flags should work
 
-        # Updating the name, and permission external flags should work, everything else is ignored
-        self._set_user_attrs(user1["id"], False, False, external=True)
-        self._set_user_attrs(user1["id"], True, True, permission=False)
-        self._set_user_attrs(user1["id"], True, True, external=True)
-        self._set_user_attrs(user1["id"], True, False, voucher_id=user0["id"])
-        self._set_user_attrs(user1["id"], True, False, active=True)
-        self._set_user_attrs(user1["id"], True, False, voucher_id=None)
-        self._set_user_attrs(user1["id"], True, False, active=False)
-        self._set_user_attrs(user1["id"], True, False, active=True)
-        user1_new = user1.copy()
-        user1_remote = self.assertQuery(("GET", f"/users/{user1['id']}"), 200).json()
-        user1_new.update(permission=False, external=True, modified=user1_remote["modified"])
-        self.assertEqual(user1_new, user1_remote)
+        # TODO: Check that voucher handling works as expected
 
         # Transactions from/to disabled users should fail
         self.assertQuery(
             ("POST", "/transactions"),
             400,
             json={
-                "sender_id": user1["id"],
-                "receiver_id": user2["id"],
+                "sender_id": j,
+                "receiver_id": user1["id"],
                 "amount": 42,
                 "reason": "test"
             }
@@ -168,16 +124,16 @@ class APITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             400,
             json={
-                "sender_id": user2["id"],
-                "receiver_id": user1["id"],
+                "sender_id": user1["id"],
+                "receiver_id": j,
                 "amount": 42,
                 "reason": "test"
             }
         )
 
         # Deleting users with balance != 0 should fail
-        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()["balance"])
-        self.assertEqual(0, self.assertQuery(("GET", f"/users/{user2['id']}"), 200).json()["balance"])
+        self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]["balance"])
+        self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]["balance"])
         self.assertQuery(
             ("POST", "/transactions"),
             201,
@@ -189,10 +145,10 @@ class APITests(utils.BaseAPITests):
             },
             recent_callbacks=[("GET", "/create/transaction/1")]
         )
-        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
-        user2 = self.assertQuery(("GET", f"/users/{user2['id']}"), 200).json()
+        user0 = self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]
+        user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
         self.assertEqual(user0["balance"], -user2["balance"])
-        self.assertQuery(("POST", f"/users/disable/{user0['id']}"), 400)
+        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user0['id']})
 
         # Deleting the user after fixing the balance should work again
         self.assertQuery(
@@ -207,18 +163,20 @@ class APITests(utils.BaseAPITests):
             skip_callbacks=2,
             recent_callbacks=[("GET", "/create/transaction/2")]
         )
-        user0 = self.assertQuery(("GET", f"/users/{user0['id']}"), 200).json()
-        user2 = self.assertQuery(("GET", f"/users/{user2['id']}"), 200).json()
+        user0 = self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]
+        user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
         self.assertEqual(user0["balance"], 0)
         self.assertEqual(user2["balance"], 0)
         self.assertQuery(
-            ("POST", f"/users/disable/{user0['id']}"),
+            ("POST", "/users/disable"),
             200,
+            json={"id": user0["id"]},
             recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
         )
         self.assertQuery(
-            ("POST", f"/users/disable/{user2['id']}"),
+            ("POST", "/users/disable"),
             200,
+            json={"id": user2["id"]},
             recent_callbacks=[("GET", f"/update/user/{user2['id']}")]
         )
         users.pop(0)
@@ -240,32 +198,35 @@ class APITests(utils.BaseAPITests):
             },
             recent_callbacks=[("GET", "/create/communism/1")]
         ).json()
-        self.assertQuery(("POST", f"/users/disable/{user0['id']}"), 400)
-        self.assertQuery(("POST", f"/users/disable/{user1['id']}"), 400)
-        self.assertEqual(communism, self.assertQuery(("GET", "/communisms/1"), 200).json())
+        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user0['id']})
+        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user1["id"]})
+        self.assertListEqual([communism], self.assertQuery(("GET", "/communisms"), 200).json())
 
         # Deleting users that don't participate in active communisms should work
         self.assertQuery(
-            ("POST", "/communisms/setParticipants/1"),
+            ("POST", "/communisms/setParticipants"),
             200,
-            json=[],
+            json={"id": 1, "participants": []},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/1")]
         )
         self.assertQuery(
-            ("POST", f"/users/disable/{user1['id']}"),
+            ("POST", "/users/disable"),
             200,
+            json={"id": user1["id"]},
             recent_callbacks=[("GET", f"/update/user/{user1['id']}")]
         )
         self.assertQuery(
-            ("POST", "/communisms/abort/1"),
+            ("POST", "/communisms/abort"),
             200,
+            json={"id": 1},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/1")]
         )
         self.assertQuery(
-            ("POST", f"/users/disable/{user0['id']}"),
+            ("POST", "/users/disable"),
             200,
+            json={"id": user0["id"]},
             recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
         )
         users.pop(0)
