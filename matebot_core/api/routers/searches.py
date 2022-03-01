@@ -87,8 +87,8 @@ async def search_for_ballots(
 @versioning.versions(minimal=1)
 async def search_for_consumables(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
-        name: Optional[pydantic.NonNegativeInt] = None,
-        description: Optional[pydantic.NonNegativeInt] = None,
+        name: Optional[pydantic.constr(max_length=255)] = None,
+        description: Optional[pydantic.constr(max_length=255)] = None,
         price: Optional[pydantic.PositiveInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):

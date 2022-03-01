@@ -196,7 +196,12 @@ def run_server(args: argparse.Namespace):
     if args.debug:
         print("Do not start the server this way during production!", file=sys.stderr)
 
-    settings = _settings.Settings()
+    try:
+        settings = _settings.Settings()
+    except ValueError:
+        print("Ensure that the configuration file is valid. Please correct any errors.", file=sys.stderr)
+        raise
+
     if args.debug:
         settings.logging.root["level"] = "DEBUG"
         for handler in settings.logging.handlers:
