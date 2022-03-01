@@ -336,21 +336,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
         self.assertEqual(ballot.result, 0)
 
-    def test_add_and_delete_consumable(self):
-        consumable = models.Consumable(
-            name="Mate",
-            description="everyone hates Mate",
-            price=9000
-        )
-        self.session.add(consumable)
-        self.session.commit()
-        self.assertIs(self.session.query(models.Consumable).first(), consumable)
-        self.assertEqual(1, len(self.session.query(models.Consumable).all()))
-
-        self.session.delete(consumable)
-        self.session.commit()
-        self.assertEqual(0, len(self.session.query(models.Consumable).all()))
-
     def test_multi_transactions(self):
         self.session.add_all(self.get_sample_users())
         self.session.commit()
