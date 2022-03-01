@@ -416,6 +416,8 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.rollback()
 
     def test_user_alias_constraints(self):
+        self.assertEqual(0, len(self.session.query(models.Application).all()))
+
         # Missing all required fields
         self.session.add(models.Alias())
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
@@ -431,8 +433,22 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
                 raise
             self.session.rollback()
 
-        # Everything fine
+        # Creating users to fix the aforementioned problem
         self.session.add_all(self.get_sample_users())
+        self.session.commit()
+
+        # Missing application, if foreign key constraints are enforced
+        if self.database_type != utils.DatabaseType.SQLITE:
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=1))
+                self.session.commit()
+            self.session.rollback()
+
+        # Creating an application
+        self.session.add(models.Application(name="app", password="password", salt="salt"))
+        self.session.commit()
+
+        # Now, the alias can be created
         self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=1))
         self.session.commit()
 
@@ -444,16 +460,6 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.add(models.Alias(username="app-alias2", user_id=3, application_id=1))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
-        self.session.rollback()
-
-        # Missing application, if foreign key constraints are enforced
-        self.session.add(models.Alias(username="app-alias2", user_id=2, application_id=6))
-        try:
-            self.session.commit()
-        except sqlalchemy.exc.DatabaseError:
-            if self.database_type != utils.DatabaseType.MYSQL:
-                raise
-            self.session.rollback()
         self.session.rollback()
 
     def test_transaction_constraints(self):
@@ -516,16 +522,6 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             self.session.commit()
         self.session.rollback()
 
-        # Failing foreign key constraint due to unknown transaction type
-        if self.database_type == utils.DatabaseType.MYSQL:
-            self.session.add(models.Transaction(
-                sender_id=1,
-                receiver_id=2,
-                amount=1
-            ))
-            with self.assertRaises(sqlalchemy.exc.DatabaseError):
-                self.session.commit()
-
     def test_vote_constraints(self):
         # Missing required field 'ballot_id'
         self.session.add(models.Vote(user_id=2, vote=True))
@@ -547,7 +543,18 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.add(models.Ballot())
         self.session.commit()
 
-        # Everything fine
+        # Rejecting refunds with non-existing creator
+        if self.database_type != utils.DatabaseType.SQLITE:
+            self.session.add(models.Refund(description="Why not?", active=True, amount=3, creator_id=1, ballot_id=1))
+            with self.assertRaises(sqlalchemy.exc.DatabaseError):
+                self.session.commit()
+            self.session.rollback()
+
+        # Creating the user to fix the aforementioned error
+        self.session.add(models.User(external=False, permission=True))
+        self.session.commit()
+
+        # Everything fine now
         refund = models.Refund(description="Why not?", active=True, amount=3, creator_id=1, ballot_id=1)
         self.session.add(refund)
         self.session.commit()
@@ -561,7 +568,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         # Failing foreign key constraint due to unknown user
         if self.database_type == utils.DatabaseType.MYSQL:
             with self.assertRaises(sqlalchemy.exc.DatabaseError):
-                self.session.add(models.Vote(refund=refund, user_id=42, vote=True))
+                self.session.add(models.Vote(ballot=refund.ballot, user_id=42, vote=True))
                 self.session.commit()
             self.session.rollback()
 
@@ -573,17 +580,19 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
         self.session.add_all([v1, v2])
         self.session.commit()
 
-        # Second vote of same user in the same poll with a different vote
+        # Second vote of same user in the same ballot with a different vote
         self.session.add(models.Vote(ballot=refund.ballot, user_id=4, vote=True))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
 
-        # Second vote of same user in the same poll with the same vote
+        # Second vote of same user in the same ballot with the same vote
         self.session.add(models.Vote(ballot=refund.ballot, user_id=4, vote=False))
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
             self.session.commit()
         self.session.rollback()
+
+        self.assertEqual(0, refund.ballot.result)
 
 
 if __name__ == '__main__':
