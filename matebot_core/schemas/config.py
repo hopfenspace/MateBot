@@ -2,9 +2,11 @@
 Special schemas for the configuration file and its properties
 """
 
-from typing import Dict
+from typing import Dict, List
 
 import pydantic
+
+from .bases import Consumable
 
 
 class GeneralConfig(pydantic.BaseModel):
@@ -78,5 +80,20 @@ class LoggingConfig(pydantic.BaseModel):
 class CoreConfig(pydantic.BaseModel):
     general: GeneralConfig
     server: ServerConfig
+    consumables: List[Consumable] = []
     database: DatabaseConfig
     logging: LoggingConfig
+
+    @pydantic.validator("consumables")
+    def enforce_consumable_constraints(
+            value: List[Consumable]  # noqa
+    ):
+        identifiers = {v.id for v in value}
+        if len(identifiers) != len(value):
+            raise ValueError("Field 'id' must be unique")
+        names = {v.name.lower() for v in value}
+        if len(names) != len(value):
+            raise ValueError("Field 'name' must be unique")
+        if identifiers != set(range(1, len(value) + 1)):
+            raise ValueError("Identifiers should be indexed with increasing natural numbers")
+        return value

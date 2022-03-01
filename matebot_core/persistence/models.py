@@ -172,31 +172,6 @@ class MultiTransaction(Base):
         )
 
 
-class Consumable(Base):
-    __tablename__ = "consumables"
-
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    name = Column(String(255), unique=True)
-    description = Column(String(255), nullable=False, default="")
-    price = Column(Integer, nullable=False)
-
-    __table_args__ = (
-        CheckConstraint("price > 0"),
-    )
-
-    @property
-    def schema(self) -> schemas.Consumable:
-        return schemas.Consumable(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            price=self.price
-        )
-
-    def __repr__(self) -> str:
-        return f"Consumable(id={self.id}, name={self.name}, price={self.price})"
-
-
 class Refund(Base):
     __tablename__ = "refunds"
 

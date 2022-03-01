@@ -93,17 +93,16 @@ async def search_for_consumables(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Return all ballots that fulfill *all* constraints given as query parameters
+    Return all consumables that fulfill *all* constraints given as query parameters
     """
 
-    return helpers.search_models(
-        models.Consumable,
-        local,
-        id=id,
-        name=name,
-        description=description,
-        price=price
-    )
+    return [
+        consumable for consumable in local.config.consumables
+        if (id is None or consumable.id == id)
+        and (name is None or consumable.name == name)
+        and (description is None or consumable.description == description)
+        and (price is None or consumable.price == price)
+    ]
 
 
 ######################
