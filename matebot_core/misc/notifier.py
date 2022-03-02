@@ -2,6 +2,7 @@
 MateBot API callback library to handle remote push notifications
 """
 
+import enum
 import asyncio
 import logging
 import threading
@@ -22,6 +23,12 @@ class Callback:
     queue: ClassVar[Queue] = Queue()
     logger: ClassVar[logging.Logger] = logging.getLogger("callback")
     thread: ClassVar[Optional[threading.Thread]] = None
+
+    @enum.unique
+    class Operation(enum.Enum):
+        CREATED = "created"
+        UPDATED = "updated"
+        DELETED = "deleted"
 
     @classmethod
     async def _get(cls, paths: List[str], clients: List[Tuple[str, str]]):

@@ -2,7 +2,6 @@
 MateBot REST API base library
 """
 
-import enum
 import time
 import uuid
 import logging
@@ -26,20 +25,6 @@ runtime_key = secrets.token_hex(16)
 runtime_uuid = uuid.UUID(runtime_key)
 
 ModelType = Union[pydantic.BaseModel, List[pydantic.BaseModel]]
-
-
-@enum.unique
-class Operations(enum.Enum):
-    CREATE = "Creating"
-    UPDATE = "Updating"
-    PATCH = "Patching"
-    DELETE = "Deleting"
-
-
-class ReturnType(enum.Enum):
-    NONE = enum.auto()
-    MODEL = enum.auto()
-    SCHEMA = enum.auto()
 
 
 class APIWithoutValidationError(FastAPI):
