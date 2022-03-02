@@ -57,9 +57,13 @@ jobs:
         python3 -m unittest tests -v
     - name: Run matebot_core once
       run: |
-        python3 -m matebot_core init --database sqlite:///test.db --application app --password password
-        rm test.db
-        rm config.json
+        python3 -m matebot_core init --database sqlite:///test.db --community community
+        python3 -m matebot_core add-app --app app --password password
+        python3 -m matebot_core run &
+        sleep 3
+        killall -s 9 -- python3
+        rm -fv test.db
+        rm -fv config.json
     - name: Build the package
       run: |
         python3 -m build .
@@ -69,7 +73,8 @@ jobs:
         python3 -m venv venv
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
-        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --application app --password password
+        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --community community
+        ../venv/bin/python3 -m matebot_core add-app --app app --password password
         ../venv/bin/python3 -m matebot_core run &
         sleep 3
         curl http://localhost:8000/
