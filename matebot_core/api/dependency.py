@@ -23,19 +23,21 @@ def get_session() -> Generator[Session, None, bool]:
 
     logger = logging.getLogger(__name__)
     session = database.get_new_session()
+
     try:
         yield session
         session.flush()
     except sqlalchemy.exc.DBAPIError as exc:
         details = exc.statement.replace("\n", "")
-        logger.error(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}")
+        logger.exception(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}")
         session.rollback()
-        session.close()
-        raise
+        raise base.APIException(status_code=500, detail="", repeat=False, message="Unexpected error") from exc
     except sqlalchemy.exc.SQLAlchemyError as exc:
-        logger.error(f"{type(exc).__name__}: {str(exc)}")
+        logger.exception(f"{type(exc).__name__}: {str(exc)}")
         session.rollback()
-        session.close()
+        raise base.APIException(status_code=500, detail="", repeat=False, message="Unexpected error") from exc
+    except Exception:
+        session.rollback()
         raise
     finally:
         session.close()
