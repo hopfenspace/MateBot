@@ -28,10 +28,9 @@ from .. import __file__ as _package_init_path
 
 
 DEFAULT_EXCEPTION_HANDLERS = {
-    base.APIException: base.APIException.handle,
-    RequestValidationError: base.handle_request_validation_error,
     StarletteHTTPException: base.APIException.handle,
-    Exception: base.APIException.handle
+    RequestValidationError: base.handle_request_validation_error,
+    Exception: base.handle_generic_exception
 }
 
 LICENSE_INFO = {

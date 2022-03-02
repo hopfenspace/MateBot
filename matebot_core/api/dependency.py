@@ -31,11 +31,11 @@ def get_session() -> Generator[Session, None, bool]:
         details = exc.statement.replace("\n", "")
         logger.exception(f"{type(exc).__name__}: {', '.join(exc.args)} @ {details!r}")
         session.rollback()
-        raise base.APIException(status_code=500, detail="", repeat=False, message="Unexpected error") from exc
+        raise
     except sqlalchemy.exc.SQLAlchemyError as exc:
         logger.exception(f"{type(exc).__name__}: {str(exc)}")
         session.rollback()
-        raise base.APIException(status_code=500, detail="", repeat=False, message="Unexpected error") from exc
+        raise
     except Exception:
         session.rollback()
         raise

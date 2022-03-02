@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 import pydantic
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, StarletteHTTPException
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
@@ -67,6 +67,21 @@ class APIWithoutValidationError(FastAPI):
         return self.openapi_schema
 
 
+async def handle_generic_exception(request: Request, _: Exception):
+    logger.exception("Unhandled exception caught in base exception handler!")
+    status_code = 500
+    msg = "Unexpected server error. The requested action wasn't completed successfully."
+
+    return JSONResponse(jsonable_encoder(schemas.APIError(
+        status=status_code,
+        method=request.method,
+        request=request.url.path,
+        repeat=False,
+        message=msg,
+        details=""
+    )), status_code=status_code)
+
+
 async def handle_request_validation_error(request: Request, exc: RequestValidationError):
     status_code = 400
     msgs = "\n".join(["\t" + error["msg"] for error in exc.errors()])
@@ -99,70 +114,18 @@ class APIException(HTTPException):
         self.repeat = repeat
         self.message = message
 
-    async def hook(self, request: Request) -> Optional[str]:
-        """
-        Hook into exception handling to do extra steps
-
-        This method was designed to be overwritten in a subclass.
-
-        :param request: the incoming request handled by this class
-        :return: a message that optionally overwrites the stored message
-        """
-
-        pass
-
     @classmethod
-    async def handle(cls, request: Request, exc: HTTPException) -> Response:
+    async def handle(cls, request: Request, exc: StarletteHTTPException) -> Response:
         """
         Handle exceptions in a generic way to produce APIError models
         """
 
-        hook_message = None
-        if hasattr(exc, "hook") and callable(exc.hook):
-            hook_message = await exc.hook(request)
+        status_code = getattr(exc, "status_code", 500)
+        repeat = getattr(exc, "repeat", False)
+        message = getattr(exc, "message", exc.__class__.__name__)
 
-        status_code = 500
-        if hasattr(exc, "status_code"):
-            status_code = exc.status_code
-
-        if not isinstance(exc, HTTPException):
-            details = jsonable_encoder(exc)
-            if len(details) == 0:
-                details = jsonable_encoder({
-                    "args": str(exc.args),
-                    "cause": str(exc.__cause__),
-                    "context": str(exc.__context__),
-                    "str": str(exc)
-                })
-            if "str" not in details:
-                details["str"] = str(exc)
-
-            if isinstance(exc, pydantic.ValidationError) and not isinstance(exc, RequestValidationError):
-                status_code = 500
-                details = "Please file a bug report. Thanks."
-
-            logger.exception(
-                f"{type(exc).__name__}: {exc} @ '{request.method} "
-                f"{request.url.path}' (details: {details})"
-            )
-            return JSONResponse(jsonable_encoder(schemas.APIError(
-                status=status_code,
-                method=request.method,
-                request=request.url.path,
-                repeat=False,
-                message=exc.__class__.__name__,
-                details=str(details)
-            )), status_code=status_code)
-
-        repeat = False
-        if hasattr(exc, "repeat"):
-            repeat = exc.repeat
-        message = exc.__class__.__name__
-        if hasattr(exc, "message"):
-            if exc.message is not None:
-                message = exc.message
-        if hook_message is not None:
-            message = hook_message
+        if not isinstance(exc, StarletteHTTPException):
+            logger.error("Invalid exception class for base handler")
 
         logger.debug(
             f"{type(exc).__name__}: {message} @ '{request.method} "
@@ -175,7 +138,7 @@ class APIException(HTTPException):
             repeat=repeat,
             message=message,
             details=str(exc.detail)
-        )), status_code=status_code, headers=exc.headers)
+        )), status_code=status_code, headers=getattr(exc, "headers", None))
 
 
 class BadRequest(APIException):
@@ -222,20 +185,6 @@ class Conflict(APIException):
         )
 
 
-class ForbiddenChange(APIException):
-    """
-    Exception when a resource was requested to be changed which is forbidden
-    """
-
-    def __init__(self, resource: str, detail: Optional[str] = None):
-        super().__init__(
-            status_code=409,
-            detail=detail,
-            repeat=False,
-            message=f"Resource '{resource}' may not be modified."
-        )
-
-
 class InternalServerException(APIException):
     """
     Exception for problems within the server implementation
@@ -265,10 +214,4 @@ class MissingImplementation(APIException):
             repeat=False,
             message=f"Feature '{feature}' not implemented yet. Stay tuned."
         )
-
-    async def hook(self, request: Request) -> Optional[str]:
-        logger.error(
-            f"Feature '{self.detail}' (required for '{request.method} "
-            f"{request.url.path}') not implemented yet."
-        )
-        return
+        logger.warning(f"Feature '{feature}' was not implemented yet.")
