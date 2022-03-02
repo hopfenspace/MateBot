@@ -33,19 +33,20 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     license="GLPv3",
     install_requires=[
-        "aiohttp>=3.7,<4.0",
-        "fastapi>=0.66.0,<1.0",
+        "aiohttp>=3.8,<4.0",
+        "alembic>=1.7.6,<2.0",
+        "fastapi==0.74.1",
         "pydantic>=1.8.2,<2.0",
         "python-jose>=3.3.0,<4.0",
-        "python-multipart==0.0.5,<1.0",
+        "python-multipart==0.0.5",
         "requests>=2.26.0,<3.0",
-        "SQLAlchemy>=1.4.20,<2.0",
-        "uvicorn>=0.14.0,<1.0"
+        "SQLAlchemy>=1.4.30,<2.0",
+        "uvicorn>=0.17.0,<1.0"
     ],
     extra_requires={
         "full": [
-            "aiofiles>=0.7",
-            "ujson>=4.0"
+            "aiofiles>=0.8.0,<1.0",
+            "ujson>=4.0,<5.0"
         ]
     },
     project_urls={},
