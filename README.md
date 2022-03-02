@@ -55,6 +55,18 @@ python3 -m matebot_core run
 ```
 Take a look at the built-in help page using `--help`.
 
+### Upgrading
+
+This project uses [alembic](https://alembic.sqlalchemy.org) to handle database
+migrations. Ideally, the upgrade procedure would contain those steps:
+
+1. Read the release notes, because they may contain additional information.
+2. Shutdown the web server.
+3. Make a backup of the database.
+4. Pull the new version of the project.
+5. Run `venv/bin/alembic upgrade head`.
+6. Start the web server again.
+
 ### Creating a systemd service
 
 On systemd-enabled systems, it's recommended to add a systemd service to
