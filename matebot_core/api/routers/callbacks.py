@@ -148,7 +148,7 @@ async def update_existing_callback(
     model.username = callback.username
     model.password = callback.password
 
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)
 
 
 @router.delete(

@@ -94,7 +94,7 @@ async def create_new_user(
     values = user.dict()
     values["active"] = True
     model = models.User(**values)
-    return await helpers.create_new_of_model(model, local, logger, "/users/{}", True)
+    return await helpers.create_new_of_model(model, local, logger)
 
 
 @router.post(
@@ -127,7 +127,7 @@ async def set_flags_of_user(
         model.external = change.external
     if change.permission is not None:
         model.permission = change.permission
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)
 
 
 @router.post(
@@ -154,7 +154,7 @@ async def set_name_of_user(
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
 
     model.name = change.username
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)
 
 
 @router.post(
@@ -220,7 +220,7 @@ async def set_voucher_of_user(
             )
 
     debtor.voucher_user = voucher
-    await helpers.update_model(debtor, local, logger, helpers.ReturnType.NONE)
+    await helpers.update_model(debtor, local, logger)
     return schemas.VoucherUpdateResponse(
         debtor=debtor,
         voucher=voucher,
@@ -294,13 +294,8 @@ async def disable_user_permanently(
 
     # Deleting aliases using this helper method is preferred to trigger callbacks correctly
     for alias in model.aliases:
-        await helpers.delete_one_of_model(
-            alias.id,
-            models.Alias,
-            local,
-            logger=logger
-        )
+        await helpers.delete_one_of_model(alias.id, models.Alias, local, logger=logger)
     model.aliases = []
     model.active = False
 
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)

@@ -124,7 +124,7 @@ async def create_new_of_model(
     :raises APIException: when the database operation went wrong (to report the problem)
     """
 
-    enforce_logger(logger).info(f"Adding new model {model!r}...")
+    enforce_logger(logger).debug(f"Adding new model {model!r}...")
     local.session.add(model)
     local.session.commit()
 
@@ -151,7 +151,7 @@ async def update_model(
     :param logger: optional logger that should be used for INFO and ERROR messages
     """
 
-    enforce_logger(logger).info(f"Updating model {model!r}...")
+    enforce_logger(logger).debug(f"Updating model {model!r}...")
     local.session.add(model)
     local.session.commit()
 
@@ -183,7 +183,7 @@ async def delete_one_of_model(
     """
 
     obj = await return_one(instance_id, model, local.session)
-    enforce_logger(logger).info(f"Deleting model {obj!r}...")
+    enforce_logger(logger).debug(f"Deleting model {obj!r}...")
     local.session.delete(obj)
     local.session.commit()
 
