@@ -46,3 +46,9 @@ COMMAND_INITIALIZE_DATABASE: Optional[List[str]] = None
 # test! Also note that the argument of this field will be used by `subprocess.run`!
 # The command won't be executed if a temporary or in-memory sqlite database was used.
 COMMAND_CLEANUP_DATABASE: Optional[List[str]] = None
+
+# Maximum number of retries allocating a local port during server startup
+MAX_SERVER_START_RETRIES: int = 8
+
+# Maximum number of retries to connect to the API and callback servers during startup
+MAX_SERVER_WAIT_RETRIES: int = 10
