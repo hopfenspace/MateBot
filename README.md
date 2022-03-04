@@ -9,7 +9,7 @@ where every user has any number of associated aliases but one shared balance.
 It can be sent to other users, shared in bills or refunded by the community
 by a community poll, where every user has the equal privileges and voting
 weight. Additionally, the API provides endpoints to easily consume any
-amount of predefined but modifiable consumables with different stocks.
+amount of consumables and vouch for other users in case of high debts.
 
 ## Installation
 
