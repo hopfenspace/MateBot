@@ -7,9 +7,6 @@ from typing import Optional
 import pydantic
 
 
-_HTTP_METHOD_REGEX = r"^GET$|HEAD$|POST$|PUT$|PATCH$|DELETE$|OPTIONS$|TRACE$|CONNECT$"
-
-
 class APIError(pydantic.BaseModel):
     """
     APIError: shared model for all types of API failures
@@ -34,7 +31,7 @@ class APIError(pydantic.BaseModel):
 
     error: bool = True
     status: Optional[pydantic.NonNegativeInt]
-    method: pydantic.constr(regex=_HTTP_METHOD_REGEX)
+    method: pydantic.constr(max_length=255)
     request: str
     repeat: bool
     message: str
