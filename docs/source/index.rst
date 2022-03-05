@@ -2,7 +2,7 @@
 Welcome to the MateBot core API documentation!
 ==============================================
 
-.. image:: _static/matebot_alpha_1024.png
+.. image:: _static/matebot.png
   :width: 160
   :alt: MateBot core API logo
 
