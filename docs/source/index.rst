@@ -27,4 +27,5 @@ Table of contents
     database
     testing
     code_conventions
+    license
 
