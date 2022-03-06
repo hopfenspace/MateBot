@@ -4,9 +4,7 @@
 Database
 ========
 
-
 .. toctree::
-
 
 ********************
 Database Information
@@ -15,13 +13,6 @@ Database Information
 Overview
 ========
 
-.. image:: database.png
-
-Creation
-========
-
-.. literalinclude:: ../../create_tables.sql
-    :language: sql
 
 Table layouts
 =============
