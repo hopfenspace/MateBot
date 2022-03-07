@@ -127,8 +127,8 @@ it with ``su - matebot_core`` or ``sudo -su matebot_user``.
 
     .. code-block::
 
-            python3 -m matebot_core add-app --help
-            python3 -m matebot_core add-app --app <APPLICATION NAME>
+        python3 -m matebot_core add-app --help
+        python3 -m matebot_core add-app --app <APPLICATION NAME>
 
 Execution
 ---------
@@ -137,5 +137,49 @@ You can now easily start the MateBot core API using the ``run`` command:
 
 .. code-block::
 
-        python3 -m matebot_core run --help
-        python3 -m matebot_core run
+    python3 -m matebot_core run --help
+    python3 -m matebot_core run
+
+It's also possible to run ``uvicorn`` directly to execute the
+project's ASGI application (in this case, the server settings
+of the ``config.json`` file are ignored!):
+
+.. code-block::
+
+    uvicorn matebot_core.api:api
+
+Another way to run the application is by using ``nginx`` as a reverse
+proxy. This is the recommended setup when the API is reachable globally.
+See `the uvicorn docs <https://www.uvicorn.org/deployment>`_ for more
+information about deployments and various sample configuration.
+
+Upgrading
+---------
+
+This project uses `alembic <https://alembic.sqlalchemy.org>`_ to handle
+database migrations. Ideally, the upgrade procedure would contain those steps:
+
+1. Read the release notes, because they may contain additional information.
+2. Shutdown the web server.
+3. Make a backup of the database.
+4. Pull the new version of the project
+   (e.g. ``git fetch origin && git checkout <new version tag>``).
+5. Run ``venv/bin/alembic upgrade head``.
+6. Start the web server again.
+
+Systemd service
+---------------
+
+On systemd-enabled systems, it's recommended to add a systemd service
+to start the MateBot core API automatically. To do so, call the module
+with the ``systemd`` command, edit the service file, add a symlink to it,
+reload the systemd daemon and finally enable the new service.
+All steps as an example below:
+
+.. code-block::
+
+    python3 -m matebot_core systemd
+    sudo ln -vrs matebot_core.service /lib/systemd/system/matebot_core.service
+    sudo systemctl daemon-reload
+    sudo systemctl enable matebot_core
+    sudo systemctl start matebot_core
