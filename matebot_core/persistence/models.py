@@ -2,6 +2,9 @@
 MateBot core database models
 """
 
+import datetime
+from typing import List
+
 from sqlalchemy import (
     Boolean, DateTime, Integer, String,
     CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
@@ -14,21 +17,28 @@ from .. import schemas
 
 
 class User(Base):
+    """
+    Model representing one end-user of the MateBot via some client application
+    """
+
     __tablename__ = "users"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    name = Column(String(255), nullable=True)
-    balance = Column(Integer, nullable=False, default=0)
-    permission = Column(Boolean, nullable=False, default=False)
-    active = Column(Boolean, nullable=False, default=True)
-    special = Column(Boolean, nullable=True, default=None, unique=True)
-    external = Column(Boolean, nullable=False)
-    voucher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created = Column(DateTime, server_default=func.now())
-    modified = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    name: str = Column(String(255), nullable=True)
+    balance: int = Column(Integer, nullable=False, default=0)
+    permission: bool = Column(Boolean, nullable=False, default=False)
+    """Flag indicating whether the user is allowed to take part in ballots"""
+    active: bool = Column(Boolean, nullable=False, default=True)
+    """Flag indicating a disabled user (treated as 'deleted'), since user models won't be removed"""
+    special: bool = Column(Boolean, nullable=True, default=None, unique=True)
+    """Unique flag determining the special community user in the set of users"""
+    external: bool = Column(Boolean, nullable=False)
+    voucher_id: int = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created: datetime.datetime = Column(DateTime, server_default=func.now())
+    modified: datetime.datetime = Column(DateTime, server_onupdate=FetchedValue(), server_default=func.now(), onupdate=func.now())
 
-    aliases = relationship("Alias", cascade="all,delete", backref="user")
-    vouching_for = relationship("User", backref=backref("voucher_user", remote_side=[id]))
+    aliases: List["Alias"] = relationship("Alias", cascade="all,delete", backref="user")
+    vouching_for: List["User"] = relationship("User", backref=backref("voucher_user", remote_side=[id]))
 
     __table_args__ = (
         CheckConstraint("special != false"),
@@ -36,10 +46,18 @@ class User(Base):
 
     @property
     def username(self) -> str:
+        """
+        Convenience property returning a printable username (or the user ID, as fallback)
+        """
+
         return self.name or f"user {self.id}"
 
     @property
     def schema(self) -> schemas.User:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.User(
             id=self.id,
             name=self.name,
@@ -58,18 +76,26 @@ class User(Base):
 
 
 class Application(Base):
+    """
+    Model representing a front-end (client) application to this backend service
+    """
+
     __tablename__ = "applications"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    name = Column(String(255), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    salt = Column(String(255), nullable=False)
-    created = Column(DateTime, server_default=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    name: str = Column(String(255), unique=True, nullable=False)
+    password: str = Column(String(255), nullable=False)
+    salt: str = Column(String(255), nullable=False)
+    created: datetime.datetime = Column(DateTime, server_default=func.now())
 
-    callbacks = relationship("Callback", back_populates="app", cascade="all,delete")
+    callbacks: List["Callback"] = relationship("Callback", back_populates="app", cascade="all,delete")
 
     @property
     def schema(self) -> schemas.Application:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Application(
             id=self.id,
             name=self.name,
@@ -81,15 +107,21 @@ class Application(Base):
 
 
 class Alias(Base):
+    """
+    Model representing a unique user reference in a given application
+    """
+
     __tablename__ = "aliases"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
-    username = Column(String(255), nullable=False)
-    confirmed = Column(Boolean, nullable=False, default=False)
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    user_id: int = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    application_id: int = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False)
+    username: str = Column(String(255), nullable=False)
+    """User's unique username in the client application (may also be a user ID)"""
+    confirmed: bool = Column(Boolean, nullable=False, default=False)
+    """Flag indicating whether the alias was confirmed by the user via another application"""
 
-    application = relationship("Application", foreign_keys=[application_id])
+    application: Application = relationship("Application", foreign_keys=[application_id])
 
     __table_args__ = (
         UniqueConstraint("application_id", "username", name="single_username_per_app"),
@@ -97,6 +129,10 @@ class Alias(Base):
 
     @property
     def schema(self) -> schemas.Alias:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Alias(
             id=self.id,
             user_id=self.user_id,
@@ -112,19 +148,24 @@ class Alias(Base):
 
 
 class Transaction(Base):
+    """
+    Model representing a single transaction record between exactly two users
+    """
+
     __tablename__ = "transactions"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    receiver_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    amount = Column(Integer, nullable=False)
-    reason = Column(String(255), nullable=True)
-    timestamp = Column(DateTime, nullable=False, server_default=func.now())
-    multi_transaction_id = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    sender_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    receiver_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount: int = Column(Integer, nullable=False)
+    reason: str = Column(String(255), nullable=True)
+    """Reason for the transaction which may be used as its description"""
+    timestamp: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
+    multi_transaction_id: int = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
 
-    sender = relationship("User", foreign_keys=[sender_id])
-    receiver = relationship("User", foreign_keys=[receiver_id])
-    multi_transaction = relationship("MultiTransaction", backref="transactions")
+    sender: User = relationship("User", foreign_keys=[sender_id])
+    receiver: User = relationship("User", foreign_keys=[receiver_id])
+    multi_transaction: "MultiTransaction" = relationship("MultiTransaction", backref="transactions")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -133,6 +174,10 @@ class Transaction(Base):
 
     @property
     def schema(self) -> schemas.Transaction:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Transaction(
             id=self.id,
             sender=self.sender.schema,
@@ -150,14 +195,22 @@ class Transaction(Base):
 
 
 class MultiTransaction(Base):
+    """
+    Model representing a series of transactions that are tied together via a group operation (e.g. communism)
+    """
+
     __tablename__ = "multi_transactions"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    base_amount = Column(Integer, nullable=False)
-    registered = Column(DateTime, nullable=False, server_default=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    base_amount: int = Column(Integer, nullable=False)
+    registered: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
 
     @property
     def schema(self) -> schemas.MultiTransaction:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.MultiTransaction(
             id=self.id,
             base_amount=self.base_amount,
@@ -173,22 +226,26 @@ class MultiTransaction(Base):
 
 
 class Refund(Base):
+    """
+    Model representing a refund request which allows individual users to receive money from the community
+    """
+
     __tablename__ = "refunds"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    amount = Column(Integer, nullable=False)
-    description = Column(String(255), nullable=False)
-    active = Column(Boolean, nullable=False, default=True)
-    created = Column(DateTime, nullable=False, server_default=func.now())
-    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    amount: int = Column(Integer, nullable=False)
+    description: str = Column(String(255), nullable=False)
+    active: bool = Column(Boolean, nullable=False, default=True)
+    created: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
+    modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    ballot_id = Column(Integer, ForeignKey("ballots.id"), nullable=False)
-    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
+    creator_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    ballot_id: int = Column(Integer, ForeignKey("ballots.id"), nullable=False)
+    transaction_id: int = Column(Integer, ForeignKey("transactions.id"), nullable=True)
 
-    creator = relationship("User", backref="refunds")
-    ballot = relationship("Ballot", backref="refunds")
-    transaction = relationship("Transaction")
+    creator: User = relationship("User", backref="refunds")
+    ballot: "Ballot" = relationship("Ballot", backref="refunds")
+    transaction: Transaction = relationship("Transaction")
 
     __table_args__ = (
         CheckConstraint("amount > 0"),
@@ -196,6 +253,10 @@ class Refund(Base):
 
     @property
     def schema(self) -> schemas.Refund:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Refund(
             id=self.id,
             amount=self.amount,
@@ -217,21 +278,30 @@ class Refund(Base):
 
 
 class Poll(Base):
+    """
+    Model representing a membership request poll to allow external users to be promoted to internals
+    """
+
     __tablename__ = "polls"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    active = Column(Boolean, nullable=False, default=True)
-    accepted = Column(Boolean, nullable=True, default=None)
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    ballot_id = Column(Integer, ForeignKey("ballots.id"), nullable=False)
-    created = Column(DateTime, nullable=False, server_default=func.now())
-    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    active: bool = Column(Boolean, nullable=False, default=True)
+    accepted: bool = Column(Boolean, nullable=True, default=None)
+    """Flag indicating whether the membership poll was accepted by the community"""
+    creator_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    ballot_id: int = Column(Integer, ForeignKey("ballots.id"), nullable=False)
+    created: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
+    modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    creator = relationship("User", backref="polls")
-    ballot = relationship("Ballot", backref="polls")
+    creator: User = relationship("User", backref="polls")
+    ballot: "Ballot" = relationship("Ballot", backref="polls")
 
     @property
     def schema(self) -> schemas.Poll:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Poll(
             id=self.id,
             active=self.active,
@@ -248,17 +318,29 @@ class Poll(Base):
 
 
 class Ballot(Base):
+    """
+    Model representing a ballot with one vote per user (used by polls and refunds)
+    """
+
     __tablename__ = "ballots"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     @property
     def result(self) -> int:
+        """
+        Convenience property returning the sum of all votes (= result of the ballot)
+        """
+
         return -len(self.votes) + 2 * sum(v.vote for v in self.votes)
 
     @property
     def schema(self) -> schemas.Ballot:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Ballot(
             id=self.id,
             modified=self.modified.timestamp(),
@@ -270,16 +352,20 @@ class Ballot(Base):
 
 
 class Vote(Base):
+    """
+    Model representing a unique vote in a ballot (with at most one vote per user)
+    """
+
     __tablename__ = "votes"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    vote = Column(Boolean, nullable=False)
-    ballot_id = Column(Integer, ForeignKey("ballots.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    vote: bool = Column(Boolean, nullable=False)
+    ballot_id: int = Column(Integer, ForeignKey("ballots.id", ondelete="CASCADE"), nullable=False)
+    user_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    ballot = relationship("Ballot", backref="votes")
-    user = relationship("User", backref="votes")
+    ballot: Ballot = relationship("Ballot", backref="votes")
+    user: User = relationship("User", backref="votes")
 
     __table_args__ = (
         UniqueConstraint("user_id", "ballot_id", name="single_vote_per_user"),
@@ -287,6 +373,10 @@ class Vote(Base):
 
     @property
     def schema(self) -> schemas.Vote:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Vote(
             id=self.id,
             user_id=self.user_id,
@@ -302,20 +392,24 @@ class Vote(Base):
 
 
 class Communism(Base):
+    """
+    Model representing a collective payment, where multiple users pay fractions of a total amount
+    """
+
     __tablename__ = "communisms"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    active = Column(Boolean, nullable=False, default=True)
-    amount = Column(Integer, nullable=False)
-    description = Column(String(255), nullable=False)
-    created = Column(DateTime, nullable=False, server_default=func.now())
-    modified = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    multi_transaction_id = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    active: bool = Column(Boolean, nullable=False, default=True)
+    amount: int = Column(Integer, nullable=False)
+    description: str = Column(String(255), nullable=False)
+    created: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
+    modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    creator_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    multi_transaction_id: int = Column(Integer, ForeignKey("multi_transactions.id"), nullable=True, default=None)
 
-    creator = relationship("User")
-    participants = relationship("CommunismUsers", cascade="all,delete", backref="communism")
-    multi_transaction = relationship("MultiTransaction")
+    creator: User = relationship("User")
+    participants: List["CommunismUsers"] = relationship("CommunismUsers", cascade="all,delete", backref="communism")
+    multi_transaction: MultiTransaction = relationship("MultiTransaction")
 
     __table_args__ = (
         CheckConstraint("amount >= 1"),
@@ -323,6 +417,10 @@ class Communism(Base):
 
     @property
     def schema(self) -> schemas.Communism:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Communism(
             id=self.id,
             amount=self.amount,
@@ -343,14 +441,19 @@ class Communism(Base):
 
 
 class CommunismUsers(Base):
+    """
+    Model representing a user that participates in one communism
+    """
+
     __tablename__ = "communisms_users"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    communism_id = Column(Integer, ForeignKey("communisms.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    quantity = Column(Integer, nullable=False)
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    communism_id: int = Column(Integer, ForeignKey("communisms.id", ondelete="CASCADE"), nullable=False)
+    user_id: int = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    quantity: int = Column(Integer, nullable=False)
+    """Number of times a user joined the communism, since users may decide to pay more than others"""
 
-    user = relationship("User", backref="communisms")
+    user: User = relationship("User", backref="communisms")
 
     __table_args = (
         CheckConstraint("quantity >= 0"),
@@ -359,6 +462,10 @@ class CommunismUsers(Base):
 
     @property
     def schema(self) -> schemas.CommunismUser:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.CommunismUser(
             communism=self.communism.schema,
             user=self.user.schema,
@@ -370,17 +477,29 @@ class CommunismUsers(Base):
 
 
 class Callback(Base):
+    """
+    Model representing a callback path to notify a client application about certain updates
+    """
+
     __tablename__ = "callbacks"
 
-    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    base = Column(String(255), unique=False, nullable=False)
-    application_id = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
-    username = Column(String(255), nullable=True)
-    password = Column(String(255), nullable=True)
-    app = relationship("Application", back_populates="callbacks")
+    id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
+    base: str = Column(String(255), unique=False, nullable=False)
+    """Base URL used to notify the client application"""
+    application_id: int = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
+    username: str = Column(String(255), nullable=True)
+    """Username for HTTP Basic Auth"""
+    password: str = Column(String(255), nullable=True)
+    """Password for HTTP Basic Auth"""
+
+    app: Application = relationship("Application", back_populates="callbacks")
 
     @property
     def schema(self) -> schemas.Callback:
+        """
+        Pydantic schema representation of the database model that can be sent to clients
+        """
+
         return schemas.Callback(
             id=self.id,
             base=self.base,
