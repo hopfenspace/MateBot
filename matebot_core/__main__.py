@@ -37,7 +37,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart={python_executable} -m matebot_core
+ExecStart={python_executable} -m matebot_core run
 User={getpass.getuser()}
 WorkingDirectory={os.path.abspath(".")}
 Restart=always

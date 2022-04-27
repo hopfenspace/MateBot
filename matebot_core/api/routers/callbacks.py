@@ -109,7 +109,7 @@ async def create_new_callback(
     uri = callback.base + ("/" if not callback.base.endswith("/") else "")
     matches = local.session.query(models.Callback).filter_by(base=uri).all()
     if matches:
-        raise Conflict(f"A callback with that base URI already exists, but the base URI must be unique.", str(matches))
+        raise Conflict("A callback with that base URI already exists, but the base URI must be unique.", str(matches))
 
     model = models.Callback(
         base=uri,
