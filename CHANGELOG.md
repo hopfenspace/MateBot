@@ -1,3 +1,12 @@
+# MateBot core v0.4.2 (2022-04-29)
+
+- Cleaned up some modules
+- Fixed problems of occupied ports in unittests
+
+# MateBot core v0.4.1 (2022-04-27)
+
+Security release updating the `ujson` dependency to `>5.0`.
+
 # MateBot core v0.4 (2022-03-02)
 
 This release can be considered stable and almost feature-complete.
