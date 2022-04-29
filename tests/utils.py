@@ -15,6 +15,7 @@ import threading
 import subprocess
 import http.server
 import urllib.parse
+import json as _json
 from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import uvicorn
@@ -365,7 +366,16 @@ class BaseAPITests(BaseTest):
         else:
             self.fail(f"Failed to login ({response.status_code})")
 
-    def _init_project_data(self):
+    def _run_api_server(self):
+        config = _schemas.config.CoreConfig(**_settings.get_default_config())
+        if conf.SERVER_LOGGING_OVERWRITE:
+            config.logging = conf.SERVER_LOGGING_OVERWRITE
+        config.database.debug_sql = conf.SQLALCHEMY_ECHOING
+        config.database.connection = self.database_url
+        config.server.password_iterations = 1
+        with open(self.config_file, "w") as f:
+            f.write(config.json())
+
         self.auth = ("application", secrets.token_urlsafe(16))
         config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
         database.PRINT_SQLITE_WARNING = False
@@ -377,64 +387,57 @@ class BaseAPITests(BaseTest):
         session.flush()
         session.close()
 
-    def _run_api_server(self):
-        self.server_port = random.randint(10000, 64000)
+        def _run_server(port: int):
+            with open(self.config_file, "r") as fd:
+                c = _json.load(fd)
+            c["server"]["port"] = port
+            with open(self.config_file, "w") as fd:
+                _json.dump(c, fd)
 
-        config = _schemas.config.CoreConfig(**_settings.get_default_config())
-        if conf.SERVER_LOGGING_OVERWRITE:
-            config.logging = conf.SERVER_LOGGING_OVERWRITE
-        config.database.debug_sql = conf.SQLALCHEMY_ECHOING
-        config.database.connection = self.database_url
-        config.server.port = self.server_port
-        config.server.password_iterations = 1
-        with open(self.config_file, "w") as f:
-            f.write(config.json())
+            app = create_app(
+                settings=_settings.Settings(),
+                configure_logging=False,
+                configure_static_docs=False
+            )
 
-        self._init_project_data()
-
-        app = create_app(
-            settings=_settings.Settings(),
-            configure_logging=False,
-            configure_static_docs=False
-        )
-
-        try:
             uvicorn.run(
                 app,  # noqa
-                port=self.server_port,
+                port=port,
                 host="127.0.0.1",
                 debug=True,
                 workers=1,
                 log_level="error",
                 access_log=False
             )
-        except SystemExit:
-            print(
-                f"Is the API server port {self.server_port} already "
-                f"occupied? Re-run the unittests for better results.",
-                file=sys.stderr
-            )
-            raise
+
+        self.server_port = random.randint(10000, 20000)
+        for i in range(conf.MAX_SERVER_START_RETRIES):
+            try:
+                _run_server(self.server_port)
+                break
+            except SystemExit:
+                self.server_port += 1
+        else:
+            self.fail(f"Is the API server port {self.server_port} already occupied?")
 
     def _run_callback_server(self):
         self.CallbackHandler.request_list = self.callback_request_list
-        self.callback_server_port = random.randint(10000, 64000)
+        self.callback_server_port = random.randint(20000, 30000)
 
-        try:
-            self.callback_server = http.server.HTTPServer(
-                ("127.0.0.1", self.callback_server_port),
-                self.CallbackHandler
-            )
-        except OSError as exc:
-            if exc.errno == errno.EADDRINUSE:
-                print(
-                    f"Is the callback server port {self.callback_server_port} already "
-                    f"occupied? Re-run the unittests for better results.",
-                    file=sys.stderr
+        for i in range(conf.MAX_SERVER_START_RETRIES):
+            try:
+                self.callback_server = http.server.HTTPServer(
+                    ("127.0.0.1", self.callback_server_port),
+                    self.CallbackHandler
                 )
-            raise
-
-        self.callback_server.serve_forever()
+                self.callback_server.serve_forever()
+                break
+            except OSError as exc:
+                if exc.errno != errno.EADDRINUSE:
+                    raise
+                self.callback_server_port += 1
+        else:
+            self.fail(f"Is the callback server port {self.callback_server_port} already occupied?")
 
     def get_db_session(self) -> sqlalchemy.orm.Session:
         opts = {"echo": conf.SQLALCHEMY_ECHOING}
@@ -465,31 +468,32 @@ class BaseAPITests(BaseTest):
 
     def setUp(self) -> None:
         super().setUp()
-        self.server_port = random.randint(10000, 64000)
-        self.callback_request_list = queue.Queue()
-
-        self.callback_server_thread = threading.Thread(
-            target=self._run_callback_server,
-            daemon=True
-        )
-        self.callback_server_thread.start()
-
+        self.server_port = random.randint(10000, 20000)
         self.server_thread = threading.Thread(target=self._run_api_server, daemon=True)
         self.server_thread.start()
 
-        def wait_for_servers():
+        self.callback_request_list = queue.Queue()
+        self.callback_server_port = random.randint(20000, 30000)
+        self.callback_server_thread = threading.Thread(target=self._run_callback_server, daemon=True)
+        self.callback_server_thread.start()
+
+        for i in range(conf.MAX_SERVER_WAIT_RETRIES):
             try:
                 requests.head(self.callback_server_uri)
+                break
             except requests.exceptions.ConnectionError:
                 self.callback_server_thread.join(0.05)
-                wait_for_servers()
+        else:
+            self.fail("Failed to successfully start the callback server")
+
+        for i in range(conf.MAX_SERVER_WAIT_RETRIES):
             try:
                 requests.get(self.server)
+                break
             except requests.exceptions.ConnectionError:
-                self.server_thread.join(0.05)
-                wait_for_servers()
-
-        wait_for_servers()
+                self.server_thread.join(0.1)
+        else:
+            self.fail("Failed to successfully start the API server")
 
     def tearDown(self) -> None:
         self.callback_server.shutdown()

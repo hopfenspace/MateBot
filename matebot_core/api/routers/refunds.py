@@ -180,4 +180,4 @@ async def abort_open_refund_request(
 
     model.active = False
     logger.debug(f"Aborting refund {model}")
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)

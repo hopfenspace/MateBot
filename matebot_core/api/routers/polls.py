@@ -207,4 +207,4 @@ async def abort_open_membership_poll(
 
     model.active = False
     logger.debug(f"Aborting poll {model}")
-    return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
+    return await helpers.update_model(model, local, logger)
