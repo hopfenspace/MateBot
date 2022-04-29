@@ -9,7 +9,7 @@ import pydantic
 import sqlalchemy.orm
 from fastapi.responses import Response
 
-from .base import BadRequest, InternalServerException, NotFound
+from .base import BadRequest, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
 from ..misc.logger import enforce_logger
@@ -84,18 +84,13 @@ async def return_one(
     return obj
 
 
-async def resolve_user_spec(
-        user_spec: Union[str, int],
-        local: LocalRequestData,
-        app: Optional[models.Application] = None
-) -> models.User:
+async def resolve_user_spec(user_spec: Union[str, int], local: LocalRequestData) -> models.User:
     """
     Resolve a user specification, which might be a user ID or a unique, confirmed alias (requiring the origin app)
 
     :param user_spec: either the user ID or the 'username' in an alias
         of the given application (which must be confirmed!)
     :param local: contextual local data
-    :param app: optional application (required for string user specs) to filter aliases
     :return: resulting user as SQLAlchemy model
     :raises BadRequest: when no or multiple users were found for the given user spec
     :raises NotFound: when the specified object ID returned no result
@@ -107,10 +102,15 @@ async def resolve_user_spec(
         return await return_one(user_spec, models.User, local.session)
     if not isinstance(user_spec, str):
         raise TypeError(f"Expected int or str, found {type(user_spec)}")
-    if app is None or not isinstance(app, models.Application):
-        raise InternalServerException(detail=user_spec, message="Resolving user spec without application failed")
 
-    possible_aliases = search_models(models.Alias, local, application_id=app.id, confirmed=True, username=user_spec)
+    possible_aliases = search_models(
+        models.Alias,
+        local,
+        application_id=local.origin_app.id,
+        confirmed=True,
+        username=user_spec
+    )
+
     if len(possible_aliases) > 1:
         raise BadRequest(f"Multiple users were found for '{user_spec}'. Please ensure user aliases are unique.")
     elif len(possible_aliases) == 0:
