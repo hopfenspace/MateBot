@@ -95,7 +95,6 @@ class MultiTransaction(pydantic.BaseModel):
 
 
 class Consumable(pydantic.BaseModel):
-    id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255)
     price: pydantic.PositiveInt
@@ -104,7 +103,7 @@ class Consumable(pydantic.BaseModel):
 class Consumption(pydantic.BaseModel):
     user: user_spec
     amount: pydantic.PositiveInt
-    consumable_id: pydantic.NonNegativeInt
+    consumable: pydantic.constr(max_length=255)
 
 
 class VoucherUpdateResponse(pydantic.BaseModel):

@@ -9,7 +9,7 @@ import pydantic
 from fastapi import Depends
 
 from ._router import router
-from ..base import APIException, BadRequest, Conflict
+from ..base import APIException, BadRequest, Conflict, NotFound
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -115,11 +115,10 @@ async def make_a_new_transaction(
         if user.external and user.voucher_id is None:
             raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
 
-        consumable: models.Consumable = await helpers.return_one(
-            consumption.consumable_id,
-            models.Consumable,
-            local.session
-        )
+        consumables = [c for c in local.config.consumables if c.name == consumption.consumable]
+        if len(consumables) == 0:
+            raise NotFound(f"Consumable {consumption.consumable}")
+        consumable = consumables[0]
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
         return create_transaction(user, community, total, reason, local.session, logger, local.tasks).schema
