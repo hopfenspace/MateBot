@@ -70,7 +70,6 @@ class RefundCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator: user_spec
-    active: bool = True
 
 
 class RefundVoteResponse(pydantic.BaseModel):
@@ -99,7 +98,6 @@ class CommunismCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator: user_spec
-    active: bool = True
     participants: List[CommunismUserBinding] = []
 
 

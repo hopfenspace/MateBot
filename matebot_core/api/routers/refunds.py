@@ -83,7 +83,7 @@ async def create_new_refund(
             amount=refund.amount,
             description=refund.description,
             creator=creator,
-            active=refund.active,
+            active=True,
             ballot=models.Ballot()
         ),
         local,

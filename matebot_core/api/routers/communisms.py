@@ -124,7 +124,7 @@ async def create_new_communism(
         amount=communism.amount,
         description=communism.description,
         creator=creator,
-        active=communism.active,
+        active=True,
         participants=[
             models.CommunismUsers(user_id=p.user_id, quantity=p.quantity)
             for p in participants

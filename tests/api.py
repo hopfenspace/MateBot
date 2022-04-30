@@ -198,7 +198,6 @@ class APITests(utils.BaseAPITests):
                 "amount": 1337,
                 "description": "description",
                 "creator": user0["id"],
-                "active": True,
                 "participants": [{"quantity": 1, "user_id": user1["id"]}]
             },
             recent_callbacks=[("GET", "/create/communism/1")]
@@ -444,14 +443,12 @@ class APITests(utils.BaseAPITests):
                 "amount": 1,
                 "description": "description1",
                 "creator": None,  # will be inserted later
-                "active": True,
                 "participants": []
             },
             {
                 "amount": 42,
                 "description": "description2",
                 "creator": None,  # will be inserted later
-                "active": True,
                 "participants": [
                     {
                         "user_id": 1,
