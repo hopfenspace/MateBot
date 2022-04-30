@@ -98,7 +98,6 @@ class CommunismCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
     creator: user_spec
-    participants: List[CommunismUserBinding] = []
 
 
 class CommunismUserUpdate(pydantic.BaseModel):

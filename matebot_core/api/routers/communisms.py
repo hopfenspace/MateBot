@@ -102,9 +102,8 @@ async def create_new_communism(
     """
     Create a new communism based on the specified data
 
-    * `400`: if the creator or any participant is an external user
-        without voucher, if the creator or any participant is disabled
-        or if the creator user specification couldn't be resolved
+    * `400`: if the creator is an external user without voucher or has been
+        disabled or if the creator user specification couldn't be resolved
     * `404`: if the user ID of the creator user or any mentioned participant is unknown
     * `409`: if the community user is part of the list of participants
     """
@@ -117,18 +116,12 @@ async def create_new_communism(
     if creator.external and creator.voucher_user is None:
         raise BadRequest("You can't create communisms without having a voucher user.")
 
-    participants = _compress_participants(communism.participants)
-    await _check_participants(participants, local)
-
     model = models.Communism(
         amount=communism.amount,
         description=communism.description,
         creator=creator,
         active=True,
-        participants=[
-            models.CommunismUsers(user_id=p.user_id, quantity=p.quantity)
-            for p in participants
-        ]
+        participants=[models.CommunismUsers(user_id=creator.id, quantity=1)]
     )
 
     return await helpers.create_new_of_model(model, local, logger)
