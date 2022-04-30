@@ -119,8 +119,8 @@ class APITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             400,
             json={
-                "sender_id": j,
-                "receiver_id": user1["id"],
+                "sender": j,
+                "receiver": user1["id"],
                 "amount": 42,
                 "reason": "test"
             }
@@ -129,8 +129,8 @@ class APITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             400,
             json={
-                "sender_id": user1["id"],
-                "receiver_id": j,
+                "sender": user1["id"],
+                "receiver": j,
                 "amount": 42,
                 "reason": "test"
             }
@@ -143,8 +143,8 @@ class APITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender_id": user0["id"],
-                "receiver_id": user2["id"],
+                "sender": user0["id"],
+                "receiver": user2["id"],
                 "amount": 42,
                 "reason": "test"
             },
@@ -160,8 +160,8 @@ class APITests(utils.BaseAPITests):
             ("POST", "/transactions"),
             201,
             json={
-                "sender_id": user2["id"],
-                "receiver_id": user0["id"],
+                "sender": user2["id"],
+                "receiver": user0["id"],
                 "amount": 42,
                 "reason": "reverse"
             },
@@ -197,7 +197,7 @@ class APITests(utils.BaseAPITests):
             json={
                 "amount": 1337,
                 "description": "description",
-                "creator_id": user0["id"],
+                "creator": user0["id"],
                 "active": True,
                 "participants": [{"quantity": 1, "user_id": user1["id"]}]
             },
@@ -268,7 +268,7 @@ class APITests(utils.BaseAPITests):
         refund1 = self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Do you like this?", "amount": 42, "creator_id": 2},
+            json={"description": "Do you like this?", "amount": 42, "creator": 2},
             r_schema=_schemas.Refund,
             recent_callbacks=[("GET", "/create/refund/1")]
         ).json()
@@ -281,7 +281,7 @@ class APITests(utils.BaseAPITests):
         refund2 = self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Are you sure?", "amount": 1337, "creator_id": 2},
+            json={"description": "Are you sure?", "amount": 1337, "creator": 2},
             recent_callbacks=[("GET", "/create/refund/2")]
         ).json()
         self.assertEqual(refund2["id"], 2)
@@ -305,7 +305,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
-            json={"user_id": 2, "ballot_id": 1, "vote": True}
+            json={"user": 2, "ballot_id": 1, "vote": True}
         )
 
         # Adding an unprivileged user
@@ -319,7 +319,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
-            json={"user_id": 3, "ballot_id": 1, "vote": True}
+            json={"user": 3, "ballot_id": 1, "vote": True}
         )
 
         # Adding a privileged user which gets disabled first, though
@@ -334,7 +334,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
-            json={"user_id": 4, "ballot_id": 1, "vote": True}
+            json={"user": 4, "ballot_id": 1, "vote": True}
         )
 
         # Adding a new user to actually vote on the refund for the first time
@@ -348,7 +348,7 @@ class APITests(utils.BaseAPITests):
         vote1 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
-            json={"user_id": 5, "ballot_id": 1, "vote": True},
+            json={"user": 5, "ballot_id": 1, "vote": True},
             r_schema=_schemas.RefundVoteResponse,
             recent_callbacks=[("GET", "/create/vote/1")]
         ).json()
@@ -362,7 +362,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds/vote"),
             [400, 409],
-            json={"user_id": community["id"], "ballot_id": 1, "vote": True}
+            json={"user": community["id"], "ballot_id": 1, "vote": True}
         )
 
         # Add another user to accept the refund request
@@ -377,7 +377,7 @@ class APITests(utils.BaseAPITests):
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
-            json={"user_id": 6, "ballot_id": 1, "vote": True},
+            json={"user": 6, "ballot_id": 1, "vote": True},
             r_schema=_schemas.RefundVoteResponse,
             recent_callbacks=[("GET", "/create/vote/2"), ("GET", "/create/transaction/1"), ("GET", "/update/refund/1")]
         ).json()
@@ -405,20 +405,20 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/7")]
         )
-        self.assertQuery(("POST", "/refunds/vote"), 400, json={"user_id": 7, "ballot_id": 1, "vote": True})
+        self.assertQuery(("POST", "/refunds/vote"), 400, json={"user": 7, "ballot_id": 1, "vote": True})
 
         # The community user shouldn't create refunds
         self.assertQuery(
             ("POST", "/refunds"),
             409,
-            json={"description": "Foo", "amount": 1337, "creator_id": community["id"]}
+            json={"description": "Foo", "amount": 1337, "creator": community["id"]}
         )
 
         # User referenced by 'creator' doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/refunds"),
             404,
-            json={"description": "Foo", "amount": 1337, "creator_id": 8}
+            json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
         self.assertQuery(
             ("POST", "/users"),
@@ -430,7 +430,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Foo", "amount": 1337, "creator_id": 8}
+            json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
 
         # TODO: Don't send votes for memberships polls to the refund endpoint
@@ -443,14 +443,14 @@ class APITests(utils.BaseAPITests):
             {
                 "amount": 1,
                 "description": "description1",
-                "creator_id": None,  # will be inserted later
+                "creator": None,  # will be inserted later
                 "active": True,
                 "participants": []
             },
             {
                 "amount": 42,
                 "description": "description2",
-                "creator_id": None,  # will be inserted later
+                "creator": None,  # will be inserted later
                 "active": True,
                 "participants": [
                     {
@@ -466,12 +466,12 @@ class APITests(utils.BaseAPITests):
             {
                 "amount": 1337,
                 "description": "description3",
-                "creator_id": None  # will be inserted later
+                "creator": None  # will be inserted later
             },
             {
                 "amount": 1337,
                 "description": "description4",
-                "creator_id": 42
+                "creator": 42
             },
         ]
 
@@ -483,7 +483,7 @@ class APITests(utils.BaseAPITests):
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
-        # The user mentioned in the 'creator_id' field is not found
+        # The user mentioned in the 'creator' field is not found
         self.assertQuery(
             ("POST", "/communisms"),
             404,
@@ -496,8 +496,8 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/1")]
         ).json()
-        sample_data[0]["creator_id"] = user1["id"]
-        sample_data[1]["creator_id"] = user1["id"]
+        sample_data[0]["creator"] = user1["id"]
+        sample_data[1]["creator"] = user1["id"]
 
         # Create and get the first communism object
         communism1 = self.assertQuery(
@@ -522,7 +522,7 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
         ).json()
-        sample_data[2]["creator_id"] = user2["id"]
+        sample_data[2]["creator"] = user2["id"]
 
         # Create and get the second communism object
         response2 = self.assertQuery(
