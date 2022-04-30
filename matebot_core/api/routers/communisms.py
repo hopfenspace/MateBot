@@ -135,20 +135,24 @@ async def create_new_communism(
 )
 @versioning.versions(1)
 async def abort_open_communism(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Abort an open communism (closing it without performing transactions)
 
-    * `400`: if the communism is already closed
+    * `400`: if the communism is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a communism is allowed to abort it.", detail=str(issuer))
 
     model.active = False
     logger.debug(f"Aborting communism {model}")
@@ -163,19 +167,24 @@ async def abort_open_communism(
 )
 @versioning.versions(1)
 async def close_open_communism(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Close an open communism (closing it with performing transactions)
 
-    * `400`: if the communism is already closed
+    * `400`: if the communism is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
+
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a communism is allowed to close it.", detail=str(issuer))
 
     model.active = False
     m, ts = None, []

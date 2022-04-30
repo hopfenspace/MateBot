@@ -238,7 +238,7 @@ async def set_voucher_of_user(
 )
 @versioning.versions(1)
 async def disable_user_permanently(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -248,17 +248,21 @@ async def disable_user_permanently(
 
     * `400`: if the given user actively vouches for someone else,
         has a non-zero balance, has created / participates in any
-        open communisms or refund requests or is already disabled
+        open communisms or refund requests, is already disabled
+        or if the issuer is not permitted to perform the operation
     * `404`: if the user ID is not found
     * `409`: if the community user was given
     """
 
     model = await helpers.return_one(body.id, models.User, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest(f"User {model.id} is already disabled.", str(model))
     if model.special:
         raise Conflict("The community user can't be disabled.", str(model))
+    if model.id != issuer.id:
+        raise BadRequest("A user can only disable itself, not somebody else.", detail=str(issuer))
 
     if local.session.query(models.Communism).filter_by(creator=model, active=True).all():
         raise BadRequest(

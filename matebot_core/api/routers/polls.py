@@ -192,20 +192,24 @@ async def vote_for_membership_request(
 )
 @versioning.versions(1)
 async def abort_open_membership_poll(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Abort an ongoing poll request (closing it without performing the transaction)
 
-    * `400`: if the poll is already closed
+    * `400`: if the poll is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the poll ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Poll, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest("Updating an already closed poll is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a poll is allowed to abort it.", detail=str(issuer))
 
     model.active = False
     logger.debug(f"Aborting poll {model}")

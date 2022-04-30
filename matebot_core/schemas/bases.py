@@ -18,6 +18,11 @@ class IdBody(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
 
 
+class IssuerIdBody(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    issuer: user_spec
+
+
 class Token(pydantic.BaseModel):
     access_token: str
     token_type: str
