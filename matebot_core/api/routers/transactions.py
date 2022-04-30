@@ -86,7 +86,8 @@ async def make_a_new_transaction(
 
     * `400`: if the transaction is not allowed for various reasons,
         e.g. sender equals receiver, either of those users
-        is disabled or is external but has no active voucher
+        is disabled or is external but has no active voucher or if
+        the sender's or receiver's user specification couldn't be resolved
     * `404`: if the sender or receiver user IDs are unknown
     * `409`: if the sender is the community user
 
@@ -94,6 +95,7 @@ async def make_a_new_transaction(
 
     * `400`: if the consuming user is disabled or has no rights
         to consume goods (being an external user without voucher)
+        or if its user specification couldn't be resolved
     * `404`: if the sender user or consumable isn't found
     * `409`: if the consuming user is the community itself or if no community
         user was found at all (meaning the DB wasn't set up properly)
@@ -105,7 +107,7 @@ async def make_a_new_transaction(
         if community is None:
             raise Conflict("No community user found. Please make sure to setup the DB correctly.")
 
-        user = await helpers.return_one(consumption.user_id, models.User, local.session)
+        user = await helpers.resolve_user_spec(consumption.user, local)
         if user.special:
             raise Conflict("The special community user can't consume goods.", str(user.schema))
         if not user.active:
@@ -125,8 +127,8 @@ async def make_a_new_transaction(
     elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
-    sender = await helpers.return_one(transaction.sender_id, models.User, local.session)
-    receiver = await helpers.return_one(transaction.receiver_id, models.User, local.session)
+    sender = await helpers.resolve_user_spec(transaction.sender, local)
+    receiver = await helpers.resolve_user_spec(transaction.receiver, local)
     amount = transaction.amount
     reason = transaction.reason
 

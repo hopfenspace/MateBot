@@ -103,12 +103,13 @@ async def create_new_communism(
     Create a new communism based on the specified data
 
     * `400`: if the creator or any participant is an external user
-        without voucher, or if the creator or any participant is disabled
+        without voucher, if the creator or any participant is disabled
+        or if the creator user specification couldn't be resolved
     * `404`: if the user ID of the creator user or any mentioned participant is unknown
     * `409`: if the community user is part of the list of participants
     """
 
-    creator = await helpers.return_one(communism.creator_id, models.User, local.session)
+    creator = await helpers.resolve_user_spec(communism.creator, local)
     if creator.special:
         raise Conflict("The community user can't open communisms.")
     if not creator.active:

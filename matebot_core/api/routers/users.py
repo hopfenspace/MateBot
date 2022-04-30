@@ -175,13 +175,14 @@ async def set_voucher_of_user(
     a new transaction, if the voucher has been changed to None (= unset).
 
     * `400`: if changing the voucher is not possible for various reasons
-        (e.g. someone already vouches for the particular user)
+        (e.g. someone already vouches for the particular user) or if
+        the debtor or voucher user specifications couldn't be resolved
     * `404`: if any user ID is unknown
     * `409`: if the community user was used in the query
     """
 
-    debtor = await helpers.return_one(update.debtor, models.User, local.session)
-    voucher = update.voucher and await helpers.return_one(update.voucher, models.User, local.session)
+    debtor = await helpers.resolve_user_spec(update.debtor, local)
+    voucher = update.voucher and await helpers.resolve_user_spec(update.voucher, local)
 
     if debtor.special:
         raise Conflict("Nobody can vouch for the community user.")
@@ -201,7 +202,7 @@ async def set_voucher_of_user(
         if debtor.balance > 0:
             transaction = transactions.create_transaction(
                 debtor,
-                debtor.voucher_user,  # noqa
+                debtor.voucher_user,
                 abs(debtor.balance),
                 "vouch: stopping vouching",
                 local.session,
@@ -210,7 +211,7 @@ async def set_voucher_of_user(
             )
         elif debtor.balance < 0:
             transaction = transactions.create_transaction(
-                debtor.voucher_user,  # noqa
+                debtor.voucher_user,
                 debtor,
                 abs(debtor.balance),
                 "vouch: stopping vouching",

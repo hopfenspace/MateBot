@@ -65,11 +65,12 @@ async def create_new_refund(
     Create a new refund based on the specified data.
 
     * `400`: if the creator is an external user without voucher or disabled
+        or if the creator user specification couldn't be resolved
     * `404`: if the user ID of the creator is unknown
     * `409`: if the special community user is the creator
     """
 
-    creator = await helpers.return_one(refund.creator_id, models.User, local.session)
+    creator = await helpers.resolve_user_spec(refund.creator, local)
     if creator.special:
         raise Conflict("Community user can't create a refund")
     if not creator.active:
@@ -112,13 +113,14 @@ async def vote_for_refund_request(
 
     * `400`: if the refund is not active anymore, the user has already voted
         in the specified ballot, the user is not active or unprivileged
+        or if the voter's user specification couldn't be resolved
     * `404`: if the user ID or ballot ID is unknown.
     * `409`: if the voter is the community user, an invalid state has
         been detected or the ballot referenced by the newly created vote
         is actually about a membership poll instead of a refund request
     """
 
-    user = await helpers.return_one(vote.user_id, models.User, local.session)
+    user = await helpers.resolve_user_spec(vote.user, local)
     ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
 
     if user.special:
