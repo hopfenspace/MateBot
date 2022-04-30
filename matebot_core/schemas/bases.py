@@ -6,9 +6,12 @@ applications and the transactions between the users as
 well as the schemas needed for managing and consuming goods.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pydantic
+
+
+user_spec = Union[pydantic.NonNegativeInt, pydantic.constr(max_length=255)]
 
 
 class IdBody(pydantic.BaseModel):
@@ -77,8 +80,8 @@ class Transaction(pydantic.BaseModel):
 
 
 class TransactionCreation(pydantic.BaseModel):
-    sender_id: pydantic.NonNegativeInt
-    receiver_id: pydantic.NonNegativeInt
+    sender: user_spec
+    receiver: user_spec
     amount: pydantic.PositiveInt
     reason: pydantic.constr(max_length=255)
 
@@ -99,7 +102,7 @@ class Consumable(pydantic.BaseModel):
 
 
 class Consumption(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
+    user: user_spec
     amount: pydantic.PositiveInt
     consumable_id: pydantic.NonNegativeInt
 
@@ -111,8 +114,8 @@ class VoucherUpdateResponse(pydantic.BaseModel):
 
 
 class VoucherUpdateRequest(pydantic.BaseModel):
-    debtor: pydantic.NonNegativeInt
-    voucher: Optional[pydantic.NonNegativeInt]
+    debtor: user_spec
+    voucher: Optional[user_spec]
 
 
 class UsernameChangeRequest(pydantic.BaseModel):
@@ -121,6 +124,6 @@ class UsernameChangeRequest(pydantic.BaseModel):
 
 
 class UserFlagsChangeRequest(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
+    user: user_spec
     external: Optional[bool]
     permission: Optional[bool]

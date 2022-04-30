@@ -9,7 +9,7 @@ import pydantic
 import sqlalchemy.orm
 from fastapi.responses import Response
 
-from .base import NotFound
+from .base import BadRequest, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
 from ..misc.logger import enforce_logger
@@ -82,6 +82,41 @@ async def return_one(
     if obj is None:
         raise NotFound(f"{model.__name__} ID {object_id!r}")
     return obj
+
+
+async def resolve_user_spec(user_spec: Union[str, int], local: LocalRequestData) -> models.User:
+    """
+    Resolve a user specification, which might be a user ID or a unique, confirmed alias (requiring the origin app)
+
+    :param user_spec: either the user ID or the 'username' in an alias
+        of the given application (which must be confirmed!)
+    :param local: contextual local data
+    :return: resulting user as SQLAlchemy model
+    :raises BadRequest: when no or multiple users were found for the given user spec
+    :raises NotFound: when the specified object ID returned no result
+    :raises InternalServerException: when no valid application was given along a string user spec
+    :raises TypeError: when the user spec is neither string nor int
+    """
+
+    if isinstance(user_spec, int):
+        return await return_one(user_spec, models.User, local.session)
+    if not isinstance(user_spec, str):
+        raise TypeError(f"Expected int or str, found {type(user_spec)}")
+
+    possible_aliases = search_models(
+        models.Alias,
+        local,
+        application_id=local.origin_app.id,
+        confirmed=True,
+        username=user_spec
+    )
+
+    if len(possible_aliases) > 1:
+        raise BadRequest(f"Multiple users were found for '{user_spec}'. Please ensure user aliases are unique.")
+    elif len(possible_aliases) == 0:
+        raise BadRequest(f"No users were found for '{user_spec}'. Please ensure such a user alias exists.")
+    user_id = possible_aliases[0].user_id
+    return await return_one(user_id, models.User, local.session)
 
 
 def search_models(

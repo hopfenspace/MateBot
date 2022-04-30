@@ -3,16 +3,17 @@ MateBot API dependency library
 """
 
 import logging
-from typing import Generator, Optional
+from typing import Generator, Optional, Tuple
 
 import sqlalchemy.exc
+import fastapi.datastructures
 from fastapi import BackgroundTasks, Depends, Request, Response
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from sqlalchemy.orm import Session
 
 from . import base
-from ..persistence import database
+from ..persistence import database, models
 from ..settings import Settings
 
 
@@ -69,7 +70,7 @@ class MinimalRequestData:
         return self._config
 
 
-async def check_auth_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="login"))):
+async def check_auth_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="login"))) -> Tuple[str, str, int]:
     credentials_exception = base.APIException(
         status_code=401,
         detail=f"token={token!r}",
@@ -85,9 +86,11 @@ async def check_auth_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="l
             options={"require_exp": True, "require_iat": True}
         )
         username = payload.get("sub", None)
-        if username is None:
+        expiration = int(payload.get("exp", 0))
+        if username is None or expiration <= 0:
             raise credentials_exception
-    except jwt.JWTError as exc:
+        return token, username, expiration
+    except (jwt.JWTError, ValueError) as exc:
         raise credentials_exception from exc
 
 
@@ -107,14 +110,19 @@ class LocalRequestData(MinimalRequestData):
             response: Response,
             tasks: BackgroundTasks,
             session: Session = Depends(get_session),
-            token: str = Depends(check_auth_token)
+            auth_check: Tuple[str, str, int] = Depends(check_auth_token)
     ):
         super().__init__(request, response, session)
-        self.tasks = tasks
-        self._token = token
-        self.headers = request.headers
-        self.session = session
+        self.tasks: BackgroundTasks = tasks
+        self._token, self._requesting_app_name, self._token_expiration = auth_check
+        self.headers: fastapi.datastructures.Headers = request.headers
+        self.session: sqlalchemy.orm.Session = session
         self._config: Optional[Settings] = None
+
+        target_apps = session.query(models.Application).filter_by(name=self._requesting_app_name).all()
+        if len(target_apps) != 1:
+            raise base.APIException(status_code=500, detail=self._token, message="Token owner couldn't be determined")
+        self.origin_app: models.Application = target_apps[0]
 
     @property
     def config(self) -> Settings:

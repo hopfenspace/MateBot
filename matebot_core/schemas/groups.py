@@ -9,7 +9,7 @@ from typing import List, Optional
 
 import pydantic
 
-from .bases import MultiTransaction as _MultiTransaction, Transaction as _Transaction, User as _User
+from .bases import user_spec, MultiTransaction as _MultiTransaction, Transaction as _Transaction, User as _User
 
 
 class Vote(pydantic.BaseModel):
@@ -21,7 +21,7 @@ class Vote(pydantic.BaseModel):
 
 
 class VoteCreation(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
+    user: user_spec
     ballot_id: pydantic.NonNegativeInt
     vote: bool
 
@@ -44,7 +44,7 @@ class Poll(pydantic.BaseModel):
 
 
 class PollCreation(pydantic.BaseModel):
-    creator_id: pydantic.NonNegativeInt
+    creator: user_spec
 
 
 class PollVoteResponse(pydantic.BaseModel):
@@ -69,7 +69,7 @@ class Refund(pydantic.BaseModel):
 class RefundCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator_id: pydantic.NonNegativeInt
+    creator: user_spec
     active: bool = True
 
 
@@ -98,7 +98,7 @@ class Communism(pydantic.BaseModel):
 class CommunismCreation(pydantic.BaseModel):
     amount: pydantic.PositiveInt
     description: pydantic.constr(max_length=255)
-    creator_id: pydantic.NonNegativeInt
+    creator: user_spec
     active: bool = True
     participants: List[CommunismUserBinding] = []
 

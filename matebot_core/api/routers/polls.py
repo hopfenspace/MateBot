@@ -60,11 +60,12 @@ async def create_new_membership_poll(
     Create a new membership request poll for the specified user
 
     * `400`: if the creator is already internal or disabled
+        or if the creator user specification couldn't be resolved
     * `404`: if the user ID of the `creator` is unknown.
     * `409`: if the special community user is the creator
     """
 
-    creator = await helpers.return_one(poll.creator_id, models.User, local.session)
+    creator = await helpers.resolve_user_spec(poll.creator, local)
     if creator.special:
         raise Conflict("A membership request can't be created for the community user.")
     if not creator.active:
@@ -133,13 +134,14 @@ async def vote_for_membership_request(
 
     * `400`: if the poll is not active anymore, the user has already voted
         in the specified ballot, the user is not active or unprivileged
+        or if the voter's user specification couldn't be resolved
     * `404`: if the user ID or ballot ID is unknown.
     * `409`: if the voter is the community user, an invalid state has
         been detected or the ballot referenced by the newly created vote
         is actually about a refund request instead of a membership poll
     """
 
-    user = await helpers.return_one(vote.user_id, models.User, local.session)
+    user = await helpers.resolve_user_spec(vote.user, local)
     ballot = await helpers.return_one(vote.ballot_id, models.Ballot, local.session)
 
     if user.special:
