@@ -111,12 +111,13 @@ async def set_flags_of_user(
     """
     Set & unset the flags of an existing user
 
-    * `404`: if the user ID is not known
+    * `404`: if the user ID is not known or if the
+        user specification couldn't be resolved
     * `409`: if an inactive user was changed or if both
         `external=true` and `permission=true` were set
     """
 
-    model = await helpers.return_one(change.user_id, models.User, local.session)
+    model = await helpers.resolve_user_spec(change.user, local)
 
     if not model.active:
         raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))

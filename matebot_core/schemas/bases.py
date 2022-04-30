@@ -124,6 +124,6 @@ class UsernameChangeRequest(pydantic.BaseModel):
 
 
 class UserFlagsChangeRequest(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
+    user: user_spec
     external: Optional[bool]
     permission: Optional[bool]
