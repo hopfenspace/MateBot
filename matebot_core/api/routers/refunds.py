@@ -165,20 +165,24 @@ async def vote_for_refund_request(
 )
 @versioning.versions(1)
 async def abort_open_refund_request(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Abort an ongoing refund request (closing it without performing the transaction)
 
-    * `400`: if the refund is already closed
+    * `400`: if the refund is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the refund ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Refund, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest("Updating an already closed refund is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a refund is allowed to abort it.", detail=str(issuer))
 
     model.active = False
     logger.debug(f"Aborting refund {model}")
