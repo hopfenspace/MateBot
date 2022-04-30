@@ -231,13 +231,13 @@ async def set_voucher_of_user(
 
 
 @router.post(
-    "/users/disable",
+    "/users/delete",
     tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(1)
-async def disable_user_permanently(
+async def softly_delete_user_permanently(
         body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
