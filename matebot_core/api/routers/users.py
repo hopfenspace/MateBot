@@ -137,33 +137,6 @@ async def set_flags_of_user(
 
 
 @router.post(
-    "/users/setName",
-    tags=["Users"],
-    response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
-)
-@versioning.versions(minimal=1)
-async def set_name_of_user(
-        change: schemas.UsernameChangeRequest,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Set (or unset) the username of an existing user
-
-    * `404`: if the user ID is not known
-    * `409`: if an inactive user was changed
-    """
-
-    model = await helpers.return_one(change.user_id, models.User, local.session)
-
-    if not model.active:
-        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
-
-    model.name = change.username
-    return await helpers.update_model(model, local, logger)
-
-
-@router.post(
     "/users/setVoucher",
     tags=["Users"],
     response_model=schemas.VoucherUpdateResponse,
