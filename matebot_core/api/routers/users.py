@@ -84,16 +84,21 @@ async def search_for_users(
 )
 @versioning.versions(minimal=1)
 async def create_new_user(
-        user: schemas.UserCreation,
+        user_creation: schemas.UserCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Create a new "empty" user account with zero balance
     """
 
-    values = user.dict()
-    values["active"] = True
-    model = models.User(**values)
+    model = models.User(
+        name=user_creation.name,
+        balance=0,
+        permission=False,
+        active=True,
+        external=True,
+        voucher_id=None
+    )
     return await helpers.create_new_of_model(model, local, logger)
 
 

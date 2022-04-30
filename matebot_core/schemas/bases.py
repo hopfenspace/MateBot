@@ -68,10 +68,7 @@ class User(pydantic.BaseModel):
 
 
 class UserCreation(pydantic.BaseModel):
-    name: Optional[pydantic.constr(max_length=255)]
-    permission: bool
-    external: bool
-    voucher_id: Optional[pydantic.NonNegativeInt]
+    name: pydantic.constr(max_length=255)
 
 
 class Transaction(pydantic.BaseModel):
