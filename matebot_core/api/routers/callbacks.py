@@ -160,7 +160,7 @@ async def update_existing_callback(
 )
 @versioning.versions(minimal=1)
 async def delete_existing_callback(
-        callback: schemas.Callback,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -169,4 +169,4 @@ async def delete_existing_callback(
     * `404`: if the requested callback ID doesn't exist
     """
 
-    return await helpers.delete_one_of_model(callback.id, models.Callback, local, logger=logger)
+    return await helpers.delete_one_of_model(body.id, models.Callback, local, logger=logger)

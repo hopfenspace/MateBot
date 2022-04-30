@@ -140,7 +140,7 @@ async def update_existing_alias(
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
-        alias: schemas.Alias,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -149,4 +149,4 @@ async def delete_existing_alias(
     * `404`: if the requested alias ID doesn't exist
     """
 
-    return await helpers.delete_one_of_model(alias.id, models.Alias, local, logger=logger)
+    return await helpers.delete_one_of_model(body.id, models.Alias, local, logger=logger)
