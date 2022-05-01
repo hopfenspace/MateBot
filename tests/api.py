@@ -110,7 +110,7 @@ class APITests(utils.BaseAPITests):
         user1 = users[1]
         user2 = users[2]
 
-        # TODO: Updating the name, and permission external flags should work
+        # TODO: Updating the permission external flags should work
 
         # TODO: Check that voucher handling works as expected
 
@@ -258,10 +258,23 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user1", "permission": True, "external": False},
+            json={"name": "user1"},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
         ).json()
+
+        # Checking for the permission
+        self.assertQuery(
+            ("POST", "/refunds"),
+            400,
+            json={"description": "Do you like this?", "amount": 42, "creator": 2}
+        )
+        self.assertQuery(
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": 2, "permission": True, "external": False},
+            recent_callbacks=[("GET", "/update/user/2")]
+        )
 
         # Create the first refund request
         refund1 = self.assertQuery(
@@ -290,10 +303,15 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(refund2["active"], True)
 
         # Abort the second refund request
+        self.assertQuery(
+            ("POST", "/refunds/abort"),
+            400,
+            json={"id": 2, "issuer": 1}
+        ).json()
         refund2 = self.assertQuery(
             ("POST", "/refunds/abort"),
             200,
-            json={"id": 2},
+            json={"id": 2, "issuer": 2},
             recent_callbacks=[("GET", "/update/refund/2")]
         ).json()
         self.assertEqual(refund2["allowed"], False)
@@ -329,7 +347,12 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/4")]
         ).json()
-        self.assertQuery(("POST", "/users/disable"), 200, json={"id": 4}, recent_callbacks=[("GET", "/update/user/4")])
+        self.assertQuery(
+            ("POST", "/users/delete"),
+            200,
+            json={"id": 4, "issuer": 4},
+            recent_callbacks=[("GET", "/update/user/4")]
+        )
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -344,6 +367,17 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/5")]
         ).json()
+        self.assertQuery(
+            ("POST", "/refunds/vote"),
+            400,
+            json={"user": 5, "ballot_id": 1, "vote": True}
+        )
+        self.assertQuery(
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": 5, "permission": True, "external": False},
+            recent_callbacks=[("GET", "/update/user/5")]
+        )
         vote1 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
@@ -372,6 +406,12 @@ class APITests(utils.BaseAPITests):
             json={"name": "user5", "permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/6")]
+        )
+        self.assertQuery(
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": 6, "permission": True},
+            recent_callbacks=[("GET", "/update/user/6")]
         )
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
@@ -426,6 +466,12 @@ class APITests(utils.BaseAPITests):
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/8")]
         ).json()
+        self.assertQuery(
+            ("POST", "/users/setVoucher"),
+            200,
+            json={"debtor": 8, "voucher": 2},
+            recent_callbacks=[("GET", "/update/user/8")]
+        )
         self.assertQuery(
             ("POST", "/refunds"),
             201,
