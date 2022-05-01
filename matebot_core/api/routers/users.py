@@ -202,9 +202,9 @@ async def set_voucher_of_user(
     debtor.voucher_user = voucher
     await helpers.update_model(debtor, local, logger)
     return schemas.VoucherUpdateResponse(
-        debtor=debtor,
-        voucher=voucher,
-        transaction=transaction
+        debtor=debtor.schema,
+        voucher=voucher.schema,
+        transaction=transaction and transaction.schema
     )
 
 
