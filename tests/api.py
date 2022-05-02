@@ -69,7 +69,7 @@ class APITests(utils.BaseAPITests):
             user = self.assertQuery(
                 ("POST", "/users"),
                 201,
-                json={"name": f"user{i+1}", "permission": True, "external": False},
+                json={"name": f"user{i+1}"},
                 r_schema=_schemas.User
             ).json()
             self.assertEqual(i+1, user["id"])
@@ -99,9 +99,9 @@ class APITests(utils.BaseAPITests):
         )
         j = len(users) - 1
         self.assertQuery(
-            ("POST", f"/users/disable"),
+            ("POST", f"/users/delete"),
             200,
-            json={"id": j},
+            json={"id": j, "issuer": j},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", f"/update/user/{j}")]
         )
@@ -116,7 +116,7 @@ class APITests(utils.BaseAPITests):
 
         # Transactions from/to disabled users should fail
         self.assertQuery(
-            ("POST", "/transactions"),
+            ("POST", "/transactions/send"),
             400,
             json={
                 "sender": j,
@@ -126,7 +126,7 @@ class APITests(utils.BaseAPITests):
             }
         )
         self.assertQuery(
-            ("POST", "/transactions"),
+            ("POST", "/transactions/send"),
             400,
             json={
                 "sender": user1["id"],
@@ -140,7 +140,21 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]["balance"])
         self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]["balance"])
         self.assertQuery(
-            ("POST", "/transactions"),
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": user0["id"], "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+        )
+        self.assertQuery(
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": user2["id"], "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", f"/update/user/{user2['id']}")]
+        )
+        self.assertQuery(
+            ("POST", "/transactions/send"),
             201,
             json={
                 "sender": user0["id"],
@@ -153,11 +167,12 @@ class APITests(utils.BaseAPITests):
         user0 = self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]
         user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
         self.assertEqual(user0["balance"], -user2["balance"])
-        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user0['id']})
+        self.assertQuery(("POST", "/users/delete"), 400, json={"id": user0['id']})
+        self.assertQuery(("POST", "/users/delete"), 400, json={"id": user0['id'], "issuer": user0['id']})
 
         # Deleting the user after fixing the balance should work again
         self.assertQuery(
-            ("POST", "/transactions"),
+            ("POST", "/transactions/send"),
             201,
             json={
                 "sender": user2["id"],
@@ -173,15 +188,20 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(user0["balance"], 0)
         self.assertEqual(user2["balance"], 0)
         self.assertQuery(
-            ("POST", "/users/disable"),
+            ("POST", "/users/delete"),
             200,
-            json={"id": user0["id"]},
+            json={"id": user0["id"], "issuer": user0["id"]},
             recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
         )
         self.assertQuery(
-            ("POST", "/users/disable"),
+            ("POST", "/users/delete"),
+            400,
+            json={"id": user2["id"]}
+        )
+        self.assertQuery(
+            ("POST", "/users/delete"),
             200,
-            json={"id": user2["id"]},
+            json={"id": user2["id"], "issuer": user2["id"]},
             recent_callbacks=[("GET", f"/update/user/{user2['id']}")]
         )
         users.pop(0)
@@ -191,6 +211,13 @@ class APITests(utils.BaseAPITests):
         # Deleting users that created/participate in an active communism shouldn't work
         user0 = users[0]
         user1 = users[1]
+        self.assertQuery(
+            ("POST", "/users/setFlags"),
+            200,
+            json={"user": user0["id"], "external": False},
+            r_schema=_schemas.User,
+            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+        )
         communism = self.assertQuery(
             ("POST", "/communisms"),
             201,
@@ -202,35 +229,28 @@ class APITests(utils.BaseAPITests):
             },
             recent_callbacks=[("GET", "/create/communism/1")]
         ).json()
-        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user0['id']})
-        self.assertQuery(("POST", "/users/disable"), 400, json={"id": user1["id"]})
+        self.assertQuery(("POST", "/users/delete"), 400, json={"id": user0['id']})
+        self.assertQuery(("POST", "/users/delete"), 400, json={"id": user1["id"]})
         self.assertListEqual([communism], self.assertQuery(("GET", "/communisms"), 200).json())
 
         # Deleting users that don't participate in active communisms should work
         self.assertQuery(
-            ("POST", "/communisms/setParticipants"),
+            ("POST", "/users/delete"),
             200,
-            json={"id": 1, "participants": []},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/update/communism/1")]
-        )
-        self.assertQuery(
-            ("POST", "/users/disable"),
-            200,
-            json={"id": user1["id"]},
+            json={"id": user1["id"], "issuer": user1["id"]},
             recent_callbacks=[("GET", f"/update/user/{user1['id']}")]
         )
         self.assertQuery(
             ("POST", "/communisms/abort"),
             200,
-            json={"id": 1},
+            json={"id": 1, "issuer": user0["id"]},
             r_schema=_schemas.Communism,
             recent_callbacks=[("GET", "/update/communism/1")]
         )
         self.assertQuery(
-            ("POST", "/users/disable"),
+            ("POST", "/users/delete"),
             200,
-            json={"id": user0["id"]},
+            json={"id": user0["id"], "issuer": user0["id"]},
             recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
         )
         users.pop(0)
