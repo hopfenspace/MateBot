@@ -13,7 +13,9 @@ from jose import jwt
 from sqlalchemy.orm import Session
 
 from . import base
+from ..misc import notifier
 from ..persistence import database, models
+from ..schemas import events
 from ..settings import Settings
 
 
@@ -123,6 +125,14 @@ class LocalRequestData(MinimalRequestData):
         if len(target_apps) != 1:
             raise base.APIException(status_code=500, detail=self._token, message="Token owner couldn't be determined")
         self.origin_app: models.Application = target_apps[0]
+
+    def publish(self, event: events.Event, data: Optional[dict] = None):
+        self.tasks.add_task(
+            notifier.Callback.push,
+            event,
+            data,
+            [obj.schema for obj in self.session.query(models.Callback).all()]
+        )
 
     @property
     def config(self) -> Settings:

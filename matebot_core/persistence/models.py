@@ -487,10 +487,8 @@ class Callback(Base):
     base: str = Column(String(255), unique=False, nullable=False)
     """Base URL used to notify the client application"""
     application_id: int = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
-    username: str = Column(String(255), nullable=True)
-    """Username for HTTP Basic Auth"""
-    password: str = Column(String(255), nullable=True)
-    """Password for HTTP Basic Auth"""
+    shared_secret: str = Column(String(2047), nullable=True)
+    """Shared secret directly used in the HTTP Authorization header using the 'Bearer' scheme"""
 
     app: Application = relationship("Application", back_populates="callbacks")
 
@@ -504,8 +502,7 @@ class Callback(Base):
             id=self.id,
             base=self.base,
             application_id=self.application_id,
-            username=self.username,
-            password=self.password
+            shared_secret=self.shared_secret
         )
 
     def __repr__(self) -> str:
