@@ -21,10 +21,11 @@ logger = logging.getLogger(__name__)
 callback_router = APIRouter(tags=["Announcements"])
 
 
-@callback_router.get("/create/{model}/{id}", name="Announce-Creation")
-def announce_created_model():
+# TODO: remove the 422 response model from the callback API description
+@callback_router.post("/", name="Publish Event")
+def send_callback_query(events: List[schemas.Event]):
     """
-    Announce a created object of the `model` with the `id`.
+    Publish a list of recent events to a callback listener
 
     It's up to the developer of the application that wants to use
     callbacks to implement this endpoint. Those requests may be ignored.
@@ -32,34 +33,8 @@ def announce_created_model():
     Implementation detail: The response of the external API implementation
     will be logged in case of an error, but will be ignored in general.
     The external API does not need to return any meaningful response.
-    """
-
-
-@callback_router.get("/update/{model}/{id}", name="Announce-Update")
-def announce_updated_model():
-    """
-    Announce an updated object of the `model` with the `id`.
-
-    It's up to the developer of the application that wants to use
-    callbacks to implement this endpoint. Those requests may be ignored.
-
-    Implementation detail: The response of the external API implementation
-    will be logged in case of an error, but will be ignored in general.
-    The external API does not need to return any meaningful response.
-    """
-
-
-@callback_router.get("/delete/{model}/{id}", name="Announce-Deletion")
-def announce_deleted_model():
-    """
-    Announce a deleted object of the `model` with the `id`.
-
-    It's up to the developer of the application that wants to use
-    callbacks to implement this endpoint. Those requests may be ignored.
-
-    Implementation detail: The response of the external API implementation
-    will be logged in case of an error, but will be ignored in general.
-    The external API does not need to return any meaningful response.
+    However, if the external API doesn't react or connecting fails, the
+    MateBot core server will occasionally try to resend the event.
     """
 
 
@@ -106,16 +81,14 @@ async def create_new_callback(
 
     if callback.application_id is not None:
         await helpers.return_one(callback.application_id, models.Application, local.session)
-    uri = callback.base + ("/" if not callback.base.endswith("/") else "")
-    matches = local.session.query(models.Callback).filter_by(base=uri).all()
+    matches = local.session.query(models.Callback).filter_by(url=callback.url).all()
     if matches:
         raise Conflict("A callback with that base URI already exists, but the base URI must be unique.", str(matches))
 
     model = models.Callback(
-        base=uri,
+        url=callback.url,
         application_id=callback.application_id,
-        username=callback.username,
-        password=callback.password
+        shared_secret=callback.shared_secret
     )
     return await helpers.create_new_of_model(model, local, logger)
 
@@ -140,13 +113,12 @@ async def update_existing_callback(
     """
 
     model = await helpers.return_one(callback.id, models.Callback, local.session)
-    if [m for m in local.session.query(models.Callback).filter_by(base=callback.base).all() if m.id != model.id]:
-        raise Conflict(f"Base URL {callback.base} already in use.", detail=str(callback))
+    if [m for m in local.session.query(models.Callback).filter_by(base=callback.url).all() if m.id != model.id]:
+        raise Conflict(f"Callback URL {callback.url} already in use.", detail=str(callback))
 
-    model.base = callback.base
+    model.url = callback.url
     model.application_id = callback.application_id
-    model.username = callback.username
-    model.password = callback.password
+    model.shared_secret = callback.shared_secret
 
     return await helpers.update_model(model, local, logger)
 

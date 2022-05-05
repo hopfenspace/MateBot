@@ -484,8 +484,8 @@ class Callback(Base):
     __tablename__ = "callbacks"
 
     id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    base: str = Column(String(255), unique=False, nullable=False)
-    """Base URL used to notify the client application"""
+    url: str = Column(String(255), unique=False, nullable=False)
+    """Callback URL used to notify the client application"""
     application_id: int = Column(Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=True, unique=True)
     shared_secret: str = Column(String(2047), nullable=True)
     """Shared secret directly used in the HTTP Authorization header using the 'Bearer' scheme"""
@@ -500,7 +500,7 @@ class Callback(Base):
 
         return schemas.Callback(
             id=self.id,
-            base=self.base,
+            url=self.url,
             application_id=self.application_id,
             shared_secret=self.shared_secret
         )
