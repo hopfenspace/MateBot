@@ -86,7 +86,6 @@ async def search_for_ballots(
 @router.get("/consumables", tags=["Searches"], response_model=List[schemas.Consumable])
 @versioning.versions(minimal=1)
 async def search_for_consumables(
-        id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         name: Optional[pydantic.constr(max_length=255)] = None,
         description: Optional[pydantic.constr(max_length=255)] = None,
         price: Optional[pydantic.PositiveInt] = None,
@@ -98,8 +97,7 @@ async def search_for_consumables(
 
     return [
         consumable for consumable in local.config.consumables
-        if (id is None or consumable.id == id)
-        and (name is None or consumable.name == name)
+        if (name is None or consumable.name == name)
         and (description is None or consumable.description == description)
         and (price is None or consumable.price == price)
     ]
