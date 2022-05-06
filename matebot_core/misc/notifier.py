@@ -25,12 +25,11 @@ class Callback:
     Collection of class methods to easily trigger push notifications (HTTP callbacks)
     """
 
-    loop: ClassVar[Optional[asyncio.AbstractEventLoop]] = None
     queue: ClassVar[Queue[schemas.Event]] = Queue()
     logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
-    thread: ClassVar[Optional[threading.Thread]] = None
-    session: ClassVar[Optional[aiohttp.ClientSession]] = None
     shutdown_event: ClassVar[threading.Event] = threading.Event()
+    _thread: ClassVar[Optional[threading.Thread]] = None
+    _session: ClassVar[Optional[aiohttp.ClientSession]] = None
 
     @classmethod
     def created(cls, *args, **kwargs):
@@ -48,7 +47,7 @@ class Callback:
     async def _publish_event(cls, callback: schemas.Callback, events: List[schemas.Event]):
         events_notification = schemas.EventsNotification(events=events, number=len(events))
         try:
-            response = await cls.session.post(
+            response = await cls._session.post(
                 callback.url,
                 json=events_notification.dict(),  # TODO: maybe need some other conversion
                 timeout=aiohttp.ClientTimeout(total=2),
@@ -66,8 +65,8 @@ class Callback:
 
     @classmethod
     async def _run_worker(cls):
-        if cls.session is None:
-            cls.session = aiohttp.ClientSession()
+        if cls._session is None:
+            cls._session = aiohttp.ClientSession()
         while not cls.shutdown_event.is_set():
             try:
                 events = [cls.queue.get(block=True, timeout=EVENT_QUEUE_WAIT_TIME)]
@@ -87,9 +86,13 @@ class Callback:
 
     @classmethod
     def _run_thread(cls):
-        if not cls.thread or not cls.thread.is_alive():
-            cls.thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=False)
-            cls.thread.start()
+        if not cls._thread:
+            if cls._thread and cls._thread.is_alive():
+                cls.logger.error("Re-starting thread while old thread is still alive!")
+                cls.logger.debug(f"Enumerating threads: {threading.enumerate()}")
+            cls._thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=False)
+            cls._thread.start()
+        cls.logger.debug(f"Enumerating threads: {threading.enumerate()}")
 
     @classmethod
     def push(cls, event: schemas.EventType, data: Optional[dict] = None):
