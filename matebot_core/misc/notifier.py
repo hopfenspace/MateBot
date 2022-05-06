@@ -40,10 +40,11 @@ class Callback:
 
     @classmethod
     async def _publish_event(cls, callback: schemas.Callback, event: schemas.Event):
+        events_notification = schemas.EventsNotification(events=[event], number=1)
         try:
             response = await cls.session.post(
                 callback.url,
-                json=event.dict(),  # TODO: maybe need some other conversion
+                json=events_notification.dict(),  # TODO: maybe need some other conversion
                 timeout=aiohttp.ClientTimeout(total=2),
                 headers=callback.shared_secret and {"Authorization": f"Bearer {callback.shared_secret}"}
             )

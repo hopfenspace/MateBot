@@ -6,6 +6,7 @@ well as an enum of the different known event types.
 """
 
 import enum
+from typing import List
 
 import pydantic
 
@@ -33,3 +34,8 @@ class Event(pydantic.BaseModel):
     event: EventType
     timestamp: pydantic.NonNegativeInt
     data: dict
+
+
+class EventsNotification(pydantic.BaseModel):
+    number: pydantic.NonNegativeInt
+    events: List[Event]
