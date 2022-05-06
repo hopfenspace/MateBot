@@ -173,33 +173,6 @@ async def create_new_of_model(
     return model.schema
 
 
-async def update_model(
-        model: models.Base,
-        local: LocalRequestData,
-        logger: Optional[logging.Logger] = None
-):
-    """
-    Add the updated model to a database transaction and commit it (triggering callbacks)
-
-    :param model: instance of the updated SQLAlchemy model
-    :param local: contextual local data
-    :param logger: optional logger that should be used for INFO and ERROR messages
-    """
-
-    enforce_logger(logger).debug(f"Updating model {model!r}...")
-    local.session.add(model)
-    local.session.commit()
-
-    local.tasks.add_task(
-        Callback.updated,
-        type(model).__name__.lower(),
-        model.id,
-        local.session.query(models.Callback).all()
-    )
-
-    return model.schema
-
-
 async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],

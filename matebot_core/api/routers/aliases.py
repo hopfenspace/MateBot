@@ -129,7 +129,9 @@ async def update_existing_alias(
     model.application_id = alias.application_id
     model.username = alias.username
     model.confirmed = alias.confirmed
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.delete(

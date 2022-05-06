@@ -119,8 +119,9 @@ async def update_existing_callback(
     model.url = callback.url
     model.application_id = callback.application_id
     model.shared_secret = callback.shared_secret
-
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.delete(

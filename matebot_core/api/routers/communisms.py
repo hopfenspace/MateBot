@@ -159,7 +159,9 @@ async def abort_open_communism(
 
     model.active = False
     logger.debug(f"Aborting communism {model}")
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.post(
@@ -200,7 +202,9 @@ async def close_open_communism(
 
     model.multi_transaction = m
     logger.debug(f"Closing communism {model} (created multi transaction {m} with {len(ts)} parts)")
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.post(
@@ -243,4 +247,6 @@ async def set_participants_of_open_communism(
     for p in remaining:
         local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user_id, quantity=p.quantity))
 
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema

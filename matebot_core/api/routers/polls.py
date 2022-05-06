@@ -173,13 +173,15 @@ async def vote_for_membership_request(
         poll.active = False
         poll.accepted = True
         poll.creator.external = False
-        await helpers.update_model(poll, local, logger)
-        await helpers.update_model(poll.creator, local, logger)
+        local.session.add(poll)
+        local.session.add(poll.creator)
+        local.session.commit()
 
     elif -result_of_ballot >= local.config.general.min_membership_disapproves:
         poll.active = False
         poll.accepted = False
-        await helpers.update_model(poll, local, logger)
+        local.session.add(poll)
+        local.session.commit()
 
     return schemas.PollVoteResponse(poll=poll.schema, vote=model.schema)
 
@@ -209,4 +211,6 @@ async def abort_open_membership_poll(
 
     model.active = False
     logger.debug(f"Aborting poll {model}")
-    return await helpers.update_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
