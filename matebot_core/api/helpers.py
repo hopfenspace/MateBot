@@ -3,7 +3,7 @@ Generic helper library for the core REST API
 """
 
 import logging
-from typing import Callable, List, Optional, Tuple, Type, Union
+from typing import Callable, List, Optional, Type, Union
 
 import pydantic
 import sqlalchemy.orm
@@ -13,54 +13,6 @@ from .base import BadRequest, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
 from ..misc.logger import enforce_logger
-from ..misc.notifier import Callback
-
-
-def add_callback(
-        operation: Union[str, Callback.Operation],
-        model: Union[models.Base, Tuple[Union[str, Type[models.Base]], int]],
-        local: LocalRequestData
-) -> None:
-    """
-    Add a callback operation to the background task queue
-
-    :param operation: either a valid string or enum referencing a callback
-        operation (one of `created`, `updated` or `deleted`)
-    :param model: either the instance of an already created & committed SQLAlchemy model or a
-        tuple of the model type and the model ID (where the type is either a class or a string)
-    :param local: contextual local data
-    """
-
-    if isinstance(operation, str):
-        operation = Callback.Operation(operation)
-    elif not isinstance(operation, Callback.Operation):
-        raise TypeError("Invalid operation type")
-    callback_function = getattr(Callback, operation.value, None)
-    if callback_function is None:
-        raise RuntimeError("Invalid callback name doesn't match enum value")
-
-    if isinstance(model, models.Base):
-        model_type = type(model).__name__
-        model_id = model.id
-        if model_id is None:
-            raise ValueError("Models must be committed to the database to trigger callbacks (missing ID)")
-    elif isinstance(model, tuple):
-        if len(model) != 2:
-            raise ValueError("Invalid tuple length to specify callbacks")
-        model_type, model_id = model
-        if isinstance(model_type, sqlalchemy.orm.decl_api.DeclarativeMeta):
-            model_type = model_type.__name__
-        elif not isinstance(model_type, str):
-            raise ValueError("Model type must either be a string or a valid declarative class")
-    else:
-        raise TypeError("Invalid model type definition for callback triggering")
-
-    local.tasks.add_task(
-        callback_function,
-        str(model_type).lower(),
-        int(model_id),
-        local.session.query(models.Callback).all()
-    )
 
 
 async def return_one(
@@ -115,7 +67,10 @@ async def resolve_user_spec(user_spec: Union[str, int], local: LocalRequestData)
         raise BadRequest(f"Multiple users were found for '{user_spec}'. Please ensure user aliases are unique.")
     elif len(possible_aliases) == 0:
         raise BadRequest(f"No users were found for '{user_spec}'. Please ensure such a user alias exists.")
-    user_id = possible_aliases[0].user_id
+    alias = possible_aliases[0]
+    if not isinstance(alias, models.Alias):
+        raise TypeError(f"Expected Alias model but got {type(alias)}")
+    user_id = alias.user_id
     return await return_one(user_id, models.User, local.session)
 
 
@@ -165,12 +120,4 @@ async def delete_one_of_model(
     enforce_logger(logger).debug(f"Deleting model {obj!r}...")
     local.session.delete(obj)
     local.session.commit()
-
-    local.tasks.add_task(
-        Callback.deleted,
-        type(obj).__name__.lower(),
-        instance_id,
-        local.session.query(models.Callback).all()
-    )
-
     return Response(status_code=204)
