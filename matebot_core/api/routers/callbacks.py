@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 callback_router = APIRouter(tags=["Announcements"])
 
 
-# TODO: remove the 422 response model from the callback API description
 @callback_router.post("/", name="Publish Event")
 def send_callback_query(events: schemas.EventsNotification):
     """

@@ -49,6 +49,10 @@ class APIWithoutValidationError(FastAPI):
             for path, operations in self.openapi_schema["paths"].items():
                 for method, metadata in operations.items():
                     metadata["responses"].pop("422", None)
+                    for _, callback in metadata.get("callbacks", {}).items():
+                        for _, callback_endpoint in callback.items():
+                            for _, callback_method in callback_endpoint.items():
+                                del callback_method["responses"]
         return self.openapi_schema
 
 
