@@ -72,10 +72,11 @@ class Callback:
                 events = [cls.queue.get(block=True, timeout=EVENT_QUEUE_WAIT_TIME)]
             except Empty:
                 continue
-            try:
-                events.append(cls.queue.get(block=True, timeout=EVENT_QUEUE_BUFFER_TIME))
-            except Empty:
-                pass
+            while True:
+                try:
+                    events.append(cls.queue.get(block=True, timeout=EVENT_QUEUE_BUFFER_TIME))
+                except Empty:
+                    break
             callbacks = []
             for session in dependency.get_session():
                 callbacks = [obj.schema for obj in session.query(models.Callback).all()]
@@ -92,7 +93,7 @@ class Callback:
                 cls.logger.debug(f"Enumerating threads: {threading.enumerate()}")
             cls._thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=False)
             cls._thread.start()
-        cls.logger.debug(f"Enumerating threads: {threading.enumerate()}")
+            cls.logger.debug(f"Enumerating threads: {threading.enumerate()}")
 
     @classmethod
     def push(cls, event: schemas.EventType, data: Optional[dict] = None):
