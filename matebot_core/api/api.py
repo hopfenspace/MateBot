@@ -19,11 +19,11 @@ try:
 except ImportError:
     StaticFiles = None
 
-from . import base, dependency, versioning
+from . import base, versioning
 from .routers import router
 from .. import schemas, __version__
 from ..misc import notifier
-from ..persistence import database, models
+from ..persistence import database
 from ..settings import Settings
 from .. import __file__ as _package_init_path
 
@@ -185,11 +185,8 @@ def create_app(
 
     def startup_server():
         logger.info("Starting API...")
-        callbacks = []
-        for session in dependency.get_session():
-            callbacks = [obj.schema for obj in session.query(models.Callback).all()]
-        logger.debug(f"Notifying {len(callbacks)} callbacks of server_started event...")
-        notifier.Callback.push(schemas.EventType.SERVER_STARTED, {}, callbacks)
+        logger.debug(f"Notifying callbacks of SERVER_STARTED event...")
+        notifier.Callback.push(schemas.EventType.SERVER_STARTED, {"base_url": settings.server.public_base_url})
 
     def shutdown_server():
         logger.info("Shutting down...")

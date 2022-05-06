@@ -2,7 +2,7 @@
 Special schemas for the configuration file and its properties
 """
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pydantic
 
@@ -23,6 +23,7 @@ class ServerConfig(pydantic.BaseModel):
     host: str = "127.0.0.1"
     port: pydantic.conint(gt=0, lt=65536) = 8000
     password_iterations: int = 2**20
+    public_base_url: Optional[pydantic.HttpUrl] = None
 
 
 class DatabaseConfig(pydantic.BaseModel):
