@@ -130,8 +130,9 @@ async def create_new_communism(
             for p in participants
         ]
     )
-
-    return await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.post(

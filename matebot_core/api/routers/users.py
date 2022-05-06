@@ -94,7 +94,9 @@ async def create_new_user(
     values = user.dict()
     values["active"] = True
     model = models.User(**values)
-    return await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.post(

@@ -88,7 +88,9 @@ async def create_new_alias(
         username=alias.username,
         confirmed=alias.confirmed
     )
-    return await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.put(

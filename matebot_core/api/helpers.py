@@ -144,35 +144,6 @@ def search_models(
     return [obj.schema for obj in query.all() if specialized_item_filter is None or specialized_item_filter(obj)]
 
 
-async def create_new_of_model(
-        model: models.Base,
-        local: LocalRequestData,
-        logger: Optional[logging.Logger] = None
-) -> pydantic.BaseModel:
-    """
-    Create a new model's entry in the database (triggering callbacks)
-
-    :param model: instance of a new SQLAlchemy model without any associated session
-    :param local: contextual local data
-    :param logger: optional logger that should be used for INFO and ERROR messages
-    :return: resulting object (as its schema's instance)
-    :raises APIException: when the database operation went wrong (to report the problem)
-    """
-
-    enforce_logger(logger).debug(f"Adding new model {model!r}...")
-    local.session.add(model)
-    local.session.commit()
-
-    local.tasks.add_task(
-        Callback.created,
-        type(model).__name__.lower(),
-        model.id,
-        local.session.query(models.Callback).all()
-    )
-
-    return model.schema
-
-
 async def delete_one_of_model(
         instance_id: pydantic.NonNegativeInt,
         model: Type[models.Base],

@@ -78,17 +78,16 @@ async def create_new_refund(
     if creator.external and not creator.voucher_id:
         raise BadRequest("You can't create a refund request without voucher.", str(refund))
 
-    return await helpers.create_new_of_model(
-        models.Refund(
-            amount=refund.amount,
-            description=refund.description,
-            creator=creator,
-            active=refund.active,
-            ballot=models.Ballot()
-        ),
-        local,
-        logger
+    model = models.Refund(
+        amount=refund.amount,
+        description=refund.description,
+        creator=creator,
+        active=refund.active,
+        ballot=models.Ballot()
     )
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.post(
@@ -145,7 +144,8 @@ async def vote_for_refund_request(
         raise BadRequest("You can't vote on your own refund requests.")
 
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
-    await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
 
     attempt_closing_refund(
         refund,

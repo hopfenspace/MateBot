@@ -90,7 +90,9 @@ async def create_new_callback(
         application_id=callback.application_id,
         shared_secret=callback.shared_secret
     )
-    return await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 @router.put(

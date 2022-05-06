@@ -73,7 +73,10 @@ async def create_new_membership_poll(
     if not creator.external:
         raise BadRequest("You are already an internal user. Membership request polls can only be created by externals.")
 
-    return await helpers.create_new_of_model(models.Poll(creator=creator, ballot=models.Ballot()), local, logger)
+    model = models.Poll(creator=creator, ballot=models.Ballot())
+    local.session.add(model)
+    local.session.commit()
+    return model.schema
 
 
 # @router.put(
@@ -166,7 +169,8 @@ async def vote_for_membership_request(
         raise BadRequest("You can't vote on your own membership polls.")
 
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
-    await helpers.create_new_of_model(model, local, logger)
+    local.session.add(model)
+    local.session.commit()
 
     result_of_ballot = ballot.result
     if result_of_ballot >= local.config.general.min_membership_approves:
