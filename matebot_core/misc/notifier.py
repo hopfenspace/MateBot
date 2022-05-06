@@ -7,7 +7,7 @@ import logging
 import datetime
 import threading
 from queue import Empty, Queue
-from typing import ClassVar, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 import aiohttp
 
@@ -21,29 +21,41 @@ class Callback:
 
     loop: ClassVar[Optional[asyncio.AbstractEventLoop]] = None
     queue: ClassVar[Queue[Tuple[schemas.Callback, schemas.Event]]] = Queue()
-    logger: ClassVar[logging.Logger] = logging.getLogger("callback")
+    logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
     thread: ClassVar[Optional[threading.Thread]] = None
     session: ClassVar[aiohttp.ClientSession] = aiohttp.ClientSession()
     shutdown_event: ClassVar[threading.Event] = threading.Event()
 
     @classmethod
+    def created(cls, *args, **kwargs):
+        cls.logger.warning(f"Backward-incompatibility in Callback.created; args={args}; kwargs={kwargs}")
+
+    @classmethod
+    def updated(cls, *args, **kwargs):
+        cls.logger.warning(f"Backward-incompatibility in Callback.updated; args={args}; kwargs={kwargs}")
+
+    @classmethod
+    def deleted(cls, *args, **kwargs):
+        cls.logger.warning(f"Backward-incompatibility in Callback.deleted; args={args}; kwargs={kwargs}")
+
+    @classmethod
     async def _publish_event(cls, callback: schemas.Callback, event: schemas.Event):
         try:
             response = await cls.session.post(
-                callback.base,
+                callback.url,
                 json=event.dict(),  # TODO: maybe need some other conversion
                 timeout=aiohttp.ClientTimeout(total=2),
-                headers={"Authorization": f"Bearer {callback.shared_secret}"}
+                headers=callback.shared_secret and {"Authorization": f"Bearer {callback.shared_secret}"}
             )
             if response.status != 200:
-                cls.logger.warning(f"Callback for {callback.base!r} failed with response code {response.status!r}.")
+                cls.logger.warning(f"Callback for {callback.url!r} failed with response code {response.status!r}.")
         except aiohttp.ClientConnectionError as exc:
             cls.logger.info(
-                f"{type(exc).__name__} during callback to 'POST {callback.base}' for {callback.application_id} "
+                f"{type(exc).__name__} during callback to 'POST {callback.url}' for {callback.application_id} "
                 f"with the following arguments: {', '.join(map(repr, exc.args))}"
             )
         except asyncio.TimeoutError:
-            cls.logger.warning(f"Timeout while trying 'POST {callback.base}' of app {callback.application_id}")
+            cls.logger.warning(f"Timeout while trying 'POST {callback.url}' of app {callback.application_id}")
 
     @classmethod
     async def _run_worker(cls):
@@ -64,7 +76,12 @@ class Callback:
             cls.thread.start()
 
     @classmethod
-    def push(cls, event: schemas.EventType, data: Optional[dict] = None, callbacks: Optional[schemas.Callback] = None):
+    def push(
+            cls,
+            event: schemas.EventType,
+            data: Optional[dict] = None,
+            callbacks: Optional[List[schemas.Callback]] = None
+    ):
         cls._run_thread()
         for callback in (callbacks or []):
             cls.queue.put((callback, schemas.Event(event=event, timestamp=datetime.datetime.now(), data=data or {})))

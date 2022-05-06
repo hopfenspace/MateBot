@@ -20,5 +20,6 @@ exported by default, since it's currently only used internally.
 
 from .bases import *
 from .errors import *
+from .events import *
 from .extra import *
 from .groups import *
