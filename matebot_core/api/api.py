@@ -19,10 +19,11 @@ try:
 except ImportError:
     StaticFiles = None
 
-from . import base, versioning
+from . import base, dependency, versioning
 from .routers import router
 from .. import schemas, __version__
-from ..persistence import database
+from ..misc import notifier
+from ..persistence import database, models
 from ..settings import Settings
 from .. import __file__ as _package_init_path
 
@@ -182,6 +183,18 @@ def create_app(
     :return: new ``FastAPI`` instance
     """
 
+    def startup_server():
+        logger.info("Starting API...")
+        callbacks = []
+        for session in dependency.get_session():
+            callbacks = [obj.schema for obj in session.query(models.Callback).all()]
+        logger.debug(f"Notifying {len(callbacks)} callbacks of server_started event...")
+        notifier.Callback.push(schemas.EventType.SERVER_STARTED, {}, callbacks)
+
+    def shutdown_server():
+        logger.info("Shutting down...")
+        notifier.Callback.shutdown_event.set()
+
     if settings is None:
         settings = Settings()
 
@@ -229,7 +242,8 @@ def create_app(
         license_info=LICENSE_INFO,
         static_directory=static_directory,
         responses={400: {"model": schemas.APIError}},
-        on_shutdown=[lambda: logger.info("Shutting down...")],
+        on_startup=[startup_server],
+        on_shutdown=[shutdown_server],
         api_class=versioning.VersionedFastAPI
     )
 

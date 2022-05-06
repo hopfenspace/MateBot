@@ -23,7 +23,8 @@ class Callback:
     queue: ClassVar[Queue[Tuple[schemas.Callback, schemas.Event]]] = Queue()
     logger: ClassVar[logging.Logger] = logging.getLogger("callback")
     thread: ClassVar[Optional[threading.Thread]] = None
-    session: aiohttp.ClientSession = aiohttp.ClientSession()
+    session: ClassVar[aiohttp.ClientSession] = aiohttp.ClientSession()
+    shutdown_event: ClassVar[threading.Event] = threading.Event()
 
     @classmethod
     async def _publish_event(cls, callback: schemas.Callback, event: schemas.Event):
@@ -46,19 +47,20 @@ class Callback:
 
     @classmethod
     async def _run_worker(cls):
-        while True:  # while event not set; see https://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
+        while not cls.shutdown_event.is_set():
             try:
-                item = cls.queue.get(block=True, timeout=30)
+                item = cls.queue.get(block=True, timeout=3)
             except Empty:
                 continue
             callback, event = item
             cls.logger.debug(f"Handling callback {event} for {callback} ...")
             await cls._publish_event(callback, event)
+        cls.logger.info("Stopped event notifier thread")
 
     @classmethod
     def _run_thread(cls):
         if not cls.thread or not cls.thread.is_alive():
-            cls.thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=True)
+            cls.thread = threading.Thread(target=lambda: asyncio.run(cls._run_worker()), daemon=False)
             cls.thread.start()
 
     @classmethod
