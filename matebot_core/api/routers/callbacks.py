@@ -22,7 +22,7 @@ callback_router = APIRouter(tags=["Announcements"])
 
 
 @callback_router.post("/", name="Publish Event")
-def send_callback_query(events: schemas.EventsNotification):
+def send_callback_query(events: schemas.EventsNotification):  # noqa
     """
     Publish a list of recent events to a callback listener
 
@@ -41,7 +41,7 @@ def send_callback_query(events: schemas.EventsNotification):
 @versioning.versions(minimal=1)
 async def search_for_callbacks(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
-        base: Optional[pydantic.constr(max_length=255)] = None,
+        url: Optional[pydantic.constr(max_length=255)] = None,
         application_id: Optional[pydantic.NonNegativeInt] = None,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
@@ -53,7 +53,7 @@ async def search_for_callbacks(
         models.Callback,
         local,
         id=id,
-        base=base,
+        url=url,
         application_id=application_id
     )
 
@@ -75,14 +75,14 @@ async def create_new_callback(
     Add a new callback API which should implement all required endpoints
 
     * `404`: if the `application_id` is not known
-    * `409`: if the exact same base URL has already been registered for any other application
+    * `409`: if the exact same URL has already been registered for any other application
     """
 
     if callback.application_id is not None:
         await helpers.return_one(callback.application_id, models.Application, local.session)
     matches = local.session.query(models.Callback).filter_by(url=callback.url).all()
     if matches:
-        raise Conflict("A callback with that base URI already exists, but the base URI must be unique.", str(matches))
+        raise Conflict("A callback with that URL already exists, but the base URL must be unique.", str(matches))
 
     model = models.Callback(
         url=callback.url,
@@ -110,11 +110,11 @@ async def update_existing_callback(
     Update an existing callback model identified by its `id`
 
     * `404`: if the callback ID doesn't exist
-    * `409`: if the exact same base URL is already in use
+    * `409`: if the exact same URL is already in use
     """
 
     model = await helpers.return_one(callback.id, models.Callback, local.session)
-    if [m for m in local.session.query(models.Callback).filter_by(base=callback.url).all() if m.id != model.id]:
+    if [m for m in local.session.query(models.Callback).filter_by(url=callback.url).all() if m.id != model.id]:
         raise Conflict(f"Callback URL {callback.url} already in use.", detail=str(callback))
 
     model.url = callback.url
