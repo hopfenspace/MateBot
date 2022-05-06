@@ -8,11 +8,11 @@ import logging
 from typing import List, Optional, Tuple
 
 from sqlalchemy.orm.session import Session
-from fastapi.background import BackgroundTasks
 
 from .logger import enforce_logger
 from .notifier import Callback
 from ..persistence import models
+from ..schemas import EventType
 
 
 class _SimpleMultiTransactionMode(enum.Enum):
@@ -31,8 +31,7 @@ def create_transaction(
         amount: int,
         reason: str,
         session: Session,
-        logger: logging.Logger,
-        tasks: Optional[BackgroundTasks] = None
+        logger: logging.Logger
 ) -> models.Transaction:
     """
     Send the specified amount of money from one user to another one
@@ -43,8 +42,6 @@ def create_transaction(
     :param reason: textual description of the transaction
     :param session: SQLAlchemy session used to perform database operations
     :param logger: logger that should be used for INFO and ERROR messages
-    :param tasks: FastAPI's list of background tasks the callback task should be added to
-        (use None to disable creating the notification background task completely)
     :return: the newly created and committed Transaction object
     :raises ValueError: in case the amount is not positive or some user ID is not set
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
@@ -75,13 +72,10 @@ def create_transaction(
     session.commit()
     logger.debug(f"Successfully committed new transaction {model.id}")
 
-    if tasks is not None:
-        tasks.add_task(
-            Callback.created,
-            type(model).__name__.lower(),
-            model.id,
-            session.query(models.Callback).all()
-        )
+    Callback.push(
+        EventType.TRANSACTION_CREATED,
+        {"id": model.id, "sender": sender.id, "receiver": receiver.id, "amount": model.amount}
+    )
 
     return model
 
@@ -95,8 +89,7 @@ def _make_simple_multi_transaction(
         session: Session,
         logger: logging.Logger,
         direction: _SimpleMultiTransactionMode,
-        indicator: Optional[str] = None,
-        tasks: Optional[BackgroundTasks] = None
+        indicator: Optional[str] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
     """
     Perform a simple multi transaction; see the other `create_*` functions for its API
@@ -192,12 +185,10 @@ def _make_simple_multi_transaction(
         f"transactions: {[t.id for t in transactions]}"
     )
 
-    if tasks is not None:
-        tasks.add_task(
-            Callback.created,
-            type(multi).__name__.lower(),
-            multi.id,
-            session.query(models.Callback).all()
+    for t in transactions:
+        Callback.push(
+            EventType.TRANSACTION_CREATED,
+            {"id": t.id, "sender": t.sender.id, "receiver": t.receiver.id, "amount": t.amount}
         )
 
     return multi, transactions
@@ -210,8 +201,7 @@ def create_one_to_many_transaction_by_base(
         reason: str,
         session: Session,
         logger: logging.Logger,
-        indicator: Optional[str] = None,
-        tasks: Optional[BackgroundTasks] = None
+        indicator: Optional[str] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
     """
     Send money from one user to a list of receiver users
@@ -234,8 +224,6 @@ def create_one_to_many_transaction_by_base(
     :param logger: logger that should be used for INFO and ERROR messages
     :param indicator: optional format string that transforms the reason before creating the
         transaction to allow customization with the two possible keys being `reason` and `n`
-    :param tasks: FastAPI's list of background tasks the callback task should be added to
-        (use None to disable creating the notification background task completely)
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no receivers have been given, the amount is
@@ -253,8 +241,7 @@ def create_one_to_many_transaction_by_base(
         session,
         logger,
         _SimpleMultiTransactionMode.ONE_TO_MANY,
-        indicator,
-        tasks
+        indicator
     )
 
 
@@ -265,8 +252,7 @@ def create_one_to_many_transaction_by_total(
         reason: str,
         session: Session,
         logger: logging.Logger,
-        indicator: Optional[str] = None,
-        tasks: Optional[BackgroundTasks] = None
+        indicator: Optional[str] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
     """
     Send money from one user to a list of receiver users
@@ -292,8 +278,6 @@ def create_one_to_many_transaction_by_total(
     :param logger: logger that should be used for INFO and ERROR messages
     :param indicator: optional format string that transforms the reason before creating the
         transaction to allow customization with the two possible keys being `reason` and `n`
-    :param tasks: FastAPI's list of background tasks the callback task should be added to
-        (use None to disable creating the notification background task completely)
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no receivers have been given, the amount is
@@ -311,8 +295,7 @@ def create_one_to_many_transaction_by_total(
         session,
         logger,
         _SimpleMultiTransactionMode.ONE_TO_MANY,
-        indicator,
-        tasks
+        indicator
     )
 
 
@@ -323,8 +306,7 @@ def create_many_to_one_transaction_by_base(
         reason: str,
         session: Session,
         logger: logging.Logger,
-        indicator: Optional[str] = None,
-        tasks: Optional[BackgroundTasks] = None
+        indicator: Optional[str] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
     """
     Send money from a list of users to a single users
@@ -347,8 +329,6 @@ def create_many_to_one_transaction_by_base(
     :param logger: logger that should be used for INFO and ERROR messages
     :param indicator: optional format string that transforms the reason before creating the
         transaction to allow customization with the two possible keys being `reason` and `n`
-    :param tasks: FastAPI's list of background tasks the callback task should be added to
-        (use None to disable creating the notification background task completely)
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no senders have been given, the amount is
@@ -366,8 +346,7 @@ def create_many_to_one_transaction_by_base(
         session,
         logger,
         _SimpleMultiTransactionMode.MANY_TO_ONE,
-        indicator,
-        tasks
+        indicator
     )
 
 
@@ -378,8 +357,7 @@ def create_many_to_one_transaction_by_total(
         reason: str,
         session: Session,
         logger: logging.Logger,
-        indicator: Optional[str] = None,
-        tasks: Optional[BackgroundTasks] = None
+        indicator: Optional[str] = None
 ) -> Tuple[models.MultiTransaction, List[models.Transaction]]:
     """
     Send money from a list of users to a single users
@@ -405,8 +383,6 @@ def create_many_to_one_transaction_by_total(
     :param logger: logger that should be used for INFO and ERROR messages
     :param indicator: optional format string that transforms the reason before creating the
         transaction to allow customization with the two possible keys being `reason` and `n`
-    :param tasks: FastAPI's list of background tasks the callback task should be added to
-        (use None to disable creating the notification background task completely)
     :return: both the newly created and committed MultiTransaction
         object and the list of new transactions
     :raises ValueError: in case no senders have been given, the amount is
@@ -424,6 +400,5 @@ def create_many_to_one_transaction_by_total(
         session,
         logger,
         _SimpleMultiTransactionMode.MANY_TO_ONE,
-        indicator,
-        tasks
+        indicator
     )

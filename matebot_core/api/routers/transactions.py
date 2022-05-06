@@ -121,7 +121,7 @@ async def make_a_new_transaction(
         consumable = consumables[0]
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount
-        return create_transaction(user, community, total, reason, local.session, logger, local.tasks).schema
+        return create_transaction(user, community, total, reason, local.session, logger).schema
 
     elif not isinstance(transaction, schemas.TransactionCreation):
         raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
@@ -147,4 +147,4 @@ async def make_a_new_transaction(
             str(receiver)
         )
 
-    return create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks).schema
+    return create_transaction(sender, receiver, amount, reason, local.session, logger).schema

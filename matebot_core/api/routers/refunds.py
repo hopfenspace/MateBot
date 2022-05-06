@@ -151,8 +151,7 @@ async def vote_for_refund_request(
         refund,
         local.session,
         (local.config.general.min_refund_approves, local.config.general.min_refund_disapproves),
-        logger,
-        local.tasks
+        logger
     )
     return schemas.RefundVoteResponse(refund=refund.schema, vote=model.schema)
 
