@@ -3,13 +3,13 @@ MateBot router module for /transactions requests
 """
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
 import pydantic
 from fastapi import Depends
 
 from ._router import router
-from ..base import APIException, BadRequest, Conflict, NotFound
+from ..base import BadRequest, Conflict, NotFound
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -59,30 +59,23 @@ async def search_for_transactions(
 
 
 @router.post(
-    "/transactions",
+    "/transactions/send",
     tags=["Transactions"],
     status_code=201,
     response_model=schemas.Transaction,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(minimal=1)
-async def make_a_new_transaction(
-        transaction: Union[schemas.TransactionCreation, schemas.Consumption],
+async def send_money_between_two_users(
+        transaction: schemas.TransactionCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Make a new transaction or consumption
+    Make a new ordinary one-to-one transaction between two users
 
     Note that transactions can't be edited after being sent to this
     endpoint by design, so take care doing that. The frontend application
     might want to request explicit user approval ahead of time.
-
-    This endpoint allows both one-to-one and consumption transactions.
-    A one-to-one transaction is the simplest form, where one user sends
-    money to another user. The latter form lets a user consume goods listed
-    via the `GET /consumables` endpoint, so they will be paid to the community.
-
-    Specific information about one-to-one transactions:
 
     * `400`: if the transaction is not allowed for various reasons,
         e.g. sender equals receiver, either of those users
@@ -90,41 +83,7 @@ async def make_a_new_transaction(
         the sender's or receiver's user specification couldn't be resolved
     * `404`: if the sender or receiver user IDs are unknown
     * `409`: if the sender is the community user
-
-    Specific information about consumption transactions:
-
-    * `400`: if the consuming user is disabled or has no rights
-        to consume goods (being an external user without voucher)
-        or if its user specification couldn't be resolved
-    * `404`: if the sender user or consumable isn't found
-    * `409`: if the consuming user is the community itself or if no community
-        user was found at all (meaning the DB wasn't set up properly)
     """
-
-    if isinstance(transaction, schemas.Consumption):
-        consumption = transaction
-        community = local.session.query(models.User).filter_by(special=True).first()
-        if community is None:
-            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
-
-        user = await helpers.resolve_user_spec(consumption.user, local)
-        if user.special:
-            raise Conflict("The special community user can't consume goods.", str(user.schema))
-        if not user.active:
-            raise BadRequest(f"The disabled user {user.nameusername!r} can't consume goods.", str(user.schema))
-        if user.external and user.voucher_id is None:
-            raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
-
-        consumables = [c for c in local.config.consumables if c.name == consumption.consumable]
-        if len(consumables) == 0:
-            raise NotFound(f"Consumable {consumption.consumable}")
-        consumable = consumables[0]
-        reason = f"consume: {consumption.amount}x {consumable.name}"
-        total = consumable.price * consumption.amount
-        return create_transaction(user, community, total, reason, local.session, logger).schema
-
-    elif not isinstance(transaction, schemas.TransactionCreation):
-        raise APIException(status_code=500, detail="Invalid input data validation", repeat=False)
 
     sender = await helpers.resolve_user_spec(transaction.sender, local)
     receiver = await helpers.resolve_user_spec(transaction.receiver, local)
@@ -148,3 +107,51 @@ async def make_a_new_transaction(
         )
 
     return create_transaction(sender, receiver, amount, reason, local.session, logger).schema
+
+
+@router.post(
+    "/transactions/consume",
+    tags=["Transactions"],
+    status_code=201,
+    response_model=schemas.Transaction,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+)
+@versioning.versions(minimal=1)
+async def consume_consumables_by_sending_money_to_the_community(
+        consumption: schemas.Consumption,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Make a new consumption (user-to-community transaction)
+
+    Note that transactions can't be edited after being sent to this
+    endpoint by design, so take care doing that. The frontend application
+    might want to request explicit user approval ahead of time.
+
+    * `400`: if the consuming user is disabled or has no rights
+        to consume goods (being an external user without voucher)
+        or if its user specification couldn't be resolved
+    * `404`: if the sender user or consumable isn't found
+    * `409`: if the consuming user is the community itself or if no community
+        user was found at all (meaning the DB wasn't set up properly)
+    """
+
+    community = local.session.query(models.User).filter_by(special=True).first()
+    if community is None:
+        raise Conflict("No community user found. Please make sure to setup the DB correctly.")
+
+    user = await helpers.resolve_user_spec(consumption.user, local)
+    if user.special:
+        raise Conflict("The special community user can't consume goods.", str(user.schema))
+    if not user.active:
+        raise BadRequest(f"The disabled user {user.username!r} can't consume goods.", str(user.schema))
+    if user.external and user.voucher_id is None:
+        raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
+
+    consumables = [c for c in local.config.consumables if c.name == consumption.consumable]
+    if len(consumables) == 0:
+        raise NotFound(f"Consumable {consumption.consumable}")
+    consumable = consumables[0]
+    reason = f"consume: {consumption.amount}x {consumable.name}"
+    total = consumable.price * consumption.amount
+    return create_transaction(user, community, total, reason, local.session, logger).schema

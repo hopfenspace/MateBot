@@ -20,33 +20,43 @@ from ... import schemas
 logger = logging.getLogger(__name__)
 
 
-def _compress_participants(participants: List[schemas.CommunismUserBinding]) -> List[schemas.CommunismUserBinding]:
-    compressed = {}
-    for binding in participants:
-        if binding.user_id not in compressed:
-            compressed[binding.user_id] = 0
-        compressed[binding.user_id] += binding.quantity
-    return [schemas.CommunismUserBinding(user_id=k, quantity=v) for k, v in compressed.items()]
+async def _update_participation(
+        communism: models.Communism,
+        user: models.User,
+        quantity_diff: int,
+        local: LocalRequestData
+) -> schemas.Communism:
+    if not communism.active:
+        raise BadRequest("Updating an already closed communism is not possible.", detail=str(communism))
+    if not user.active:
+        raise BadRequest(f"{user.username} is a disabled user, it can't participate in communisms.", detail=str(user))
+    if user.external and user.voucher_user is None:
+        raise BadRequest(f"{user.usernaem} is an external user without voucher.")
+    if user.special:
+        raise Conflict("The community user can't participate in communisms.")
+    if quantity_diff == 0:
+        return communism.schema
 
+    for communism_user in communism.participants:
+        if communism_user.user_id == user.id:
+            if quantity_diff < 0 and abs(quantity_diff) < communism_user.quantity:
+                communism_user.quantity -= abs(quantity_diff)
+            elif quantity_diff < 0 and abs(quantity_diff) == communism_user.quantity:
+                local.session.delete(communism_user)
+            elif quantity_diff < 0:
+                raise BadRequest(f"You can't participate less than zero times in communisms.")
+            elif quantity_diff > 0:
+                communism_user.quantity += quantity_diff
+            break
+    else:
+        if quantity_diff > 0:
+            local.session.add(models.CommunismUsers(communism_id=communism.id, user_id=user.id, quantity=quantity_diff))
+        else:
+            raise BadRequest(f"You don't participate in this communism, you can't leave it.")
 
-async def _check_participants(participants: List[schemas.CommunismUserBinding], local: LocalRequestData):
-    def restrict_community_user(special_flag: bool):
-        if special_flag:
-            raise Conflict("The community user can't participate in communisms.")
-
-    invalid_participant_entries = [
-        (k, v) for k, v in {
-            p.user_id: await helpers.return_one(p.user_id, models.User, local.session)
-            for p in participants
-        }.items()
-        if not v.active or (v.external and v.voucher_user is None) or restrict_community_user(v.special)
-    ]
-    if invalid_participant_entries:
-        raise BadRequest(
-            f"Disabled users or externals without voucher can't participate in communisms. "
-            f"{len(invalid_participant_entries)} proposed participants are disabled or external.",
-            str(invalid_participant_entries)
-        )
+    local.session.add(communism)
+    local.session.commit()
+    return communism.schema
 
 
 @router.get("/communisms", tags=["Communisms"], response_model=List[schemas.Communism])
@@ -102,9 +112,8 @@ async def create_new_communism(
     """
     Create a new communism based on the specified data
 
-    * `400`: if the creator or any participant is an external user
-        without voucher, if the creator or any participant is disabled
-        or if the creator user specification couldn't be resolved
+    * `400`: if the creator is an external user without voucher or has been
+        disabled or if the creator user specification couldn't be resolved
     * `404`: if the user ID of the creator user or any mentioned participant is unknown
     * `409`: if the community user is part of the list of participants
     """
@@ -117,18 +126,12 @@ async def create_new_communism(
     if creator.external and creator.voucher_user is None:
         raise BadRequest("You can't create communisms without having a voucher user.")
 
-    participants = _compress_participants(communism.participants)
-    await _check_participants(participants, local)
-
     model = models.Communism(
         amount=communism.amount,
         description=communism.description,
         creator=creator,
-        active=communism.active,
-        participants=[
-            models.CommunismUsers(user_id=p.user_id, quantity=p.quantity)
-            for p in participants
-        ]
+        active=True,
+        participants=[models.CommunismUsers(user_id=creator.id, quantity=1)]
     )
     local.session.add(model)
     local.session.commit()
@@ -143,20 +146,24 @@ async def create_new_communism(
 )
 @versioning.versions(1)
 async def abort_open_communism(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Abort an open communism (closing it without performing transactions)
 
-    * `400`: if the communism is already closed
+    * `400`: if the communism is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a communism is allowed to abort it.", detail=str(issuer))
 
     model.active = False
     logger.debug(f"Aborting communism {model}")
@@ -173,19 +180,24 @@ async def abort_open_communism(
 )
 @versioning.versions(1)
 async def close_open_communism(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Close an open communism (closing it with performing transactions)
 
-    * `400`: if the communism is already closed
+    * `400`: if the communism is already closed or if the
+        issuer is not permitted to perform the operation
     * `404`: if the communism ID is unknown
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
+
     if not model.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
+    if model.creator.id != issuer.id:
+        raise BadRequest("Only the creator of a communism is allowed to close it.", detail=str(issuer))
 
     model.active = False
     m, ts = None, []
@@ -197,8 +209,7 @@ async def close_open_communism(
             model.description,
             local.session,
             logger,
-            "communism[{n}]: {reason}",
-            local.tasks
+            "communism[{n}]: {reason}"
         )
 
     model.multi_transaction = m
@@ -209,45 +220,57 @@ async def close_open_communism(
 
 
 @router.post(
-    "/communisms/setParticipants",
+    "/communisms/increaseParticipation",
     tags=["Communisms"],
     response_model=schemas.Communism,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(1)
-async def set_participants_of_open_communism(
-        body: schemas.CommunismUserUpdate,
+async def increase_participation_in_open_communism(
+        body: schemas.CommunismParticipationUpdate,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Set the participants of an open communism
+    Increase the participation of a single user by 1 for an open communism
 
-    * `400`: if the communism is already closed or if any participant
+    * `400`: if the communism is already closed or if the mentioned user
         is an external user without voucher or a disabled user
     * `404`: if the communism ID or the user ID of any mentioned participant is unknown
-    * `409`: if the community user is part of the participants
+    * `409`: if the community user is the user selected for participation
     """
 
-    model = await helpers.return_one(body.id, models.Communism, local.session)
+    return await _update_participation(
+        await helpers.return_one(body.id, models.Communism, local.session),
+        await helpers.resolve_user_spec(body.user, local),
+        1,
+        local
+    )
 
-    if not model.active:
-        raise BadRequest("Updating an already closed communism is not possible.", detail=str(model))
 
-    participants = _compress_participants(body.participants)
-    await _check_participants(participants, local)
+@router.post(
+    "/communisms/decreaseParticipation",
+    tags=["Communisms"],
+    response_model=schemas.Communism,
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+)
+@versioning.versions(1)
+async def decrease_participation_in_open_communism(
+        body: schemas.CommunismParticipationUpdate,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Decrease the participation of a single user by 1 for an open communism
 
-    remaining = list(participants)[:]
-    for c_u in model.participants:
-        for p in participants:
-            if c_u.user_id == p.user_id:
-                c_u.quantity = p.quantity
-                remaining.remove(p)
-                break
-        else:
-            local.session.delete(c_u)
-    for p in remaining:
-        local.session.add(models.CommunismUsers(communism_id=model.id, user_id=p.user_id, quantity=p.quantity))
+    * `400`: if the communism is already closed or if any participant
+        is an external user without voucher or a disabled user or if
+        there was an attempt to leave a communism without prior participation
+    * `404`: if the communism ID or the user ID of any mentioned participant is unknown
+    * `409`: if the community user is the user selected for participation
+    """
 
-    local.session.add(model)
-    local.session.commit()
-    return model.schema
+    return await _update_participation(
+        await helpers.return_one(body.id, models.Communism, local.session),
+        await helpers.resolve_user_spec(body.user, local),
+        -1,
+        local
+    )

@@ -84,16 +84,21 @@ async def search_for_users(
 )
 @versioning.versions(minimal=1)
 async def create_new_user(
-        user: schemas.UserCreation,
+        user_creation: schemas.UserCreation,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Create a new "empty" user account with zero balance
     """
 
-    values = user.dict()
-    values["active"] = True
-    model = models.User(**values)
+    model = models.User(
+        name=user_creation.name,
+        balance=0,
+        permission=False,
+        active=True,
+        external=True,
+        voucher_id=None
+    )
     local.session.add(model)
     local.session.commit()
     return model.schema
@@ -213,8 +218,7 @@ async def set_voucher_of_user(
                 abs(debtor.balance),
                 "vouch: stopping vouching",
                 local.session,
-                logger,
-                local.tasks
+                logger
             )
         elif debtor.balance < 0:
             transaction = transactions.create_transaction(
@@ -223,29 +227,28 @@ async def set_voucher_of_user(
                 abs(debtor.balance),
                 "vouch: stopping vouching",
                 local.session,
-                logger,
-                local.tasks
+                logger
             )
 
     debtor.voucher_user = voucher
     local.session.add(debtor)
     local.session.commit()
     return schemas.VoucherUpdateResponse(
-        debtor=debtor,
-        voucher=voucher,
-        transaction=transaction
+        debtor=debtor.schema,
+        voucher=voucher.schema,
+        transaction=transaction and transaction.schema
     )
 
 
 @router.post(
-    "/users/disable",
+    "/users/delete",
     tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(1)
-async def disable_user_permanently(
-        body: schemas.IdBody,
+async def softly_delete_user_permanently(
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -255,17 +258,21 @@ async def disable_user_permanently(
 
     * `400`: if the given user actively vouches for someone else,
         has a non-zero balance, has created / participates in any
-        open communisms or refund requests or is already disabled
+        open communisms or refund requests, is already disabled
+        or if the issuer is not permitted to perform the operation
     * `404`: if the user ID is not found
     * `409`: if the community user was given
     """
 
     model = await helpers.return_one(body.id, models.User, local.session)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
 
     if not model.active:
         raise BadRequest(f"User {model.id} is already disabled.", str(model))
     if model.special:
         raise Conflict("The community user can't be disabled.", str(model))
+    if model.id != issuer.id:
+        raise BadRequest("A user can only disable itself, not somebody else.", detail=str(issuer))
 
     if local.session.query(models.Communism).filter_by(creator=model, active=True).all():
         raise BadRequest(

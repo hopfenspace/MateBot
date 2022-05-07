@@ -94,37 +94,6 @@ async def create_new_callback(
     return model.schema
 
 
-@router.put(
-    "/callbacks",
-    tags=["Callbacks"],
-    response_model=schemas.Callback,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
-    callbacks=callback_router.routes
-)
-@versioning.versions(minimal=1)
-async def update_existing_callback(
-        callback: schemas.Callback,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Update an existing callback model identified by its `id`
-
-    * `404`: if the callback ID doesn't exist
-    * `409`: if the exact same URL is already in use
-    """
-
-    model = await helpers.return_one(callback.id, models.Callback, local.session)
-    if [m for m in local.session.query(models.Callback).filter_by(url=callback.url).all() if m.id != model.id]:
-        raise Conflict(f"Callback URL {callback.url} already in use.", detail=str(callback))
-
-    model.url = callback.url
-    model.application_id = callback.application_id
-    model.shared_secret = callback.shared_secret
-    local.session.add(model)
-    local.session.commit()
-    return model.schema
-
-
 @router.delete(
     "/callbacks",
     tags=["Callbacks"],
@@ -134,7 +103,7 @@ async def update_existing_callback(
 )
 @versioning.versions(minimal=1)
 async def delete_existing_callback(
-        callback: schemas.Callback,
+        body: schemas.IdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -143,4 +112,4 @@ async def delete_existing_callback(
     * `404`: if the requested callback ID doesn't exist
     """
 
-    return await helpers.delete_one_of_model(callback.id, models.Callback, local, logger=logger)
+    return await helpers.delete_one_of_model(body.id, models.Callback, local, logger=logger)

@@ -18,6 +18,11 @@ class IdBody(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
 
 
+class IssuerIdBody(pydantic.BaseModel):
+    id: pydantic.NonNegativeInt
+    issuer: user_spec
+
+
 class Token(pydantic.BaseModel):
     access_token: str
     token_type: str
@@ -36,6 +41,11 @@ class AliasCreation(pydantic.BaseModel):
     application_id: pydantic.NonNegativeInt
     username: pydantic.constr(max_length=255)
     confirmed: bool = False
+
+
+class AliasDeletion(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
+    aliases: List[Alias]
 
 
 class Application(pydantic.BaseModel):
@@ -63,10 +73,7 @@ class User(pydantic.BaseModel):
 
 
 class UserCreation(pydantic.BaseModel):
-    name: Optional[pydantic.constr(max_length=255)]
-    permission: bool
-    external: bool
-    voucher_id: Optional[pydantic.NonNegativeInt]
+    name: pydantic.constr(max_length=255)
 
 
 class Transaction(pydantic.BaseModel):
