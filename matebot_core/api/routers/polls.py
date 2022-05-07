@@ -79,43 +79,6 @@ async def create_new_membership_poll(
     return model.schema
 
 
-# @router.put(
-#     "",
-#     response_model=schemas.Poll,
-#     responses={k: {"model": schemas.APIError} for k in (403, 404, 409)}
-# )
-# @versioning.versions(1)
-# async def update_existing_poll(
-#         poll: schemas.Poll,
-#         local: LocalRequestData = Depends(LocalRequestData)
-# ):
-#     """
-#     Update an existing poll model (and maybe calculate the
-#     result based on all votes, when closing it).
-#
-#     A 403 error will be returned if any other attribute than `active` has
-#     been changed. A 404 error will be returned if the poll ID is not found.
-#     A 409 error will be returned if the poll is used by some refund
-#     and this refund has not been closed yet, since this should
-#     be done first. Take a look at `PUT /refunds` for details.
-#     """
-#
-#     model = await helpers.return_one(poll.id, models.Poll, local.session)
-#     helpers.restrict_updates(poll, model.schema)
-#
-#     refund = local.session.query(models.Refund).filter_by(poll_id=poll.id).first()
-#     if refund and refund.active:
-#         raise Conflict(f"Poll {poll.id} is used by active refund {refund.id}", detail=str(refund))
-#
-#     if model.active and not poll.active:
-#         model.result = sum(v.vote for v in model.votes)
-#         model.active = False
-#         model.closed = datetime.datetime.now().replace(microsecond=0)
-#         return await helpers.update_model(model, local, logger, helpers.ReturnType.SCHEMA)
-#
-#     return await helpers.get_one_of_model(poll.id, models.Poll, local)
-
-
 @router.post(
     "/polls/vote",
     tags=["Polls"],
