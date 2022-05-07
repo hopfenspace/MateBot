@@ -12,6 +12,7 @@ from ._router import router
 from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
+from ...misc.notifier import Callback
 from ...persistence import models
 from ... import schemas
 
@@ -90,6 +91,11 @@ async def create_new_alias(
     )
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.ALIAS_CONFIRMED if alias.confirmed else schemas.EventType.ALIAS_CONFIRMATION_REQUESTED,
+        {"id": model.id, "user": model.user_id, "app": model.application.name}
+    )
     return model.schema
 
 
@@ -125,6 +131,11 @@ async def confirm_existing_alias(
     model.confirmed = True
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.ALIAS_CONFIRMED,
+        {"id": model.id, "user": model.user_id, "app": model.application.name}
+    )
     return model.schema
 
 

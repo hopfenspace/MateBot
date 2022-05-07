@@ -13,6 +13,7 @@ from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...misc import transactions
+from ...misc.notifier import Callback
 from ...persistence import models
 from ... import schemas
 
@@ -207,7 +208,7 @@ async def set_voucher_of_user(
     if debtor == voucher:
         raise BadRequest("You can't vouch for yourself.", str(voucher))
     if not debtor.external:
-        raise BadRequest("You can't vouch for {debtor.name}, since it's an internal user.", str(debtor))
+        raise BadRequest(f"You can't vouch for {debtor.name}, since it's an internal user.", str(debtor))
 
     transaction = None
     if debtor.voucher_user is not None and voucher is None:
@@ -233,6 +234,10 @@ async def set_voucher_of_user(
     debtor.voucher_user = voucher
     local.session.add(debtor)
     local.session.commit()
+    Callback.push(
+        schemas.EventType.VOUCHER_UPDATED,
+        {"id": debtor.id, "voucher": voucher and voucher.id, "transaction": transaction and transaction.id}
+    )
     return schemas.VoucherUpdateResponse(
         debtor=debtor.schema,
         voucher=voucher.schema,
@@ -316,4 +321,5 @@ async def softly_delete_user_permanently(
     model.active = False
     local.session.add(model)
     local.session.commit()
+    Callback.push(schemas.EventType.USER_SOFTLY_DELETED, {"id": model.id})
     return model.schema

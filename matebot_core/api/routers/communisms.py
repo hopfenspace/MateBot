@@ -13,6 +13,7 @@ from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.notifier import Callback
 from ...misc.transactions import create_many_to_one_transaction_by_total
 from ... import schemas
 
@@ -56,6 +57,11 @@ async def _update_participation(
 
     local.session.add(communism)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.COMMUNISM_UPDATED,
+        {"id": communism.id, "participants": sum([p.quantity for p in communism.participants])}
+    )
     return communism.schema
 
 
@@ -135,6 +141,10 @@ async def create_new_communism(
     )
     local.session.add(model)
     local.session.commit()
+    Callback.push(
+        schemas.EventType.COMMUNISM_CREATED,
+        {"id": model.id, "user": model.creator.id, "amount": model.amount, "participants": 1}
+    )
     return model.schema
 
 
@@ -169,6 +179,12 @@ async def abort_open_communism(
     logger.debug(f"Aborting communism {model}")
     local.session.add(model)
     local.session.commit()
+
+    total_participants = sum([p.quantity for p in model.participants])
+    Callback.push(
+        schemas.EventType.COMMUNISM_CLOSED,
+        {"id": model.id, "aborted": True, "transactions": 0, "participants": total_participants}
+    )
     return model.schema
 
 
@@ -216,6 +232,13 @@ async def close_open_communism(
     logger.debug(f"Closing communism {model} (created multi transaction {m} with {len(ts)} parts)")
     local.session.add(model)
     local.session.commit()
+
+    transactions = len(model.multi_transaction.transactions)
+    total_participants = sum([p.quantity for p in model.participants])
+    Callback.push(
+        schemas.EventType.COMMUNISM_CLOSED,
+        {"id": model.id, "aborted": False, "transactions": transactions, "participants": total_participants}
+    )
     return model.schema
 
 
