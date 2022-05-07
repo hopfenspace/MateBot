@@ -43,6 +43,11 @@ class AliasCreation(pydantic.BaseModel):
     confirmed: bool = False
 
 
+class AliasDeletion(pydantic.BaseModel):
+    user_id: pydantic.NonNegativeInt
+    aliases: List[Alias]
+
+
 class Application(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     name: pydantic.constr(max_length=255)

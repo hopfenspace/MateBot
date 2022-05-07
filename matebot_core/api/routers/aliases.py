@@ -9,7 +9,7 @@ import pydantic
 from fastapi import Depends
 
 from ._router import router
-from ..base import Conflict
+from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
@@ -91,62 +91,59 @@ async def create_new_alias(
     return await helpers.create_new_of_model(model, local, logger)
 
 
-@router.put(
-    "/aliases",
+@router.post(
+    "/aliases/confirm",
     tags=["Aliases"],
     response_model=schemas.Alias,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
 )
 @versioning.versions(minimal=1)
-async def update_existing_alias(
-        alias: schemas.Alias,
+async def confirm_existing_alias(
+        alias: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Update an existing alias model identified by the `alias_id`.
+    Confirm an existing unconfirmed alias model identified by the `alias_id`.
+    If the alias is already confirmed, this endpoint will silently accept it.
 
-    * `404`: if the alias ID, user ID or application ID is unknown
-    * `409`: if the target user is disabled or the alias combination already exists
+    * `400`: if the issuer is not the alias owner
+    * `404`: if the alias ID or the issuer user is unknown
+    * `409`: if the target user is disabled or the community user
     """
 
     model = await helpers.return_one(alias.id, models.Alias, local.session)
-    user = await helpers.return_one(alias.user_id, models.User, local.session)
+    user = await helpers.resolve_user_spec(alias.issuer, local)
+    if user.id != model.user_id:
+        raise BadRequest("You are not permitted to confirm this alias, only the owner may do it.", str(model))
     if not user.active:
-        raise Conflict("A disabled user can't get new aliases.", str(alias))
-    await helpers.return_one(alias.application_id, models.Application, local.session)
+        raise Conflict("A disabled user can't handle aliases.", str(user))
+    if user.special:
+        raise Conflict("The community user can't handle aliases.")
 
-    existing_alias = local.session.query(models.Alias).filter_by(
-        application_id=alias.application_id,
-        username=alias.username
-    ).first()
-    if existing_alias is not None:
-        raise Conflict(
-            f"User alias {alias.username!r} can't be created since it already exists.",
-            str(existing_alias)
-        )
-
-    model.user_id = user.id
-    model.application_id = alias.application_id
-    model.username = alias.username
-    model.confirmed = alias.confirmed
+    model.confirmed = True
     return await helpers.update_model(model, local, logger)
 
 
-@router.delete(
-    "/aliases",
+@router.post(
+    "/aliases/delete",
     tags=["Aliases"],
-    status_code=204,
-    responses={404: {"model": schemas.APIError}}
+    response_model=schemas.AliasDeletion,
+    responses={k: {"model": schemas.APIError} for k in (400, 404)}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
-        body: schemas.IdBody,
+        body: schemas.IssuerIdBody,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
     Delete an existing alias model.
 
-    * `404`: if the requested alias ID doesn't exist
+    * `400`: if the issuer is not the alias owner
+    * `404`: if the alias ID or the issuer user is unknown
     """
 
+    model = await helpers.return_one(body.id, models.Alias, local.session)
+    user = await helpers.resolve_user_spec(body.issuer, local)
+    if user.id != model.user_id:
+        raise BadRequest("You are not permitted to delete this alias, only the owner may do it.", str(user))
     return await helpers.delete_one_of_model(body.id, models.Alias, local, logger=logger)
