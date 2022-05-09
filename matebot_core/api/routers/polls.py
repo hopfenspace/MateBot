@@ -12,6 +12,7 @@ from ._router import router
 from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
+from ...misc.notifier import Callback
 from ...persistence import models
 from ... import schemas
 
@@ -76,6 +77,11 @@ async def create_new_membership_poll(
     model = models.Poll(creator=creator, ballot=models.Ballot())
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.POLL_CREATED,
+        {"id": model.id, "user": model.creator_id}
+    )
     return model.schema
 
 
@@ -134,6 +140,10 @@ async def vote_for_membership_request(
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
     local.session.add(model)
     local.session.commit()
+    Callback.push(
+        schemas.EventType.POLL_UPDATED,
+        {"id": model.id, "last_vote": model.id, "current_result": ballot.result}
+    )
 
     result_of_ballot = ballot.result
     if result_of_ballot >= local.config.general.min_membership_approves:
@@ -150,6 +160,11 @@ async def vote_for_membership_request(
         local.session.add(poll)
         local.session.commit()
 
+    if not poll.active:
+        Callback.push(
+            schemas.EventType.POLL_CLOSED,
+            {"id": poll.id, "user": poll.creator_id, "accepted": poll.accepted, "aborted": False, "last_vote": model.id, "total_votes": len(ballot.votes), "result": ballot.result}
+        )
     return schemas.PollVoteResponse(poll=poll.schema, vote=model.schema)
 
 
@@ -184,4 +199,9 @@ async def abort_open_membership_poll(
     logger.debug(f"Aborting poll {model}")
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.POLL_CLOSED,
+        {"id": model.id, "user": model.creator_id, "accepted": False, "aborted": True, "last_vote": None}
+    )
     return model.schema

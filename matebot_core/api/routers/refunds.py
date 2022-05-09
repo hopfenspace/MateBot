@@ -13,6 +13,7 @@ from ..base import BadRequest, Conflict
 from ..dependency import LocalRequestData
 from .. import helpers, versioning
 from ...persistence import models
+from ...misc.notifier import Callback
 from ...misc.refunds import attempt_closing_refund
 from ... import schemas
 
@@ -87,6 +88,11 @@ async def create_new_refund(
     )
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.REFUND_CREATED,
+        {"id": model.id, "user": model.creator_id, "amount": model.amount}
+    )
     return model.schema
 
 
@@ -146,6 +152,10 @@ async def vote_for_refund_request(
     model = models.Vote(user=user, ballot=ballot, vote=vote.vote)
     local.session.add(model)
     local.session.commit()
+    Callback.push(
+        schemas.EventType.REFUND_UPDATED,
+        {"id": refund.id, "last_vote": model.id, "current_result": ballot.result}
+    )
 
     attempt_closing_refund(
         refund,
@@ -187,4 +197,9 @@ async def abort_open_refund_request(
     logger.debug(f"Aborting refund {model}")
     local.session.add(model)
     local.session.commit()
+
+    Callback.push(
+        schemas.EventType.REFUND_CLOSED,
+        {"id": model.id, "aborted": True, "accepted": False, "transaction": None}
+    )
     return model.schema

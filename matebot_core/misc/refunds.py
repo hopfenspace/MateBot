@@ -64,7 +64,6 @@ def attempt_closing_refund(
 
     Callback.push(
         EventType.REFUND_CLOSED,
-        {"id": refund.id, "aborted": False, "accepted": accepted}
+        {"id": refund.id, "aborted": False, "accepted": accepted, "transaction": refund.transaction_id}
     )
-
     return True
