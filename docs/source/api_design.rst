@@ -233,3 +233,64 @@ implemented:
 - ``user_softly_deleted``
 
   - ``id`` refers to the user that has been softly deleted
+
+Example
+~~~~~~~
+
+Let's assume a new communism should be created. Then, a ``POST`` query is
+sent to the ``/communisms`` endpoint. It should contain it's data as JSON
+body, for example the following object:
+
+.. code-block:: javascript
+
+    {
+      "amount": 1337,
+      "description": "foo",
+      "creator": 2
+    }
+
+
+If the client application is authenticated and everything completed without
+problems, this would create a ``201`` response with the following body:
+
+.. code-block:: javascript
+
+    {
+      "id": 1,
+      "amount": 1337,
+      "description": "foo",
+      "creator_id": 2,
+      "active": true,
+      "created": 1652190970,
+      "modified": 1652190970,
+      "participants": [
+        {
+          "user_id": 2,
+          "quantity": 1
+        }
+      ],
+      "multi_transaction": null
+    }
+
+
+Additionally, it would a trigger a callback ``communism_created``. Since
+nothing else happened on the side of the API server in the last seconds,
+this would result in the following request to any configured callback server:
+
+.. code-block:: javascript
+
+    {
+      "number": 1,
+      "events": [
+        {
+          "event": "communism_created",
+          "timestamp": 1652198170,
+          "data": {
+            "id": 2,
+            "user": 2,
+            "amount": 1337,
+            "participants": 1
+          }
+        }
+      ]
+    }
