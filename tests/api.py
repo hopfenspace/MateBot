@@ -88,7 +88,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            json={"url": f"http://localhost:{self.callback_server_port}/"},
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
@@ -271,7 +271,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            json={"url": f"http://localhost:{self.callback_server_port}/"},
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
@@ -508,7 +508,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"},
+            json={"url": f"http://localhost:{self.callback_server_port}/"},
             recent_callbacks=[("GET", "/create/callback/1")]
         )
 
@@ -909,18 +909,18 @@ class CallbackTests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             401,
-            json={"base": f"http://localhost:{self.callback_server_port}/"}
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
         )
         self.login()
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": f"http://localhost:{self.callback_server_port}/"}
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
         )
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": "http://localhost:64000"},
+            json={"url": "http://localhost:64000"},
             recent_callbacks=[("GET", "/create/callback/2")],
             skip_callbacks=1,
             skip_callback_timeout=0.2
@@ -928,7 +928,7 @@ class CallbackTests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"base": "http://localhost:65000", "app": 1}
+            json={"url": "http://localhost:65000", "app": 1}
         )
 
 

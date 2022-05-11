@@ -181,7 +181,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertTrue(isinstance(app1.callbacks, list))
         self.assertEqual([], app1.callbacks)
 
-        callback = models.Callback(base="http://example.com", application_id=app1.id)
+        callback = models.Callback(url="http://example.com", application_id=app1.id)
         self.session.add(callback)
         self.session.commit()
 
@@ -199,7 +199,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.add(app2)
         self.session.commit()
 
-        callback = models.Callback(base="http://example.net", application_id=app2.id)
+        callback = models.Callback(url="http://example.net", application_id=app2.id)
         self.session.add(callback)
         self.session.commit()
 
