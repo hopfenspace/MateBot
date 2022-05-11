@@ -244,10 +244,12 @@ async def disable_user_permanently(
     """
     Disable a user account, without the possibility to effectively re-enable it (= deletion)
 
-    This operation will delete the user aliases, but no user history or transactions.
+    This operation will delete the user aliases, but no user history or
+    transactions. If the user account has any positive balance left, it will be
+    moved to the community. Users with negative balance can't be deleted.
 
     * `400`: if the given user actively vouches for someone else,
-        has a non-zero balance, has created / participates in any
+        has a negative balance, has created / participates in any
         open communisms or refund requests or is already disabled
     * `404`: if the user ID is not found
     * `409`: if the community user was given
@@ -286,12 +288,27 @@ async def disable_user_permanently(
             "Therefore, your user account can't be deleted."
         )
 
-    if model.balance != 0:
+    if model.balance < 0:
         info = ""
         if model.voucher_user and model.external:
             info = f" User {model.voucher_user.name!r} vouches for you and may help you to handle this."
         raise BadRequest(
-            f"Your balance is not zero. You need a zero balance before you can delete your user account.{info}"
+            f"Your balance is negative. You need a non-negative balance "
+            f"before you can delete your user account.{info}"
+        )
+
+    if model.balance > 0:
+        community = local.session.query(models.User).filter_by(special=True).first()
+        if community is None:
+            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
+        transactions.create_transaction(
+            model,
+            community,
+            model.balance,
+            f"permanent deletion of user account {model.id}",
+            local.session,
+            logger,
+            local.tasks
         )
 
     # Deleting aliases using this helper method is preferred to trigger callbacks correctly
