@@ -137,6 +137,13 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Bind TCP socket to this port (overwrite config)"
     )
     parser_run.add_argument(
+        "--config",
+        type=str,
+        metavar="config",
+        default="config.json",
+        help="Overwrite the config file (defaults to 'config.json')"
+    )
+    parser_run.add_argument(
         "--debug",
         action="store_true",
         help="Enable full debug mode including tracebacks via HTTP (probably insecure)"
@@ -196,6 +203,7 @@ def run_server(args: argparse.Namespace):
     if args.debug:
         print("Do not start the server this way during production!", file=sys.stderr)
 
+    _settings.CONFIG_PATHS.insert(0, args.config)
     try:
         settings = _settings.Settings()
     except ValueError:
