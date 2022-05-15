@@ -16,9 +16,8 @@ import subprocess
 import http.server
 import urllib.parse
 import json as _json
-from typing import Any, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
-import uvicorn
 import pydantic
 import requests
 import sqlalchemy.orm
@@ -26,7 +25,6 @@ from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas as _schemas, settings as _settings
 from matebot_core.api import auth
-from matebot_core.api.api import create_app
 from matebot_core.persistence import database, models
 
 from . import conf
@@ -176,7 +174,7 @@ class BaseAPITests(BaseTest):
     _latest_api_version: Optional[int] = None
 
     server_port: Optional[int] = None
-    server_thread: Optional[threading.Thread] = None
+    server_process: Optional[subprocess.Popen] = None
 
     auth: Optional[Tuple[str, str]] = None
     token: Optional[str] = None
@@ -366,7 +364,13 @@ class BaseAPITests(BaseTest):
         else:
             self.fail(f"Failed to login ({response.status_code})")
 
-    def _run_api_server(self):
+    def _start_api_server(self):
+        def _mk_args(port, conf_path) -> list:
+            return [
+                sys.executable, "-m", "matebot_core", "run", "--port", str(port),
+                "--config", conf_path, "--host", "127.0.0.1", "--workers", "1", "--no-access-log"
+            ]
+
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
         if conf.SERVER_LOGGING_OVERWRITE:
             config.logging = conf.SERVER_LOGGING_OVERWRITE
@@ -387,38 +391,48 @@ class BaseAPITests(BaseTest):
         session.flush()
         session.close()
 
-        def _run_server(port: int):
-            with open(self.config_file, "r") as fd:
-                c = _json.load(fd)
-            c["server"]["port"] = port
-            with open(self.config_file, "w") as fd:
-                _json.dump(c, fd)
-
-            app = create_app(
-                settings=_settings.Settings(),
-                configure_logging=False,
-                configure_static_docs=False
-            )
-
-            uvicorn.run(
-                app,  # noqa
-                port=port,
-                host="127.0.0.1",
-                debug=True,
-                workers=1,
-                log_level="error",
-                access_log=False
-            )
-
         self.server_port = random.randint(10000, 20000)
+
         for i in range(conf.MAX_SERVER_START_RETRIES):
-            try:
-                _run_server(self.server_port)
-                break
-            except SystemExit:
-                self.server_port += 1
+            self.server_process = subprocess.Popen(
+                _mk_args(self.server_port, self.config_file),
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                start_new_session=True
+            )
+
+            for j in range(conf.MAX_SERVER_WAIT_RETRIES):
+                try:
+                    self.server_process.wait(conf.API_SUBPROCESS_START_WAIT_TIMEOUT)
+                except subprocess.TimeoutExpired:
+                    pass
+                else:
+                    self._quit_api_server()
+                    self.server_port += 1
+                    break
+
+                try:
+                    requests.get(self.server)
+                    return
+                except requests.exceptions.ConnectionError:
+                    pass
+
+            else:
+                if self.server_process.poll() is not None:
+                    self._quit_api_server()
+                    self.server_port += 1
+
         else:
-            self.fail(f"Is the API server port {self.server_port} already occupied?")
+            self.server_process.terminate()
+            outs, errs = self.server_process.communicate()
+            return_code = self.server_process.poll()
+            self._quit_api_server()
+            self.fail(
+                f"Failed to successfully start the API server after {conf.MAX_SERVER_WAIT_RETRIES} "
+                f"tries. Server process returned code {return_code}.\n"
+                f"{' STDERR '.center(80, '=')}\n{errs.decode('UTF-8')}\n"
+                f"{' STDOUT '.center(80, '=')}\n{outs.decode('UTF-8')}"
+            )
 
     def _run_callback_server(self):
         self.CallbackHandler.request_list = self.callback_request_list
@@ -438,6 +452,22 @@ class BaseAPITests(BaseTest):
                 self.callback_server_port += 1
         else:
             self.fail(f"Is the callback server port {self.callback_server_port} already occupied?")
+
+    def _quit_api_server(self):
+        if self.server_process is None:
+            return
+        self.server_process.terminate()
+        try:
+            self.server_process.wait(conf.API_SUBPROCESS_TERMINATE_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            pass
+        self.server_process.kill()
+        try:
+            self.server_process.wait(conf.API_SUBPROCESS_KILL_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            pass
+        self.server_process.stdout.close()
+        self.server_process.stderr.close()
 
     def get_db_session(self) -> sqlalchemy.orm.Session:
         opts = {"echo": conf.SQLALCHEMY_ECHOING}
@@ -469,8 +499,8 @@ class BaseAPITests(BaseTest):
     def setUp(self) -> None:
         super().setUp()
         self.server_port = random.randint(10000, 20000)
-        self.server_thread = threading.Thread(target=self._run_api_server, daemon=True)
-        self.server_thread.start()
+
+        self._start_api_server()
 
         self.callback_request_list = queue.Queue()
         self.callback_server_port = random.randint(20000, 30000)
@@ -486,15 +516,19 @@ class BaseAPITests(BaseTest):
         else:
             self.fail("Failed to successfully start the callback server")
 
-        for i in range(conf.MAX_SERVER_WAIT_RETRIES):
-            try:
-                requests.get(self.server)
-                break
-            except requests.exceptions.ConnectionError:
-                self.server_thread.join(0.1)
-        else:
-            self.fail("Failed to successfully start the API server")
-
     def tearDown(self) -> None:
         self.callback_server.shutdown()
+        self._quit_api_server()
         super().tearDown()
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        p = subprocess.run(
+            [sys.executable, "-m", "matebot_core", "run", "-h"],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            start_new_session=True
+        )
+        if p.returncode != 0:
+            raise RuntimeError("Executing the 'matebot_core' module from the current Python interpreter failed!")
