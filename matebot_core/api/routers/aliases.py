@@ -35,7 +35,7 @@ async def search_for_aliases(
     """
 
     return helpers.search_models(
-        models.Transaction,
+        models.Alias,
         local,
         id=id,
         user_id=user_id,

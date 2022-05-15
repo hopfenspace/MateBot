@@ -259,6 +259,30 @@ class APITests(utils.BaseAPITests):
 
         self.assertEqual(len(self.assertQuery(("GET", "/users"), 200).json()), 10, "Might I miss something?")
 
+    def test_positive_balance_user_deletion(self):
+        self.make_special_user()
+        user_to_delete_id = int(self.assertQuery(
+            ("POST", "/users"),
+            201,
+            json={"name": "user_to_delete", "permission": True, "external": False},
+            r_schema=_schemas.User
+        ).json()["id"])
+        old_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
+        session = self.get_db_session()
+        user_to_delete = session.get(models.User, user_to_delete_id)
+        user_to_delete.balance = 1337
+        session.add(user_to_delete)
+        session.commit()
+
+        user = self.assertQuery(
+            ("POST", "/users/disable"),
+            200,
+            json={"id": user_to_delete_id}
+        ).json()
+        self.assertEqual(user["balance"], 0)
+        new_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
+        self.assertEqual(old_community_balance + 1337, new_community_balance)
+
     def test_refunds(self):
         self.make_special_user()
         community = self.assertQuery(("GET", "/users?community=1"), 200).json()
