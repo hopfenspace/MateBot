@@ -13,4 +13,4 @@ if __name__ == '__main__':
         def createTests(self, from_discovery=False, loader=None):
             self.test = get_suite()  # noqa
 
-    MainProgram()
+    MainProgram(catchbreak=True)
