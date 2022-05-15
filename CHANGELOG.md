@@ -1,3 +1,23 @@
+# Upcoming
+
+- Rebuild the callback functionality with event posting using `POST` including
+  various useful details for the callback server with optional authentication,
+  together with an event buffer to cache the most recent events for more speed
+- **Breaking change** of various endpoints e.g. for the updates of the
+  participation in communisms, sending money and consuming goods
+  or disabling users to make it more intuitive
+- **Breaking change** by removed the unused endpoints `GET /ballots`,
+  `GET /multitransactions`, `PUT /callbacks`, `PUT /aliases`,
+  `DELETE /aliases` and `POST /users/setName`
+- Accept user aliases combined with the application ID from
+  the auth token as valid user specification
+- Added an `issuer` field for various operations to enforce user
+  permission checks on the API server instead of client applications
+- Rewrote the API unittests to use subprocesses instead of threads to run the
+  API server for better end-to-end tests and fixed various smaller issues
+- Fixed a bug preventing general consumption
+- Rewrote and extended some bigger parts of the sphinx documentation
+
 # MateBot core v0.4.2 (2022-04-29)
 
 - Cleaned up some modules
