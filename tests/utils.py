@@ -182,19 +182,26 @@ class BaseAPITests(BaseTest):
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
     callback_server_thread: Optional[threading.Thread] = None
-    callback_request_list: "queue.Queue[Tuple[str, str]]" = queue.Queue()
+    callback_event_queue: queue.Queue[Tuple[str, int, Dict[str, Any]]] = queue.Queue()
 
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
-        request_list: "queue.Queue[Tuple[str, str]]"
+        event_queue: queue.Queue[Tuple[str, int, Dict[str, Any]]]
 
         def do_HEAD(self) -> None:  # noqa
             self.send_response(200)
             self.end_headers()
 
-        def do_GET(self) -> None:  # noqa
+        def do_POST(self) -> None:  # noqa
+            content = self.rfile.read(int(self.headers.get("Content-Length", 1024)))
+            data = _json.loads(content)
+            events = data.get("events", [])
+            if "number" in data:
+                if data["number"] != len(events):
+                    raise ValueError(f"Expected {data['number']} events, found {len(events)}")
+            for e in events:
+                self.event_queue.put((str(e["event"]), int(e["timestamp"]), e.get("data", {})))
             self.send_response(200)
             self.end_headers()
-            self.request_list.put((self.command, self.path))
 
         def log_message(self, fmt: str, *args: Any) -> None:
             pass
@@ -214,6 +221,46 @@ class BaseAPITests(BaseTest):
             self._latest_api_version = int(response.json()["latest"])
         return self._latest_api_version
 
+    def assertEvent(
+            self,
+            event_type: str,
+            required: Optional[Union[List[str], Dict[str, Any]]] = None,
+            timeout: float = 0.5
+    ) -> bool:
+        """
+        Check that a given event with some required values has been received recently
+
+        :param event_type: type of the event that should be awaited / asserted
+        :param required: optional list of required keys in the data supplied together with
+            the event or dictionary of keys with values in that data set (in the first
+            form, only the presence of those keys is checked, in the later the values, too)
+        :param timeout: timeout to wait for incoming events before giving up on it
+        """
+
+        temporary_queue = queue.Queue()
+        try:
+            while True:
+                e_type, e_timestamp, e_data = self.callback_event_queue.get(block=True, timeout=timeout)
+                if event_type != e_type:
+                    temporary_queue.put((e_type, e_timestamp, e_data))
+                elif isinstance(required, list) and not all([k in e_data for k in required]):
+                    temporary_queue.put((e_type, e_timestamp, e_data))
+                elif isinstance(required, dict):
+                    for k, v in required.items():
+                        if k not in e_data or e_data[k] != v:
+                            temporary_queue.put((e_type, e_timestamp, e_data))
+                            break
+                    else:
+                        return True
+                else:
+                    return True
+        except queue.Empty:
+            keys = (required or []) if not isinstance(required, dict) else list(required.keys())
+            self.fail(f"Timeout while waiting for an event of type {event_type!r} with keys {keys}")
+        finally:
+            while not temporary_queue.empty():
+                self.callback_event_queue.put(temporary_queue.get())
+
     def assertQuery(
             self,
             endpoint: Union[Tuple[str, str], Tuple[str, str, int]],
@@ -225,10 +272,6 @@ class BaseAPITests(BaseTest):
             r_headers: Optional[Union[Mapping, Iterable]] = None,
             r_schema: Optional[Union[pydantic.BaseModel, Type[pydantic.BaseModel]]] = None,
             r_schema_ignored_fields: Optional[List[str]] = None,
-            skip_callbacks: Optional[int] = None,
-            skip_callback_timeout: float = 0.025,
-            recent_callbacks: Optional[List[Tuple[str, str]]] = None,
-            callback_timeout: float = 0.5,
             no_version: bool = False,
             **kwargs
     ) -> requests.Response:
@@ -252,25 +295,10 @@ class BaseAPITests(BaseTest):
         :param r_headers optional set of headers which are asserted in the response
         :param r_schema: optional class or instance of a response schema to be asserted
         :param r_schema_ignored_fields: list of ignored fields while checking a response with schema
-        :param skip_callbacks: optional number of callback requests that will be dropped and
-            not checked in the recent callback check later (no problem if the number is too high)
-        :param skip_callback_timeout: maximal waiting time for the skip operation
-        :param recent_callbacks: optional, unsorted list of the most recent ("rightmost") callbacks
-            that arrived at the local callback HTTP server (which only works when its
-            callback server URI has been registered in the API during the same unit test)
-        :param callback_timeout: maximal waiting time until a callback request arrived
         :param no_version: don't add the latest version to the two-element endpoint definition
         :param kwargs: dict of any further keyword arguments, passed to ``requests.request``
         :return: response to the requested resource
         """
-
-        if skip_callbacks is not None:
-            while skip_callbacks > 0:
-                try:
-                    skip_callbacks -= 1
-                    self.callback_request_list.get(timeout=skip_callback_timeout)
-                except queue.Empty:
-                    pass
 
         if len(endpoint) == 3:
             method, path, api_version = endpoint
@@ -335,14 +363,6 @@ class BaseAPITests(BaseTest):
                 self.assertEqual(r_schema, r_model, response.json())
             elif r_schema and isinstance(r_schema, type) and issubclass(r_schema, pydantic.BaseModel):
                 self.assertTrue(r_schema(**response.json()), response.json())
-
-        if recent_callbacks is not None:
-            while recent_callbacks:
-                obj = self.callback_request_list.get(timeout=callback_timeout)
-                if obj in recent_callbacks:
-                    recent_callbacks.remove(obj)
-                else:
-                    self.fail(f"Unexpected callback {obj!r} is not in {recent_callbacks}")
 
         return response
 
@@ -435,7 +455,7 @@ class BaseAPITests(BaseTest):
             )
 
     def _run_callback_server(self):
-        self.CallbackHandler.request_list = self.callback_request_list
+        self.CallbackHandler.event_queue = self.callback_event_queue
         self.callback_server_port = random.randint(20000, 30000)
 
         for i in range(conf.MAX_SERVER_START_RETRIES):
@@ -502,7 +522,7 @@ class BaseAPITests(BaseTest):
 
         self._start_api_server()
 
-        self.callback_request_list = queue.Queue()
+        self.callback_event_queue = queue.Queue()
         self.callback_server_port = random.randint(20000, 30000)
         self.callback_server_thread = threading.Thread(target=self._run_callback_server, daemon=True)
         self.callback_server_thread.start()
