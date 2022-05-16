@@ -518,6 +518,7 @@ class BaseAPITests(BaseTest):
 
     def tearDown(self) -> None:
         self.callback_server.shutdown()
+        self.callback_server.socket.close()
         self._quit_api_server()
         super().tearDown()
 
