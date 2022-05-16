@@ -6,8 +6,6 @@ import time
 import unittest as _unittest
 from typing import Type
 
-import requests
-
 from matebot_core import schemas as _schemas
 from matebot_core.persistence import models
 
@@ -26,10 +24,6 @@ def _tested(cls: Type):
 
 @_tested
 class APITests(utils.BaseAPITests):
-    def setUp(self) -> None:
-        super().setUp()
-        self.login()
-
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
@@ -46,6 +40,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
 
     def test_special_user(self):
+        self.login()
         self.assertEqual([], self.assertQuery(("GET", "/users"), 200).json())
         self.assertEqual([], self.assertQuery(("GET", "/users?community=y"), 200).json())
         self.make_special_user()
@@ -62,6 +57,7 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
 
     def test_users(self):
+        self.login()
         self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
 
         # Creating a set of test users
@@ -88,8 +84,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"url": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/create/callback/1")]
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
         )
 
         # Deleting users should not work by 'DELETE' but with disabling via 'POST'
@@ -103,9 +98,9 @@ class APITests(utils.BaseAPITests):
             ("POST", f"/users/delete"),
             200,
             json={"id": j, "issuer": j},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", f"/update/user/{j}")]
+            r_schema=_schemas.User
         )
+        self.assertEvent("user_softly_deleted", {"id": j}, timeout=5)
 
         user0 = users[0]
         user1 = users[1]
@@ -144,15 +139,13 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users/setFlags"),
             200,
             json={"user": user0["id"], "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+            r_schema=_schemas.User
         )
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
             json={"user": user2["id"], "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", f"/update/user/{user2['id']}")]
+            r_schema=_schemas.User
         )
         self.assertQuery(
             ("POST", "/transactions/send"),
@@ -162,9 +155,9 @@ class APITests(utils.BaseAPITests):
                 "receiver": user2["id"],
                 "amount": 42,
                 "reason": "test"
-            },
-            recent_callbacks=[("GET", "/create/transaction/1")]
+            }
         )
+        self.assertEvent("transaction_created", {"id": 1, "sender": user0["id"], "receiver": user2["id"], "amount": 42})
         user0 = self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]
         user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
         self.assertEqual(user0["balance"], -user2["balance"])
@@ -180,20 +173,19 @@ class APITests(utils.BaseAPITests):
                 "receiver": user0["id"],
                 "amount": 42,
                 "reason": "reverse"
-            },
-            skip_callbacks=2,
-            recent_callbacks=[("GET", "/create/transaction/2")]
+            }
         )
         user0 = self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]
         user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
         self.assertEqual(user0["balance"], 0)
         self.assertEqual(user2["balance"], 0)
+        self.assertEvent("transaction_created", {"id": 2, "sender": user2["id"], "receiver": user0["id"], "amount": 42})
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
-            json={"id": user0["id"], "issuer": user0["id"]},
-            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+            json={"id": user0["id"], "issuer": user0["id"]}
         )
+        self.assertEvent("user_softly_deleted", {"id": user0["id"]})
         self.assertQuery(
             ("POST", "/users/delete"),
             400,
@@ -202,9 +194,9 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
-            json={"id": user2["id"], "issuer": user2["id"]},
-            recent_callbacks=[("GET", f"/update/user/{user2['id']}")]
+            json={"id": user2["id"], "issuer": user2["id"]}
         )
+        self.assertEvent("user_softly_deleted", {"id": user2["id"]})
         users.pop(0)
         users.pop(0)
         users.pop(0)
@@ -216,8 +208,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users/setFlags"),
             200,
             json={"user": user0["id"], "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+            r_schema=_schemas.User
         )
         communism = self.assertQuery(
             ("POST", "/communisms"),
@@ -227,9 +218,9 @@ class APITests(utils.BaseAPITests):
                 "description": "description",
                 "creator": user0["id"],
                 "participants": [{"quantity": 1, "user_id": user1["id"]}]
-            },
-            recent_callbacks=[("GET", "/create/communism/1")]
+            }
         ).json()
+        self.assertEvent("communism_created", {"id": 1, "user": user0["id"], "amount": 1337, "participants": 1})
         self.assertQuery(("POST", "/users/delete"), 400, json={"id": user0['id']})
         self.assertQuery(("POST", "/users/delete"), 400, json={"id": user1["id"]})
         self.assertListEqual([communism], self.assertQuery(("GET", "/communisms"), 200).json())
@@ -238,28 +229,28 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
-            json={"id": user1["id"], "issuer": user1["id"]},
-            recent_callbacks=[("GET", f"/update/user/{user1['id']}")]
+            json={"id": user1["id"], "issuer": user1["id"]}
         )
+        self.assertEvent("user_softly_deleted", {"id": user1["id"]})
         self.assertQuery(
             ("POST", "/communisms/abort"),
             200,
             json={"id": 1, "issuer": user0["id"]},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/update/communism/1")]
+            r_schema=_schemas.Communism
         )
+        self.assertEvent("communism_closed", {"id": 1, "transactions": 0, "aborted": True, "participants": 1})
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
-            json={"id": user0["id"], "issuer": user0["id"]},
-            recent_callbacks=[("GET", f"/update/user/{user0['id']}")]
+            json={"id": user0["id"], "issuer": user0["id"]}
         )
+        self.assertEvent("user_softly_deleted", {"id": user0["id"]})
         users.pop(0)
         users.pop(1)
 
         self.assertEqual(len(self.assertQuery(("GET", "/users"), 200).json()), 10, "Might I miss something?")
 
-    def test_positive_balance_user_deletion(self):
+        # Check that deleting users with positive balance transfers the remaining amount to the community user
         self.make_special_user()
         user_to_delete_id = int(self.assertQuery(
             ("POST", "/users"),
@@ -273,11 +264,11 @@ class APITests(utils.BaseAPITests):
         user_to_delete.balance = 1337
         session.add(user_to_delete)
         session.commit()
-
+        self.assertQuery(("POST", "/users/delete"), 400, json={"id": user_to_delete_id})
         user = self.assertQuery(
-            ("POST", "/users/disable"),
+            ("POST", "/users/delete"),
             200,
-            json={"id": user_to_delete_id}
+            json={"id": user_to_delete_id, "issuer": user_to_delete_id}
         ).json()
         self.assertEqual(user["balance"], 0)
         new_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
@@ -285,6 +276,7 @@ class APITests(utils.BaseAPITests):
 
     def test_refunds(self):
         self.make_special_user()
+        self.login()
         community = self.assertQuery(("GET", "/users?community=1"), 200).json()
         self.assertEqual(len(community), 1)
         community = community[0]
@@ -526,6 +518,7 @@ class APITests(utils.BaseAPITests):
         # TODO: Don't send votes for memberships polls to the refund endpoint
 
     def test_communisms(self):
+        self.login()
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
 
         # Adding the callback server for testing
@@ -794,6 +787,7 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(56, session.query(models.MultiTransaction).get(1).base_amount)
 
     def test_communism_schema_checks(self):
+        self.login()
         sample_data = [
             {},
             {
@@ -829,6 +823,8 @@ class APITests(utils.BaseAPITests):
             )
 
     def test_user_search(self):
+        self.login()
+
         def comp(x: int, query: str):
             data = self.assertQuery(("GET", "/users" + (query and "?" + query)), 200).json()
             self.assertEqual(x, len(data), str(data))
@@ -907,28 +903,7 @@ class APITests(utils.BaseAPITests):
 
         session.close()
 
-
-@_tested
-class CallbackTests(utils.BaseAPITests):
-    def test_callback_testing(self):
-        self.assertEqual(0, self.callback_request_list.qsize())
-        requests.get(f"{self.callback_server_uri}test")
-        self.assertEqual(("GET", "/test"), self.callback_request_list.get(timeout=1))
-        requests.get(f"{self.callback_server_uri}foo")
-        requests.get(f"{self.callback_server_uri}bar")
-        requests.get(f"{self.callback_server_uri}baz")
-        self.assertEqual(("GET", "/foo"), self.callback_request_list.get(timeout=1))
-        self.assertEqual(("GET", "/bar"), self.callback_request_list.get(timeout=0))
-        self.assertEqual(("GET", "/baz"), self.callback_request_list.get(timeout=0))
-
-        requests.get(f"{self.callback_server_uri}create/refund/7")
-        requests.get(f"{self.callback_server_uri}update/user/3")
-        requests.get(f"{self.callback_server_uri}delete/vote/1")
-        self.assertEqual(("GET", "/create/refund/7"), self.callback_request_list.get(timeout=0.5))
-        self.assertEqual(("GET", "/update/user/3"), self.callback_request_list.get(timeout=0))
-        self.assertEqual(("GET", "/delete/vote/1"), self.callback_request_list.get(timeout=0))
-
-    def test_callback_helper(self):
+    def test_callbacks(self):
         self.assertEqual(0, self.callback_request_list.qsize())
         self.assertQuery(
             ("POST", "/callbacks"),
