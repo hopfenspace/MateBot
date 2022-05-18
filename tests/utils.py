@@ -182,10 +182,10 @@ class BaseAPITests(BaseTest):
     callback_server: Optional[http.server.HTTPServer] = None
     callback_server_port: Optional[int] = None
     callback_server_thread: Optional[threading.Thread] = None
-    callback_event_queue: queue.Queue[Tuple[str, int, Dict[str, Any]]] = queue.Queue()
+    callback_event_queue = queue.Queue()  # type: queue.Queue[Tuple[str, int, Dict[str, Any]]]
 
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
-        event_queue: queue.Queue[Tuple[str, int, Dict[str, Any]]]
+        event_queue = queue.Queue()  # type: queue.Queue[Tuple[str, int, Dict[str, Any]]]
 
         def do_HEAD(self) -> None:  # noqa
             self.send_response(200)

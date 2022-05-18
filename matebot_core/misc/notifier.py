@@ -25,7 +25,7 @@ class Callback:
     Collection of class methods to easily trigger push notifications (HTTP callbacks)
     """
 
-    queue: ClassVar[Queue[schemas.Event]] = Queue()
+    queue = Queue()  # type: ClassVar[Queue[schemas.Event]]
     logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
     shutdown_event: ClassVar[threading.Event] = threading.Event()
     _thread: ClassVar[Optional[threading.Thread]] = None
