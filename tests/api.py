@@ -287,8 +287,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"url": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/create/callback/1")]
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
         )
 
         # Adding the creator user
@@ -296,8 +295,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user1"},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/2")]
+            r_schema=_schemas.User
         ).json()
 
         # Checking for the permission
@@ -309,8 +307,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
-            json={"user": 2, "permission": True, "external": False},
-            recent_callbacks=[("GET", "/update/user/2")]
+            json={"user": 2, "permission": True, "external": False}
         )
 
         # Create the first refund request
@@ -318,26 +315,26 @@ class APITests(utils.BaseAPITests):
             ("POST", "/refunds"),
             201,
             json={"description": "Do you like this?", "amount": 42, "creator": 2},
-            r_schema=_schemas.Refund,
-            recent_callbacks=[("GET", "/create/refund/1")]
+            r_schema=_schemas.Refund
         ).json()
         self.assertEqual(refund1["id"], 1)
         self.assertEqual(refund1["active"], True)
         self.assertEqual(refund1["ballot_id"], 1)
         self.assertEqual(refund1["votes"], [])
+        self.assertEvent("refund_created", ["id", "user"])
 
         # Add another refund request to be sure
         refund2 = self.assertQuery(
             ("POST", "/refunds"),
             201,
-            json={"description": "Are you sure?", "amount": 1337, "creator": 2},
-            recent_callbacks=[("GET", "/create/refund/2")]
+            json={"description": "Are you sure?", "amount": 1337, "creator": 2}
         ).json()
         self.assertEqual(refund2["id"], 2)
         self.assertEqual(refund2["votes"], [])
         self.assertEqual(refund2["allowed"], None)
         self.assertEqual(refund2["transaction"], None)
         self.assertEqual(refund2["active"], True)
+        self.assertEvent("refund_created", {"id": 2, "amount": 1337, "user": 2})
 
         # Abort the second refund request
         self.assertQuery(
@@ -348,12 +345,12 @@ class APITests(utils.BaseAPITests):
         refund2 = self.assertQuery(
             ("POST", "/refunds/abort"),
             200,
-            json={"id": 2, "issuer": 2},
-            recent_callbacks=[("GET", "/update/refund/2")]
+            json={"id": 2, "issuer": 2}
         ).json()
         self.assertEqual(refund2["allowed"], False)
         self.assertEqual(refund2["transaction"], None)
         self.assertEqual(refund2["active"], False)
+        self.assertEvent("refund_closed", {"id": 2, "aborted": True, "accepted": False})
 
         # A user can't vote on its own refund requests
         self.assertQuery(
@@ -367,8 +364,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user2", "permission": False, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/3")]
+            r_schema=_schemas.User
         ).json()
         self.assertQuery(
             ("POST", "/refunds/vote"),
@@ -381,15 +377,14 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user3", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/4")]
+            r_schema=_schemas.User
         ).json()
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
-            json={"id": 4, "issuer": 4},
-            recent_callbacks=[("GET", "/update/user/4")]
+            json={"id": 4, "issuer": 4}
         )
+        self.assertEvent("user_softly_deleted", ["id"])
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -401,8 +396,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user4", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/5")]
+            r_schema=_schemas.User
         ).json()
         self.assertQuery(
             ("POST", "/refunds/vote"),
@@ -412,21 +406,20 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
-            json={"user": 5, "permission": True, "external": False},
-            recent_callbacks=[("GET", "/update/user/5")]
+            json={"user": 5, "permission": True, "external": False}
         )
         vote1 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
             json={"user": 5, "ballot_id": 1, "vote": True},
-            r_schema=_schemas.RefundVoteResponse,
-            recent_callbacks=[("GET", "/create/vote/1")]
+            r_schema=_schemas.RefundVoteResponse
         ).json()
         self.assertEqual(vote1["vote"]["vote"], True)
         self.assertEqual(vote1["vote"]["ballot_id"], 1)
         self.assertIsNone(vote1["refund"]["transaction"])
         self.assertGreaterEqual(vote1["refund"]["modified"], refund1["created"])
         self.assertListEqual(vote1["refund"]["votes"], [vote1["vote"]])
+        self.assertEvent("refund_updated", {"id": 1, "last_vote": 1, "current_result": 1})
 
         # The community user shouldn't vote on refund requests
         self.assertQuery(
@@ -441,25 +434,24 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user5", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/6")]
+            r_schema=_schemas.User
         )
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
-            json={"user": 6, "permission": True},
-            recent_callbacks=[("GET", "/update/user/6")]
+            json={"user": 6, "permission": True}
         )
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
             json={"user": 6, "ballot_id": 1, "vote": True},
-            r_schema=_schemas.RefundVoteResponse,
-            recent_callbacks=[("GET", "/create/vote/2"), ("GET", "/create/transaction/1"), ("GET", "/update/refund/1")]
+            r_schema=_schemas.RefundVoteResponse
         ).json()
         self.assertListEqual(vote2["refund"]["votes"], [vote1["vote"], vote2["vote"]])
         self.assertIsNotNone(vote2["refund"]["transaction"])
+        self.assertEvent("refund_updated", {"id": 1, "last_vote": 2, "current_result": 2})
         transaction = _schemas.Transaction(**vote2["refund"]["transaction"])
+        self.assertEvent("refund_closed", {"id": 1, "aborted": False, "accepted": True, "transaction": transaction.id})
         self.assertEqual(transaction.amount, 42)
         self.assertEqual(transaction.sender.id, 1)
         self.assertEqual(transaction.receiver.id, 2)
@@ -478,8 +470,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user6", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/7")]
+            r_schema=_schemas.User
         )
         self.assertQuery(("POST", "/refunds/vote"), 400, json={"user": 7, "ballot_id": 1, "vote": True})
 
@@ -500,15 +491,14 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user7", "permission": True, "external": False},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/8")]
+            r_schema=_schemas.User
         ).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": 8, "voucher": 2},
-            recent_callbacks=[("GET", "/update/user/8")]
+            json={"debtor": 8, "voucher": 2}
         )
+        self.assertEvent("voucher_updated", {"id": 8, "voucher": 2})
         self.assertQuery(
             ("POST", "/refunds"),
             201,
@@ -516,6 +506,8 @@ class APITests(utils.BaseAPITests):
         ).json()
 
         # TODO: Don't send votes for memberships polls to the refund endpoint
+
+    # TODO: test_polls
 
     def test_communisms(self):
         self.login()
@@ -525,8 +517,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"url": f"http://localhost:{self.callback_server_port}/"},
-            recent_callbacks=[("GET", "/create/callback/1")]
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
         )
 
         # The user mentioned in the 'creator' field is not found
@@ -543,8 +534,7 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user1"},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/1")]
+            r_schema=_schemas.User
         ).json()
 
         # Fail due to restricted user account
@@ -562,8 +552,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
-            json={"user": user1["id"], "permission": True, "external": False},
-            recent_callbacks=[("GET", "/update/user/1")]
+            json={"user": user1["id"], "permission": True, "external": False}
         )
 
         # Create and get the first communism object
@@ -575,18 +564,17 @@ class APITests(utils.BaseAPITests):
                 "description": "description1",
                 "creator": user1["id"]
             },
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/create/communism/1")]
+            r_schema=_schemas.Communism
         ).json()
         self.assertListEqual([communism1], self.assertQuery(("GET", "/communisms?id=1"), 200).json())
+        self.assertEvent("communism_created", {"id": 1, "amount": 1, "user": user1["id"], "participants": 1})
 
         # User referenced by participant 2 doesn't exist, then it's created
         user2 = self.assertQuery(
             ("POST", "/users"),
             201,
             json={"name": "user2"},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/2")]
+            r_schema=_schemas.User
         ).json()
 
         # Create and get the second communism object
@@ -598,19 +586,19 @@ class APITests(utils.BaseAPITests):
                 "description": "description2",
                 "creator": user1["id"]
             },
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/create/communism/2")]
+            r_schema=_schemas.Communism
         )
         communism2 = response2.json()
         self.assertListEqual([communism2], self.assertQuery(("GET", "/communisms?id=2"), 200).json())
+        self.assertEvent("communism_created", {"id": 2, "amount": 42, "user": user1["id"], "participants": 1})
 
         # Allow the user 2 to create communisms by vouching
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": user2["id"], "voucher": user1["id"]},
-            recent_callbacks=[("GET", "/update/user/2")]
+            json={"debtor": user2["id"], "voucher": user1["id"]}
         )
+        self.assertEvent("voucher_updated")
 
         # Create and get the third communism object
         response3 = self.assertQuery(
@@ -621,11 +609,11 @@ class APITests(utils.BaseAPITests):
                 "description": "description3",
                 "creator": user2["id"]
             },
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/create/communism/3")]
+            r_schema=_schemas.Communism
         )
         communism3 = response3.json()
         self.assertListEqual([communism3], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
+        self.assertEvent("communism_created", {"id": 3, "amount": 1337, "user": user2["id"], "participants": 1})
 
         # Add new users to the third communism
         for i in range(22):
@@ -633,43 +621,39 @@ class APITests(utils.BaseAPITests):
                 ("POST", "/communisms/increaseParticipation"),
                 200,
                 json={"id": 3, "user": 1},
-                r_schema=_schemas.Communism,
-                recent_callbacks=[("GET", "/update/communism/3")]
+                r_schema=_schemas.Communism
             ).json()
             self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
+        for i in range(22):
+            self.assertEvent("communism_updated", {"id": 3, "participants": 2 + i})
 
         # Remove a user from the third communism
         communism3_changed = self.assertQuery(
             ("POST", "/communisms/decreaseParticipation"),
             200,
             json={"id": 3, "user": 1},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/update/communism/3")]
+            r_schema=_schemas.Communism
         ).json()
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
         self.assertEqual(len(communism3_changed["participants"]), 2)
         self.assertEqual(communism3_changed["participants"][1]["quantity"], 21)
+        self.assertEvent("communism_updated", {"id": 3, "participants": 22})
 
         # Modify the quantity of a user from the third communism
         communism3_changed = self.assertQuery(
             ("POST", "/communisms/increaseParticipation"),
             200,
             json={"id": 3, "user": 1},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/update/communism/3")]
+            r_schema=_schemas.Communism
         ).json()
         query = "/communisms?active=true&unique_participants=2"
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", query), 200).json())
         self.assertEqual(len(communism3_changed["participants"]), 2)
         self.assertEqual(communism3_changed["participants"][1]["quantity"], 22)
+        self.assertEvent("communism_updated", {"id": 3, "participants": 23})
 
         # The newly added participant doesn't exist
-        self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
-            404,
-            json=[_schemas.CommunismUserBinding(user_id=4, quantity=40)],
-            recent_callbacks=[]
-        ).json()
+        self.assertQuery(("POST", "/communisms/increaseParticipation"), 404, json={"id": 3, "user": 42})
 
         # Do not allow to delete communisms
         self.assertQuery(
@@ -686,16 +670,15 @@ class APITests(utils.BaseAPITests):
             ("POST", "/users"),
             201,
             json={"name": "user3"},
-            r_schema=_schemas.User,
-            recent_callbacks=[("GET", "/create/user/3")]
+            r_schema=_schemas.User
         ).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
             json={"debtor": 3, "voucher": 1},
-            r_schema=_schemas.VoucherUpdateResponse,
-            recent_callbacks=[("GET", "/update/user/3")]
+            r_schema=_schemas.VoucherUpdateResponse
         )
+        self.assertEvent("voucher_updated", {"id": 3, "voucher": 1})
         self.assertQuery(
             ("POST", "/communisms/decreaseParticipation"),
             400,
@@ -705,9 +688,9 @@ class APITests(utils.BaseAPITests):
             ("POST", "/communisms/increaseParticipation"),
             200,
             json={"id": 3, "user": 3},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[("GET", "/update/communism/3")]
+            r_schema=_schemas.Communism
         ).json()
+        self.assertEvent("communism_updated", {"id": 3, "participants": 24})
 
         # Do not allow another user to close the communism
         self.assertQuery(
@@ -728,15 +711,12 @@ class APITests(utils.BaseAPITests):
             ("POST", "/communisms/close"),
             200,
             json={"id": 3, "issuer": 2},
-            r_schema=_schemas.Communism,
-            recent_callbacks=[
-                ("GET", "/update/communism/3"),
-                ("GET", "/create/multitransaction/1")
-            ]
+            r_schema=_schemas.Communism
         ).json()
         self.assertFalse(communism3_changed["active"])
         self.assertIsNotNone(communism3_changed["modified"])
         self.assertIsNotNone(communism3_changed["created"])
+        self.assertEvent("communism_closed", {"id": 3, "transactions": 2, "aborted": False, "participants": 24})
         users_updated = self.assertQuery(("GET", "/users"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
         for t in transactions:
@@ -760,6 +740,8 @@ class APITests(utils.BaseAPITests):
                 "multi_transaction_id": 1
             }
         ])
+        self.assertEvent("transaction_created", {"id": 1, "amount": 1232})
+        self.assertEvent("transaction_created", {"id": 2, "amount": 56, "sender": user3["id"], "receiver": user2["id"]})
 
         # Check that the multi transaction worked as expected
         self.assertEqual(users[0]["balance"] - 1232, users_updated[0]["balance"])
@@ -904,7 +886,7 @@ class APITests(utils.BaseAPITests):
         session.close()
 
     def test_callbacks(self):
-        self.assertEqual(0, self.callback_request_list.qsize())
+        self.assertEqual(0, self.callback_event_queue.qsize())
         self.assertQuery(
             ("POST", "/callbacks"),
             401,
@@ -919,10 +901,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/callbacks"),
             201,
-            json={"url": "http://localhost:64000"},
-            recent_callbacks=[("GET", "/create/callback/2")],
-            skip_callbacks=1,
-            skip_callback_timeout=0.2
+            json={"url": "http://localhost:64000"}
         )
         self.assertQuery(
             ("POST", "/callbacks"),

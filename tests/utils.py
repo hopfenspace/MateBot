@@ -255,8 +255,10 @@ class BaseAPITests(BaseTest):
                 else:
                     return True
         except queue.Empty:
-            keys = (required or []) if not isinstance(required, dict) else list(required.keys())
-            self.fail(f"Timeout while waiting for an event of type {event_type!r} with keys {keys}")
+            if isinstance(required, dict):
+                self.fail(f"Timeout while waiting for an event of type {event_type!r} with data {required}")
+            else:
+                self.fail(f"Timeout while waiting for an event of type {event_type!r} with keys {required or []}")
         finally:
             while not temporary_queue.empty():
                 self.callback_event_queue.put(temporary_queue.get())
