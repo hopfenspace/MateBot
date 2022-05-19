@@ -72,11 +72,11 @@ async def create_new_refund(
 
     creator = await helpers.resolve_user_spec(refund.creator, local)
     if creator.special:
-        raise Conflict("Community user can't create a refund")
+        raise Conflict("The community user can't create a refund.")
     if not creator.active:
-        raise BadRequest("A disabled user can't create refund requests.", str(refund))
+        raise BadRequest("This user account has been disabled and therefore can't create refund requests.")
     if creator.external and not creator.voucher_id:
-        raise BadRequest("You can't create a refund request without voucher.", str(refund))
+        raise BadRequest("You can't create a refund request as external user without voucher.")
 
     return await helpers.create_new_of_model(
         models.Refund(
@@ -126,7 +126,7 @@ async def vote_for_refund_request(
     if user.special:
         raise Conflict("The community user can't vote in refund requests.")
     if ballot.polls:
-        raise Conflict("This endpoint ('POST /refunds/vote') can't be used to vote on polls.")
+        raise Conflict("This endpoint can't be used to vote on polls.", "Try 'POST /polls/vote' instead!")
     if not ballot.refunds:
         raise Conflict("The ballot didn't reference any refund request. Please file a bug report.", str(ballot))
     if len(ballot.refunds) != 1:
@@ -138,7 +138,7 @@ async def vote_for_refund_request(
     if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this refund request. You can't vote twice.")
     if not user.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this refund request.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't vote for this refund request.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about refund requests.")
     if user.id == refund.creator_id:
