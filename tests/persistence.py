@@ -71,7 +71,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
     def test_create_user_without_orm(self):
         self.session.execute(
             sqlalchemy.insert(models.User).values(
-                name="name",
                 balance=42,
                 permission=True,
                 external=False
@@ -81,7 +80,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
 
         self.assertEqual(1, len(self.session.query(models.User).all()))
         self.assertTrue(self.session.get(models.User, 1))
-        self.assertEqual(self.session.get(models.User, 1).name, "name")
+        self.assertFalse(hasattr(self.session.get(models.User, 1), "name"))
         self.assertEqual(self.session.get(models.User, 1).balance, 42)
         now = int(datetime.datetime.now().timestamp())
         modified = self.session.get(models.User, 1).modified.timestamp()
@@ -123,8 +122,9 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
             self.session.query(models.User).filter_by(special=True).all()
         )
 
-        self.session.query(models.User).filter_by(name="user5").delete()
-        self.assertEqual(len(self.get_sample_users())-1, len(self.session.query(models.User).all()))
+        self.session.query(models.User).filter_by(external=True).delete()
+        self.session.commit()
+        self.assertEqual(len(self.get_sample_users())-2, len(self.session.query(models.User).all()))
         self.session.query(models.User).delete()
         self.session.commit()
         self.assertEqual(0, len(self.session.query(models.User).all()))
