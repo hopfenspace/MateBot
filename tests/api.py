@@ -441,7 +441,7 @@ class APITests(utils.BaseAPITests):
         # User referenced by 'creator' doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/refunds"),
-            404,
+            400,
             json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
         self.assertQuery(
@@ -510,7 +510,7 @@ class APITests(utils.BaseAPITests):
         # The user mentioned in the 'creator' field is not found
         self.assertQuery(
             ("POST", "/communisms"),
-            404,
+            400,
             json=sample_data[3]
         )
         user1 = self.assertQuery(
@@ -536,7 +536,7 @@ class APITests(utils.BaseAPITests):
         # User referenced by participant 2 doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/communisms"),
-            404,
+            400,
             json=sample_data[1]
         ).json()
         user2 = self.assertQuery(
@@ -611,11 +611,10 @@ class APITests(utils.BaseAPITests):
 
         # The newly added participant doesn't exist
         self.assertQuery(
-            ("POST", "/communisms/setParticipants/3"),
-            404,
-            json=[_schemas.CommunismUserBinding(user_id=4, quantity=40)],
-            recent_callbacks=[]
-        ).json()
+            ("POST", "/communisms/setParticipants"),
+            400,
+            json={"id": 3, "participants": [{"user_id": 1, "quantity": 40}, {"user_id": 1337, "quantity": 1}]}
+        )
 
         # Do not allow to delete communisms
         self.assertQuery(
@@ -710,7 +709,7 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms?id=4"), 200).json())
         self.assertQuery(
             ("POST", "/communisms/setParticipants"),
-            404,
+            400,
             json={"id": 4, "participants": communism3["participants"]}
         )
         self.assertQuery(
