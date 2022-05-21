@@ -49,7 +49,7 @@ async def search_for_aliases(
     tags=["Aliases"],
     status_code=201,
     response_model=schemas.Alias,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_alias(
@@ -62,7 +62,7 @@ async def create_new_alias(
     The `username` field should reflect the internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
 
-    * `404`: if the user ID or application ID is unknown
+    * `400`: if the user ID or application ID is unknown
     * `409`: if the referenced user is disabled
     """
 
@@ -95,7 +95,7 @@ async def create_new_alias(
     "/aliases",
     tags=["Aliases"],
     response_model=schemas.Alias,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def update_existing_alias(
@@ -105,7 +105,7 @@ async def update_existing_alias(
     """
     Update an existing alias model identified by the `alias_id`.
 
-    * `404`: if the alias ID, user ID or application ID is unknown
+    * `400`: if the alias ID, user ID or application ID is unknown
     * `409`: if the target user is disabled or the alias combination already exists
     """
 
@@ -136,7 +136,7 @@ async def update_existing_alias(
     "/aliases",
     tags=["Aliases"],
     status_code=204,
-    responses={404: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
@@ -146,7 +146,7 @@ async def delete_existing_alias(
     """
     Delete an existing alias model.
 
-    * `404`: if the requested alias ID doesn't exist
+    * `400`: if the requested alias ID doesn't exist
     """
 
     return await helpers.delete_one_of_model(alias.id, models.Alias, local, logger=logger)

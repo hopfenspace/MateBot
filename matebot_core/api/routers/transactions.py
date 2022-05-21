@@ -63,7 +63,7 @@ async def search_for_transactions(
     tags=["Transactions"],
     status_code=201,
     response_model=schemas.Transaction,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def make_a_new_transaction(
@@ -88,7 +88,6 @@ async def make_a_new_transaction(
         e.g. sender equals receiver, either of those users
         is disabled or is external but has no active voucher or if
         the sender's or receiver's user specification couldn't be resolved
-    * `404`: if the sender or receiver user IDs are unknown
     * `409`: if the sender is the community user
 
     Specific information about consumption transactions:
@@ -96,7 +95,6 @@ async def make_a_new_transaction(
     * `400`: if the consuming user is disabled or has no rights
         to consume goods (being an external user without voucher)
         or if its user specification couldn't be resolved
-    * `404`: if the sender user or consumable isn't found
     * `409`: if the consuming user is the community itself
     """
 
@@ -116,7 +114,7 @@ async def make_a_new_transaction(
 
         consumables = [c for c in local.config.consumables if c.name == consumption.consumable]
         if len(consumables) == 0:
-            raise NotFound(f"Consumable {consumption.consumable}")
+            raise NotFound(f"Consumable {consumption.consumable!r}")
         consumable = consumables[0]
         reason = f"consume: {consumption.amount}x {consumable.name}"
         total = consumable.price * consumption.amount

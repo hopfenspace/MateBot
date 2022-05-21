@@ -149,10 +149,10 @@ class NotFound(APIException):
 
     def __init__(self, resource: str, detail: Optional[str] = None):
         super().__init__(
-            status_code=404,
+            status_code=400,
             detail=detail,
             repeat=False,
-            message=f"{str(resource)!r} was not found."
+            message=f"{resource} was not found."
         )
 
 

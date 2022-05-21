@@ -89,7 +89,7 @@ async def search_for_callbacks(
     tags=["Callbacks"],
     status_code=201,
     response_model=schemas.Callback,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -100,7 +100,7 @@ async def create_new_callback(
     """
     Add a new callback API which should implement all required endpoints
 
-    * `404`: if the `application_id` is not known
+    * `400`: if the `application_id` is not known
     * `409`: if the exact same base URL has already been registered for any other application
     """
 
@@ -124,7 +124,7 @@ async def create_new_callback(
     "/callbacks",
     tags=["Callbacks"],
     response_model=schemas.Callback,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -135,7 +135,7 @@ async def update_existing_callback(
     """
     Update an existing callback model identified by its `id`
 
-    * `404`: if the callback ID doesn't exist
+    * `400`: if the callback ID doesn't exist
     * `409`: if the exact same base URL is already in use
     """
 
@@ -155,7 +155,7 @@ async def update_existing_callback(
     "/callbacks",
     tags=["Callbacks"],
     status_code=204,
-    responses={404: {"model": schemas.APIError}},
+    responses={400: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -166,7 +166,7 @@ async def delete_existing_callback(
     """
     Delete an existing callback model
 
-    * `404`: if the requested callback ID doesn't exist
+    * `400`: if the requested callback ID doesn't exist
     """
 
     return await helpers.delete_one_of_model(callback.id, models.Callback, local, logger=logger)

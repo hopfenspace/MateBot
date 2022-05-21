@@ -99,7 +99,7 @@ async def create_new_user(
     "/users/setFlags",
     tags=["Users"],
     response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def set_flags_of_user(
@@ -109,8 +109,7 @@ async def set_flags_of_user(
     """
     Set & unset the flags of an existing user
 
-    * `404`: if the user ID is not known or if the
-        user specification couldn't be resolved
+    * `400`: if the user specification couldn't be resolved
     * `409`: if an inactive user was changed or if both
         `external=true` and `permission=true` were set
     """
@@ -133,7 +132,7 @@ async def set_flags_of_user(
     "/users/setVoucher",
     tags=["Users"],
     response_model=schemas.VoucherUpdateResponse,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(1)
 async def set_voucher_of_user(
@@ -149,7 +148,6 @@ async def set_voucher_of_user(
     * `400`: if changing the voucher is not possible for various reasons
         (e.g. someone already vouches for the particular user) or if
         the debtor or voucher user specifications couldn't be resolved
-    * `404`: if any user ID is unknown
     * `409`: if the community user was used in the query
     """
 
@@ -205,7 +203,7 @@ async def set_voucher_of_user(
     "/users/disable",
     tags=["Users"],
     response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(1)
 async def disable_user_permanently(
@@ -222,7 +220,7 @@ async def disable_user_permanently(
     * `400`: if the given user actively vouches for someone else,
         has a negative balance, has created / participates in any
         open communisms or refund requests or is already disabled
-    * `404`: if the user ID is not found
+        or if the user ID wasn't found
     * `409`: if the community user was given
     """
 
