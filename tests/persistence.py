@@ -123,7 +123,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         )
 
         self.session.query(models.User).filter_by(external=True).delete()
-        self.session.commit()
         self.assertEqual(len(self.get_sample_users())-2, len(self.session.query(models.User).all()))
         self.session.query(models.User).delete()
         self.session.commit()
