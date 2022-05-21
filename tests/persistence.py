@@ -123,10 +123,17 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         )
 
         self.session.query(models.User).filter_by(external=True).delete()
-        self.assertEqual(len(self.get_sample_users())-2, len(self.session.query(models.User).all()))
-        self.session.query(models.User).delete()
         self.session.commit()
-        self.assertEqual(0, len(self.session.query(models.User).all()))
+        self.assertEqual(len(self.get_sample_users())-2, len(self.session.query(models.User).all()))
+
+        if self.database_type == utils.DatabaseType.SQLITE:
+            self.session.query(models.User).delete()
+            self.session.commit()
+            self.assertEqual(0, len(self.session.query(models.User).all()))
+        else:
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                self.session.query(models.User).delete()
+                self.session.commit()
 
     def test_create_aliases_and_delete_on_cascade(self):
         self.session.add_all(self.get_sample_users())
