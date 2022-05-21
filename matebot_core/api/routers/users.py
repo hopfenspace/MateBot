@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 async def search_for_users(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         community: Optional[bool] = None,
-        name: Optional[pydantic.constr(max_length=255)] = None,
         permission: Optional[bool] = None,
         active: Optional[bool] = None,
         external: Optional[bool] = None,
@@ -68,7 +67,6 @@ async def search_for_users(
         specialized_item_filter=extended_filter,
         id=id,
         special=community or None,
-        name=name,
         permission=permission,
         active=active,
         external=external,
@@ -120,41 +118,14 @@ async def set_flags_of_user(
     model = await helpers.resolve_user_spec(change.user, local)
 
     if not model.active:
-        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
+        raise Conflict("This user account is disabled and can't be updated.")
     if change.external and change.permission:
-        raise Conflict("An external user can't get extended permissions.", str(change))
+        raise Conflict("An external user can't get extended permissions.")
 
     if change.external is not None:
         model.external = change.external
     if change.permission is not None:
         model.permission = change.permission
-    return await helpers.update_model(model, local, logger)
-
-
-@router.post(
-    "/users/setName",
-    tags=["Users"],
-    response_model=schemas.User,
-    responses={k: {"model": schemas.APIError} for k in (404, 409)}
-)
-@versioning.versions(minimal=1)
-async def set_name_of_user(
-        change: schemas.UsernameChangeRequest,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
-    """
-    Set (or unset) the username of an existing user
-
-    * `404`: if the user ID is not known
-    * `409`: if an inactive user was changed
-    """
-
-    model = await helpers.return_one(change.user_id, models.User, local.session)
-
-    if not model.active:
-        raise Conflict(f"User {model.id} is disabled and can't be updated.", str(model))
-
-    model.name = change.username
     return await helpers.update_model(model, local, logger)
 
 
@@ -186,17 +157,17 @@ async def set_voucher_of_user(
     voucher = update.voucher and await helpers.resolve_user_spec(update.voucher, local)
 
     if debtor.special:
-        raise Conflict("Nobody can vouch for the community user.")
+        raise BadRequest("Nobody can vouch for the community user.")
     if voucher and voucher.special:
         raise Conflict("The community user can't vouch for anyone.")
 
     if debtor.voucher_user is not None and voucher and debtor.voucher_user != voucher:
-        raise BadRequest(f"Someone already vouches for {debtor.name}, you can't vouch for it.", str(debtor))
+        raise BadRequest("This user already has a voucher, you can't vouch for it.")
 
     if debtor == voucher:
-        raise BadRequest("You can't vouch for yourself.", str(voucher))
+        raise BadRequest("You can't vouch for yourself.")
     if not debtor.external:
-        raise BadRequest("You can't vouch for {debtor.name}, since it's an internal user.", str(debtor))
+        raise BadRequest("You can't vouch for this user, since it's an internal user.")
 
     transaction = None
     if debtor.voucher_user is not None and voucher is None:
@@ -258,9 +229,9 @@ async def disable_user_permanently(
     model = await helpers.return_one(body.id, models.User, local.session)
 
     if not model.active:
-        raise BadRequest(f"User {model.id} is already disabled.", str(model))
+        raise BadRequest("This user account is already disabled.")
     if model.special:
-        raise Conflict("The community user can't be disabled.", str(model))
+        raise Conflict("The community user can't be disabled.")
 
     if local.session.query(models.Communism).filter_by(creator=model, active=True).all():
         raise BadRequest(
@@ -291,7 +262,7 @@ async def disable_user_permanently(
     if model.balance < 0:
         info = ""
         if model.voucher_user and model.external:
-            info = f" User {model.voucher_user.name!r} vouches for you and may help you to handle this."
+            info = " You have a voucher who may help you to handle this."
         raise BadRequest(
             f"Your balance is negative. You need a non-negative balance "
             f"before you can delete your user account.{info}"
@@ -300,7 +271,7 @@ async def disable_user_permanently(
     if model.balance > 0:
         community = local.session.query(models.User).filter_by(special=True).first()
         if community is None:
-            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
+            raise RuntimeError("No community user found. Please make sure to setup the DB correctly.")
         transactions.create_transaction(
             model,
             community,

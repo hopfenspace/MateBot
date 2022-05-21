@@ -97,21 +97,20 @@ async def make_a_new_transaction(
         to consume goods (being an external user without voucher)
         or if its user specification couldn't be resolved
     * `404`: if the sender user or consumable isn't found
-    * `409`: if the consuming user is the community itself or if no community
-        user was found at all (meaning the DB wasn't set up properly)
+    * `409`: if the consuming user is the community itself
     """
 
     if isinstance(transaction, schemas.Consumption):
         consumption = transaction
         community = local.session.query(models.User).filter_by(special=True).first()
         if community is None:
-            raise Conflict("No community user found. Please make sure to setup the DB correctly.")
+            raise RuntimeError("No community user found. Please make sure to setup the DB correctly.")
 
         user = await helpers.resolve_user_spec(consumption.user, local)
         if user.special:
-            raise Conflict("The special community user can't consume goods.", str(user.schema))
+            raise Conflict("The special community user can't consume goods.")
         if not user.active:
-            raise BadRequest(f"The disabled user {user.nameusername!r} can't consume goods.", str(user.schema))
+            raise BadRequest("This user account has been disabled and therefore can't consume goods.")
         if user.external and user.voucher_id is None:
             raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
 
@@ -132,19 +131,16 @@ async def make_a_new_transaction(
     reason = transaction.reason
 
     if sender.id == receiver.id:
-        raise BadRequest("You can't send money to yourself.", str(transaction))
+        raise BadRequest("You can't send money to yourself.")
     if not sender.active:
-        raise BadRequest(f"Disabled user {sender.username!r} can't make transactions", str(sender))
+        raise BadRequest("This user account has been disabled and therefore can't make transactions.")
     if not receiver.active:
-        raise BadRequest(f"Disabled user {receiver.username!r} can't get transactions", str(receiver))
+        raise BadRequest("You can't send money to that user, since the user account has been disabled.")
     if sender.special:
-        raise Conflict("The community mustn't send money to other users directly; use refunds instead!", str(sender))
+        raise Conflict("The community mustn't send money to other users directly; use refunds instead!")
     if sender.external and sender.voucher_id is None:
-        raise BadRequest("You can't send money to others, since you are an external user without voucher.", str(sender))
+        raise BadRequest("You can't send money to others, since you are an external user without voucher.")
     if receiver.external and receiver.voucher_id is None:
-        raise BadRequest(
-            f"You can't send money to {receiver.username}, since nobody vouches for {receiver.username}.",
-            str(receiver)
-        )
+        raise BadRequest(f"You can't send money to this user, since nobody vouches for this user.")
 
     return create_transaction(sender, receiver, amount, reason, local.session, logger, local.tasks).schema

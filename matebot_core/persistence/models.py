@@ -24,7 +24,6 @@ class User(Base):
     __tablename__ = "users"
 
     id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
-    name: str = Column(String(255), nullable=True)
     balance: int = Column(Integer, nullable=False, default=0)
     permission: bool = Column(Boolean, nullable=False, default=False)
     """Flag indicating whether the user is allowed to take part in ballots"""
@@ -45,14 +44,6 @@ class User(Base):
     )
 
     @property
-    def username(self) -> str:
-        """
-        Convenience property returning a printable username (or the user ID, as fallback)
-        """
-
-        return self.name or f"user {self.id}"
-
-    @property
     def schema(self) -> schemas.User:
         """
         Pydantic schema representation of the database model that can be sent to clients
@@ -60,7 +51,6 @@ class User(Base):
 
         return schemas.User(
             id=self.id,
-            name=self.name,
             balance=self.balance,
             permission=self.permission,
             active=self.active,

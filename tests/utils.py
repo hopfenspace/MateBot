@@ -161,13 +161,13 @@ class BasePersistenceTests(BaseTest):
     @staticmethod
     def get_sample_users() -> List[models.User]:
         return [
-            models.User(name="user1", balance=-42, external=True),
-            models.User(name="user2", balance=51, external=False),
-            models.User(name="user3", external=True),
-            models.User(name="user4", balance=2, external=False),
-            models.User(name="user5", permission=False, active=False, external=False, voucher_id=2),
+            models.User(balance=-42, external=True),
+            models.User(balance=51, external=False),
+            models.User(external=True),
+            models.User(balance=2, external=False),
+            models.User(permission=False, active=False, external=False, voucher_id=2),
             models.User(external=False),
-            models.User(name="community", external=False, special=True, balance=2, permission=True)
+            models.User(external=False, special=True, balance=2, permission=True)
         ]
 
 
@@ -450,7 +450,7 @@ class BaseAPITests(BaseTest):
             bind=engine
         )()
 
-    def make_special_user(self, community_name: str = "Community"):
+    def make_special_user(self):
         session = self.get_db_session()
         specials = session.query(models.User).filter_by(special=True).all()
         if len(specials) > 1:
@@ -460,8 +460,7 @@ class BaseAPITests(BaseTest):
                 active=True,
                 special=True,
                 external=False,
-                permission=False,
-                name=community_name
+                permission=False
             ))
             session.commit()
         session.close()

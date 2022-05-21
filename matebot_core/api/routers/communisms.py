@@ -45,7 +45,7 @@ async def _check_participants(participants: List[schemas.CommunismUserBinding], 
         raise BadRequest(
             f"Disabled users or externals without voucher can't participate in communisms. "
             f"{len(invalid_participant_entries)} proposed participants are disabled or external.",
-            str(invalid_participant_entries)
+            detail=str(invalid_participant_entries)
         )
 
 
@@ -113,7 +113,7 @@ async def create_new_communism(
     if creator.special:
         raise Conflict("The community user can't open communisms.")
     if not creator.active:
-        raise BadRequest("Your user account was deleted. Therefore, you can't create communisms.")
+        raise BadRequest("This user account has been deleted. Therefore, you can't create communisms.")
     if creator.external and creator.voucher_user is None:
         raise BadRequest("You can't create communisms without having a voucher user.")
 

@@ -69,7 +69,7 @@ class APITests(utils.BaseAPITests):
             user = self.assertQuery(
                 ("POST", "/users"),
                 201,
-                json={"name": f"user{i+1}", "permission": True, "external": False},
+                json={"permission": True, "external": False},
                 r_schema=_schemas.User
             ).json()
             self.assertEqual(i+1, user["id"])
@@ -244,7 +244,7 @@ class APITests(utils.BaseAPITests):
         user_to_delete_id = int(self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user_to_delete", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()["id"])
         old_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
@@ -283,7 +283,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user1", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
         ).json()
@@ -336,7 +336,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2", "permission": False, "external": False},
+            json={"permission": False, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/3")]
         ).json()
@@ -350,7 +350,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user3", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/4")]
         ).json()
@@ -365,7 +365,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user4", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/5")]
         ).json()
@@ -394,7 +394,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user5", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/6")]
         )
@@ -425,7 +425,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user6", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/7")]
         )
@@ -447,7 +447,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user7", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/8")]
         ).json()
@@ -516,7 +516,7 @@ class APITests(utils.BaseAPITests):
         user1 = self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user1", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/1")]
         ).json()
@@ -542,7 +542,7 @@ class APITests(utils.BaseAPITests):
         user2 = self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/2")]
         ).json()
@@ -631,7 +631,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user3", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User,
             recent_callbacks=[("GET", "/create/user/3")]
         ).json()
@@ -767,20 +767,20 @@ class APITests(utils.BaseAPITests):
         session.commit()
         comp(1, "")
 
-        session.add(models.User(active=True, external=True, name="foo"))
+        session.add(models.User(active=True, external=True))
         session.commit()
         comp(2, "")
 
         session.add(models.User(active=True, external=False, permission=True))
-        session.add(models.User(active=True, external=False, permission=True, name="bar"))
+        session.add(models.User(active=True, external=False, permission=True))
         session.commit()
         comp(4, "")
 
-        session.add(models.User(external=False, name="baz"))
+        session.add(models.User(external=False))
         session.commit()
         comp(5, "")
 
-        session.add(models.User(active=False, external=False, name="baz"))
+        session.add(models.User(active=False, external=False))
         session.commit()
         comp(6, "")
 
@@ -798,20 +798,15 @@ class APITests(utils.BaseAPITests):
         comp(2, "external=true")
         comp(5, "external=false")
 
-        comp(0, "name=foobar")
-        comp(1, "name=foo")
-        comp(2, "name=baz")
-
         comp(2, "active=true&external=false&permission=true")
-        comp(1, "active=true&external=false&permission=true&name=bar")
 
         comp(1, "voucher_id=3")
         comp(0, "voucher_id=4")
         comp(0, "voucher_id=3&active=false")
 
-        comp(2, "external=false&name=baz")
-        comp(1, "external=false&name=baz&active=true")
-        comp(1, "external=false&name=baz&active=false")
+        comp(5, "external=false")
+        comp(3, "external=false&active=true")
+        comp(2, "external=false&active=false")
 
         session.add(models.Application(name="app", password="password", salt="salt"))
         session.commit()

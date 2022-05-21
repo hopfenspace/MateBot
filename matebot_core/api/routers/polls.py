@@ -69,7 +69,7 @@ async def create_new_membership_poll(
     if creator.special:
         raise Conflict("A membership request can't be created for the community user.")
     if not creator.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't create membership requests.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't create membership requests.")
     if not creator.external:
         raise BadRequest("You are already an internal user. Membership request polls can only be created by externals.")
 
@@ -147,7 +147,7 @@ async def vote_for_membership_request(
     if user.special:
         raise Conflict("The community user can't vote in membership polls.")
     if ballot.refunds:
-        raise Conflict("This endpoint ('POST /polls/vote') can't be used to vote on refund requests.")
+        raise Conflict("This endpoint can't be used to vote on refund requests.", "Try 'POST /refunds/vote' instead!")
     if not ballot.polls:
         raise Conflict("The ballot didn't reference any membership poll. Please file a bug report.", str(ballot))
     if len(ballot.polls) != 1:
@@ -159,7 +159,7 @@ async def vote_for_membership_request(
     if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this membership poll. You can't vote twice.")
     if not user.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this membership poll.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't vote for this membership poll.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about membership polls.")
     if user.id == poll.creator_id:

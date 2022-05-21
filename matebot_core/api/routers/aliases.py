@@ -70,7 +70,7 @@ async def create_new_alias(
     application = await helpers.return_one(alias.application_id, models.Application, local.session)
 
     if not user.active:
-        raise Conflict("A disabled user can't get new aliases.", str(alias))
+        raise Conflict("This user account has been disabled, therefore it can't get new aliases.")
 
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=application.id,
@@ -112,7 +112,7 @@ async def update_existing_alias(
     model = await helpers.return_one(alias.id, models.Alias, local.session)
     user = await helpers.return_one(alias.user_id, models.User, local.session)
     if not user.active:
-        raise Conflict("A disabled user can't get new aliases.", str(alias))
+        raise Conflict("This user account has been disabled, therefore it can't get new aliases.")
     await helpers.return_one(alias.application_id, models.Application, local.session)
 
     existing_alias = local.session.query(models.Alias).filter_by(
