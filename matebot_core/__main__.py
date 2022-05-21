@@ -97,17 +97,10 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         metavar="url",
         help="Database connection URL including scheme and auth"
     )
-    init_community = parser_init.add_mutually_exclusive_group()
-    init_community.add_argument(
+    parser_init.add_argument(
         "--no-community",
         action="store_true",
-        help="Don't create the community user if it doesn't exist"
-    )
-    init_community.add_argument(
-        "--community",
-        type=str,
-        metavar="name",
-        help="Optional name of the possibly new community user"
+        help="Don't create the community user if it doesn't exist (not recommended)"
     )
 
     parser_add_app.add_argument(
@@ -274,15 +267,12 @@ def init_project(args: argparse.Namespace) -> int:
         specials = session.query(models.User).filter_by(special=True).all()
         if len(specials) > 1:
             raise RuntimeError("Multiple community users found. Please drop a bug report.")
-        if not args.community:
-            print("Using an empty or no name for the community is discouraged! Continuing anyways...", file=sys.stderr)
         if len(specials) == 0:
             session.add(models.User(
                 active=True,
                 special=True,
                 external=False,
-                permission=False,
-                name=args.community
+                permission=False
             ))
             session.commit()
             session.flush()
