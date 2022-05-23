@@ -63,12 +63,7 @@ class APITests(utils.BaseAPITests):
         # Creating a set of test users
         users = []
         for i in range(10):
-            user = self.assertQuery(
-                ("POST", "/users"),
-                201,
-                json={"permission": True, "external": False},
-                r_schema=_schemas.User
-            ).json()
+            user = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
             self.assertEqual(i+1, user["id"])
             self.assertEqual(
                 user,
@@ -252,12 +247,7 @@ class APITests(utils.BaseAPITests):
 
         # Check that deleting users with positive balance transfers the remaining amount to the community user
         self.make_special_user()
-        user_to_delete_id = int(self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()["id"])
+        user_to_delete_id = int(self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()["id"])
         old_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
         session = self.get_db_session()
         user_to_delete = session.get(models.User, user_to_delete_id)
@@ -291,12 +281,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding the creator user
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
 
         # Checking for the permission
         self.assertQuery(
@@ -373,12 +358,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding a privileged user which gets disabled first, though
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
@@ -392,12 +372,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding a new user to actually vote on the refund for the first time
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -430,12 +405,7 @@ class APITests(utils.BaseAPITests):
 
         # Add another user to accept the refund request
         old_balance = self.assertQuery(("GET", "/users?id=2"), 200).json()[0]["balance"]
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        )
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
@@ -467,12 +437,7 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([transaction], transactions)
 
         # Don't allow to add votes to already closed refund requests
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        )
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(("POST", "/refunds/vote"), 400, json={"user": 7, "ballot_id": 1, "vote": True})
 
         # The community user shouldn't create refunds
@@ -488,12 +453,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
@@ -531,12 +491,7 @@ class APITests(utils.BaseAPITests):
                 "creator": 42
             }
         )
-        user1 = self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        user1 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
 
         # Fail due to restricted user account
         self.assertQuery(
@@ -576,12 +531,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"amount": 42, "description": "description2", "creator": 2}
         ).json()
-        user2 = self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
 
         # Create and get the second communism object
         response2 = self.assertQuery(
@@ -672,12 +622,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Add another new user to the communism
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": True, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,

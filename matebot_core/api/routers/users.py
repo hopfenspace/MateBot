@@ -82,10 +82,7 @@ async def search_for_users(
     response_model=schemas.User
 )
 @versioning.versions(minimal=1)
-async def create_new_user(
-        user_creation: schemas.UserCreation,
-        local: LocalRequestData = Depends(LocalRequestData)
-):
+async def create_new_user(local: LocalRequestData = Depends(LocalRequestData)):
     """
     Create a new "empty" user account with zero balance
     """
