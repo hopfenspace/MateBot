@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 callback_router = APIRouter(tags=["Announcements"])
 
 
-@callback_router.post("/", name="Publish Event")
+@callback_router.post("/", name="Publish Events")
 def send_callback_query(events: schemas.EventsNotification):  # noqa
     """
     Publish a list of recent events to a callback listener
@@ -63,7 +63,7 @@ async def search_for_callbacks(
     tags=["Callbacks"],
     status_code=201,
     response_model=schemas.Callback,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -74,8 +74,8 @@ async def create_new_callback(
     """
     Add a new callback API which should implement all required endpoints
 
-    * `404`: if the `application_id` is not known
-    * `409`: if the exact same URL has already been registered for any other application
+    * `400`: if the `application_id` is not known
+    * `409`: if the same URL has already been registered for another application
     """
 
     if callback.application_id is not None:
@@ -98,7 +98,7 @@ async def create_new_callback(
     "/callbacks",
     tags=["Callbacks"],
     status_code=204,
-    responses={404: {"model": schemas.APIError}},
+    responses={400: {"model": schemas.APIError}},
     callbacks=callback_router.routes
 )
 @versioning.versions(minimal=1)
@@ -109,7 +109,7 @@ async def delete_existing_callback(
     """
     Delete an existing callback model
 
-    * `404`: if the requested callback ID doesn't exist
+    * `400`: if the requested callback ID doesn't exist
     """
 
     return await helpers.delete_one_of_model(body.id, models.Callback, local, logger=logger)

@@ -55,7 +55,7 @@ async def search_for_refunds(
     tags=["Refunds"],
     status_code=201,
     response_model=schemas.Refund,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_refund(
@@ -67,17 +67,16 @@ async def create_new_refund(
 
     * `400`: if the creator is an external user without voucher or disabled
         or if the creator user specification couldn't be resolved
-    * `404`: if the user ID of the creator is unknown
     * `409`: if the special community user is the creator
     """
 
     creator = await helpers.resolve_user_spec(refund.creator, local)
     if creator.special:
-        raise Conflict("Community user can't create a refund")
+        raise Conflict("The community user can't create a refund.")
     if not creator.active:
-        raise BadRequest("A disabled user can't create refund requests.", str(refund))
+        raise BadRequest("This user account has been disabled and therefore can't create refund requests.")
     if creator.external and not creator.voucher_id:
-        raise BadRequest("You can't create a refund request without voucher.", str(refund))
+        raise BadRequest("You can't create a refund request as external user without voucher.")
 
     model = models.Refund(
         amount=refund.amount,
@@ -100,7 +99,7 @@ async def create_new_refund(
     "/refunds/vote",
     tags=["Refunds"],
     response_model=schemas.RefundVoteResponse,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(1)
 async def vote_for_refund_request(
@@ -117,9 +116,8 @@ async def vote_for_refund_request(
     request has been accepted, otherwise this attribute is null).
 
     * `400`: if the refund is not active anymore, the user has already voted
-        in the specified ballot, the user is not active or unprivileged
-        or if the voter's user specification couldn't be resolved
-    * `404`: if the user ID or ballot ID is unknown.
+        in the specified ballot, the ballot wasn't found, the user is not active
+        or unprivileged or if the voter's user specification couldn't be resolved
     * `409`: if the voter is the community user, an invalid state has
         been detected or the ballot referenced by the newly created vote
         is actually about a membership poll instead of a refund request
@@ -131,7 +129,7 @@ async def vote_for_refund_request(
     if user.special:
         raise Conflict("The community user can't vote in refund requests.")
     if ballot.polls:
-        raise Conflict("This endpoint ('POST /refunds/vote') can't be used to vote on polls.")
+        raise Conflict("This endpoint can't be used to vote on polls.", "Try 'POST /polls/vote' instead!")
     if not ballot.refunds:
         raise Conflict("The ballot didn't reference any refund request. Please file a bug report.", str(ballot))
     if len(ballot.refunds) != 1:
@@ -143,7 +141,7 @@ async def vote_for_refund_request(
     if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this refund request. You can't vote twice.")
     if not user.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this refund request.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't vote for this refund request.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about refund requests.")
     if user.id == refund.creator_id:
@@ -170,7 +168,7 @@ async def vote_for_refund_request(
     "/refunds/abort",
     tags=["Refunds"],
     response_model=schemas.Refund,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def abort_open_refund_request(
@@ -180,9 +178,8 @@ async def abort_open_refund_request(
     """
     Abort an ongoing refund request (closing it without performing the transaction)
 
-    * `400`: if the refund is already closed or if the
-        issuer is not permitted to perform the operation
-    * `404`: if the refund ID is unknown
+    * `400`: if the refund is unknown or already closed or if
+        the issuer is not permitted to perform the operation
     """
 
     model = await helpers.return_one(body.id, models.Refund, local.session)

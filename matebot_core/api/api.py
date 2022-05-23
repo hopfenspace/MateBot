@@ -59,7 +59,7 @@ code equals the expected status code for that operation, usually `200` (OK).
 
 The following documentation provides in-depth information about the available
 endpoints, their calling convention and returned responses. In general, the
-following four different `4xx` error responses are used in the API code:
+following three different `4xx` error responses are used in the API code:
 
 1. The `400` (Bad Request) error response is usually adequate to show to end
    users. It contains few or none technical details in the `message` field,
@@ -73,11 +73,7 @@ following four different `4xx` error responses are used in the API code:
    invalid. If a client encounters such a response, it should use the
    `POST /login` endpoint with its username and password to gather a fresh API
    token, which should be included in the `Authorization` header field.
-3. The `404` (Not Found) error response usually indicates inadequate pre-checks
-   of user supplied input or commands or invalid state in the client app.
-   Client applications should avoid having a state and should be implemented as
-   lazy as possible, anyways. It's returned whenever a model ID can't be found.
-4. The `409` (Conflict) error response is usually not adequate for end users,
+3. The `409` (Conflict) error response is usually not adequate for end users,
    since it may contain technical information. It may be seen if certain logical
    or database constraints are violated. The user agent should usually try to
    debug the problems itself, since the error probably results from inadequate

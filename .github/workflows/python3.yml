@@ -26,10 +26,10 @@ jobs:
         sudo systemctl start mysql.service
         mysql -e "CREATE USER matebot_core_user IDENTIFIED BY 'matebot_core_password';" -u root -p"root" -v
         echo '#!/bin/bash' >> db_setup.sh
-        echo 'mysql -e "CREATE DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
+        echo 'sudo service mysql restart; mysql -e "CREATE DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
         echo 'mysql -e "GRANT ALL PRIVILEGES ON matebot_core_unittests.* TO matebot_core_user;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
         echo '#!/bin/bash' >> db_teardown.sh
-        echo 'mysql -e "DROP DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_teardown.sh
+        echo 'sudo service mysql restart; mysql -e "DROP DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_teardown.sh
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -57,7 +57,7 @@ jobs:
         python3 -X tracemalloc=5 -m unittest tests -v
     - name: Run matebot_core once
       run: |
-        python3 -m matebot_core init --database sqlite:///test.db --community community
+        python3 -m matebot_core init --database sqlite:///test.db
         python3 -m matebot_core add-app --app app --password password
         python3 -m matebot_core run &
         sleep 3
@@ -73,7 +73,7 @@ jobs:
         python3 -m venv venv
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
-        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --community community
+        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db
         ../venv/bin/python3 -m matebot_core add-app --app app --password password
         ../venv/bin/python3 -m matebot_core run &
         sleep 3

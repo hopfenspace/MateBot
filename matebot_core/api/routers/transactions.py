@@ -63,7 +63,7 @@ async def search_for_transactions(
     tags=["Transactions"],
     status_code=201,
     response_model=schemas.Transaction,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def send_money_between_two_users(
@@ -81,7 +81,6 @@ async def send_money_between_two_users(
         e.g. sender equals receiver, either of those users
         is disabled or is external but has no active voucher or if
         the sender's or receiver's user specification couldn't be resolved
-    * `404`: if the sender or receiver user IDs are unknown
     * `409`: if the sender is the community user
     """
 
@@ -91,20 +90,17 @@ async def send_money_between_two_users(
     reason = transaction.reason
 
     if sender.id == receiver.id:
-        raise BadRequest("You can't send money to yourself.", str(transaction))
+        raise BadRequest("You can't send money to yourself.")
     if not sender.active:
-        raise BadRequest(f"Disabled user {sender.username!r} can't make transactions", str(sender))
+        raise BadRequest("This user account has been disabled and therefore can't make transactions.")
     if not receiver.active:
-        raise BadRequest(f"Disabled user {receiver.username!r} can't get transactions", str(receiver))
+        raise BadRequest("You can't send money to that user, since the user account has been disabled.")
     if sender.special:
-        raise Conflict("The community mustn't send money to other users directly; use refunds instead!", str(sender))
+        raise Conflict("The community mustn't send money to other users directly; use refunds instead!")
     if sender.external and sender.voucher_id is None:
-        raise BadRequest("You can't send money to others, since you are an external user without voucher.", str(sender))
+        raise BadRequest("You can't send money to others, since you are an external user without voucher.")
     if receiver.external and receiver.voucher_id is None:
-        raise BadRequest(
-            f"You can't send money to {receiver.username}, since nobody vouches for {receiver.username}.",
-            str(receiver)
-        )
+        raise BadRequest(f"You can't send money to this user, since nobody vouches for this user.")
 
     return create_transaction(sender, receiver, amount, reason, local.session, logger).schema
 
@@ -129,11 +125,9 @@ async def consume_consumables_by_sending_money_to_the_community(
     might want to request explicit user approval ahead of time.
 
     * `400`: if the consuming user is disabled or has no rights
-        to consume goods (being an external user without voucher)
-        or if its user specification couldn't be resolved
-    * `404`: if the sender user or consumable isn't found
-    * `409`: if the consuming user is the community itself or if no community
-        user was found at all (meaning the DB wasn't set up properly)
+        to consume goods (being an external user without voucher) or if
+        the consumable or the user specification couldn't be resolved
+    * `409`: if the consuming user is the community itself
     """
 
     community = local.session.query(models.User).filter_by(special=True).first()

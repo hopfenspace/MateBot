@@ -32,7 +32,7 @@ async def return_one(
 
     obj = session.get(model, object_id)
     if obj is None:
-        raise NotFound(f"{model.__name__} ID {object_id!r}")
+        raise NotFound(f"{model.__name__} with ID {object_id!r}")
     return obj
 
 

@@ -108,7 +108,7 @@ async def search_for_communisms(
     tags=["Communisms"],
     status_code=201,
     response_model=schemas.Communism,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def create_new_communism(
@@ -118,9 +118,10 @@ async def create_new_communism(
     """
     Create a new communism based on the specified data
 
-    * `400`: if the creator is an external user without voucher or has been
-        disabled or if the creator user specification couldn't be resolved
-    * `404`: if the user ID of the creator user or any mentioned participant is unknown
+    * `400`: if the creator or any participant is an external user
+        without voucher, if the creator or any participant is disabled,
+        if the creator user specification couldn't be resolved or the user
+        ID of the creator user or any mentioned participant is unknown
     * `409`: if the community user is part of the list of participants
     """
 
@@ -128,7 +129,7 @@ async def create_new_communism(
     if creator.special:
         raise Conflict("The community user can't open communisms.")
     if not creator.active:
-        raise BadRequest("Your user account was deleted. Therefore, you can't create communisms.")
+        raise BadRequest("This user account has been deleted. Therefore, you can't create communisms.")
     if creator.external and creator.voucher_user is None:
         raise BadRequest("You can't create communisms without having a voucher user.")
 
@@ -152,7 +153,7 @@ async def create_new_communism(
     "/communisms/abort",
     tags=["Communisms"],
     response_model=schemas.Communism,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def abort_open_communism(
@@ -162,9 +163,8 @@ async def abort_open_communism(
     """
     Abort an open communism (closing it without performing transactions)
 
-    * `400`: if the communism is already closed or if the
-        issuer is not permitted to perform the operation
-    * `404`: if the communism ID is unknown
+    * `400`: if the communism is unknown or already closed or
+        if the issuer is not permitted to perform the operation
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
@@ -192,7 +192,7 @@ async def abort_open_communism(
     "/communisms/close",
     tags=["Communisms"],
     response_model=schemas.Communism,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def close_open_communism(
@@ -202,9 +202,8 @@ async def close_open_communism(
     """
     Close an open communism (closing it with performing transactions)
 
-    * `400`: if the communism is already closed or if the
-        issuer is not permitted to perform the operation
-    * `404`: if the communism ID is unknown
+    * `400`: if the communism is unknown or already closed or
+        if the issuer is not permitted to perform the operation
     """
 
     model = await helpers.return_one(body.id, models.Communism, local.session)
@@ -246,7 +245,7 @@ async def close_open_communism(
     "/communisms/increaseParticipation",
     tags=["Communisms"],
     response_model=schemas.Communism,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(1)
 async def increase_participation_in_open_communism(
@@ -256,9 +255,9 @@ async def increase_participation_in_open_communism(
     """
     Increase the participation of a single user by 1 for an open communism
 
-    * `400`: if the communism is already closed or if the mentioned user
-        is an external user without voucher or a disabled user
-    * `404`: if the communism ID or the user ID of any mentioned participant is unknown
+    * `400`: if the communism is already closed, if any participant
+        is an external user without voucher or a disabled user or if
+        any of the participant user specs or the communism ID is unknown
     * `409`: if the community user is the user selected for participation
     """
 
@@ -284,10 +283,10 @@ async def decrease_participation_in_open_communism(
     """
     Decrease the participation of a single user by 1 for an open communism
 
-    * `400`: if the communism is already closed or if any participant
+    * `400`: if the communism is already closed, if any participant
         is an external user without voucher or a disabled user or if
+        any of the participant user specs or the communism ID is unknown or
         there was an attempt to leave a communism without prior participation
-    * `404`: if the communism ID or the user ID of any mentioned participant is unknown
     * `409`: if the community user is the user selected for participation
     """
 

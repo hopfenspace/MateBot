@@ -61,7 +61,6 @@ class ApplicationCreation(pydantic.BaseModel):
 
 class User(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
-    name: Optional[pydantic.constr(max_length=255)]
     balance: int
     permission: bool
     active: bool
@@ -73,7 +72,9 @@ class User(pydantic.BaseModel):
 
 
 class UserCreation(pydantic.BaseModel):
-    name: pydantic.constr(max_length=255)
+    permission: bool
+    external: bool
+    voucher_id: Optional[pydantic.NonNegativeInt]
 
 
 class Transaction(pydantic.BaseModel):
@@ -122,11 +123,6 @@ class VoucherUpdateResponse(pydantic.BaseModel):
 class VoucherUpdateRequest(pydantic.BaseModel):
     debtor: user_spec
     voucher: Optional[user_spec]
-
-
-class UsernameChangeRequest(pydantic.BaseModel):
-    user_id: pydantic.NonNegativeInt
-    username: Optional[pydantic.constr(max_length=255)]
 
 
 class UserFlagsChangeRequest(pydantic.BaseModel):

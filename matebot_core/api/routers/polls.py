@@ -50,7 +50,7 @@ async def search_for_polls(
     tags=["Polls"],
     status_code=201,
     response_model=schemas.Poll,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def create_new_membership_poll(
@@ -61,8 +61,7 @@ async def create_new_membership_poll(
     Create a new membership request poll for the specified user
 
     * `400`: if the creator is already internal or disabled
-        or if the creator user specification couldn't be resolved
-    * `404`: if the user ID of the `creator` is unknown.
+        or the creator user specification couldn't be resolved
     * `409`: if the special community user is the creator
     """
 
@@ -70,7 +69,7 @@ async def create_new_membership_poll(
     if creator.special:
         raise Conflict("A membership request can't be created for the community user.")
     if not creator.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't create membership requests.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't create membership requests.")
     if not creator.external:
         raise BadRequest("You are already an internal user. Membership request polls can only be created by externals.")
 
@@ -89,7 +88,7 @@ async def create_new_membership_poll(
     "/polls/vote",
     tags=["Polls"],
     response_model=schemas.PollVoteResponse,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(1)
 async def vote_for_membership_request(
@@ -105,9 +104,8 @@ async def vote_for_membership_request(
     have been created. The limits are set in the server's configuration.
 
     * `400`: if the poll is not active anymore, the user has already voted
-        in the specified ballot, the user is not active or unprivileged
-        or if the voter's user specification couldn't be resolved
-    * `404`: if the user ID or ballot ID is unknown.
+        in the specified ballot, the ballot wasn't found, the user is not active
+        or unprivileged or if the voter's user specification couldn't be resolved
     * `409`: if the voter is the community user, an invalid state has
         been detected or the ballot referenced by the newly created vote
         is actually about a refund request instead of a membership poll
@@ -119,7 +117,7 @@ async def vote_for_membership_request(
     if user.special:
         raise Conflict("The community user can't vote in membership polls.")
     if ballot.refunds:
-        raise Conflict("This endpoint ('POST /polls/vote') can't be used to vote on refund requests.")
+        raise Conflict("This endpoint can't be used to vote on refund requests.", "Try 'POST /refunds/vote' instead!")
     if not ballot.polls:
         raise Conflict("The ballot didn't reference any membership poll. Please file a bug report.", str(ballot))
     if len(ballot.polls) != 1:
@@ -131,7 +129,7 @@ async def vote_for_membership_request(
     if local.session.query(models.Vote).filter_by(ballot=ballot, user=user).all():
         raise BadRequest("You have already voted for this membership poll. You can't vote twice.")
     if not user.active:
-        raise BadRequest("Your user account was disabled. Therefore, you can't vote for this membership poll.")
+        raise BadRequest("This user account has been disabled. Therefore, you can't vote for this membership poll.")
     if not user.permission:
         raise BadRequest("You are not permitted to participate in ballots about membership polls.")
     if user.id == poll.creator_id:
@@ -172,7 +170,7 @@ async def vote_for_membership_request(
     "/polls/abort",
     tags=["Polls"],
     response_model=schemas.Poll,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
 async def abort_open_membership_poll(
@@ -182,9 +180,8 @@ async def abort_open_membership_poll(
     """
     Abort an ongoing poll request (closing it without performing the transaction)
 
-    * `400`: if the poll is already closed or if the
-        issuer is not permitted to perform the operation
-    * `404`: if the poll ID is unknown
+    * `400`: if the poll is unknown or already closed or if
+        the issuer is not permitted to perform the operation
     """
 
     model = await helpers.return_one(body.id, models.Poll, local.session)

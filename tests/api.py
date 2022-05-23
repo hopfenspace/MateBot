@@ -66,7 +66,7 @@ class APITests(utils.BaseAPITests):
             user = self.assertQuery(
                 ("POST", "/users"),
                 201,
-                json={"name": f"user{i+1}"},
+                json={"permission": True, "external": False},
                 r_schema=_schemas.User
             ).json()
             self.assertEqual(i+1, user["id"])
@@ -255,7 +255,7 @@ class APITests(utils.BaseAPITests):
         user_to_delete_id = int(self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user_to_delete", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()["id"])
         old_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
@@ -294,7 +294,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user1"},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
 
@@ -363,7 +363,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2", "permission": False, "external": False},
+            json={"permission": False, "external": False},
             r_schema=_schemas.User
         ).json()
         self.assertQuery(
@@ -376,7 +376,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user3", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
         self.assertQuery(
@@ -395,7 +395,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user4", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
         self.assertQuery(
@@ -433,13 +433,14 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user5", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         )
         self.assertQuery(
             ("POST", "/users/setFlags"),
             200,
-            json={"user": 6, "permission": True}
+            json={"user": 6, "permission": True},
+            r_schema=_schemas.User
         )
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
@@ -469,7 +470,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user6", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         )
         self.assertQuery(("POST", "/refunds/vote"), 400, json={"user": 7, "ballot_id": 1, "vote": True})
@@ -484,13 +485,13 @@ class APITests(utils.BaseAPITests):
         # User referenced by 'creator' doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/refunds"),
-            404,
+            400,
             json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user7", "permission": True, "external": False},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
         self.assertQuery(
@@ -523,7 +524,7 @@ class APITests(utils.BaseAPITests):
         # The user mentioned in the 'creator' field is not found
         self.assertQuery(
             ("POST", "/communisms"),
-            404,
+            400,
             json={
                 "amount": 1337,
                 "description": "description4",
@@ -533,7 +534,7 @@ class APITests(utils.BaseAPITests):
         user1 = self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user1"},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
 
@@ -570,10 +571,15 @@ class APITests(utils.BaseAPITests):
         self.assertEvent("communism_created", {"id": 1, "amount": 1, "user": user1["id"], "participants": 1})
 
         # User referenced by participant 2 doesn't exist, then it's created
+        self.assertQuery(
+            ("POST", "/communisms"),
+            400,
+            json={"amount": 42, "description": "description2", "creator": 2}
+        ).json()
         user2 = self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user2"},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
 
@@ -653,7 +659,7 @@ class APITests(utils.BaseAPITests):
         self.assertEvent("communism_updated", {"id": 3, "participants": 23})
 
         # The newly added participant doesn't exist
-        self.assertQuery(("POST", "/communisms/increaseParticipation"), 404, json={"id": 3, "user": 42})
+        self.assertQuery(("POST", "/communisms/increaseParticipation"), 400, json={"id": 3, "user": 42})
 
         # Do not allow to delete communisms
         self.assertQuery(
@@ -669,7 +675,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users"),
             201,
-            json={"name": "user3"},
+            json={"permission": True, "external": False},
             r_schema=_schemas.User
         ).json()
         self.assertQuery(
@@ -700,7 +706,7 @@ class APITests(utils.BaseAPITests):
         )
         self.assertQuery(
             ("POST", "/communisms/close"),
-            404,
+            400,
             json={"id": 3, "issuer": 10}
         )
 
@@ -752,12 +758,12 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([], self.assertQuery(("GET", "/communisms?id=4"), 200).json())
         self.assertQuery(
             ("POST", "/communisms/increaseParticipation"),
-            404,
+            400,
             json={"id": 4, "user": 3}
         ).json()
         self.assertQuery(
             ("POST", "/communisms/decreaseParticipation"),
-            404,
+            400,
             json={"id": 4, "user": 2}
         ).json()
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?active=false"), 200).json())
@@ -818,20 +824,20 @@ class APITests(utils.BaseAPITests):
         session.commit()
         comp(1, "")
 
-        session.add(models.User(active=True, external=True, name="foo"))
+        session.add(models.User(active=True, external=True))
         session.commit()
         comp(2, "")
 
         session.add(models.User(active=True, external=False, permission=True))
-        session.add(models.User(active=True, external=False, permission=True, name="bar"))
+        session.add(models.User(active=True, external=False, permission=True))
         session.commit()
         comp(4, "")
 
-        session.add(models.User(external=False, name="baz"))
+        session.add(models.User(external=False))
         session.commit()
         comp(5, "")
 
-        session.add(models.User(active=False, external=False, name="baz"))
+        session.add(models.User(active=False, external=False))
         session.commit()
         comp(6, "")
 
@@ -849,20 +855,15 @@ class APITests(utils.BaseAPITests):
         comp(2, "external=true")
         comp(5, "external=false")
 
-        comp(0, "name=foobar")
-        comp(1, "name=foo")
-        comp(2, "name=baz")
-
         comp(2, "active=true&external=false&permission=true")
-        comp(1, "active=true&external=false&permission=true&name=bar")
 
         comp(1, "voucher_id=3")
         comp(0, "voucher_id=4")
         comp(0, "voucher_id=3&active=false")
 
-        comp(2, "external=false&name=baz")
-        comp(1, "external=false&name=baz&active=true")
-        comp(1, "external=false&name=baz&active=false")
+        comp(5, "external=false")
+        comp(3, "external=false&active=true")
+        comp(2, "external=false&active=false")
 
         session.add(models.Application(name="app", password="password", salt="salt"))
         session.commit()

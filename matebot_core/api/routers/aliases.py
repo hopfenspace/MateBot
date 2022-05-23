@@ -50,7 +50,7 @@ async def search_for_aliases(
     tags=["Aliases"],
     status_code=201,
     response_model=schemas.Alias,
-    responses={404: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
+    responses={400: {"model": schemas.APIError}, 409: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def create_new_alias(
@@ -63,7 +63,7 @@ async def create_new_alias(
     The `username` field should reflect the internal username in the
     frontend application and may be any string with a maximum length of 255 chars.
 
-    * `404`: if the user ID or application ID is unknown
+    * `400`: if the user ID or application ID is unknown
     * `409`: if the referenced user is disabled
     """
 
@@ -71,7 +71,7 @@ async def create_new_alias(
     application = await helpers.return_one(alias.application_id, models.Application, local.session)
 
     if not user.active:
-        raise Conflict("A disabled user can't get new aliases.", str(alias))
+        raise Conflict("This user account has been disabled, therefore it can't get new aliases.")
 
     existing_alias = local.session.query(models.Alias).filter_by(
         application_id=application.id,
@@ -103,7 +103,7 @@ async def create_new_alias(
     "/aliases/confirm",
     tags=["Aliases"],
     response_model=schemas.Alias,
-    responses={k: {"model": schemas.APIError} for k in (400, 404, 409)}
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
 @versioning.versions(minimal=1)
 async def confirm_existing_alias(
@@ -111,11 +111,10 @@ async def confirm_existing_alias(
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Confirm an existing unconfirmed alias model identified by the `alias_id`.
+    Confirm an existing unconfirmed alias model identified by the body's `id`.
     If the alias is already confirmed, this endpoint will silently accept it.
 
-    * `400`: if the issuer is not the alias owner
-    * `404`: if the alias ID or the issuer user is unknown
+    * `400`: if the issuer is not the alias owner or any resource wasn't resolved
     * `409`: if the target user is disabled or the community user
     """
 
@@ -124,7 +123,7 @@ async def confirm_existing_alias(
     if user.id != model.user_id:
         raise BadRequest("You are not permitted to confirm this alias, only the owner may do it.", str(model))
     if not user.active:
-        raise Conflict("A disabled user can't handle aliases.", str(user))
+        raise Conflict("This user account has been disabled, therefore it can't get new aliases.")
     if user.special:
         raise Conflict("The community user can't handle aliases.")
 
@@ -143,7 +142,7 @@ async def confirm_existing_alias(
     "/aliases/delete",
     tags=["Aliases"],
     response_model=schemas.AliasDeletion,
-    responses={k: {"model": schemas.APIError} for k in (400, 404)}
+    responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(minimal=1)
 async def delete_existing_alias(
@@ -153,8 +152,7 @@ async def delete_existing_alias(
     """
     Delete an existing alias model.
 
-    * `400`: if the issuer is not the alias owner
-    * `404`: if the alias ID or the issuer user is unknown
+    * `400`: if the issuer is not the owner or any resource wasn't resolved
     """
 
     model = await helpers.return_one(body.id, models.Alias, local.session)
