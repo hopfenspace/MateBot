@@ -78,8 +78,8 @@ async def send_money_between_two_users(
     might want to request explicit user approval ahead of time.
 
     * `400`: if the transaction is not allowed for various reasons,
-        e.g. sender equals receiver, either of those users
-        is disabled or is external but has no active voucher or if
+        e.g. sender equals receiver, the amount is too high, either of those
+        users is disabled or is external but has no active voucher or if
         the sender's or receiver's user specification couldn't be resolved
     * `409`: if the sender is the community user
     """
@@ -101,6 +101,9 @@ async def send_money_between_two_users(
         raise BadRequest("You can't send money to others, since you are an external user without voucher.")
     if receiver.external and receiver.voucher_id is None:
         raise BadRequest(f"You can't send money to this user, since nobody vouches for this user.")
+    m_amount = local.config.general.max_transaction_amount
+    if transaction.amount > m_amount:
+        raise BadRequest(f"Your desired transaction amount is higher than the configured maximum amount of {m_amount}!")
 
     return create_transaction(sender, receiver, amount, reason, local.session, logger).schema
 
@@ -124,9 +127,9 @@ async def consume_consumables_by_sending_money_to_the_community(
     endpoint by design, so take care doing that. The frontend application
     might want to request explicit user approval ahead of time.
 
-    * `400`: if the consuming user is disabled or has no rights
-        to consume goods (being an external user without voucher) or if
-        the consumable or the user specification couldn't be resolved
+    * `400`: if the consuming user is disabled or has no rights to consume
+        goods (being an external user without voucher), the amount is too high
+        or the consumable or the user specification couldn't be resolved
     * `409`: if the consuming user is the community itself
     """
 
@@ -141,6 +144,9 @@ async def consume_consumables_by_sending_money_to_the_community(
         raise BadRequest(f"The disabled user {user.username!r} can't consume goods.", str(user.schema))
     if user.external and user.voucher_id is None:
         raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
+    m_amount = local.config.general.max_simultaneous_consumption
+    if consumption.amount > m_amount:
+        raise BadRequest(f"Your desired consumption is higher than the configured maximum amount of {m_amount}!")
 
     consumables = [c for c in local.config.consumables if c.name == consumption.consumable]
     if len(consumables) == 0:
