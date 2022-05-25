@@ -83,6 +83,7 @@ class Callback:
             cls.logger.debug(f"Handling {len(events)} events '{events}' for {len(callbacks)} callbacks ...")
             for c in callbacks:
                 await cls._publish_event(c, events)
+        await cls._session.close()
         cls.logger.info("Stopped event notifier thread")
 
     @classmethod
