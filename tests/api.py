@@ -264,6 +264,32 @@ class APITests(utils.BaseAPITests):
         new_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
         self.assertEqual(old_community_balance + 1337, new_community_balance)
 
+    def test_externals_vouch_for_externals(self):
+        self.make_special_user()
+        self.login()
+        user1 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+
+        def _check():
+            self.assertEqual(user1["external"], True)
+            self.assertEqual(user1["permission"], False)
+            self.assertEqual(user1["active"], True)
+            self.assertEqual(user1["voucher_id"], None)
+            self.assertEqual(user2["external"], True)
+            self.assertEqual(user2["permission"], False)
+            self.assertEqual(user2["active"], True)
+            self.assertEqual(user2["voucher_id"], None)
+
+        _check()
+        self.assertTrue(self.assertQuery(
+            ("POST", "/users/setVoucher"),
+            400,
+            json={"debtor": user1['id'], "voucher": user2['id']}
+        ).json()["error"])
+        user1 = self.assertQuery(("GET", f"/users?id={user1['id']}"), 200).json()[0]
+        user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
+        _check()
+
     def test_refunds(self):
         self.make_special_user()
         self.login()
