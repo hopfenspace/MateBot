@@ -5,6 +5,7 @@ This module contains schemas for refunds
 and its votes as well as communisms.
 """
 
+import enum
 from typing import List, Optional
 
 import pydantic
@@ -32,11 +33,20 @@ class Ballot(pydantic.BaseModel):
     votes: List[Vote]
 
 
+@enum.unique
+class PollVariant(str, enum.Enum):
+    GET_INTERNAL = "get_internal"
+    LOOSE_INTERNAL = "loose_internal"
+    GET_PERMISSION = "get_permission"
+    LOOSE_PERMISSION = "loose_permission"
+
+
 class Poll(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     active: bool
     accepted: Optional[bool]
-    creator: _User
+    variant: PollVariant
+    user: _User
     ballot_id: pydantic.NonNegativeInt
     votes: List[Vote]
     created: pydantic.NonNegativeInt
@@ -44,7 +54,9 @@ class Poll(pydantic.BaseModel):
 
 
 class PollCreation(pydantic.BaseModel):
-    creator: user_spec
+    user: user_spec
+    issuer: user_spec
+    variant: PollVariant
 
 
 class PollVoteResponse(pydantic.BaseModel):

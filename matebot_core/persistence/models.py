@@ -6,7 +6,7 @@ import datetime
 from typing import List
 
 from sqlalchemy import (
-    Boolean, DateTime, Integer, String,
+    Boolean, DateTime, Enum, Integer, String,
     CheckConstraint, Column, FetchedValue, ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import relationship, backref
@@ -278,12 +278,14 @@ class Poll(Base):
     active: bool = Column(Boolean, nullable=False, default=True)
     accepted: bool = Column(Boolean, nullable=True, default=None)
     """Flag indicating whether the membership poll was accepted by the community"""
-    creator_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    variant: int = Column(Enum(schemas.PollVariant), nullable=False, default=None)
+    """Enum indicating the type of poll (one of get/loose internal/permission)"""
+    user_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
     ballot_id: int = Column(Integer, ForeignKey("ballots.id"), nullable=False)
     created: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
     modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    creator: User = relationship("User", backref="polls")
+    user: User = relationship("User", backref="polls")
     ballot: "Ballot" = relationship("Ballot", backref="polls")
 
     @property
@@ -296,15 +298,16 @@ class Poll(Base):
             id=self.id,
             active=self.active,
             accepted=self.accepted,
+            variant=self.variant,
             created=self.created.timestamp(),
             modified=self.modified.timestamp(),
-            creator=self.creator.schema,
+            user=self.user.schema,
             ballot_id=self.ballot_id,
             votes=[v.schema for v in self.ballot.votes]
         )
 
     def __repr__(self) -> str:
-        return "Poll(id={}, creator={})".format(self.id, self.creator)
+        return "Poll(id={}, user={})".format(self.id, self.user)
 
 
 class Ballot(Base):

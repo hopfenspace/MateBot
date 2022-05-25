@@ -171,6 +171,8 @@ implemented:
 
   - ``id`` refers to the created poll
   - ``user`` refers to the user ID which has requested to become an internal user
+  - ``variant`` is an enum determining the type of poll
+    (i.e. whether to get or loose the internal or permission flag)
 
 - ``poll_updated``
 
@@ -186,6 +188,8 @@ implemented:
   - ``id`` refers to the closed poll
   - ``accepted`` determines if the poll was accepted or not
   - ``aborted`` determines if the poll was aborted (``false`` for normal closing)
+  - ``variant`` is an enum determining the type of poll
+    (i.e. whether to get or loose the internal or permission flag)
   - ``user`` refers to the user ID which has requested to become an internal user
     (ignoring whether the request has been accepted or not)
   - ``last_vote`` refers to the optional ID of the last vote
