@@ -35,12 +35,21 @@ amount of consumables and vouch for other users in case of high debts.
    ```shell
    venv/bin/python3 -m matebot_core init --help
    ```
+   It's recommended *not* to use the `--create-all` switch (see step 6 and 7).
 5. Edit the newly created config file `config.json`. Important parts
    are the server and database settings, but you may want to change
    the general or logging settings as well. You should always use
    a persistent database, even if it's a sqlite database, since the
    in-memory sqlite database is currently not working properly.
-6. Create new application accounts to authenticate against the API
+6. Perform the database migrations to create an up-to-date DB layout:
+   ```shell
+   alembic upgrade head
+   ```
+7. Re-run the `init` subcommand once to make sure everything works later.
+   ```shell
+   venv/bin/python3 -m matebot_core init
+   ```
+8. Create new application accounts to authenticate against the API
    (use `--help` to show the options); the password may either be given
    via the `--password` option or interactively via standard input:
    ```shell
