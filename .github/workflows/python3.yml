@@ -58,6 +58,8 @@ jobs:
     - name: Run matebot_core once
       run: |
         python3 -m matebot_core init --database sqlite:///test.db
+        alembic upgrade head
+        python3 -m matebot_core init
         python3 -m matebot_core add-app --app app --password password
         python3 -m matebot_core run &
         sleep 3
@@ -74,6 +76,8 @@ jobs:
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
         ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db
+        alembic upgrade head
+        ../venv/bin/python3 -m matebot_core init
         ../venv/bin/python3 -m matebot_core add-app --app app --password password
         ../venv/bin/python3 -m matebot_core run &
         sleep 3
