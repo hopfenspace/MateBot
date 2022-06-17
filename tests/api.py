@@ -468,7 +468,136 @@ class APITests(utils.BaseAPITests):
 
         # TODO: Don't send votes for memberships polls to the refund endpoint
 
-    # TODO: test_polls
+    def test_polls(self):
+        self.login()
+        self.make_special_user()
+        self.assertListEqual([], self.assertQuery(("GET", "/polls"), 200).json())
+
+        # Adding the callback server for testing
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
+        )
+
+        # Create a set of sample users with various attributes
+        session = self.get_db_session()
+        user1_model = models.User(external=False, permission=True)
+        user2_model = models.User(external=False, permission=True)
+        user3_model = models.User(external=False, permission=False)
+        user4_model = models.User(external=False, permission=False)
+        user5_model = models.User(external=True, permission=False, voucher_user=user1_model)
+        user6_model = models.User(external=True, permission=False, voucher_user=None)
+        user7_model = models.User(external=False, permission=True, active=False)
+        user8_model = models.User(external=True, active=False)
+        session.add_all(
+            [user1_model, user2_model, user3_model, user4_model, user5_model, user6_model, user7_model, user8_model]
+        )
+        session.commit()
+        user1, user2, user3 = user1_model.id, user2_model.id, user3_model.id
+        user4, user5, user6 = user4_model.id, user5_model.id, user6_model.id
+        user7, user8 = user7_model.id, user8_model.id
+        session.close()
+        self.assertEqual(9, len(self.assertQuery(("GET", "/users"), 200).json()))
+
+        # Check various bad configurations
+        self.assertQuery(
+            ("POST", "/polls"), 409,
+            json={"user": 1, "issuer": user6, "variant": "get_internal"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user1, "issuer": user6, "variant": "get_permissions"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user5, "issuer": user1, "variant": "loose_permissions"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user6, "issuer": user6, "variant": "get_permissions"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user1, "issuer": user6, "variant": "loose_internal"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user3, "issuer": user1, "variant": "get_internal"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user1, "issuer": user3, "variant": "get_permissions"}
+        )
+        self.assertQuery(
+            ("POST", "/polls"), 400,
+            json={"user": user1, "issuer": user5, "variant": "loose_permission"}
+        )
+
+        # Create some correct polls
+        get_internal = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"user": user6, "issuer": user6, "variant": "get_internal"}
+        ).json()
+        self.assertEvent("poll_created", ["id", "user", "variant"])
+        get_permission = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"user": user3, "issuer": user3, "variant": "get_permission"}
+        ).json()
+        self.assertEvent("poll_created", {"id": 2, "user": user3, "variant": "get_permission"})
+        loose_internal = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"user": user4, "issuer": user2, "variant": "loose_internal"}
+        ).json()
+        self.assertEvent("poll_created")
+        loose_permission = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"user": user1, "issuer": user2, "variant": "loose_permission"}
+        ).json()
+        self.assertEvent("poll_created")
+        self.assertEqual(4, len(self.assertQuery(("GET", "/polls"), 200).json()))
+        self.assertEqual(4, len(self.assertQuery(("GET", "/polls?active=true"), 200).json()))
+        self.assertEqual(0, len(self.assertQuery(("GET", "/polls?active=false"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/polls?ballot_id=4"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/polls?user_id=4"), 200).json()))
+        self.assertEqual(0, len(self.assertQuery(("GET", "/polls?user_id=3"), 200).json()))
+
+        # Perform some invalid vote requests
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote on your own polls
+            json={"user": user6, "ballot_id": get_internal["id"], "vote": False}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote on other polls when you don't have permissions
+            json={"user": user6, "ballot_id": loose_permission["id"], "vote": False}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote on other polls when you don't have permissions
+            json={"user": user4, "ballot_id": get_internal["id"], "vote": False}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote on your own polls
+            json={"user": user1, "ballot_id": loose_permission["id"], "vote": False}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote when the user account has been disabled
+            json={"user": user7, "ballot_id": get_permission["id"], "vote": False}
+        )
+
+        # Check that a vote for a refund can't be used on the polls endpoints
+        self.assertQuery(("POST", "/refunds"), 201, json={"amount": 4, "creator": 3, "description": "foo"})
+        self.assertEvent("refund_created")
+        self.assertQuery(
+            ("POST", "/polls/vote"), 409,
+            json={"user": 4, "ballot_id": 5, "vote": True}
+        )
+
+        # TODO: Add tests that the polls *DO* what they should
 
     def test_communisms(self):
         self.login()
