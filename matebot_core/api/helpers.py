@@ -55,13 +55,11 @@ async def resolve_user_spec(user_spec: Union[str, int], local: LocalRequestData)
     if not isinstance(user_spec, str):
         raise TypeError(f"Expected int or str, found {type(user_spec)}")
 
-    possible_aliases = search_models(
-        models.Alias,
-        local,
+    possible_aliases = local.session.query(models.Alias).filter_by(
         application_id=local.origin_app.id,
         confirmed=True,
         username=user_spec
-    )
+    ).all()
 
     if len(possible_aliases) > 1:
         raise BadRequest(f"Multiple users were found for '{user_spec}'. Please ensure user aliases are unique.")
