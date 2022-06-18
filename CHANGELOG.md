@@ -1,14 +1,18 @@
-# Upcoming
+# MateBot core v0.5 (2022-06-19)
 
 - Rebuild the callback functionality with event posting using `POST` including
   various useful details for the callback server with optional authentication,
   together with an event buffer to cache the most recent events for more speed
 - **Breaking change** of various endpoints e.g. for the updates of the
-  participation in communisms, sending money and consuming goods
-  or disabling users to make it more intuitive
+  participation in communisms, sending money and consuming goods, dropping
+  privileges or disabling users to make it more intuitive
+- Rewrite the handling of membership polls with a new `variant` field
+  to determine the type of poll, with the current options being
+  `get_internal`, `get_permission`, `loose_internal` and `loose_permission`
 - **Breaking change** by removed the unused endpoints `GET /ballots`,
   `GET /multitransactions`, `PUT /callbacks`, `PUT /aliases`,
-  `DELETE /aliases` and `POST /users/setName`
+  `DELETE /aliases`, `POST /users/setFlags` and `POST /users/setName`
+- Replaced all `404` HTTP responses with `400` responses
 - Accept user aliases combined with the application ID from
   the auth token as valid user specification
 - Added an `issuer` field for various operations to enforce user
@@ -16,7 +20,11 @@
 - Rewrote the API unittests to use subprocesses instead of threads to run the
   API server for better end-to-end tests and fixed various smaller issues
 - Fixed a bug preventing general consumption
+- Dropped the user's name attribute and its handling functionality
+- Implemented the limitations of the config options `max_parallel_debtors`,
+  `max_transaction_amount` and `max_simultaneous_consumption`
 - Rewrote and extended some bigger parts of the sphinx documentation
+- Fixed some problems with the database migrations on SQLite databases
 
 # MateBot core v0.4.2 (2022-04-29)
 
