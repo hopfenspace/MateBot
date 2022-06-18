@@ -116,7 +116,7 @@ async def create_new_membership_poll(
                 raise BadRequest("You don't have extended permissions, therefore you can't loose them.")
             raise BadRequest("That user doesn't have extended permissions, therefore those permissions can't be taken.")
 
-    model = models.Poll(user=user, ballot=models.Ballot(), variant=poll.variant)
+    model = models.Poll(user=user, creator=issuer, ballot=models.Ballot(), variant=poll.variant)
     local.session.add(model)
     local.session.commit()
 
@@ -191,6 +191,7 @@ async def vote_for_membership_request(
             if not poll.user.external or poll.user.permission:
                 logger.warning(f"User {poll.user.id} was already internal or had permissions; useless poll {poll.id}")
             poll.user.external = False
+            poll.user.voucher_id = None
         elif poll.variant == schemas.PollVariant.LOOSE_INTERNAL:
             poll.user.external = True
             if poll.user.permission:
@@ -256,7 +257,7 @@ async def abort_open_membership_poll(
 
     if not model.active:
         raise BadRequest("Updating an already closed poll is not possible.", detail=str(model))
-    if model.issuer.id != issuer.id:
+    if model.creator_id != issuer.id:
         raise BadRequest("Only the creator of a poll is allowed to abort it.", detail=str(issuer))
 
     model.active = False

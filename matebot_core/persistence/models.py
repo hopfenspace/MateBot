@@ -281,11 +281,13 @@ class Poll(Base):
     variant: int = Column(Enum(schemas.PollVariant), nullable=False, default=None)
     """Enum indicating the type of poll (one of get/loose internal/permission)"""
     user_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
+    creator_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
     ballot_id: int = Column(Integer, ForeignKey("ballots.id"), nullable=False)
     created: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now())
     modified: datetime.datetime = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    user: User = relationship("User", backref="polls")
+    user: User = relationship("User", backref="polls", foreign_keys=[user_id])
+    creator: User = relationship("User", foreign_keys=[creator_id])
     ballot: "Ballot" = relationship("Ballot", backref="polls")
 
     @property
@@ -302,6 +304,7 @@ class Poll(Base):
             created=self.created.timestamp(),
             modified=self.modified.timestamp(),
             user=self.user.schema,
+            creator_id=self.creator_id,
             ballot_id=self.ballot_id,
             votes=[v.schema for v in self.ballot.votes]
         )

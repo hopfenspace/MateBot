@@ -47,6 +47,7 @@ class Poll(pydantic.BaseModel):
     accepted: Optional[bool]
     variant: PollVariant
     user: _User
+    creator_id: pydantic.NonNegativeInt
     ballot_id: pydantic.NonNegativeInt
     votes: List[Vote]
     created: pydantic.NonNegativeInt
