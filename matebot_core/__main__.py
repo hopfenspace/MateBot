@@ -9,6 +9,7 @@ import secrets
 import argparse
 
 import uvicorn
+import sqlalchemy.exc
 
 from matebot_core import settings as _settings
 from matebot_core.api import auth
@@ -101,6 +102,11 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "--no-community",
         action="store_true",
         help="Don't create the community user if it doesn't exist (not recommended)"
+    )
+    parser_init.add_argument(
+        "--create-all",
+        action="store_true",
+        help="Create all database models of the current revision, ignoring migrations (not recommended)"
     )
 
     parser_add_app.add_argument(
@@ -257,11 +263,25 @@ def init_project(args: argparse.Namespace) -> int:
             json.dump(settings, f, indent=4)
 
     else:
-        print("A config file has been found. Consider removing it before continuing to avoid inconsistencies.")
+        print(
+            "A config file has been found and will be used. If you want a fresh installation, "
+            "you should remove the config file and clear the database, then run this command again."
+        )
 
     config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
-    database.init(config.database.connection, config.database.debug_sql)
+    database.init(config.database.connection, config.database.debug_sql, args.create_all)
     session = database.get_new_session()
+
+    try:
+        session.query(models.User).all()
+    except sqlalchemy.exc.DatabaseError:
+        print(
+            "No table 'users' found in the database. Please initialize the database first. Either "
+            "perform the necessary database migrations using the 'alembic upgrade head' command "
+            "or use the insecure '--create-all' switch (which makes later migrations much harder!).",
+            file=sys.stderr
+        )
+        return 1
 
     if not args.no_community:
         specials = session.query(models.User).filter_by(special=True).all()

@@ -49,7 +49,7 @@ class Callback:
         try:
             response = await cls._session.post(
                 callback.url,
-                json=events_notification.dict(),  # TODO: maybe need some other conversion
+                json=events_notification.dict(),
                 timeout=aiohttp.ClientTimeout(total=2),
                 headers=callback.shared_secret and {"Authorization": f"Bearer {callback.shared_secret}"}
             )
@@ -83,6 +83,7 @@ class Callback:
             cls.logger.debug(f"Handling {len(events)} events '{events}' for {len(callbacks)} callbacks ...")
             for c in callbacks:
                 await cls._publish_event(c, events)
+        await cls._session.close()
         cls.logger.info("Stopped event notifier thread")
 
     @classmethod
