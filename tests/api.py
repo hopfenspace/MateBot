@@ -24,6 +24,15 @@ def _tested(cls: Type):
 
 @_tested
 class APITests(utils.BaseAPITests):
+    def _edit_user(self, user_id: int, **kwargs):
+        session = self.get_db_session()
+        user0_model = session.query(models.User).get(user_id)
+        for k, v in kwargs.items():
+            setattr(user0_model, k, v)
+        session.add(user0_model)
+        session.commit()
+        session.close()
+
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
@@ -130,18 +139,8 @@ class APITests(utils.BaseAPITests):
         # Deleting users with balance != 0 should fail
         self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user0['id']}"), 200).json()[0]["balance"])
         self.assertEqual(0, self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]["balance"])
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": user0["id"], "external": False},
-            r_schema=_schemas.User
-        )
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": user2["id"], "external": False},
-            r_schema=_schemas.User
-        )
+        self._edit_user(user0["id"], external=False)
+        self._edit_user(user2["id"], external=False)
         self.assertQuery(
             ("POST", "/transactions/send"),
             201,
@@ -199,12 +198,7 @@ class APITests(utils.BaseAPITests):
         # Deleting users that created/participate in an active communism shouldn't work
         user0 = users[0]
         user1 = users[1]
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": user0["id"], "external": False},
-            r_schema=_schemas.User
-        )
+        self._edit_user(user0["id"], external=False)
         communism = self.assertQuery(
             ("POST", "/communisms"),
             201,
@@ -315,11 +309,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"description": "Do you like this?", "amount": 42, "creator": 2}
         )
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": 2, "permission": True, "external": False}
-        )
+        self._edit_user(2, permission=True, external=False)
 
         # Create the first refund request
         refund1 = self.assertQuery(
@@ -404,11 +394,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"user": 5, "ballot_id": 1, "vote": True}
         )
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": 5, "permission": True, "external": False}
-        )
+        self._edit_user(5, permission=True, external=False)
         vote1 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
@@ -432,12 +418,7 @@ class APITests(utils.BaseAPITests):
         # Add another user to accept the refund request
         old_balance = self.assertQuery(("GET", "/users?id=2"), 200).json()[0]["balance"]
         self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": 6, "permission": True},
-            r_schema=_schemas.User
-        )
+        self._edit_user(6, permission=True)
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
             200,
@@ -795,11 +776,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Allow the user to create communisms
-        self.assertQuery(
-            ("POST", "/users/setFlags"),
-            200,
-            json={"user": user1["id"], "permission": True, "external": False}
-        )
+        self._edit_user(user1["id"], permission=True, external=False)
 
         # Create and get the first communism object
         communism1 = self.assertQuery(
