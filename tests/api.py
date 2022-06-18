@@ -492,7 +492,20 @@ class APITests(utils.BaseAPITests):
             json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
 
-        # TODO: Don't send votes for memberships polls to the refund endpoint
+        # Check that a vote for a poll can't be used on the refunds endpoints
+        poll_ballot_id = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"issuer": 5, "user": 3, "variant": "get_internal"}
+        ).json()["ballot_id"]
+        self.assertEvent("poll_created")
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": 6, "ballot_id": poll_ballot_id, "vote": True}
+        )
+        self.assertQuery(
+            ("POST", "/refunds/vote"), 409,
+            json={"user": 5, "ballot_id": poll_ballot_id, "vote": True}
+        )
 
     def test_polls(self):
         self.login()
@@ -508,6 +521,8 @@ class APITests(utils.BaseAPITests):
 
         # Create a set of sample users with various attributes
         session = self.get_db_session()
+        self.assertEqual(1, len(session.query(models.Application).all()))
+        self.assertEqual(1, session.query(models.Application).all()[0].id)
         user1_model = models.User(external=False, permission=True)
         user2_model = models.User(external=False, permission=True)
         user3_model = models.User(external=False, permission=False)
@@ -516,15 +531,22 @@ class APITests(utils.BaseAPITests):
         user6_model = models.User(external=True, permission=False, voucher_user=None)
         user7_model = models.User(external=False, permission=True, active=False)
         user8_model = models.User(external=True, active=False)
-        session.add_all(
-            [user1_model, user2_model, user3_model, user4_model, user5_model, user6_model, user7_model, user8_model]
-        )
+        alias1_model = models.Alias(application_id=1, username="user1", confirmed=True)
+        alias2_model = models.Alias(application_id=1, username="user2", confirmed=False)
+        alias3_model = models.Alias(application_id=1, username="user3", confirmed=True)
+        alias1, alias2, alias3 = alias1_model.username, alias2_model.username, alias3_model.username
+        user1_model.aliases, user2_model.aliases, user3_model.aliases = ([alias1_model], [alias2_model], [alias3_model])
+        session.add_all([
+            user1_model, user2_model, user3_model, user4_model, user5_model, user6_model, user7_model, user8_model,
+            alias1_model, alias2_model, alias3_model
+        ])
         session.commit()
-        user1, user2, user3 = user1_model.id, user2_model.id, user3_model.id
-        user4, user5, user6 = user4_model.id, user5_model.id, user6_model.id
-        user7, user8 = user7_model.id, user8_model.id
+        user1, user2, user3, user4 = user1_model.id, user2_model.id, user3_model.id, user4_model.id
+        user5, user6, user7, user8 = user5_model.id, user6_model.id, user7_model.id, user8_model.id
         session.close()
         self.assertEqual(9, len(self.assertQuery(("GET", "/users"), 200).json()))
+        self.assertEqual(3, len(self.assertQuery(("GET", "/aliases"), 200).json()))
+        self.assertEqual(2, len(self.assertQuery(("GET", "/aliases?confirmed=true"), 200).json()))
 
         # Check various bad configurations
         self.assertQuery(
@@ -566,11 +588,16 @@ class APITests(utils.BaseAPITests):
             json={"user": user6, "issuer": user6, "variant": "get_internal"}
         ).json()
         self.assertEvent("poll_created", ["id", "user", "variant"])
+        get_internal2 = self.assertQuery(
+            ("POST", "/polls"), 201,
+            json={"user": user5, "issuer": user2, "variant": "get_internal"}
+        ).json()
+        self.assertEvent("poll_created")
         get_permission = self.assertQuery(
             ("POST", "/polls"), 201,
             json={"user": user3, "issuer": user3, "variant": "get_permission"}
         ).json()
-        self.assertEvent("poll_created", {"id": 2, "user": user3, "variant": "get_permission"})
+        self.assertEvent("poll_created", {"id": 3, "user": user3, "variant": "get_permission"})
         loose_internal = self.assertQuery(
             ("POST", "/polls"), 201,
             json={"user": user4, "issuer": user2, "variant": "loose_internal"}
@@ -581,8 +608,8 @@ class APITests(utils.BaseAPITests):
             json={"user": user1, "issuer": user2, "variant": "loose_permission"}
         ).json()
         self.assertEvent("poll_created")
-        self.assertEqual(4, len(self.assertQuery(("GET", "/polls"), 200).json()))
-        self.assertEqual(4, len(self.assertQuery(("GET", "/polls?active=true"), 200).json()))
+        self.assertEqual(5, len(self.assertQuery(("GET", "/polls"), 200).json()))
+        self.assertEqual(5, len(self.assertQuery(("GET", "/polls?active=true"), 200).json()))
         self.assertEqual(0, len(self.assertQuery(("GET", "/polls?active=false"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/polls?ballot_id=4"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/polls?user_id=4"), 200).json()))
@@ -611,6 +638,11 @@ class APITests(utils.BaseAPITests):
         )
         self.assertQuery(
             ("POST", "/polls/vote"), 400,
+            # Don't vote on your own polls
+            json={"user": alias1, "ballot_id": loose_permission["id"], "vote": False}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
             # Don't vote when the user account has been disabled
             json={"user": user7, "ballot_id": get_permission["id"], "vote": False}
         )
@@ -620,10 +652,113 @@ class APITests(utils.BaseAPITests):
         self.assertEvent("refund_created")
         self.assertQuery(
             ("POST", "/polls/vote"), 409,
-            json={"user": 4, "ballot_id": 5, "vote": True}
+            json={"user": 4, "ballot_id": 6, "vote": True}
         )
 
-        # TODO: Add tests that the polls *DO* what they should
+        # Add one vote of user1 to include user6
+        self.assertEqual(0, len(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["votes"]))
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": alias1, "ballot_id": get_internal["id"], "vote": True}
+        )
+        self.assertQuery(
+            ("POST", "/polls/vote"), 400,
+            # Don't vote twice
+            json={"user": user1, "ballot_id": get_internal["id"], "vote": False}
+        )
+        self.assertEqual(1, len(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["votes"]))
+        self.assertIsNone(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["accepted"])
+        self.assertTrue(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["active"])
+        self.assertEvent("poll_updated")
+
+        # Add one vote of user2 to include user6 which should close & accept the poll
+        self.assertTrue(self.assertQuery(("GET", f"/users?id={user6}")).json()[0]["external"])
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": user2, "ballot_id": get_internal["id"], "vote": True}
+        )
+        self.assertTrue(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["accepted"])
+        self.assertFalse(self.assertQuery(("GET", f"/polls?id={get_internal['id']}")).json()[0]["active"])
+        self.assertEvent("poll_updated")
+        self.assertEvent("poll_closed", ["id", "user", "accepted", "aborted", "variant", "last_vote"])
+        self.assertFalse(self.assertQuery(("GET", f"/users?id={user6}")).json()[0]["external"])
+        self.assertIsNone(self.assertQuery(("GET", f"/users?id={user6}")).json()[0]["voucher_id"])
+
+        # Check that accepting an external to become internal clears the voucher
+        self.assertTrue(self.assertQuery(("GET", f"/users?id={user5}")).json()[0]["external"])
+        self.assertIsNotNone(self.assertQuery(("GET", f"/users?id={user5}")).json()[0]["voucher_id"])
+        self.assertEqual(0, len(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["votes"]))
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": alias1, "ballot_id": get_internal2["id"], "vote": True}
+        )
+        self.assertEqual(1, len(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["votes"]))
+        self.assertIsNone(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["accepted"])
+        self.assertTrue(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["active"])
+        self.assertEvent("poll_updated")
+        self.assertTrue(self.assertQuery(("GET", f"/users?id={user5}")).json()[0]["external"])
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": user2, "ballot_id": get_internal2["id"], "vote": True}
+        )
+        self.assertTrue(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["accepted"])
+        self.assertFalse(self.assertQuery(("GET", f"/polls?id={get_internal2['id']}")).json()[0]["active"])
+        self.assertEvent("poll_updated")
+        self.assertEvent("poll_closed", ["id", "user", "accepted", "aborted", "variant", "last_vote"])
+        self.assertFalse(self.assertQuery(("GET", f"/users?id={user6}")).json()[0]["external"])
+        self.assertIsNone(self.assertQuery(("GET", f"/users?id={user6}")).json()[0]["voucher_id"])
+
+        # Check that two votes against a poll close them without accepting
+        self.assertFalse(self.assertQuery(("GET", f"/users?id={user4}")).json()[0]["external"])
+        self.assertEqual(0, len(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["votes"]))
+        self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": alias1, "ballot_id": loose_internal["id"], "vote": False}
+        )
+        self.assertEqual(1, len(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["votes"]))
+        self.assertIsNone(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["accepted"])
+        self.assertTrue(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["active"])
+        self.assertEvent("poll_updated")
+        loose_internal_poll_vote = self.assertQuery(
+            ("POST", "/polls/vote"), 200,
+            json={"user": user2, "ballot_id": loose_internal["id"], "vote": False}
+        ).json()
+        self.assertEqual(loose_internal["id"], loose_internal_poll_vote["poll"]["id"])
+        self.assertEqual(user4, loose_internal_poll_vote["poll"]["user"]["id"])
+        self.assertEqual(user2, loose_internal_poll_vote["poll"]["creator_id"])
+        self.assertFalse(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["accepted"])
+        self.assertFalse(self.assertQuery(("GET", f"/polls?id={loose_internal['id']}")).json()[0]["active"])
+        self.assertFalse(self.assertQuery(("GET", f"/users?id={user4}")).json()[0]["external"])
+        self.assertEvent("poll_updated")
+        self.assertEvent(
+            "poll_closed",
+            {
+                "id": loose_internal["id"],
+                "user": user4,
+                "accepted": False,
+                "aborted": False,
+                "variant": "loose_internal",
+                "last_vote": loose_internal_poll_vote["vote"]["id"]
+            }
+        )
+
+        # Check that aborting a poll is possible only for the creator user
+        for issuer in [user1, alias1, user7, alias3, user5, alias2]:
+            self.assertQuery(
+                ("POST", "/polls/abort"), 400,
+                json={"id": loose_permission["id"], "issuer": issuer}
+            )
+        poll_loose_permission = self.assertQuery(
+            ("POST", "/polls/abort"), 200,
+            json={"id": loose_permission["id"], "issuer": user2}
+        ).json()
+        self.assertQuery(
+            ("POST", "/polls/abort"), 400,
+            json={"id": loose_permission["id"], "issuer": user2}
+        )
+        self.assertFalse(poll_loose_permission["accepted"])
+        self.assertFalse(poll_loose_permission["active"])
+        self.assertEvent("poll_closed", {"id": loose_permission["id"], "aborted": True, "accepted": False})
 
     def test_communisms(self):
         self.login()
