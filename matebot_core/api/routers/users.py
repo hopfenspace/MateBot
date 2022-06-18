@@ -100,38 +100,62 @@ async def create_new_user(local: LocalRequestData = Depends(LocalRequestData)):
 
 
 @router.post(
-    "/users/setFlags",
+    "/users/dropInternal",
     tags=["Users"],
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
-@versioning.versions(minimal=1)
-async def set_flags_of_user(
-        change: schemas.UserFlagsChangeRequest,
+async def drop_internal_privilege(
+        body: schemas.UserPrivilegeDrop,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
-    Set & unset the flags of an existing user
+    Drop the internal privilege of the specified user
 
-    * `400`: if the user specification couldn't be resolved
-    * `409`: if an inactive user was changed or if both
-        `external=true` and `permission=true` were set
+    * `400`: if the user specification couldn't be resolved, the issuer
+        doesn't equal the user or the user is already an external
+    * `409`: if an inactive user or the community user was targeted
     """
 
-    model = await helpers.resolve_user_spec(change.user, local)
+    def hook(model):
+        if model.external:
+            raise BadRequest("You are an external user, you can't drop such privileges.")
+        model.external = True
+        model.permission = False
+        return model
 
-    if not model.active:
-        raise Conflict("This user account is disabled and can't be updated.")
-    if change.external and change.permission:
-        raise Conflict("An external user can't get extended permissions.")
+    user = await helpers.drop_user_privileges_impl(body.user, body.issuer, local, hook)
+    Callback.push(schemas.EventType.USER_UPDATED, {"id": user.id})
+    return user.schema
 
-    if change.external is not None:
-        model.external = change.external
-    if change.permission is not None:
-        model.permission = change.permission
-    local.session.add(model)
-    local.session.commit()
-    return model.schema
+
+@router.post(
+    "/users/dropPermission",
+    tags=["Users"],
+    response_model=schemas.User,
+    responses={k: {"model": schemas.APIError} for k in (400, 409)}
+)
+async def drop_permission_privilege(
+        body: schemas.UserPrivilegeDrop,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Drop the vote permission privilege of the specified user
+
+    * `400`: if the user specification couldn't be resolved, the issuer
+        doesn't equal the user or the user doesn't have that privilege
+    * `409`: if an inactive user or the community user was targeted
+    """
+
+    def hook(model):
+        if not model.permission:
+            raise BadRequest("You don't have extended permissions and therefore can't drop them.")
+        model.permission = False
+        return model
+
+    user = await helpers.drop_user_privileges_impl(body.user, body.issuer, local, hook)
+    Callback.push(schemas.EventType.USER_UPDATED, {"id": user.id})
+    return user.schema
 
 
 @router.post(

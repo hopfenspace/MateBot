@@ -237,6 +237,11 @@ implemented:
 
   - ``id`` refers to the user that has been softly deleted
 
+- ``user_updated``
+
+  - ``id`` refers to the user that has been updated
+
+
 Example
 ~~~~~~~
 

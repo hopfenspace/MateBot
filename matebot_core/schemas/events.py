@@ -28,6 +28,7 @@ class EventType(str, enum.Enum):
     TRANSACTION_CREATED = "transaction_created"
     VOUCHER_UPDATED = "voucher_updated"
     USER_SOFTLY_DELETED = "user_softly_deleted"
+    USER_UPDATED = "user_updated"
 
 
 class Event(pydantic.BaseModel):

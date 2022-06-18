@@ -9,7 +9,7 @@ import pydantic
 import sqlalchemy.orm
 from fastapi.responses import Response
 
-from .base import BadRequest, NotFound
+from .base import BadRequest, Conflict, NotFound
 from .dependency import LocalRequestData
 from ..persistence import models
 from ..misc.logger import enforce_logger
@@ -119,3 +119,28 @@ async def delete_one_of_model(
     local.session.delete(obj)
     local.session.commit()
     return Response(status_code=204)
+
+
+async def drop_user_privileges_impl(
+        user: Union[int, str],
+        issuer: Union[int, str, None],
+        local: LocalRequestData,
+        transform_func: Callable[[models.User], models.User]
+) -> models.User:
+    """
+    Internal implementation to simply drop user privileges using a hook function
+    """
+
+    user = await resolve_user_spec(user, local)
+    if user.special:
+        raise Conflict("The community user can't drop other user's privileges")
+    if not user.active:
+        raise Conflict("The user is already disabled, dropping privileges isn't necessary.")
+    if issuer is not None:
+        issuer = await resolve_user_spec(issuer, local)
+        if user != issuer:
+            raise BadRequest("You are not allowed to drop another user's privileges!")
+    user = transform_func(user)
+    local.session.add(user)
+    local.session.commit()
+    return user

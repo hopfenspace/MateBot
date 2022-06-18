@@ -77,6 +77,11 @@ class UserCreation(pydantic.BaseModel):
     voucher_id: Optional[pydantic.NonNegativeInt]
 
 
+class UserPrivilegeDrop(pydantic.BaseModel):
+    user: user_spec
+    issuer: Optional[user_spec]
+
+
 class Transaction(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     sender: User
@@ -123,9 +128,3 @@ class VoucherUpdateResponse(pydantic.BaseModel):
 class VoucherUpdateRequest(pydantic.BaseModel):
     debtor: user_spec
     voucher: Optional[user_spec]
-
-
-class UserFlagsChangeRequest(pydantic.BaseModel):
-    user: user_spec
-    external: Optional[bool]
-    permission: Optional[bool]
