@@ -4,7 +4,6 @@ MateBot extra schemas
 This module contains the special schemas for updates and the status.
 """
 
-import sys
 import time
 import datetime
 from typing import List, Optional

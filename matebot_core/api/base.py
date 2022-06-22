@@ -62,6 +62,7 @@ async def handle_generic_exception(request: Request, _: Exception):
     msg = "Unexpected server error. The requested action wasn't completed successfully."
 
     return JSONResponse(jsonable_encoder(schemas.APIError(
+        error=True,
         status=status_code,
         method=request.method,
         request=request.url.path,
@@ -77,6 +78,7 @@ async def handle_request_validation_error(request: Request, exc: RequestValidati
     message = f"Failed to process the request:\n{msgs}\nYou may want to file a bug report."
 
     return JSONResponse(jsonable_encoder(schemas.APIError(
+        error=True,
         status=status_code,
         method=request.method,
         request=request.url.path,
@@ -121,6 +123,7 @@ class APIException(HTTPException):
             f"{request.url.path}' (details: {exc.detail})"
         )
         return JSONResponse(jsonable_encoder(schemas.APIError(
+            error=True,
             status=status_code,
             method=request.method,
             request=request.url.path,

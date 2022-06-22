@@ -2,8 +2,6 @@
 MateBot error schemas
 """
 
-from typing import Optional
-
 import pydantic
 
 
@@ -29,8 +27,8 @@ class APIError(pydantic.BaseModel):
     the problem source, if available, and should primarily be used for debugging.
     """
 
-    error: bool = True
-    status: Optional[pydantic.NonNegativeInt]
+    error: bool
+    status: pydantic.NonNegativeInt
     method: pydantic.constr(max_length=255)
     request: str
     repeat: bool
