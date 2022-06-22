@@ -105,6 +105,7 @@ async def create_new_user(local: LocalRequestData = Depends(LocalRequestData)):
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
+@versioning.versions(1)
 async def drop_internal_privilege(
         body: schemas.UserPrivilegeDrop,
         local: LocalRequestData = Depends(LocalRequestData)
@@ -135,6 +136,7 @@ async def drop_internal_privilege(
     response_model=schemas.User,
     responses={k: {"model": schemas.APIError} for k in (400, 409)}
 )
+@versioning.versions(1)
 async def drop_permission_privilege(
         body: schemas.UserPrivilegeDrop,
         local: LocalRequestData = Depends(LocalRequestData)
