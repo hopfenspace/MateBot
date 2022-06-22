@@ -2,7 +2,7 @@
 MateBot database bindings and functions using sqlalchemy
 """
 
-import sys
+import logging
 from typing import Optional
 
 from sqlalchemy import create_engine
@@ -16,6 +16,7 @@ PRINT_SQLITE_WARNING: bool = True
 Base = declarative_base()
 _engine: Optional[_Engine] = None
 _make_session: Optional[sessionmaker] = None
+_logger: logging.Logger = logging.getLogger(__name__)
 
 
 def init(database_url: str, echo: bool = True, create_all: bool = True):
@@ -38,10 +39,9 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
     global _engine, _make_session
     if database_url.startswith("sqlite:"):
         if ":memory:" in database_url or database_url == "sqlite://":
-            print(
+            _logger.warning(
                 "Using the in-memory sqlite3 may lead to later problems. "
-                "It's therefore recommended to create a persistent file.",
-                file=sys.stderr
+                "It's therefore recommended to create a persistent file."
             )
 
         _engine = create_engine(
@@ -50,10 +50,9 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
             connect_args={"check_same_thread": False}
         )
         if PRINT_SQLITE_WARNING:
-            print(
+            _logger.warning(
                 "Using a sqlite database is supported for development and testing environments "
-                "only. You should use a production-grade database server for deployment.",
-                file=sys.stderr
+                "only. You should use a production-grade database server for deployment."
             )
 
     else:
@@ -69,11 +68,10 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
 
 
 def _warn(obj: str):
-    print(
+    _logger.warning(
         f"Database {obj} not initialized! Using default database URL with database "
         f"{DEFAULT_DATABASE_URL!r}. Call 'init' once at program startup to fix "
-        f"future problems due to non-persistent database and suppress this warning.",
-        file=sys.stderr
+        f"future problems due to non-persistent database and suppress this warning."
     )
 
 
