@@ -42,6 +42,17 @@ jobs:
         cd docs
         pip install -r requirements.txt
         make html
+    - name: Run matebot_core once
+      run: |
+        python3 -m matebot_core init --database sqlite:///test.db || echo "Fail on purpose"
+        alembic upgrade head
+        python3 -m matebot_core init || echo "Fail on purpose"
+        python3 -m matebot_core add-app --app app --password password
+        python3 -m matebot_core run &
+        sleep 3
+        killall -s 9 -- python3
+        rm -fv test.db
+        rm -fv config.json
     - name: Run matebot_core unittests with temporary sqlite3
       run: |
         python3 -X tracemalloc=5 -m unittest tests -v
@@ -55,17 +66,6 @@ jobs:
       run: |
         echo -e '\nDATABASE_URL = "mysql+mysqldb://matebot_core_user:matebot_core_password@localhost/matebot_core_unittests?charset=utf8mb4"' >> tests/conf.py
         python3 -X tracemalloc=5 -m unittest tests -v
-    - name: Run matebot_core once
-      run: |
-        python3 -m matebot_core init --database sqlite:///test.db || echo "Fail on purpose"
-        alembic upgrade head
-        python3 -m matebot_core init || echo "Fail on purpose"
-        python3 -m matebot_core add-app --app app --password password
-        python3 -m matebot_core run &
-        sleep 3
-        killall -s 9 -- python3
-        rm -fv test.db
-        rm -fv config.json
     - name: Build the package
       run: |
         python3 -m build .
