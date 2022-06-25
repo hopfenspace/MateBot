@@ -83,6 +83,10 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "add-app",
         description="Add a new application with a password for the login & authentication process"
     )
+    parser_del_app = commands.add_parser(
+        "del-app",
+        description="Delete an existing application to block further API access"
+    )
     parser_run = commands.add_parser(
         "run",
         description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
@@ -121,6 +125,12 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         type=str,
         metavar="passwd",
         help="Password for the new app account (will be asked interactively if omitted)"
+    )
+
+    parser_del_app.add_argument(
+        "app",
+        metavar="name/ID",
+        help="name or ID of the application that should be deleted"
     )
 
     parser_run.add_argument(
@@ -342,6 +352,39 @@ def add_app(args: argparse.Namespace) -> int:
         return 0
 
 
+def del_app(args: argparse.Namespace) -> int:
+    app = args.app
+    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    database.init(config.database.connection, config.database.debug_sql)
+    session = database.get_new_session()
+
+    try:
+        app = int(app)
+        application = session.query(models.Application).get(app)
+        if application is None:
+            print(f"There's no application with the ID {app} in the database!", file=sys.stderr)
+            return 1
+
+    except ValueError:
+        applications = session.query(models.Application).filter_by(name=app).all()
+        if len(applications) == 0:
+            print(f"There's no application with name {app!r} in the database!", file=sys.stderr)
+            return 1
+        elif len(applications) > 1:
+            print(f"The application name {app} is not unambiguous! Please use the app ID.", file=sys.stderr)
+            return 1
+        application = applications[0]
+
+    session.delete(application)
+    session.commit()
+    print(
+        f"Successfully deleted application named {application.name!r} (ID {application.id}). "
+        f"Further login won't be possible. You should restart the server process in order to "
+        f"forcefully invalidate the access token the application might have stored."
+    )
+    return 0
+
+
 if __name__ == '__main__':
     program_name = sys.argv[0] if not sys.argv[0].endswith("__main__.py") else "matebot_core"
     namespace = get_parser(program_name).parse_args(sys.argv[1:])
@@ -350,6 +393,7 @@ if __name__ == '__main__':
         "run": run_server,
         "init": init_project,
         "add-app": add_app,
+        "del-app": del_app,
         "systemd": handle_systemd
     }
     exit(command_functions[namespace.command](namespace))
