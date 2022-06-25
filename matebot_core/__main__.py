@@ -68,7 +68,7 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=program)
 
     commands = parser.add_subparsers(
-        description="Available sub-commands: init, add-app, run, systemd",
+        description="Available sub-commands: init, show-apps, add-app, del-app, run, systemd",
         dest="command",
         required=True,
         metavar="<command>",
@@ -78,6 +78,10 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser_init = commands.add_parser(
         "init",
         description="Initialize the project by creating config files and some database models"
+    )
+    parser_show_apps = commands.add_parser(
+        "show-apps",
+        description="Show a list of currently registered applications"
     )
     parser_add_app = commands.add_parser(
         "add-app",
@@ -111,6 +115,18 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "--create-all",
         action="store_true",
         help="Create all database models of the current revision, ignoring migrations (not recommended)"
+    )
+
+    parser_show_apps.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the result in JSON format instead of human-readable text"
+    )
+    parser_show_apps.add_argument(
+        "--indent",
+        type=int,
+        metavar="n",
+        help="(JSON-only) Indent the JSON response with the n spaces (default: none)"
     )
 
     parser_add_app.add_argument(
@@ -321,6 +337,29 @@ def init_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def show_apps(args: argparse.Namespace) -> int:
+    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    database.init(config.database.connection, config.database.debug_sql)
+    session = database.get_new_session()
+    applications = session.query(models.Application).all()
+
+    if args.json:
+        print(json.dumps([app.schema.dict() for app in applications], indent=args.indent))
+        return 0
+
+    max_id, max_name, max_created = len("ID"), len("Name"), len("Created")
+    for app in applications:
+        max_id = max(max_id, len(str(app.id)))
+        max_name = max(max_name, len(f"{app.name!r}"))
+        max_created = max(max_created, len(str(app.created)))
+
+    print(f"{'ID':<{max_id}} | {'Name':<{max_name}} | {'Created':<{max_created}}")
+    print(f"{'-' * max_id}-+-{'-' * max_name}-+-{'-' * max_created}")
+    for app in applications:
+        print(f"{app.id:>{max_id}} | {app.name!r:<{max_name}} | {app.created}")
+    return 0
+
+
 def add_app(args: argparse.Namespace) -> int:
     if not args.app:
         print("Empty app names are not allowed.", file=sys.stderr)
@@ -392,6 +431,7 @@ if __name__ == '__main__':
     command_functions = {
         "run": run_server,
         "init": init_project,
+        "show-apps": show_apps,
         "add-app": add_app,
         "del-app": del_app,
         "systemd": handle_systemd
