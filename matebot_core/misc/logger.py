@@ -18,3 +18,14 @@ def enforce_logger(logger: Optional[logging.Logger] = None) -> logging.Logger:
     log = logging.getLogger(__name__)
     log.warning("No logger specified for function call; using defaults.")
     return log
+
+
+class NoDebugFilter(logging.Filter):
+    """
+    Logging filter that filters out any DEBUG message for the specified logger or handler
+    """
+
+    def filter(self, record: logging.LogRecord) -> int:
+        if super().filter(record):
+            return record.levelno > logging.DEBUG
+        return True

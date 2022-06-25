@@ -2,7 +2,7 @@
 Special schemas for the configuration file and its properties
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import pydantic
 
@@ -35,6 +35,12 @@ class LoggingConfig(pydantic.BaseModel):
     version: pydantic.conint(ge=1, le=1) = 1
     disable_existing_loggers: bool = False
     incremental: bool = False
+    filters: Dict[str, Dict[str, Union[str, list]]] = {
+        "multipart_no_debug": {
+            "()": "matebot_core.misc.logger.NoDebugFilter",
+            "name": "multipart.multipart"
+        }
+    }
     formatters: Dict[str, Dict[str, str]] = {
         "default": {
             "style": "{",
@@ -52,7 +58,7 @@ class LoggingConfig(pydantic.BaseModel):
         }
     }
     loggers: Dict[str, dict] = {}
-    handlers: Dict[str, Dict[str, str]] = {
+    handlers: Dict[str, Dict[str, Union[str, list]]] = {
         "default": {
             "level": "INFO",
             "class": "logging.StreamHandler",
@@ -60,7 +66,7 @@ class LoggingConfig(pydantic.BaseModel):
             "formatter": "default"
         },
         "file": {
-            "level": "INFO",
+            "level": "DEBUG",
             "class": "logging.FileHandler",
             "filename": "./matebot.log",
             "formatter": "file"
