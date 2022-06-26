@@ -39,10 +39,9 @@ async def search_for_users(
     """
     Return all users that fulfill *all* constraints given as query parameters
 
-    Query parameters prefixed with `user_` are treated as direct filters on
-    the user model. Query parameters prefixed with `alias_` are treated as
-    filters for users that have an alias fulfilling the given parameters. If
-    a user model has no aliases at all, it will be filtered out if at least
+    Query parameters prefixed with `alias_` are treated as filters for
+    users that have an alias fulfilling the given parameters. If a user
+    model has no aliases at all, it will be filtered out if at least
     one `alias_` query parameter has been set. If no query parameters are
     given, this endpoint will just return all currently known user models.
     """

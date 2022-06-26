@@ -8,4 +8,4 @@ python-multipart==0.0.5
 requests>=2.26.0,<3.0
 SQLAlchemy>=1.4.30,<2.0
 ujson>=5.2.0,<6.0
-uvicorn>=0.17.0,<1.0
+uvicorn>=0.18.0,<1.0
