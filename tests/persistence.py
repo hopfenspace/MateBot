@@ -404,6 +404,11 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
     """
 
     def test_community_user_constraints(self):
+        self.session.add(models.User(external=False, special=False, permission=False))
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
+            self.session.commit()
+        self.session.rollback()
+
         self.session.add_all(self.get_sample_users())
         community = self.get_sample_users()[-1]
 
