@@ -1,3 +1,13 @@
+# MateBot core v0.5.1 (2022-06-26)
+
+- **Notable change** by dropping the Python version from `/status` endpoint
+- **Notable change** by dropping defaults and optionals of the `APIError` model
+- Added two new subcommands to the CLI for better application management
+- Update FastAPI to version 0.78.0
+- Fixed logging problems due to updates in `uvicorn` and updated it to v0.18
+- Fixed warnings for endpoints not having explicit version annotations
+- Added a logging filter to suppress multipart DEBUG logs by default
+
 # MateBot core v0.5 (2022-06-19)
 
 - Rebuild the callback functionality with event posting using `POST` including
