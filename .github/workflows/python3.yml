@@ -42,7 +42,25 @@ jobs:
         cd docs
         pip install -r requirements.txt
         make html
-    - name: Run matebot_core once
+    - name: Test database migrations on MySQL with pymysql
+      run: |
+        mysql -e "CREATE DATABASE migrations_pymysql;" -u root -p"root" -v
+        mysql -e "GRANT ALL PRIVILEGES ON migrations_pymysql.* TO matebot_core_user;" -u root -p"root" -v
+        python3 -m matebot_core init --database mysql+pymysql://matebot_core_user:matebot_core_password@localhost/migrations_pymysql?charset=utf8mb4 || echo "Fail on purpose"
+        alembic upgrade head
+        mysqldump -u root -p"root" migrations_pymysql
+        mysql -e "DROP DATABASE migrations_pymysql;" -u root -p"root" -v
+        rm -fv config.json
+    - name: Test database migrations on MySQL with MySQLDb
+      run: |
+        mysql -e "CREATE DATABASE migrations_mysqldb;" -u root -p"root" -v
+        mysql -e "GRANT ALL PRIVILEGES ON migrations_mysqldb.* TO matebot_core_user;" -u root -p"root" -v
+        python3 -m matebot_core init --database mysql+mysqldb://matebot_core_user:matebot_core_password@localhost/migrations_mysqldb?charset=utf8mb4 || echo "Fail on purpose"
+        alembic upgrade head
+        mysqldump -u root -p"root" migrations_mysqldb
+        mysql -e "DROP DATABASE migrations_mysqldb;" -u root -p"root" -v
+        rm -fv config.json
+    - name: Run matebot_core once with database migrations on SQLite
       run: |
         python3 -m matebot_core init --database sqlite:///test.db || echo "Fail on purpose"
         alembic upgrade head
