@@ -53,7 +53,7 @@ class LoggingConfig(pydantic.BaseModel):
             "datefmt": "%d.%m.%Y %H:%M"
         },
         "access": {
-            "()": "uvicorn._logging.AccessFormatter",
+            "()": "uvicorn.logging.AccessFormatter",
             "fmt": "%(asctime)s %(client_addr)s - \"%(request_line)s\" %(status_code)s"
         }
     }
