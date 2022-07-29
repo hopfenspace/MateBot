@@ -502,7 +502,7 @@ class Callback(Base):
         )
 
     def __repr__(self) -> str:
-        return f"Callback(id={self.id}, base={self.base}, application_id={self.application_id})"
+        return f"Callback(id={self.id}, url={self.url}, application_id={self.application_id})"
 
 
 # Asserting that every database model has a `schema` attribute
