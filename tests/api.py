@@ -76,8 +76,12 @@ class APITests(utils.BaseAPITests):
 
         self.make_special_user()
         self.login()
-        for _ in range(18):
+        for _ in range(9):
             self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User)
+        with self.get_db_session() as session:
+            for _ in range(9):
+                session.add(models.User(external=False, permission=True))
+                session.commit()
 
         self.assertEqual(19, len(_test()))
         self.assertSetEqual(set(_test()), set(_test(descending=True)))
@@ -104,6 +108,19 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([3, 2, 1], _test(limit=16, page=1, descending=True))
         self.assertListEqual([1, 2, 3], _test(limit=3, page=0, descending=False))
         self.assertListEqual([10, 11, 12], _test(limit=3, page=3))
+        self.assertListEqual([11, 12, 13], _test(limit=3, page=3, community=False))
+        self.assertListEqual([], _test(limit=3, page=3, id=2))
+        self.assertListEqual([], _test(limit=3, page=3, external=True))
+        self.assertListEqual([19], _test(limit=3, page=3, external=False))
+        self.assertListEqual([1, 11, 12], _test(limit=3, external=False))
+        self.assertListEqual([8, 9, 10], _test(limit=3, page=2, external=True))
+        self.assertListEqual([4, 3, 2], _test(limit=3, page=2, external=True, descending=True))
+        self.assertListEqual([16, 17, 18], _test(limit=3, page=2, external=False))
+        self.assertListEqual([13, 12, 11], _test(limit=3, page=2, external=False, descending=True))
+        self.assertListEqual([1, 11], _test(limit=2, external=False))
+        self.assertListEqual([1, 11, 12, 13, 14, 15, 16, 17, 18, 19], _test(page=1, external=False))
+        self.assertListEqual([19, 18, 17, 16, 15, 14, 13, 12, 11, 1], _test(page=1, external=False, descending=True))
+        self.assertListEqual([17, 16], _test(limit=2, page=1, external=False, descending=True))
 
     def test_users(self):
         self.login()
