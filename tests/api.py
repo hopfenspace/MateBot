@@ -3,8 +3,9 @@ MateBot unit tests for the whole API in certain user actions
 """
 
 import time
+import urllib.parse
 import unittest as _unittest
-from typing import Type
+from typing import List, Type
 
 from matebot_core import schemas as _schemas
 from matebot_core.persistence import models
@@ -64,6 +65,45 @@ class APITests(utils.BaseAPITests):
         self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
         self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
+
+    def test_pagination(self):
+        def _test(**kwargs) -> List[int]:
+            path = "/users"
+            args = urllib.parse.urlencode(kwargs)
+            if args:
+                path += "?" + args
+            return [int(obj["id"]) for obj in self.assertQuery(("GET", path), 200).json()]
+
+        self.make_special_user()
+        self.login()
+        for _ in range(18):
+            self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User)
+
+        self.assertEqual(19, len(_test()))
+        self.assertSetEqual(set(_test()), set(_test(descending=True)))
+        self.assertListEqual(_test(page=2, descending=True)[::-1], _test(page=2, descending=False))
+        self.assertSetEqual(set(_test()), set(_test(page=873)))
+        self.assertEqual(4, len(_test(limit=4)))
+        self.assertEqual(8, len(_test(limit=8)))
+        self.assertEqual(19, len(_test(limit=82)))
+        self.assertEqual(5, len(_test(limit=5, page=1)))
+        self.assertEqual(5, len(_test(limit=5, page=2)))
+        self.assertEqual(0, len(_test(limit=5, page=27)))
+        self.assertEqual(2, len(_test(limit=2, page=0)))
+        self.assertEqual(2, len(_test(limit=2, page=7)))
+        self.assertEqual(1, len(_test(limit=1, page=18)))
+        self.assertEqual(0, len(_test(limit=1, page=19)))
+        self.assertListEqual([15, 16], _test(limit=2, page=7))
+        self.assertListEqual([5, 4], _test(limit=2, page=7, descending=True))
+        self.assertListEqual([1], _test(limit=1, page=18, descending=True))
+        self.assertListEqual([19], _test(limit=1, page=18, descending=False))
+        self.assertListEqual([], _test(limit=2, page=18))
+        self.assertListEqual([15, 16, 17, 18, 19], _test(limit=14, page=1))
+        self.assertListEqual([5, 4, 3, 2, 1], _test(limit=14, page=1, descending=True))
+        self.assertListEqual([], _test(limit=14, page=2, descending=True))
+        self.assertListEqual([3, 2, 1], _test(limit=16, page=1, descending=True))
+        self.assertListEqual([1, 2, 3], _test(limit=3, page=0, descending=False))
+        self.assertListEqual([10, 11, 12], _test(limit=3, page=3))
 
     def test_users(self):
         self.login()
