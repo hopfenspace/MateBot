@@ -6,6 +6,7 @@ import logging
 from typing import Callable, List, Optional, Type, Union
 
 import pydantic
+import sqlalchemy
 import sqlalchemy.orm
 from fastapi.responses import Response
 
@@ -76,6 +77,9 @@ def search_models(
         model: Type[models.Base],
         local: LocalRequestData,
         specialized_item_filter: Callable[[models.Base], bool] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         **kwargs
 ) -> List[pydantic.BaseModel]:
     """
@@ -85,6 +89,11 @@ def search_models(
     :param local: contextual local data
     :param specialized_item_filter: callable function to filter the list of models
         explicitly with some specialized metrics (e.g. custom fields or relations)
+    :param limit: limit the number of total results
+    :param page: select a page of results, based on the page size of `limit`; if no
+        limit is given, the page will be ignored due to its missing size specification
+    :param descending: reverse the order of results received from the database (the
+        item filter will process the reversed results, which however shouldn't matter)
     :param kwargs: dict of extra attribute checks on the model (empty values in the
         dict are ignored and won't be treated as check for ``None`` in the model)
     :return: list of schemas of all models that equal all kwargs and passed the filter function
@@ -94,7 +103,14 @@ def search_models(
     for k in kwargs:
         if kwargs[k] is not None:
             query = query.filter_by(**{k: kwargs[k]})
-    return [obj.schema for obj in query.all() if specialized_item_filter is None or specialized_item_filter(obj)]
+    if descending:
+        query = query.order_by(sqlalchemy.desc(model.id))
+    results = [obj.schema for obj in query.all() if specialized_item_filter is None or specialized_item_filter(obj)]
+    if limit and page:
+        return results[limit*page:limit*(page+1)]
+    elif limit:
+        return results[:limit]
+    return results
 
 
 async def delete_one_of_model(

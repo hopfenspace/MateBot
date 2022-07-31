@@ -28,6 +28,9 @@ async def search_for_aliases(
         application_id: Optional[pydantic.NonNegativeInt] = None,
         username: Optional[pydantic.constr(max_length=255)] = None,
         confirmed: Optional[bool] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -37,6 +40,9 @@ async def search_for_aliases(
     return helpers.search_models(
         models.Alias,
         local,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         user_id=user_id,
         application_id=application_id,

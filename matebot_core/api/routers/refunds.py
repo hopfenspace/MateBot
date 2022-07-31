@@ -31,6 +31,9 @@ async def search_for_refunds(
         creator_id: Optional[pydantic.NonNegativeInt] = None,
         ballot_id: Optional[pydantic.NonNegativeInt] = None,
         transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -40,6 +43,9 @@ async def search_for_refunds(
     return helpers.search_models(
         models.Refund,
         local,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         amount=amount,
         description=description,

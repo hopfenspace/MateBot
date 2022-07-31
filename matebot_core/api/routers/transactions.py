@@ -31,6 +31,9 @@ async def search_for_transactions(
         reason: Optional[pydantic.constr(max_length=255)] = None,
         has_multi_transaction: Optional[bool] = None,
         multi_transaction_id: Optional[pydantic.NonNegativeInt] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -50,6 +53,9 @@ async def search_for_transactions(
         models.Transaction,
         local,
         specialized_item_filter=extended_filter,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         sender_id=sender_id,
         receiver_id=receiver_id,

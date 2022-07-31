@@ -25,6 +25,9 @@ async def search_for_applications(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         name: Optional[pydantic.constr(max_length=255)] = None,
         callback_id: Optional[pydantic.NonNegativeInt] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -38,6 +41,9 @@ async def search_for_applications(
         models.Application,
         local,
         specialized_item_filter=extended_filter,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         name=name
     )
@@ -82,6 +88,9 @@ async def search_for_votes(
         user_id: Optional[pydantic.NonNegativeInt] = None,
         vote_for_poll: Optional[bool] = None,
         vote_for_refund: Optional[bool] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -99,6 +108,9 @@ async def search_for_votes(
         models.Vote,
         local,
         specialized_item_filter=extended_filter,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         vote=vote,
         ballot_id=ballot_id,

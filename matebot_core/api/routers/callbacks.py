@@ -43,6 +43,9 @@ async def search_for_callbacks(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
         url: Optional[pydantic.constr(max_length=255)] = None,
         application_id: Optional[pydantic.NonNegativeInt] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -52,6 +55,9 @@ async def search_for_callbacks(
     return helpers.search_models(
         models.Callback,
         local,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         url=url,
         application_id=application_id

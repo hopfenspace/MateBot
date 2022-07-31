@@ -76,6 +76,9 @@ async def search_for_communisms(
         participant_id: Optional[pydantic.NonNegativeInt] = None,
         total_participants: Optional[pydantic.NonNegativeInt] = None,
         unique_participants: Optional[pydantic.NonNegativeInt] = None,
+        limit: Optional[pydantic.NonNegativeInt] = None,
+        page: Optional[pydantic.NonNegativeInt] = None,
+        descending: Optional[bool] = False,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
     """
@@ -95,6 +98,9 @@ async def search_for_communisms(
         models.Communism,
         local,
         specialized_item_filter=extended_filter,
+        limit=limit,
+        page=page,
+        descending=descending,
         id=id,
         active=active,
         amount=amount,
