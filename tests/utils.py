@@ -390,7 +390,7 @@ class BaseAPITests(BaseTest):
         def _mk_args(port, conf_path) -> list:
             return [
                 sys.executable, "-m", "matebot_core", "run", "--port", str(port),
-                "--config", conf_path, "--host", "127.0.0.1", "--workers", "1", "--no-access-log"
+                "--config", conf_path, "--host", "127.0.0.1", "--workers", "1"
             ]
 
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
