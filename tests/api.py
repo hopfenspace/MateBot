@@ -1039,9 +1039,9 @@ class APITests(utils.BaseAPITests):
 
         # Check that a multi transaction has been created by closing the communism
         time.sleep(0.1)
-        session = self.get_db_session()
-        self.assertEqual(1, len(session.query(models.MultiTransaction).all()))
-        self.assertEqual(56, session.query(models.MultiTransaction).get(1).base_amount)
+        with self.get_db_session() as session:
+            self.assertEqual(1, len(session.query(models.MultiTransaction).all()))
+            self.assertEqual(56, session.query(models.MultiTransaction).get(1).base_amount)
 
     def test_communism_schema_checks(self):
         self.login()
