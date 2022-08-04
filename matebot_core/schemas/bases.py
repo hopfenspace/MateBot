@@ -128,3 +128,4 @@ class VoucherUpdateResponse(pydantic.BaseModel):
 class VoucherUpdateRequest(pydantic.BaseModel):
     debtor: user_spec
     voucher: Optional[user_spec]
+    issuer: user_spec

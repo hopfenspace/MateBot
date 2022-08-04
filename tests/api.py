@@ -335,7 +335,7 @@ class APITests(utils.BaseAPITests):
         self.assertTrue(self.assertQuery(
             ("POST", "/users/setVoucher"),
             400,
-            json={"debtor": user1['id'], "voucher": user2['id']}
+            json={"debtor": user1["id"], "voucher": user2["id"], "issuer": user2["id"]}
         ).json()["error"])
         user1 = self.assertQuery(("GET", f"/users?id={user1['id']}"), 200).json()[0]
         user2 = self.assertQuery(("GET", f"/users?id={user2['id']}"), 200).json()[0]
@@ -521,7 +521,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": 8, "voucher": 2}
+            json={"debtor": 8, "voucher": 2, "issuer": 2}
         )
         self.assertEvent("voucher_updated", {"id": 8, "voucher": 2})
         self.assertQuery(
@@ -876,7 +876,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": user2["id"], "voucher": user1["id"]}
+            json={"debtor": user2["id"], "voucher": user1["id"], "issuer": user1["id"]}
         )
         self.assertEvent("voucher_updated")
 
@@ -950,7 +950,7 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": 3, "voucher": 1},
+            json={"debtor": 3, "voucher": 1, "issuer": 1},
             r_schema=_schemas.VoucherUpdateResponse
         )
         self.assertEvent("voucher_updated", {"id": 3, "voucher": 1})

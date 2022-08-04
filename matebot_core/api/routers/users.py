@@ -190,19 +190,26 @@ async def set_voucher_of_user(
 
     debtor = await helpers.resolve_user_spec(update.debtor, local)
     voucher = update.voucher and await helpers.resolve_user_spec(update.voucher, local)
+    issuer = await helpers.resolve_user_spec(update.issuer, local)
 
     if debtor.special:
         raise BadRequest("Nobody can vouch for the community user.")
     if voucher and voucher.special:
         raise Conflict("The community user can't vouch for anyone.")
+    if voucher and issuer != voucher:
+        raise BadRequest("You can't let someone else vouch on your behalf.")
 
     if debtor.voucher_user is not None and voucher and debtor.voucher_user != voucher:
         raise BadRequest("This user already has a voucher, you can't vouch for it.")
 
     if debtor == voucher:
         raise BadRequest("You can't vouch for yourself.")
+    if debtor == issuer:
+        raise BadRequest("You can't change your own vouching state, you need another user to do that.")
     if not debtor.external:
         raise BadRequest("You can't vouch for this user, since it's an internal user.")
+    if issuer.external or not issuer.active:
+        raise BadRequest("You can't vouch for other users.")
     if voucher and voucher.external:
         raise BadRequest("You can't vouch for anyone else, since you are an external user yourself.")
     if len(voucher.vouching_for) >= local.config.general.max_parallel_debtors:
