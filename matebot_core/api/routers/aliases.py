@@ -132,6 +132,10 @@ async def confirm_existing_alias(
         raise Conflict("This user account has been disabled, therefore it can't get new aliases.")
     if user.special:
         raise Conflict("The community user can't handle aliases.")
+    if local.origin_app.id == model.application_id:
+        raise BadRequest("You can't confirm an alias with the same application, use another app.")
+    if model.confirmed:
+        return model.schema
 
     model.confirmed = True
     local.session.add(model)
