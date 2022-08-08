@@ -166,7 +166,11 @@ async def delete_existing_alias(
     """
 
     model = await helpers.return_one(body.id, models.Alias, local.session)
-    user = await helpers.resolve_user_spec(body.issuer, local)
-    if user.id != model.user_id:
-        raise BadRequest("You are not permitted to delete this alias, only the owner may do it.", str(user))
-    return await helpers.delete_one_of_model(body.id, models.Alias, local, logger=logger)
+    issuer = await helpers.resolve_user_spec(body.issuer, local)
+    if issuer.id != model.user_id:
+        raise BadRequest("You are not permitted to delete this alias, only the owner may do it.", str(issuer))
+    logger.debug(f"Dropping alias ID {body.id}: {model!r} ...")
+    user = await helpers.return_one(model.user_id, models.User, local.session)
+    local.session.delete(model)
+    local.session.commit()
+    return schemas.AliasDeletion(aliases=[a.schema for a in user.aliases], user_id=user.id)
