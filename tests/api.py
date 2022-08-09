@@ -315,6 +315,53 @@ class APITests(utils.BaseAPITests):
         new_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
         self.assertEqual(old_community_balance + 1337, new_community_balance)
 
+    def test_alias_deletion(self):
+        self.make_special_user()
+        self.login()
+        with self.get_db_session() as session:
+            session.add(models.User(external=False, permission=True))
+            session.add(models.User(external=True))
+            session.commit()
+
+            session.add(models.Application(name="app1", password="app1", salt="app1"))
+            session.add(models.Application(name="app2", password="app2", salt="app2"))
+            session.add(models.Application(name="app3", password="app3", salt="app3"))
+            session.commit()
+
+            session.add(models.Alias(user_id=2, application_id=1, username="2-1", confirmed=True))
+            session.add(models.Alias(user_id=2, application_id=2, username="2-2", confirmed=True))
+            session.add(models.Alias(user_id=2, application_id=3, username="2-3", confirmed=True))
+            session.add(models.Alias(user_id=3, application_id=1, username="3-1", confirmed=True))
+            session.add(models.Alias(user_id=3, application_id=2, username="3-2", confirmed=True))
+            session.add(models.Alias(user_id=3, application_id=3, username="3-3", confirmed=True))
+            session.commit()
+
+            print(session.query(models.Alias).all())
+
+        self.assertEqual(6, len(self.assertQuery(("GET", "/aliases"), 200).json()))
+        self.assertQuery(("POST", "/aliases/delete"), 400, r_schema=_schemas.APIError)
+        self.assertQuery(("POST", "/aliases/delete"), 400, json={"id": 1, "issuer": 3}, r_schema=_schemas.APIError)
+        self.assertQuery(("POST", "/aliases/delete"), 400, json={"id": 2, "issuer": 3}, r_schema=_schemas.APIError)
+        self.assertQuery(("POST", "/aliases/delete"), 400, json={"id": 4, "issuer": 1}, r_schema=_schemas.APIError)
+        self.assertQuery(("POST", "/aliases/delete"), 400, json={"id": 4, "issuer": 2}, r_schema=_schemas.APIError)
+        self.assertEqual(6, len(self.assertQuery(("GET", "/aliases"), 200).json()))
+        deletion1 = self.assertQuery(
+            ("POST", "/aliases/delete"), 200,
+            json={"id": 2, "issuer": 2}, r_schema=_schemas.AliasDeletion
+        ).json()
+        self.assertEqual(deletion1["user_id"], 2)
+        self.assertEqual(5, len(self.assertQuery(("GET", "/aliases"), 200).json()))
+        deletion2 = self.assertQuery(
+            ("POST", "/aliases/delete"), 200,
+            json={"id": 6, "issuer": "3-1"}, r_schema=_schemas.AliasDeletion
+        ).json()
+        self.assertEqual(deletion2["user_id"], 3)
+        self.assertListEqual(deletion2["aliases"], [
+            {"id": 4, "user_id": 3, "application_id": 1, "username": "3-1", "confirmed": True},
+            {"id": 5, "user_id": 3, "application_id": 2, "username": "3-2", "confirmed": True}
+        ])
+        self.assertEqual(4, len(self.assertQuery(("GET", "/aliases"), 200).json()))
+
     def test_externals_vouch_for_externals(self):
         self.make_special_user()
         self.login()
