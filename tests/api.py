@@ -336,8 +336,6 @@ class APITests(utils.BaseAPITests):
             session.add(models.Alias(user_id=3, application_id=3, username="3-3", confirmed=True))
             session.commit()
 
-            print(session.query(models.Alias).all())
-
         self.assertEqual(6, len(self.assertQuery(("GET", "/aliases"), 200).json()))
         self.assertQuery(("POST", "/aliases/delete"), 400, r_schema=_schemas.APIError)
         self.assertQuery(("POST", "/aliases/delete"), 400, json={"id": 1, "issuer": 3}, r_schema=_schemas.APIError)
@@ -1193,6 +1191,9 @@ class APITests(utils.BaseAPITests):
         comp(7, "")
         comp(1, "alias_id=1")
         comp(1, "alias_id=2")
+        comp(0, "alias_application=foo")
+        comp(0, "alias_application=app")
+        comp(3, "alias_application=application")
         comp(3, "alias_application_id=1")
         comp(0, "alias_application_id=2")
         comp(1, "alias_confirmed=false")

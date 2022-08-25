@@ -33,6 +33,7 @@ async def search_for_users(
         alias_id: Optional[pydantic.NonNegativeInt] = None,
         alias_username: Optional[pydantic.constr(max_length=255)] = None,
         alias_confirmed: Optional[bool] = None,
+        alias_application: Optional[pydantic.constr(max_length=255)] = None,
         alias_application_id: Optional[pydantic.NonNegativeInt] = None,
         limit: Optional[pydantic.NonNegativeInt] = None,
         page: Optional[pydantic.NonNegativeInt] = None,
@@ -59,10 +60,14 @@ async def search_for_users(
                 continue
             if alias_confirmed is not None and a.confirmed != alias_confirmed:
                 continue
+            if alias_application is not None and a.application.name != alias_application:
+                continue
             if alias_application_id is not None and a.application_id != alias_application_id:
                 continue
             return True
-        return not user.aliases and [alias_username, alias_confirmed, alias_application_id] == [None] * 3
+        return not user.aliases and all(
+            obj is None for obj in [alias_username, alias_confirmed, alias_application, alias_application_id]
+        )
 
     return helpers.search_models(
         models.User,
