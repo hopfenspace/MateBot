@@ -8,6 +8,7 @@ for more information about the breaking changes between versions.
 """
 
 import os
+import asyncio
 import logging.config
 from typing import Any, Callable, Dict, Optional, Type, Union
 
@@ -180,9 +181,12 @@ def create_app(
     """
 
     def startup_server():
+        async def notify_server_started():
+            await asyncio.sleep(1)
+            logger.debug(f"Notifying callbacks of SERVER_STARTED event...")
+            notifier.Callback.push(schemas.EventType.SERVER_STARTED, {"base_url": settings.server.public_base_url})
         logger.info("Starting API...")
-        logger.debug(f"Notifying callbacks of SERVER_STARTED event...")
-        notifier.Callback.push(schemas.EventType.SERVER_STARTED, {"base_url": settings.server.public_base_url})
+        asyncio.get_event_loop().create_task(notify_server_started())
 
     def shutdown_server():
         logger.info("Shutting down...")
