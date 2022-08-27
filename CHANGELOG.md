@@ -1,3 +1,12 @@
+# MateBot core v0.5.2 (2022-08-27)
+
+- Changed project license from **GLPv3** to **AGPLv3**
+- Added pagination to all relevant GET endpoints
+- Require the `ìssuer` for voucher update requests
+- Fixed logging and unittest bugs
+- Added a filter `alias_application` to the users endpoint
+- Fixed bug in `POST /aliases/delete` endpoint
+
 # MateBot core v0.5.1 (2022-06-26)
 
 - **Notable change** by dropping the Python version from `/status` endpoint
