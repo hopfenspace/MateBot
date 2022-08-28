@@ -25,6 +25,8 @@ class User(Base):
 
     id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     balance: int = Column(Integer, nullable=False, default=0)
+    name: str = Column(String(255), nullable=False, unique=True)
+    """Globally unique name of the user for cross-application display purposes"""
     permission: bool = Column(Boolean, nullable=False, default=False)
     """Flag indicating whether the user is allowed to take part in ballots"""
     active: bool = Column(Boolean, nullable=False, default=True)
