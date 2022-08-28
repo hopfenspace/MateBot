@@ -54,6 +54,7 @@ class User(Base):
         return schemas.User(
             id=self.id,
             balance=self.balance,
+            name=self.name,
             permission=self.permission,
             active=self.active,
             external=self.external,
@@ -64,7 +65,7 @@ class User(Base):
         )
 
     def __repr__(self) -> str:
-        return f"User(id={self.id}, balance={self.balance}, aliases={self.aliases})"
+        return f"User(id={self.id}, balance={self.balance}, name={self.name}, aliases={self.aliases})"
 
 
 class Application(Base):

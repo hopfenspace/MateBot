@@ -54,14 +54,10 @@ class Application(pydantic.BaseModel):
     created: pydantic.NonNegativeInt
 
 
-class ApplicationCreation(pydantic.BaseModel):
-    name: pydantic.constr(max_length=255)
-    password: pydantic.constr(min_length=8, max_length=64)
-
-
 class User(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     balance: int
+    name: pydantic.constr(max_length=255)
     permission: bool
     active: bool
     external: bool
@@ -72,14 +68,17 @@ class User(pydantic.BaseModel):
 
 
 class UserCreation(pydantic.BaseModel):
-    permission: bool
-    external: bool
-    voucher_id: Optional[pydantic.NonNegativeInt]
+    name: pydantic.constr(max_length=255)
 
 
 class UserPrivilegeDrop(pydantic.BaseModel):
     user: user_spec
     issuer: Optional[user_spec]
+
+
+class UsernameUpdateRequest(pydantic.BaseModel):
+    name: pydantic.constr(max_length=255)
+    issuer: user_spec
 
 
 class Transaction(pydantic.BaseModel):

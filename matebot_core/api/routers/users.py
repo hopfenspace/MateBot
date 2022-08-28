@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @versioning.versions(1)
 async def search_for_users(
         id: Optional[pydantic.NonNegativeInt] = None,  # noqa
+        name: Optional[pydantic.constr(max_length=255)] = None,
         community: Optional[bool] = None,
         permission: Optional[bool] = None,
         active: Optional[bool] = None,
@@ -77,6 +78,7 @@ async def search_for_users(
         page=page,
         descending=descending,
         id=id,
+        name=name,
         special=community or None,
         permission=permission,
         active=active,
@@ -92,13 +94,16 @@ async def search_for_users(
     response_model=schemas.User
 )
 @versioning.versions(minimal=1)
-async def create_new_user(local: LocalRequestData = Depends(LocalRequestData)):
+async def create_new_user(request: schemas.UserCreation, local: LocalRequestData = Depends(LocalRequestData)):
     """
     Create a new "empty" user account with zero balance
     """
 
+    if local.session.query(models.User).filter_by(name=request.name).all():
+        raise BadRequest(f"Username {request.name!r} is not available.")
     model = models.User(
         balance=0,
+        name=request.name,
         permission=False,
         active=True,
         external=True,
@@ -168,6 +173,35 @@ async def drop_permission_privilege(
     user = await helpers.drop_user_privileges_impl(body.user, body.issuer, local, hook)
     Callback.push(schemas.EventType.USER_UPDATED, {"id": user.id})
     return user.schema
+
+
+@router.post(
+    "/users/setName",
+    tags=["Users"],
+    response_model=schemas.User,
+    responses={400: {"model": schemas.APIError}}
+)
+@versioning.versions(1)
+async def drop_permission_privilege(
+        update: schemas.UsernameUpdateRequest,
+        local: LocalRequestData = Depends(LocalRequestData)
+):
+    """
+    Set the globally unique name of a particular user
+
+    * `400`: if the user is disabled or the username is already taken
+    """
+
+    issuer = await helpers.resolve_user_spec(update.issuer, local)
+    if not issuer.active:
+        raise BadRequest("This user account is disabled.")
+    if local.session.query(models.User).filter_by(name=update.name).all():
+        raise BadRequest(f"Username {update.name!r} is not available.")
+    issuer.name = update.name
+    local.session.add(issuer)
+    local.session.commit()
+    Callback.push(schemas.EventType.USER_UPDATED, {"id": issuer.id})
+    return issuer.schema
 
 
 @router.post(
