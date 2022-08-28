@@ -130,6 +130,53 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([19, 18, 17, 16, 15, 14, 13, 12, 11, 1], _test(page=1, external=False, descending=True))
         self.assertListEqual([17, 16], _test(limit=2, page=1, external=False, descending=True))
 
+    def test_username_changes(self):
+        self.login()
+        self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
+
+        users = []
+        for i in range(10):
+            user = self.assertQuery(("POST", "/users"), 201, json={"name": f"user{i}"}, r_schema=_schemas.User).json()
+            del user["modified"]
+            users.append(user)
+
+        self.assertQuery(
+            ("POST", "/callbacks"), 201,
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
+        )
+
+        def f(index: int, name: str):
+            def q(x):
+                del x["modified"]
+                return x
+            users[index]["name"] = name
+            self.assertListEqual(users, [q(e) for e in self.assertQuery(("GET", "/users"), 200).json()])
+
+        self.assertEqual("foo", self.assertQuery(
+            ("POST", "/users/setName"), 200, json={"issuer": 1, "name": "foo"}, r_schema=_schemas.User
+        ).json()["name"])
+        f(0, "foo")
+        self.assertEqual("bar", self.assertQuery(
+            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "bar"}, r_schema=_schemas.User
+        ).json()["name"])
+        f(1, "bar")
+        self.assertEqual("baz", self.assertQuery(
+            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "baz"}, r_schema=_schemas.User
+        ).json()["name"])
+        f(1, "baz")
+        self.assertEqual("bar", self.assertQuery(
+            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "bar"}, r_schema=_schemas.User
+        ).json()["name"])
+        f(1, "bar")
+        self.assertIn("not available", self.assertQuery(
+            ("POST", "/users/setName"), 400, json={"issuer": 3, "name": "bar"}, r_schema=_schemas.APIError
+        ).json()["message"])
+        f(1, "bar")
+        self.assertIn("not available", self.assertQuery(
+            ("POST", "/users/setName"), 400, json={"issuer": 6, "name": "user4"}, r_schema=_schemas.APIError
+        ).json()["message"])
+        f(1, "bar")
+
     def test_users(self):
         self.login()
         self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
