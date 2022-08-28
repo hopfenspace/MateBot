@@ -71,6 +71,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
     def test_create_user_without_orm(self):
         self.session.execute(
             sqlalchemy.insert(models.User).values(
+                name="foo",
                 balance=42,
                 permission=True,
                 external=False
@@ -80,7 +81,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
 
         self.assertEqual(1, len(self.session.query(models.User).all()))
         self.assertTrue(self.session.get(models.User, 1))
-        self.assertFalse(hasattr(self.session.get(models.User, 1), "name"))
+        self.assertTrue(hasattr(self.session.get(models.User, 1), "name"))
         self.assertEqual(self.session.get(models.User, 1).balance, 42)
         now = int(datetime.datetime.now().timestamp())
         modified = self.session.get(models.User, 1).modified.timestamp()
@@ -101,6 +102,14 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertListEqual(self.session.get(models.User, 2).vouching_for, [])
         self.assertListEqual(self.session.get(models.User, 4).vouching_for, [])
         self.assertIsNone(self.session.get(models.User, 5))
+
+        # Check the unique constraint on the user's name
+        self.session.add(models.User(name="foo", external=False))
+        self.session.commit()
+        self.session.add(models.User(name="foo", external=False))
+        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            self.session.commit()
+        self.session.rollback()
 
     def test_create_community_user(self):
         community = self.get_sample_users()[-1]
@@ -373,8 +382,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(m2.schema.total_amount, 8)
 
         # Six people pay to two guys unequally (6th person payer pays twice)
-        self.session.add(models.User(balance=-132, external=False))
-        self.session.add(models.User(balance=3, external=False))
+        self.session.add(models.User(name="foo", balance=-132, external=False))
+        self.session.add(models.User(name="bar", balance=3, external=False))
         m3 = models.MultiTransaction(base_amount=10)
         self.session.add(m3)
         self.session.commit()
@@ -562,7 +571,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             self.session.rollback()
 
         # Creating the user to fix the aforementioned error
-        self.session.add(models.User(external=False, permission=True))
+        self.session.add(models.User(name="foo", external=False, permission=True))
         self.session.commit()
 
         # Everything fine now

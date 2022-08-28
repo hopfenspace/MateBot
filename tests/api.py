@@ -76,14 +76,22 @@ class APITests(utils.BaseAPITests):
 
         self.make_special_user()
         self.login()
-        for _ in range(9):
-            self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User)
+        for i in range(9):
+            self.assertQuery(("POST", "/users"), 201, json={"name": f"user{i}"}, r_schema=_schemas.User)
         with self.get_db_session() as session:
-            for _ in range(9):
-                session.add(models.User(external=False, permission=True))
+            for j in range(9):
+                session.add(models.User(name=f"user{9+j}", external=False, permission=True))
                 session.commit()
 
         self.assertEqual(19, len(_test()))
+        self.assertEqual(0, len(_test(name="foo")))
+        self.assertEqual(0, len(_test(name="bar")))
+        self.assertEqual(1, len(_test(name="Community")))
+        self.assertEqual(0, len(_test(name="Community", community=False)))
+        self.assertEqual(1, len(_test(name="Community", community=True)))
+        self.assertEqual(1, len(_test(name="user2")))
+        self.assertEqual(1, len(_test(name="user6")))
+        self.assertEqual(1, len(_test(name="user12")))
         self.assertSetEqual(set(_test()), set(_test(descending=True)))
         self.assertListEqual(_test(page=2, descending=True)[::-1], _test(page=2, descending=False))
         self.assertSetEqual(set(_test()), set(_test(page=873)))
@@ -129,12 +137,13 @@ class APITests(utils.BaseAPITests):
         # Creating a set of test users
         users = []
         for i in range(10):
-            user = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+            user = self.assertQuery(("POST", "/users"), 201, json={"name": f"user{i}"}, r_schema=_schemas.User).json()
             self.assertEqual(i+1, user["id"])
             self.assertEqual(
                 user,
                 self.assertQuery(("GET", f"/users?id={i+1}"), 200).json()[0]
             )
+            self.assertEqual(user["name"], f"user{i}")
             users.append(user)
             self.assertEqual(
                 users,
@@ -298,7 +307,9 @@ class APITests(utils.BaseAPITests):
 
         # Check that deleting users with positive balance transfers the remaining amount to the community user
         self.make_special_user()
-        user_to_delete_id = int(self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()["id"])
+        user_to_delete_id = int(
+            self.assertQuery(("POST", "/users"), 201, json={"name": "foo"}, r_schema=_schemas.User).json()["id"]
+        )
         old_community_balance = self.assertQuery(("GET", "/users?community=1"), 200).json()[0]["balance"]
         session = self.get_db_session()
         user_to_delete = session.get(models.User, user_to_delete_id)
@@ -319,8 +330,8 @@ class APITests(utils.BaseAPITests):
         self.make_special_user()
         self.login()
         with self.get_db_session() as session:
-            session.add(models.User(external=False, permission=True))
-            session.add(models.User(external=True))
+            session.add(models.User(name="A", external=False, permission=True))
+            session.add(models.User(name="B", external=True))
             session.commit()
 
             session.add(models.Application(name="app1", password="app1", salt="app1"))
@@ -363,8 +374,8 @@ class APITests(utils.BaseAPITests):
     def test_externals_vouch_for_externals(self):
         self.make_special_user()
         self.login()
-        user1 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
-        user2 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        user1 = self.assertQuery(("POST", "/users"), 201, json={"name": "foo"}, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "bar"}, r_schema=_schemas.User).json()
 
         def _check():
             self.assertEqual(user1["external"], True)
@@ -403,7 +414,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding the creator user
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user"}, r_schema=_schemas.User).json()
 
         # Checking for the permission
         self.assertQuery(
@@ -463,12 +474,9 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding an unprivileged user
-        self.assertQuery(
-            ("POST", "/users"),
-            201,
-            json={"permission": False, "external": False},
-            r_schema=_schemas.User
-        ).json()
+        u = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        self.assertEqual(u["external"], True)
+        self.assertEqual(u["permission"], False)
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -476,7 +484,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding a privileged user which gets disabled first, though
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user2"}, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/delete"),
             200,
@@ -490,7 +498,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Adding a new user to actually vote on the refund for the first time
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user3"}, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/refunds/vote"),
             400,
@@ -519,7 +527,7 @@ class APITests(utils.BaseAPITests):
 
         # Add another user to accept the refund request
         old_balance = self.assertQuery(("GET", "/users?id=2"), 200).json()[0]["balance"]
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user4"}, r_schema=_schemas.User).json()
         self._edit_user(6, permission=True)
         vote2 = self.assertQuery(
             ("POST", "/refunds/vote"),
@@ -546,7 +554,7 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([transaction], transactions)
 
         # Don't allow to add votes to already closed refund requests
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user5"}, r_schema=_schemas.User).json()
         self.assertQuery(("POST", "/refunds/vote"), 400, json={"user": 7, "ballot_id": 1, "vote": True})
 
         # The community user shouldn't create refunds
@@ -562,7 +570,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"description": "Foo", "amount": 1337, "creator": 8}
         ).json()
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "user6"}, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
@@ -606,14 +614,14 @@ class APITests(utils.BaseAPITests):
         session = self.get_db_session()
         self.assertEqual(1, len(session.query(models.Application).all()))
         self.assertEqual(1, session.query(models.Application).all()[0].id)
-        user1_model = models.User(external=False, permission=True)
-        user2_model = models.User(external=False, permission=True)
-        user3_model = models.User(external=False, permission=False)
-        user4_model = models.User(external=False, permission=False)
-        user5_model = models.User(external=True, permission=False, voucher_user=user1_model)
-        user6_model = models.User(external=True, permission=False, voucher_user=None)
-        user7_model = models.User(external=False, permission=True, active=False)
-        user8_model = models.User(external=True, active=False)
+        user1_model = models.User(name="user1", external=False, permission=True)
+        user2_model = models.User(name="user2", external=False, permission=True)
+        user3_model = models.User(name="user3", external=False, permission=False)
+        user4_model = models.User(name="user4", external=False, permission=False)
+        user5_model = models.User(name="user5", external=True, permission=False, voucher_user=user1_model)
+        user6_model = models.User(name="user6", external=True, permission=False, voucher_user=None)
+        user7_model = models.User(name="user7", external=False, permission=True, active=False)
+        user8_model = models.User(name="user8", external=True, active=False)
         alias1_model = models.Alias(application_id=1, username="user1", confirmed=True)
         alias2_model = models.Alias(application_id=1, username="user2", confirmed=False)
         alias3_model = models.Alias(application_id=1, username="user3", confirmed=True)
@@ -864,7 +872,7 @@ class APITests(utils.BaseAPITests):
                 "creator": 42
             }
         )
-        user1 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        user1 = self.assertQuery(("POST", "/users"), 201, json={"name": "foo"}, r_schema=_schemas.User).json()
 
         # Fail due to restricted user account
         self.assertQuery(
@@ -900,7 +908,7 @@ class APITests(utils.BaseAPITests):
             400,
             json={"amount": 42, "description": "description2", "creator": 2}
         ).json()
-        user2 = self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "bar"}, r_schema=_schemas.User).json()
 
         # Create and get the second communism object
         response2 = self.assertQuery(
@@ -991,7 +999,7 @@ class APITests(utils.BaseAPITests):
         )
 
         # Add another new user to the communism
-        self.assertQuery(("POST", "/users"), 201, r_schema=_schemas.User).json()
+        self.assertQuery(("POST", "/users"), 201, json={"name": "baz"}, r_schema=_schemas.User).json()
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
@@ -1134,34 +1142,43 @@ class APITests(utils.BaseAPITests):
         session = self.get_db_session()
         comp(0, "")
 
-        session.add(models.User(active=False, external=False, permission=False))
+        session.add(models.User(name="user1", active=False, external=False, permission=False))
         session.commit()
         comp(1, "")
 
-        session.add(models.User(active=True, external=True))
+        session.add(models.User(name="user2", active=True, external=True))
         session.commit()
         comp(2, "")
 
-        session.add(models.User(active=True, external=False, permission=True))
-        session.add(models.User(active=True, external=False, permission=True))
+        session.add(models.User(name="user3", active=True, external=False, permission=True))
+        session.add(models.User(name="user4", active=True, external=False, permission=True))
         session.commit()
         comp(4, "")
 
-        session.add(models.User(external=False))
+        session.add(models.User(name="user5", external=False))
         session.commit()
         comp(5, "")
 
-        session.add(models.User(active=False, external=False))
+        session.add(models.User(name="user6", active=False, external=False))
         session.commit()
         comp(6, "")
 
-        session.add(models.User(external=True, permission=False, voucher_id=3))
+        session.add(models.User(name="user7", external=True, permission=False, voucher_id=3))
         session.commit()
         comp(7, "")
 
         comp(1, "id=1")
         comp(1, "id=2")
         comp(1, "id=3")
+
+        comp(0, "name=foo")
+        comp(0, "name=user")
+        comp(1, "name=user3")
+        comp(1, "name=user6")
+        comp(0, "name=user10")
+        comp(1, "active=true&name=user5")
+        comp(0, "active=false&name=user5")
+        comp(0, "active=true&name=user6")
 
         comp(5, "active=true")
         comp(2, "active=false")

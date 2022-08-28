@@ -159,13 +159,13 @@ class BasePersistenceTests(BaseTest):
     @staticmethod
     def get_sample_users() -> List[models.User]:
         return [
-            models.User(balance=-42, external=True),
-            models.User(balance=51, external=False),
-            models.User(external=True),
-            models.User(balance=2, external=False),
-            models.User(permission=False, active=False, external=False, voucher_id=2),
-            models.User(external=False),
-            models.User(external=False, special=True, balance=2, permission=True)
+            models.User(name="A", balance=-42, external=True),
+            models.User(name="B", balance=51, external=False),
+            models.User(name="C", external=True),
+            models.User(name="D", balance=2, external=False),
+            models.User(name="E", permission=False, active=False, external=False, voucher_id=2),
+            models.User(name="F", external=False),
+            models.User(name="G", external=False, special=True, balance=2, permission=True)
         ]
 
 
@@ -509,6 +509,7 @@ class BaseAPITests(BaseTest):
             self.fail("CRITICAL ERROR. Please drop a bug report.")
         if len(specials) == 0:
             session.add(models.User(
+                name="Community",
                 active=True,
                 special=True,
                 external=False,
