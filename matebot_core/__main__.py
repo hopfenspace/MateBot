@@ -17,6 +17,9 @@ from matebot_core.api.api import create_app
 from matebot_core.persistence import database, models
 
 
+DEFAULT_COMMUNITY_NAME = "Community"
+
+
 def handle_systemd(args: argparse.Namespace) -> int:
     python_executable = sys.executable
     if sys.executable is None or sys.executable == "":
@@ -105,6 +108,12 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         type=str,
         metavar="url",
         help="Database connection URL including scheme and auth"
+    )
+    parser_init.add_argument(
+        "--community-name",
+        type=str,
+        metavar="name",
+        help=f"Globally unique username of the community user (default: '{DEFAULT_COMMUNITY_NAME}')"
     )
     parser_init.add_argument(
         "--no-community",
@@ -314,7 +323,17 @@ def init_project(args: argparse.Namespace) -> int:
         if len(specials) > 1:
             raise RuntimeError("Multiple community users found. Please drop a bug report.")
         if len(specials) == 0:
+            name = args.community_name
+            if args.community_name is None:
+                print(
+                    "No community username has been specified! The default value "
+                    f"{DEFAULT_COMMUNITY_NAME!r} will be used. This value can be changed "
+                    f"later via the API using the 'POST /v1/users/setName' endpoint.",
+                    file=sys.stderr
+                )
+                name = DEFAULT_COMMUNITY_NAME
             session.add(models.User(
+                name=name,
                 active=True,
                 special=True,
                 external=False,
