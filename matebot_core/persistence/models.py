@@ -379,6 +379,7 @@ class Vote(Base):
         return schemas.Vote(
             id=self.id,
             user_id=self.user_id,
+            user_name=self.user.name,
             ballot_id=self.ballot_id,
             vote=self.vote,
             modified=self.modified.timestamp()
@@ -429,7 +430,7 @@ class Communism(Base):
             created=self.created.timestamp(),
             modified=self.modified.timestamp(),
             participants=[
-                schemas.CommunismUserBinding(user_id=p.user_id, quantity=p.quantity)
+                schemas.CommunismUserBinding(user_id=p.user_id, user_name=p.user.name, quantity=p.quantity)
                 for p in self.participants
             ],
             multi_transaction=self.multi_transaction and self.multi_transaction.schema

@@ -16,6 +16,7 @@ from .bases import user_spec, MultiTransaction as _MultiTransaction, Transaction
 class Vote(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     user_id: pydantic.NonNegativeInt
+    user_name: pydantic.constr(max_length=255)
     ballot_id: pydantic.NonNegativeInt
     vote: bool
     modified: pydantic.NonNegativeInt
@@ -92,6 +93,7 @@ class RefundVoteResponse(pydantic.BaseModel):
 
 class CommunismUserBinding(pydantic.BaseModel):
     user_id: pydantic.NonNegativeInt
+    user_name: pydantic.constr(max_length=255)
     quantity: pydantic.NonNegativeInt
 
 

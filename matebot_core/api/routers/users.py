@@ -182,7 +182,7 @@ async def drop_permission_privilege(
     responses={400: {"model": schemas.APIError}}
 )
 @versioning.versions(1)
-async def drop_permission_privilege(
+async def set_global_username(
         update: schemas.UsernameUpdateRequest,
         local: LocalRequestData = Depends(LocalRequestData)
 ):
