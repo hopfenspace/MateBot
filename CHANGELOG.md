@@ -1,3 +1,13 @@
+# MateBot core v0.5.3 (2022-09-14)
+
+- **Important change** by adding a globally unique name attribute to the user
+- **Changed endpoint** `POST /users` to require a unique username
+- **New endpoint** `POST /users/setName` to change the username, if available
+- **Notable change** by adding the user's name attribute to the
+  schemas `Vote` and `CommunismUserBinding`
+- Added a filter `username` to the users endpoint
+- Updated the setup utility to accept a custom community name
+
 # MateBot core v0.5.2 (2022-08-27)
 
 - Changed project license from **GLPv3** to **AGPLv3**
