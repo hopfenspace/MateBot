@@ -251,7 +251,7 @@ async def set_voucher_of_user(
         raise BadRequest("You can't vouch for other users.")
     if voucher and voucher.external:
         raise BadRequest("You can't vouch for anyone else, since you are an external user yourself.")
-    if len(voucher.vouching_for) >= local.config.general.max_parallel_debtors:
+    if voucher and len(voucher.vouching_for) >= local.config.general.max_parallel_debtors:
         raise BadRequest(f"You can't vouch for more than {local.config.general.max_parallel_debtors} in parallel.")
 
     transaction = None
@@ -284,7 +284,7 @@ async def set_voucher_of_user(
     )
     return schemas.VoucherUpdateResponse(
         debtor=debtor.schema,
-        voucher=voucher.schema,
+        voucher=voucher and voucher.schema,
         transaction=transaction and transaction.schema
     )
 
