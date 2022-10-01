@@ -42,7 +42,6 @@ class Callback(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     url: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)
     application_id: Optional[pydantic.NonNegativeInt]
-    shared_secret: Optional[pydantic.constr(max_length=2047)]
 
 
 class CallbackCreation(pydantic.BaseModel):

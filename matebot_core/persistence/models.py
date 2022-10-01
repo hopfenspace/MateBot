@@ -501,8 +501,7 @@ class Callback(Base):
         return schemas.Callback(
             id=self.id,
             url=self.url,
-            application_id=self.application_id,
-            shared_secret=self.shared_secret
+            application_id=self.application_id
         )
 
     def __repr__(self) -> str:

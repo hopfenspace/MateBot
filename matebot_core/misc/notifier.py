@@ -16,7 +16,7 @@ from ..persistence import models
 from .. import schemas
 
 
-EVENT_QUEUE_WAIT_TIME = 3
+EVENT_QUEUE_WAIT_TIME = 2
 EVENT_QUEUE_BUFFER_TIME = 0.25
 
 
@@ -44,24 +44,30 @@ class Callback:
         cls.logger.warning(f"Backward-incompatibility in Callback.deleted; args={args}; kwargs={kwargs}")
 
     @classmethod
-    async def _publish_event(cls, callback: schemas.Callback, events: List[schemas.Event]):
+    async def _publish_event(
+            cls,
+            events: List[schemas.Event],
+            application_id: Optional[int],
+            url: str,
+            shared_secret: Optional[str]
+    ):
         events_notification = schemas.EventsNotification(events=events, number=len(events))
         try:
             response = await cls._session.post(
-                callback.url,
+                url,
                 json=events_notification.dict(),
                 timeout=aiohttp.ClientTimeout(total=2),
-                headers=callback.shared_secret and {"Authorization": f"Bearer {callback.shared_secret}"}
+                headers=shared_secret and {"Authorization": f"Bearer {shared_secret}"}
             )
             if response.status != 200:
-                cls.logger.warning(f"Callback for {callback.url!r} failed with response code {response.status!r}.")
+                cls.logger.warning(f"Callback for {url!r} failed with response code {response.status!r}")
         except aiohttp.ClientConnectionError as exc:
             cls.logger.info(
-                f"{type(exc).__name__} during callback to 'POST {callback.url}' for {callback.application_id} "
+                f"{type(exc).__name__} during callback to 'POST {url}' for app {application_id} "
                 f"with the following arguments: {', '.join(map(repr, exc.args))}"
             )
         except asyncio.TimeoutError:
-            cls.logger.warning(f"Timeout while trying 'POST {callback.url}' of app {callback.application_id}")
+            cls.logger.warning(f"Timeout while trying 'POST {url}' of app {application_id}")
 
     @classmethod
     async def _run_worker(cls):
@@ -79,10 +85,13 @@ class Callback:
                     break
             callbacks = []
             for session in dependency.get_session():
-                callbacks = [obj.schema for obj in session.query(models.Callback).all()]
+                callbacks = [
+                    (obj.application_id, obj.url, obj.shared_secret)
+                    for obj in session.query(models.Callback).all()
+                ]
             cls.logger.debug(f"Handling {len(events)} events '{events}' for {len(callbacks)} callbacks ...")
             for c in callbacks:
-                await cls._publish_event(c, events)
+                await cls._publish_event(events, *c)
         await cls._session.close()
         cls.logger.info("Stopped event notifier thread")
 
