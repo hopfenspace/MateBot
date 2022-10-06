@@ -93,11 +93,11 @@ async def create_new_membership_poll(
             if issuer == user:
                 raise BadRequest(
                     "You already are an internal user. Requests to become an "
-                    "internal member can only be created by externals."
+                    "internal member can only be created for external users."
                 )
             raise BadRequest(
                 "That user is already an internal user. Requests to become an "
-                "internal member can only be created by externals."
+                "internal member can only be created for external users."
             )
 
     elif poll.variant == schemas.PollVariant.LOOSE_INTERNAL:
