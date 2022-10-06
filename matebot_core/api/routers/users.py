@@ -238,6 +238,8 @@ async def set_voucher_of_user(
     if voucher and issuer != voucher:
         raise BadRequest("You can't let someone else vouch on your behalf.")
 
+    if debtor.voucher_user is not None and voucher and debtor.voucher_user == voucher:
+        raise BadRequest(f"You already vouch for {debtor.name}.")
     if debtor.voucher_user is not None and voucher and debtor.voucher_user != voucher:
         raise BadRequest("This user already has a voucher, you can't vouch for it.")
 
