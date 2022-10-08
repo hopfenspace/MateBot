@@ -56,7 +56,7 @@ class Callback:
             response = await cls._session.post(
                 url,
                 json=events_notification.dict(),
-                timeout=aiohttp.ClientTimeout(total=2),
+                timeout=aiohttp.ClientTimeout(total=5),
                 headers=shared_secret and {"Authorization": f"Bearer {shared_secret}"}
             )
             if response.status != 200:

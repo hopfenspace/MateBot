@@ -238,7 +238,7 @@ async def close_open_communism(
     local.session.add(model)
     local.session.commit()
 
-    transactions = len(model.multi_transaction.transactions)
+    transactions = (m and len(model.multi_transaction.transactions)) or 0
     total_participants = sum([p.quantity for p in model.participants])
     Callback.push(
         schemas.EventType.COMMUNISM_CLOSED,
