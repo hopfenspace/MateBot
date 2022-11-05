@@ -265,7 +265,6 @@ def run_server(args: argparse.Namespace):
         "matebot_core.api:api.app" if args.reload else app,
         port=port,
         host=host,
-        debug=args.debug,
         reload=args.reload,
         workers=args.workers,
         log_level="debug" if args.debug else "info",
