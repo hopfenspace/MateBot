@@ -30,9 +30,9 @@ async def _update_participation(
     if not communism.active:
         raise BadRequest("Updating an already closed communism is not possible.", detail=str(communism))
     if not user.active:
-        raise BadRequest(f"{user.username} is a disabled user, it can't participate in communisms.", detail=str(user))
+        raise BadRequest(f"{user.name} is a disabled user, it can't participate in communisms.", detail=str(user))
     if user.external and user.voucher_user is None:
-        raise BadRequest(f"{user.usernaem} is an external user without voucher.")
+        raise BadRequest(f"{user.name} is an external user without voucher.")
     if user.special:
         raise Conflict("The community user can't participate in communisms.")
     if quantity_diff == 0:

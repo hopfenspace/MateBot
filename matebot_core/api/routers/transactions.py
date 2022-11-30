@@ -147,7 +147,7 @@ async def consume_consumables_by_sending_money_to_the_community(
     if user.special:
         raise Conflict("The special community user can't consume goods.", str(user.schema))
     if not user.active:
-        raise BadRequest(f"The disabled user {user.username!r} can't consume goods.", str(user.schema))
+        raise BadRequest(f"The disabled user {user.name!r} can't consume goods.", str(user.schema))
     if user.external and user.voucher_id is None:
         raise BadRequest("You can't consume any goods, since you are an external user without voucher.")
     m_amount = local.config.general.max_simultaneous_consumption
