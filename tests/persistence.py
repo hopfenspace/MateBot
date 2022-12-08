@@ -111,6 +111,35 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
             self.session.commit()
         self.session.rollback()
 
+    def test_user_min_max_balance(self):
+        user = self.get_sample_users()[0]
+        self.session.add(user)
+        self.session.commit()
+
+        # Check the minimal balance a user must be allowed to have
+        user.balance = -(2 ** 31)
+        self.session.add(user)
+        self.session.commit()
+
+        # Check the maximal balance a user must be allowed to have
+        user.balance = 2 ** 31 - 1
+        self.session.add(user)
+        self.session.commit()
+
+        # Verify hard limits on databases other than SQLite
+        if self.database_type != utils.DatabaseType.SQLITE:
+            user.balance = 2 ** 31
+            self.session.add(user.balance)
+            with self.assertRaises(sqlalchemy.exc.DatabaseError):
+                self.session.commit()
+            self.session.rollback()
+
+            user.balance = -(2 ** 31) - 1
+            self.session.add(user.balance)
+            with self.assertRaises(sqlalchemy.exc.DatabaseError):
+                self.session.commit()
+            self.session.rollback()
+
     def test_create_community_user(self):
         community = self.get_sample_users()[-1]
         self.session.add(community)

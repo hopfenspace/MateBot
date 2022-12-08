@@ -27,10 +27,10 @@ def _tested(cls: Type):
 class APITests(utils.BaseAPITests):
     def _edit_user(self, user_id: int, **kwargs):
         session = self.get_db_session()
-        user0_model = session.query(models.User).get(user_id)
+        user_model = session.query(models.User).get(user_id)
         for k, v in kwargs.items():
-            setattr(user0_model, k, v)
-        session.add(user0_model)
+            setattr(user_model, k, v)
+        session.add(user_model)
         session.commit()
         session.close()
 
@@ -1178,6 +1178,56 @@ class APITests(utils.BaseAPITests):
                 400,
                 json=entry
             )
+
+    def test_balance_limits(self):
+        self.login()
+        user1 = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "user2"}, r_schema=_schemas.User).json()
+
+        self._edit_user(user1["id"], permission=True, external=False)
+        self._edit_user(user2["id"], permission=True, external=False)
+        self.assertQuery(("POST", "/transactions/send"), 201, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 50000,
+            "reason": "test"
+        })
+        self.assertQuery(("POST", "/transactions/send"), 400, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 50001,
+            "reason": "test"
+        })
+
+        self._edit_user(user1["id"], balance=0)
+        self._edit_user(user2["id"], balance=2**31 - 10)
+        self.assertQuery(("POST", "/transactions/send"), 201, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 8,
+            "reason": "test"
+        })
+        self.assertQuery(("POST", "/transactions/send"), 400, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 1,
+            "reason": "test"
+        })
+
+        self._edit_user(user1["id"], balance=-2**31 + 10)
+        self._edit_user(user2["id"], balance=0)
+        self.assertQuery(("POST", "/transactions/send"), 201, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 9,
+            "reason": "test"
+        })
+        self.assertQuery(("POST", "/transactions/send"), 400, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 1,
+            "reason": "test"
+        })
 
     def test_user_search(self):
         self.login()
