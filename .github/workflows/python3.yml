@@ -71,9 +71,9 @@ jobs:
         killall -s 9 -- python3
         rm -fv test.db
         rm -fv config.json
-    - name: Run matebot_core unittests with temporary sqlite3
-      run: |
-        python3 -X tracemalloc=5 -m unittest tests -v
+#    - name: Run matebot_core unittests with temporary sqlite3
+#      run: |
+#        python3 -X tracemalloc=5 -m unittest tests -v
     - name: Run matebot_core unittests with MySQL and pymysql
       run: |
         echo 'COMMAND_INITIALIZE_DATABASE = ["/bin/bash", "db_setup.sh"]' >> tests/conf.py
