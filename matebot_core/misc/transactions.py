@@ -44,6 +44,7 @@ def create_transaction(
     :param logger: logger that should be used for INFO and ERROR messages
     :return: the newly created and committed Transaction object
     :raises ValueError: in case the amount is not positive or some user ID is not set
+    :raises RuntimeError: in case the target amount of a user is out of range
     :raises sqlalchemy.exc.DBAPIError: in case committing to the database fails
     """
 
@@ -56,6 +57,10 @@ def create_transaction(
 
     if sender.id is None or receiver.id is None:
         raise ValueError("ID of some user None!")
+    if sender.balance - amount <= -(2 ** 31):
+        raise RuntimeError("You have reached the maximum balance limit. Your balance can't fall below that!")
+    if receiver.balance + amount >= 2 ** 31 - 1:
+        raise RuntimeError("The receiver has reached the maximum balance limit. You can't transfer money to that user!")
 
     model = models.Transaction(
         sender_id=sender.id,

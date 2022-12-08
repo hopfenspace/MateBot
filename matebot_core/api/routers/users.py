@@ -363,7 +363,7 @@ async def softly_delete_user_permanently(
     if model.balance > 0:
         community = local.session.query(models.User).filter_by(special=True).first()
         if community is None:
-            raise RuntimeError("No community user found. Please make sure to setup the DB correctly.")
+            raise ValueError("No community user found. Please make sure to setup the DB correctly.")
         transactions.create_transaction(
             model,
             community,

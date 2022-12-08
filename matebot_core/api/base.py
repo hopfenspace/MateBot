@@ -72,6 +72,26 @@ async def handle_generic_exception(request: Request, _: Exception):
     )), status_code=status_code)
 
 
+async def handle_runtime_error(request: Request, exc: RuntimeError):
+    # Prevent SQL errors from bubbling up to the end user with a 400 response
+    msg = str(exc)
+    if "SQL" in msg:
+        return await handle_generic_exception(request, exc)
+
+    logger.warning("Unhandled RuntimeError caught in API exception handler!", exc_info=exc)
+    status_code = 400
+
+    return JSONResponse(jsonable_encoder(schemas.APIError(
+        error=True,
+        status=status_code,
+        method=request.method,
+        request=request.url.path,
+        repeat=False,
+        message=msg,
+        details=""
+    )), status_code=status_code)
+
+
 async def handle_request_validation_error(request: Request, exc: RequestValidationError):
     status_code = 400
     msgs = "\n".join(["\t" + error["msg"] for error in exc.errors()])

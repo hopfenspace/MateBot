@@ -32,6 +32,7 @@ from .. import __file__ as _package_init_path
 DEFAULT_EXCEPTION_HANDLERS = {
     StarletteHTTPException: base.APIException.handle,
     RequestValidationError: base.handle_request_validation_error,
+    RuntimeError: base.handle_runtime_error,
     Exception: base.handle_generic_exception
 }
 
