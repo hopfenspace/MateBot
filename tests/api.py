@@ -2,6 +2,7 @@
 MateBot unit tests for the whole API in certain user actions
 """
 
+import sys
 import time
 import urllib.parse
 import unittest as _unittest
@@ -1290,6 +1291,33 @@ class APITests(utils.BaseAPITests):
             201,
             json={"url": "http://localhost:65000", "app": 1}
         )
+
+    def test_173_transactions(self):
+        self.login()
+        user1 = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "user2"}, r_schema=_schemas.User).json()
+        self._edit_user(user1["id"], permission=True, external=False, balance=8600000)
+        self._edit_user(user2["id"], permission=True, external=False)
+        c = 0
+        try:
+            while True:
+                c += 1
+                print(c, end=" ... ")
+                sys.stdout.flush()
+                if c == 173:
+                    print("! ", end="")
+                self.assertQuery(("POST", "/transactions/send"), 201, json={
+                    "sender": user1["id"],
+                    "receiver": user2["id"],
+                    "amount": 50000,
+                    "reason": "test"
+                })
+                print("OK")
+                if c > 65536:
+                    break
+        except:
+            print("c =", c)
+            raise
 
 
 if __name__ == '__main__':
