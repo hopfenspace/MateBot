@@ -1291,6 +1291,74 @@ class APITests(utils.BaseAPITests):
             json={"url": "http://localhost:65000", "app": 1}
         )
 
+    # This test case currently always fails due to an unknown issue. Comment the decorator to run the test case.
+    @_unittest.skip
+    def test_173_transactions(self):
+        self.login()
+        user1 = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "user2"}, r_schema=_schemas.User).json()
+        self._edit_user(user1["id"], permission=True, external=False, balance=8600000)
+        self._edit_user(user2["id"], permission=True, external=False)
+
+        # The first 172 requests to the transaction endpoint succeed ...
+        for i in range(172):
+            self.assertQuery(("POST", "/transactions/send"), 201, json={
+                "sender": user1["id"],
+                "receiver": user2["id"],
+                "amount": 50000,
+                "reason": f"test {i}"
+            })
+        # ... but even one more request to that endpoint will hang the whole server
+        self.assertQuery(("POST", "/transactions/send"), 201, json={
+            "sender": user1["id"],
+            "receiver": user2["id"],
+            "amount": 50000,
+            "reason": "test final"
+        })
+
+    # This test case currently always fails due to an unknown issue. Comment the decorator to run the test case.
+    @_unittest.skip
+    def test_581_communisms(self):
+        self.login()
+        user = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        self._edit_user(user["id"], permission=True, external=False, balance=8600000)
+
+        # The first 580 requests to the communism endpoint succeed ...
+        for i in range(580):
+            self.assertQuery(("POST", "/communisms"), 201, json={
+                "amount": 100,
+                "description": f"test {i}",
+                "creator": user["id"]
+            })
+        # ... but even one more request to that endpoint will hang the whole server
+        self.assertQuery(("POST", "/communisms"), 201, json={
+            "amount": 100,
+            "description": "test final",
+            "creator": user["id"]
+        })
+
+    # This test case currently always fails due to an unknown issue. Comment the decorator to run the test case.
+    @_unittest.skip
+    def test_596_refunds(self):
+        self.login()
+        user = self.assertQuery(("POST", "/users"), 201, json={"name": "user1"}, r_schema=_schemas.User).json()
+        self._edit_user(user["id"], permission=True, external=False, balance=8600000)
+
+        # The first 595 requests to the refund endpoint succeed ...
+        for i in range(595):
+            print(i)
+            self.assertQuery(("POST", "/refunds"), 201, json={
+                "amount": 100,
+                "description": f"test {i}",
+                "creator": user["id"]
+            })
+        # ... but even one more request to that endpoint will hang the whole server
+        self.assertQuery(("POST", "/refunds"), 201, json={
+            "amount": 100,
+            "description": "test final",
+            "creator": user["id"]
+        })
+
 
 if __name__ == '__main__':
     _unittest.main()
