@@ -129,13 +129,13 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         # Verify hard limits on databases other than SQLite
         if self.database_type != utils.DatabaseType.SQLITE:
             user.balance = 2 ** 31
-            self.session.add(user.balance)
+            self.session.add(user)
             with self.assertRaises(sqlalchemy.exc.DatabaseError):
                 self.session.commit()
             self.session.rollback()
 
             user.balance = -(2 ** 31) - 1
-            self.session.add(user.balance)
+            self.session.add(user)
             with self.assertRaises(sqlalchemy.exc.DatabaseError):
                 self.session.commit()
             self.session.rollback()
