@@ -122,6 +122,12 @@ async def create_new_membership_poll(
                 raise BadRequest("You don't have extended permissions, therefore you can't loose them.")
             raise BadRequest("That user doesn't have extended permissions, therefore those permissions can't be taken.")
 
+    if local.session.query(models.Poll).filter_by(active=True, variant=poll.variant, creator=issuer, user=user).all():
+        raise BadRequest(
+            "You have already opened a poll with the exact same proposal. "
+            "You need to close the previous poll before a new one can be created."
+        )
+
     model = models.Poll(user=user, creator=issuer, ballot=models.Ballot(), variant=poll.variant)
     local.session.add(model)
     local.session.commit()

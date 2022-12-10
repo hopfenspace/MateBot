@@ -898,16 +898,33 @@ class APITests(utils.BaseAPITests):
         self.assertFalse(poll_loose_permission["active"])
         self.assertEvent("poll_closed", {"id": loose_permission["id"], "aborted": True, "accepted": False})
 
+    def test_no_duplicate_polls(self):
+        self.login()
+        self.assertListEqual([], self.assertQuery(("GET", "/polls"), 200).json())
+        self.assertQuery(("POST", "/callbacks"), 201, json={"url": f"http://localhost:{self.callback_server_port}/"})
+
+        with self.get_db_session() as session:
+            user1_model = models.User(name="user1", external=False, permission=True)
+            user2_model = models.User(name="user2", external=False, permission=True)
+            session.add_all([user1_model, user2_model])
+            session.commit()
+
+            self.assertQuery(
+                ("POST", "/polls"), 201,
+                json={"user": user1_model.id, "issuer": user2_model.id, "variant": "loose_internal"}
+            )
+            self.assertEvent("poll_created", ["id", "user", "variant"])
+            self.assertQuery(
+                ("POST", "/polls"), 400,
+                json={"user": user1_model.id, "issuer": user2_model.id, "variant": "loose_internal"}
+            ).json()
+
     def test_communisms(self):
         self.login()
         self.assertListEqual([], self.assertQuery(("GET", "/communisms"), 200).json())
 
         # Adding the callback server for testing
-        self.assertQuery(
-            ("POST", "/callbacks"),
-            201,
-            json={"url": f"http://localhost:{self.callback_server_port}/"}
-        )
+        self.assertQuery(("POST", "/callbacks"), 201, json={"url": f"http://localhost:{self.callback_server_port}/"})
 
         # The user mentioned in the 'creator' field is not found
         self.assertQuery(
