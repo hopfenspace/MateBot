@@ -6,7 +6,7 @@ Configuration
 
 .. toctree::
 
-The configuration of the MateBot core API is stored in a JSON file
+The main configuration of the MateBot core API is stored in a JSON file
 called ``config.json``. It should be placed in the top-level directory
 of the Python source code files. A sample configuration may
 look like the following snippet (see below for a brief explanation
@@ -19,6 +19,36 @@ of the different options the config file provides):
 
     Download the sample config file
     :download:`config.sample.json <_static/config.sample.json>`.
+
+Environment variables
+---------------------
+
+The rest of this page explains the config options as seen in the JSON file.
+It is possible to overwrite most of the options below via environment
+variables by using the key of the config entry, joined with ``__`` to
+concatenate levels. A list of more useful options is given here:
+
+========================================= ========================================
+Environment variable                      Config option
+========================================= ========================================
+``SERVER__HOST``                          ``server.host``
+``SERVER__PORT``                          ``server.port``
+``SERVER__PUBLIC_BASE_URL``               ``server.public_base_url``
+``DATABASE__CONNECTION``                  ``database.connection``
+``GENERAL__MAX_PARALLEL_DEBTORS``         ``general.max_parallel_debtors``
+``GENERAL__MAX_SIMULTANEOUS_CONSUMPTION`` ``general.max_simultaneous_consumption``
+``GENERAL__MAX_TRANSACTION_AMOUNT``       ``general.max_transaction_amount``
+``GENERAL__MIN_MEMBERSHIP_APPROVES``      ``general.min_membership_approves``
+``GENERAL__MIN_MEMBERSHIP_DISAPPROVES``   ``general.min_membership_disapproves``
+``GENERAL__MIN_REFUND_APPROVES``          ``general.min_refund_approves``
+``GENERAL__MIN_REFUND_DISAPPROVES``       ``general.min_refund_disapproves``
+========================================= ========================================
+
+The logging and consumable configurations are especially hard to configure
+via environment variables, though they accept valid JSON as input as well.
+The expected data type for a setting via environment variable equals the
+data type in the configuration file. It's recommended to use the configuration
+file for persistent settings, while using environment variables for the runtime.
 
 General settings
 ----------------

@@ -60,6 +60,9 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
     """
 
     class Config:
+        env_nested_delimiter = "__"
+        env_file = ".env"
+
         @classmethod
         def customise_sources(
                 cls,
@@ -67,7 +70,7 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
                 env_settings: _SettingsSourceCallable,
                 file_secret_settings: _SettingsSourceCallable
         ) -> Tuple[_SettingsSourceCallable, ...]:
-            return read_settings_from_config_file, init_settings, env_settings, file_secret_settings
+            return env_settings, file_secret_settings, read_settings_from_config_file, init_settings
 
 
 def get_default_config() -> Dict[str, Any]:
