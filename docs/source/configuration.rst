@@ -97,9 +97,6 @@ Consumable definitions
 The consumable section of the config is a list of
 entries of the following format:
 
-* ``id`` refers to the internal ID of the consumable, which must be a
-  unique number, starting from ``1`` and increasing (this is currently
-  used since auto-enumerating of the consumable schemas doesn't work yet)
 * ``name`` refers to the name of the consumable, which ideally is just a
   single word or abbreviation to uniquely identify the consumable for users,
   since MateBot clients are encouraged to use this name as command shortcut
