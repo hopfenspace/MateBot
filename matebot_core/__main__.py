@@ -71,33 +71,70 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=program)
 
     commands = parser.add_subparsers(
-        description="Available sub-commands: init, show-apps, add-app, del-app, run, systemd",
+        description="Available sub-commands: init, apps*, users*, run, systemd, auto",
         dest="command",
         required=True,
         metavar="<command>",
-        help="the sub-command to be executed"
+        help="the sub-command to be executed (some have their own subcommands, too)"
     )
 
     parser_init = commands.add_parser(
         "init",
         description="Initialize the project by creating config files and some database models"
     )
-    parser_show_apps = commands.add_parser(
-        "show-apps",
+
+    parser_apps = commands.add_parser(
+        "apps",
+        description="Manage registered API applications"
+    )
+    app_command = parser_apps.add_subparsers(
+        description="Available actions: show, add, del",
+        dest="action",
+        metavar="<action>",
+        required=True,
+        help="action to perform for apps"
+    )
+    parser_apps_show = app_command.add_parser(
+        "show",
         description="Show a list of currently registered applications"
     )
-    parser_add_app = commands.add_parser(
-        "add-app",
+    parser_apps_add = app_command.add_parser(
+        "add",
         description="Add a new application with a password for the login & authentication process"
     )
-    parser_del_app = commands.add_parser(
-        "del-app",
+    parser_apps_del = app_command.add_parser(
+        "del",
         description="Delete an existing application to block further API access"
     )
+
+    parser_users = commands.add_parser(
+        "users",
+        description="Manage API end users"
+    )
+    user_command = parser_users.add_subparsers(
+        description="Available actions: show, update",
+        dest="action",
+        metavar="<action>",
+        required=True,
+        help="action to perform for users"
+    )
+    parser_users_show = user_command.add_parser(
+        "show",
+        description="Show a list of all users"
+    )
+    parser_users_update = user_command.add_parser(
+        "update",
+        description="Update a user's flags (note that those operations may be rejected "
+                    "if not applicable, e.g. giving external users extra permissions or "
+                    "dropping the internal flag from users with privileges; also note that "
+                    "externals with voucher can't become internals by this command)"
+    )
+
     parser_run = commands.add_parser(
         "run",
         description="Run 'uvicorn' ASGI server to serve the MateBot core REST API"
     )
+
     parser_systemd = commands.add_parser(
         "systemd",
         description="Create a systemd unit file to run the MateBot core REST API as system service"
@@ -126,36 +163,77 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Create all database models of the current revision, ignoring migrations (not recommended)"
     )
 
-    parser_show_apps.add_argument(
+    parser_apps_show.add_argument(
         "--json",
         action="store_true",
         help="Print the result in JSON format instead of human-readable text"
     )
-    parser_show_apps.add_argument(
+    parser_apps_show.add_argument(
         "--indent",
         type=int,
         metavar="n",
-        help="(JSON-only) Indent the JSON response with the n spaces (default: none)"
+        help="(JSON-only) Indent the JSON response with n spaces (default: none)"
     )
 
-    parser_add_app.add_argument(
+    parser_apps_add.add_argument(
         "--app",
         type=str,
         metavar="name",
         required=True,
         help="Name of the newly created application account"
     )
-    parser_add_app.add_argument(
+    parser_apps_add.add_argument(
         "--password",
         type=str,
         metavar="passwd",
         help="Password for the new app account (will be asked interactively if omitted)"
     )
 
-    parser_del_app.add_argument(
+    parser_apps_del.add_argument(
         "app",
         metavar="name/ID",
         help="name or ID of the application that should be deleted"
+    )
+
+    parser_users_show.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the result in JSON format instead of human-readable text"
+    )
+    parser_users_show.add_argument(
+        "--indent",
+        type=int,
+        metavar="n",
+        help="(JSON-only) Indent the JSON response with n spaces (default: none)"
+    )
+
+    parser_users_update.add_argument(
+        "identifier",
+        metavar="ID",
+        type=int,
+        help="unique ID to identify the user"
+    )
+    parser_users_update_privileges = parser_users_update.add_mutually_exclusive_group()
+    parser_users_update_privileges.add_argument(
+        "--privileged",
+        action="store_true",
+        help="add the permission flag to the user (if not existing)"
+    )
+    parser_users_update_privileges.add_argument(
+        "--unprivileged",
+        action="store_true",
+        help="remove the permission flag from the user (if existing)"
+    )
+    parser_users_update_internal = parser_users_update.add_mutually_exclusive_group()
+    parser_users_update_internal.add_argument(
+        "--internal",
+        action="store_true",
+        help="add the internal flag to the user (if not existing)"
+    )
+    parser_users_update_internal.add_argument(
+        "--external",
+        action="store_true",
+        help="remove the internal flag from the user (if existing)"
     )
 
     parser_run.add_argument(
@@ -230,6 +308,11 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Path to the newly created systemd file"
     )
 
+    parser_auto = commands.add_parser(
+        "auto",
+        description="Deploy and start the server in 'auto mode' using environment variables for first configuration"
+    )
+
     return parser
 
 
@@ -277,10 +360,11 @@ def run_server(args: argparse.Namespace):
 
 
 def init_project(args: argparse.Namespace) -> int:
-    settings = _settings.read_settings_from_json_source(False)
-    if not settings:
+    try:
+        settings = _settings.Settings()
+    except SystemExit:
         print("No settings file found. A basic config will be created now interactively.")
-        settings = _settings.get_default_config()
+        settings = _settings.read_settings_from_json_source(create=True)
 
         if args.database:
             settings["database"]["connection"] = args.database
@@ -295,6 +379,7 @@ def init_project(args: argparse.Namespace) -> int:
 
         with open(_settings.CONFIG_PATHS[0], "w") as f:
             json.dump(settings, f, indent=4)
+        settings = _settings.Settings()
 
     else:
         print(
@@ -302,7 +387,7 @@ def init_project(args: argparse.Namespace) -> int:
             "you should remove the config file and clear the database, then run this command again."
         )
 
-    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    config = settings
     database.init(config.database.connection, config.database.debug_sql, args.create_all)
     session = database.get_new_session()
 
@@ -442,6 +527,33 @@ def del_app(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_apps(args: argparse.Namespace) -> int:
+    return {
+        "show": show_apps,
+        "add": add_app,
+        "del": del_app
+    }[args.action](args)
+
+
+def show_users(args: argparse.Namespace) -> int:
+    raise NotImplementedError
+
+
+def update_user(args: argparse.Namespace) -> int:
+    raise NotImplementedError
+
+
+def handle_users(args: argparse.Namespace) -> int:
+    return {
+        "show": show_users,
+        "update": update_user
+    }[args.action](args)
+
+
+def run_in_auto_mode(args: argparse.Namespace) -> int:
+    raise NotImplementedError
+
+
 if __name__ == '__main__':
     program_name = sys.argv[0] if not sys.argv[0].endswith("__main__.py") else "matebot_core"
     namespace = get_parser(program_name).parse_args(sys.argv[1:])
@@ -449,9 +561,9 @@ if __name__ == '__main__':
     command_functions = {
         "run": run_server,
         "init": init_project,
-        "show-apps": show_apps,
-        "add-app": add_app,
-        "del-app": del_app,
+        "apps": handle_apps,
+        "users": handle_users,
+        "auto": run_in_auto_mode,
         "systemd": handle_systemd
     }
     exit(command_functions[namespace.command](namespace))

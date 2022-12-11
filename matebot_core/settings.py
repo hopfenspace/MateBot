@@ -18,6 +18,9 @@ from .schemas import config
 
 
 CONFIG_PATHS = ["config.json", os.path.join("..", "config.json")]
+if os.environ.get("CONFIG_PATH"):
+    CONFIG_PATHS.insert(0, os.environ.get("CONFIG_PATH"))
+REQUIRE_EXISTING_CONFIG: bool = True
 
 
 def read_settings_from_json_source(create: bool = False) -> Optional[Dict[str, Any]]:
@@ -30,22 +33,6 @@ def read_settings_from_json_source(create: bool = False) -> Optional[Dict[str, A
     with open(CONFIG_PATHS[0], "w") as f:
         json.dump(get_default_config(), f, indent=4)
     return read_settings_from_json_source(False)
-
-
-def read_settings_from_config_file(_: Optional[pydantic.BaseSettings]) -> Dict[str, Any]:
-    settings = read_settings_from_json_source(False)
-    if not settings:
-        read_settings_from_json_source(True)
-        print(
-            f"No config file found! A basic 'config.json' file has been created for "
-            f"your project in {os.path.abspath(os.path.join('.', CONFIG_PATHS[0]))!r}. "
-            f"You should adjust at least the database settings, since the in-memory "
-            f"sqlite3 database does not work properly in some configurations. Consider "
-            f"calling the 'init' command to create the project's data completely first.",
-            file=sys.stderr
-        )
-        sys.exit(1)
-    return settings
 
 
 class Settings(pydantic.BaseSettings, config.CoreConfig):
@@ -73,7 +60,19 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
             return env_settings, file_secret_settings, read_settings_from_config_file, init_settings
 
 
-def get_default_config() -> Dict[str, Any]:
+def read_settings_from_config_file(_: Optional[pydantic.BaseSettings]) -> Dict[str, Any]:
+    settings = read_settings_from_json_source(create=False)
+    if not settings:
+        print(
+            f"No config file found! Use the 'init' command to create a basic configuration file. "
+            f"Afterwards, apply the database migrations and use 'init' once again.",
+            file=sys.stderr
+        )
+        sys.exit(1)
+    return settings
+
+
+def get_default_config(_ = None) -> Dict[str, Any]:
     return config.CoreConfig(
         general=config.GeneralConfig(),
         server=config.ServerConfig(),

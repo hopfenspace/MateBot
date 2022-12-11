@@ -28,9 +28,10 @@ It is possible to overwrite most of the options below via environment
 variables by using the key of the config entry, joined with ``__`` to
 concatenate levels. A list of more useful options is given here:
 
-========================================= ========================================
+========================================= =============================================
 Environment variable                      Config option
-========================================= ========================================
+========================================= =============================================
+``CONFIG_PATH``                           overwrites the path to the configuration file
 ``SERVER__HOST``                          ``server.host``
 ``SERVER__PORT``                          ``server.port``
 ``SERVER__PUBLIC_BASE_URL``               ``server.public_base_url``
@@ -42,7 +43,7 @@ Environment variable                      Config option
 ``GENERAL__MIN_MEMBERSHIP_DISAPPROVES``   ``general.min_membership_disapproves``
 ``GENERAL__MIN_REFUND_APPROVES``          ``general.min_refund_approves``
 ``GENERAL__MIN_REFUND_DISAPPROVES``       ``general.min_refund_disapproves``
-========================================= ========================================
+========================================= =============================================
 
 The logging and consumable configurations are especially hard to configure
 via environment variables, though they accept valid JSON as input as well.
