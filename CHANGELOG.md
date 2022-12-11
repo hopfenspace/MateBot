@@ -1,3 +1,20 @@
+# MateBot core v0.5.4 (2022-12-11)
+
+- **Notable change** by not exposing shared secrets via the API
+- Allow overwriting certain config options via environment variables
+- Fixed a lot of inconsistencies and bugs
+- Updated the documentation
+- Added a migration script to convert from the old database to the core API
+  schema which is expected to work as long as no further migrations are required
+- Handle `RuntimeError` as a valid exception to produce HTTP `400` responses
+- Added support for Python 3.11
+- Updated minimal dependencies
+  - `alembic` to `1.8`
+  - `fastapi` to `0.88`
+  - `pydantic` to `1.10`, adding the extra dependency `dotenv` for `.env` files
+  - `requests` to `2.27`
+  - `uvicorn` to `0.20`
+
 # MateBot core v0.5.3 (2022-09-14)
 
 - **Important change** by adding a globally unique name attribute to the user
