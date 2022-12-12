@@ -9,17 +9,20 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7.15, 3.8.14, 3.9.13, 3.10.8, 3.11.0]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11", "pypy3.9", "pypy3.10", "pypy3.11"]
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies and setup the environment
       run: |
-        sudo apt install python3-dev python3-venv default-libmysqlclient-dev build-essential -y
+        sudo apt install python3-venv default-libmysqlclient-dev build-essential -y
+        python3 -V
         python3 -m pip install --upgrade pip
         pip install flake8 pytest pylint build pymysql mysqlclient cryptography
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
@@ -30,18 +33,22 @@ jobs:
         echo 'mysql -e "GRANT ALL PRIVILEGES ON matebot_core_unittests.* TO matebot_core_user;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_setup.sh
         echo '#!/bin/bash' >> db_teardown.sh
         echo 'sudo service mysql restart; mysql -e "DROP DATABASE matebot_core_unittests;" -u root -p"root" 2>>mysql.log 1>>mysql.log' >> db_teardown.sh
+
     - name: Lint with flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=12 --max-line-length=120 --statistics
+
     - name: Lint with PyLint
       run: |
         pylint matebot_core/ -j 0 && echo "OK" || echo "FAIL"
+
     - name: Build docs using Sphinx
       run: |
         cd docs
         pip install -r requirements.txt
         make html
+
     - name: Test database migrations on MySQL with pymysql
       run: |
         mysql -e "CREATE DATABASE migrations_pymysql;" -u root -p"root" -v
@@ -51,6 +58,7 @@ jobs:
         mysqldump -u root -p"root" migrations_pymysql
         mysql -e "DROP DATABASE migrations_pymysql;" -u root -p"root" -v
         rm -fv config.json
+
     - name: Test database migrations on MySQL with MySQLDb
       run: |
         mysql -e "CREATE DATABASE migrations_mysqldb;" -u root -p"root" -v
@@ -60,33 +68,39 @@ jobs:
         mysqldump -u root -p"root" migrations_mysqldb
         mysql -e "DROP DATABASE migrations_mysqldb;" -u root -p"root" -v
         rm -fv config.json
+
     - name: Run matebot_core once with database migrations on SQLite
       run: |
         python3 -m matebot_core init --database sqlite:///test.db || echo "Fail on purpose"
         alembic upgrade head
         python3 -m matebot_core init || echo "Fail on purpose"
-        python3 -m matebot_core add-app --app app --password password
+        python3 -m matebot_core apps add --app app --password password
         python3 -m matebot_core run &
         sleep 3
         killall -s 9 -- python3
         rm -fv test.db
         rm -fv config.json
+
     - name: Run matebot_core unittests with temporary sqlite3
       run: |
         python3 -X tracemalloc=5 -m unittest tests -v
+
     - name: Run matebot_core unittests with MySQL and pymysql
       run: |
         echo 'COMMAND_INITIALIZE_DATABASE = ["/bin/bash", "db_setup.sh"]' >> tests/conf.py
         echo 'COMMAND_CLEANUP_DATABASE = ["/bin/bash", "db_teardown.sh"]' >> tests/conf.py
         echo -e '\nDATABASE_URL = "mysql+pymysql://matebot_core_user:matebot_core_password@localhost/matebot_core_unittests?charset=utf8mb4"' >> tests/conf.py
         python3 -X tracemalloc=5 -m unittest tests -v
+
     - name: Run matebot_core unittests with MySQL and MySQLdb
       run: |
         echo -e '\nDATABASE_URL = "mysql+mysqldb://matebot_core_user:matebot_core_password@localhost/matebot_core_unittests?charset=utf8mb4"' >> tests/conf.py
         python3 -X tracemalloc=5 -m unittest tests -v
+
     - name: Build the package
       run: |
         python3 -m build .
+
     - name: Install the package and execute it once
       run: |
         cd dist/
@@ -94,11 +108,26 @@ jobs:
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
         ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --create-all
-        ../venv/bin/python3 -m matebot_core add-app --app app --password password
+        ../venv/bin/python3 -m matebot_core apps add --app app --password password
         ../venv/bin/python3 -m matebot_core run &
         sleep 3
         curl http://localhost:8000/
         wget http://localhost:8000/openapi.json --debug
+
     - name: Read the MySQL client log file
       run: |
         if [ -f mysql.log ]; then cat mysql.log; fi
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          tags: matebot_core:latest
+
+      - name: Run Docker image
+        run: which docker && timeout -v --preserve-status 10s docker run --rm -e DATABASE_CONNECTION=sqlite:///test.db matebot_core:latest
