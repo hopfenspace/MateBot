@@ -20,7 +20,6 @@ from .schemas import config
 CONFIG_PATHS = ["config.json", os.path.join("..", "config.json")]
 if os.environ.get("CONFIG_PATH"):
     CONFIG_PATHS.insert(0, os.environ.get("CONFIG_PATH"))
-REQUIRE_EXISTING_CONFIG: bool = True
 
 
 def read_settings_from_json_source(create: bool = False) -> Optional[Dict[str, Any]]:
@@ -72,7 +71,7 @@ def read_settings_from_config_file(_: Optional[pydantic.BaseSettings]) -> Dict[s
     return settings
 
 
-def get_default_config(_ = None) -> Dict[str, Any]:
+def get_default_config() -> Dict[str, Any]:
     return config.CoreConfig(
         general=config.GeneralConfig(),
         server=config.ServerConfig(),

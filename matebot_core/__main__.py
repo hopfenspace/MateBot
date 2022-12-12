@@ -531,6 +531,7 @@ def handle_apps(args: argparse.Namespace) -> int:
 def show_users(args: argparse.Namespace) -> int:
     def _conv(d: dict) -> dict:
         d["aliases"] = len(d["aliases"])
+        d["voucher"] = d["voucher_id"]
         return d
 
     config = _settings.Settings()
@@ -543,13 +544,50 @@ def show_users(args: argparse.Namespace) -> int:
             return 0
         print_table(
             [_conv(user.schema.dict()) for user in users],
-            ["id", "name", "balance", "active", "external", "permission", "aliases"]
+            ["id", "name", "balance", "active", "external", "permission", "voucher", "aliases"]
         )
     return 0
 
 
 def update_user(args: argparse.Namespace) -> int:
-    raise NotImplementedError
+    config = _settings.Settings()
+    database.init(config.database.connection, config.database.debug_sql)
+    with database.get_new_session() as session:
+        user: Optional[models.User] = session.query(models.User).get(args.identifier)
+        if user is None:
+            print(f"No user with identifier {args.identifier} has been found!")
+            return 1
+
+        if args.level == "unchanged":
+            print("No modification has been requested.")
+            return 0
+        elif not user.active:
+            print("This user can't be updated, since it has been softly deleted.")
+            return 0
+        elif args.level == "external":
+            if user.vouching_for:
+                print(f"This user can't be updated, since it vouches for {len(user.vouching_for)} others.")
+                return 1
+            user.external = True
+            user.permission = False
+            user.voucher_id = None
+        elif args.level == "internal":
+            if user.voucher_id is not None:
+                print(f"User {user.voucher_id} has previously vouched for {user.name!r}. This will be reset.")
+            user.external = False
+            user.permission = False
+            user.voucher_id = None
+        elif args.level == "privileged":
+            if user.voucher_id is not None:
+                print(f"User {user.voucher_id} has previously vouched for {user.name!r}. This will be reset.")
+            user.external = False
+            user.permission = True
+            user.voucher_id = None
+        session.add(user)
+        session.commit()
+        print(f"Successfully updated user {user.id} named {user.name!r}!")
+
+    return 0
 
 
 def handle_users(args: argparse.Namespace) -> int:
