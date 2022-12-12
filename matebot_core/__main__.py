@@ -22,53 +22,6 @@ from matebot_core.persistence import database, models
 DEFAULT_COMMUNITY_NAME = "Community"
 
 
-def handle_systemd(args: argparse.Namespace) -> int:
-    python_executable = sys.executable
-    if sys.executable is None or sys.executable == "":
-        python_executable = "python3"
-        print(
-            "Revise the 'ExecStart' parameter, since the Python "
-            "interpreter path could not be determined reliably.",
-            file=sys.stderr
-        )
-
-    if not os.path.exists("matebot_core"):
-        print("Path 'matebot_core' not found!", file=sys.stderr)
-        return 1
-
-    content = f"""[Unit]
-Description=MateBot core REST API server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-ExecStart={python_executable} -m matebot_core run
-User={getpass.getuser()}
-WorkingDirectory={os.path.abspath(".")}
-Restart=always
-SyslogIdentifier=matebot_core
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-    if os.path.exists(args.path) and not args.force:
-        print(f"File {args.path!r} already exists. Aborting!", file=sys.stderr)
-        return 1
-
-    with open(args.path, "w") as f:
-        f.write(content)
-
-    print(
-        f"Successfully created the new file {args.path!r}. Now, create a "
-        f"symlink from /lib/systemd/system/ to that file. Then use 'systemctl "
-        f"daemon-reload' and enable your new service. Check that it works afterwards."
-    )
-
-    return 0
-
-
 def get_parser(program: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=program)
 
@@ -151,7 +104,8 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "--community-name",
         type=str,
         metavar="name",
-        help=f"Globally unique username of the community user (default: '{DEFAULT_COMMUNITY_NAME}')"
+        help=f"Globally unique username of the community user "
+             f"(default: '{os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)}')"
     )
     parser_init.add_argument(
         "--no-community",
@@ -293,12 +247,83 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Path to the newly created systemd file"
     )
 
-    commands.add_parser(
+    parser_auto = commands.add_parser(
         "auto",
         description="Deploy and start the server in 'auto mode' using environment variables for first configuration"
     )
+    parser_auto.add_argument(
+        "--host",
+        type=str,
+        metavar="host",
+        help="Bind TCP socket to this host (overwrite config and environment)"
+    )
+    parser_auto.add_argument(
+        "--port",
+        type=int,
+        metavar="port",
+        help="Bind TCP socket to this port (overwrite config and environment)"
+    )
+    parser_auto.add_argument(
+        "--debug-sql",
+        action="store_true",
+        help="Enable echoing of database actions (overwrite config and environment)"
+    )
+    parser_auto.add_argument(
+        "--root-path",
+        type=str,
+        default="",
+        metavar="p",
+        help="Sub-mount the application below the given path"
+    )
 
     return parser
+
+
+def handle_systemd(args: argparse.Namespace) -> int:
+    python_executable = sys.executable
+    if sys.executable is None or sys.executable == "":
+        python_executable = "python3"
+        print(
+            "Revise the 'ExecStart' parameter, since the Python "
+            "interpreter path could not be determined reliably.",
+            file=sys.stderr
+        )
+
+    if not os.path.exists("matebot_core"):
+        print("Path 'matebot_core' not found!", file=sys.stderr)
+        return 1
+
+    content = f"""[Unit]
+Description=MateBot core REST API server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart={python_executable} -m matebot_core run
+User={getpass.getuser()}
+WorkingDirectory={os.path.abspath(".")}
+Restart=always
+SyslogIdentifier=matebot_core
+
+[Install]
+WantedBy=multi-user.target
+"""
+
+    if os.path.exists(args.path) and not args.force:
+        print(f"File {args.path!r} already exists. Aborting!", file=sys.stderr)
+        return 1
+
+    with open(args.path, "w") as f:
+        f.write(content)
+
+    print(
+        f"Successfully created the new file {args.path!r}. Now, create a "
+        f"symlink from /lib/systemd/system/ to that file. Then use 'systemctl "
+        f"daemon-reload' and enable your new service. Check that it works afterwards."
+    )
+
+    return 0
 
 
 def run_server(args: argparse.Namespace):

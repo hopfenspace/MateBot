@@ -23,6 +23,23 @@ of the different options the config file provides):
 Environment variables
 ---------------------
 
+There are some recognized environment variables for some specific modes of operation.
+
+======================== =================== ======================================================================
+Environment variable     Mode (= subcommand) Meaning
+======================== =================== ======================================================================
+``CONFIG_PATH``          every mode          overwrite the path to the configuration file (default ``config.json``)
+``COMMUNITY_NAME``       ``init``, ``auto``  overwrite the initial default community name
+``DATABASE_CONNECTION``  ``init``, ``auto``  overwrite the default database connection on first run
+``INITIAL_APP_USERNAME`` ``auto``            specify an initial application username (only when no app is found)
+``INITIAL_APP_PASSWORD`` ``auto``            specify an initial application password (only when no app is found)
+
+Those environment variables are especially useful when using
+the ``auto`` mode (for example, in a setup with containers).
+
+Overwriting the configuration file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 The rest of this page explains the config options as seen in the JSON file.
 It is possible to overwrite most of the options below via environment
 variables by using the key of the config entry, joined with ``__`` to
@@ -31,7 +48,6 @@ concatenate levels. A list of more useful options is given here:
 ========================================= =============================================
 Environment variable                      Config option
 ========================================= =============================================
-``CONFIG_PATH``                           overwrites the path to the configuration file
 ``SERVER__HOST``                          ``server.host``
 ``SERVER__PORT``                          ``server.port``
 ``SERVER__PUBLIC_BASE_URL``               ``server.public_base_url``
