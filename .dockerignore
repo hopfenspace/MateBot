@@ -1,0 +1,9 @@
+*
+!alembic.ini
+!CHANGELOG.md
+!LICENSE
+!matebot_core
+!migration.sql
+!README.md
+!requirements.txt
+!tests
