@@ -7,6 +7,8 @@ import getpass
 import logging
 import secrets
 import argparse
+from typing import List, Optional
+from collections import OrderedDict
 
 import uvicorn
 import sqlalchemy.exc
@@ -124,10 +126,9 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     )
     parser_users_update = user_command.add_parser(
         "update",
-        description="Update a user's flags (note that those operations may be rejected "
-                    "if not applicable, e.g. giving external users extra permissions or "
-                    "dropping the internal flag from users with privileges; also note that "
-                    "externals with voucher can't become internals by this command)"
+        description="Update a user's flags (note that those operations may be "
+                    "rejected if not applicable; also note that externals "
+                    "with voucher can't become internals by this command)"
     )
 
     parser_run = commands.add_parser(
@@ -211,29 +212,13 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         "identifier",
         metavar="ID",
         type=int,
-        help="unique ID to identify the user"
+        help="Unique ID to identify the user"
     )
-    parser_users_update_privileges = parser_users_update.add_mutually_exclusive_group()
-    parser_users_update_privileges.add_argument(
-        "--privileged",
-        action="store_true",
-        help="add the permission flag to the user (if not existing)"
-    )
-    parser_users_update_privileges.add_argument(
-        "--unprivileged",
-        action="store_true",
-        help="remove the permission flag from the user (if existing)"
-    )
-    parser_users_update_internal = parser_users_update.add_mutually_exclusive_group()
-    parser_users_update_internal.add_argument(
-        "--internal",
-        action="store_true",
-        help="add the internal flag to the user (if not existing)"
-    )
-    parser_users_update_internal.add_argument(
-        "--external",
-        action="store_true",
-        help="remove the internal flag from the user (if existing)"
+    parser_users_update.add_argument(
+        "level",
+        metavar="level",
+        choices=("unchanged", "external", "internal", "privileged"),
+        help="Permission level for the targeted user (choices: 'unchanged', 'external', 'internal', 'privileged')"
     )
 
     parser_run.add_argument(
@@ -308,7 +293,7 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Path to the newly created systemd file"
     )
 
-    parser_auto = commands.add_parser(
+    commands.add_parser(
         "auto",
         description="Deploy and start the server in 'auto mode' using environment variables for first configuration"
     )
@@ -440,26 +425,34 @@ def init_project(args: argparse.Namespace) -> int:
     return 0
 
 
+def print_table(objs: List[dict], keys: Optional[List[str]] = None):
+    info = OrderedDict()
+    if keys:
+        for k in keys:
+            info[k] = len(k)
+    for obj in objs:
+        for key in obj:
+            if keys and key not in keys:
+                continue
+            if key not in info:
+                info[key] = len(key)
+            info[key] = max(len(str(obj.get(key))), info.get(key))
+    print(" | ".join([f"{k:<{info[k]}}" for k in info]))
+    print("-+-".join(["-" * info[k] for k in info]))
+    for obj in objs:
+        print(" | ".join([f"{obj[k]!s:<{info[k]}}" for k in info]))
+
+
 def show_apps(args: argparse.Namespace) -> int:
-    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    config = _settings.Settings()
     database.init(config.database.connection, config.database.debug_sql)
-    session = database.get_new_session()
-    applications = session.query(models.Application).all()
+    with database.get_new_session() as session:
+        applications = session.query(models.Application).all()
 
-    if args.json:
-        print(json.dumps([app.schema.dict() for app in applications], indent=args.indent))
-        return 0
-
-    max_id, max_name, max_created = len("ID"), len("Name"), len("Created")
-    for app in applications:
-        max_id = max(max_id, len(str(app.id)))
-        max_name = max(max_name, len(f"{app.name!r}"))
-        max_created = max(max_created, len(str(app.created)))
-
-    print(f"{'ID':<{max_id}} | {'Name':<{max_name}} | {'Created':<{max_created}}")
-    print(f"{'-' * max_id}-+-{'-' * max_name}-+-{'-' * max_created}")
-    for app in applications:
-        print(f"{app.id:>{max_id}} | {app.name!r:<{max_name}} | {app.created}")
+        if args.json:
+            print(json.dumps([app.schema.dict() for app in applications], indent=args.indent))
+            return 0
+        print_table([app.schema.dict() for app in applications], ["id", "name", "created"])
     return 0
 
 
@@ -536,7 +529,23 @@ def handle_apps(args: argparse.Namespace) -> int:
 
 
 def show_users(args: argparse.Namespace) -> int:
-    raise NotImplementedError
+    def _conv(d: dict) -> dict:
+        d["aliases"] = len(d["aliases"])
+        return d
+
+    config = _settings.Settings()
+    database.init(config.database.connection, config.database.debug_sql)
+    with database.get_new_session() as session:
+        users = session.query(models.User).all()
+
+        if args.json:
+            print(json.dumps([user.schema.dict() for user in users], indent=args.indent))
+            return 0
+        print_table(
+            [_conv(user.schema.dict()) for user in users],
+            ["id", "name", "balance", "active", "external", "permission", "aliases"]
+        )
+    return 0
 
 
 def update_user(args: argparse.Namespace) -> int:
