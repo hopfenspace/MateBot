@@ -7,6 +7,8 @@ RUN	apt update && \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN	pip3 install -r requirements.txt
+RUN	pip3 install -r requirements.txt && \
+    pip3 install pymysql mysqlclient && \
+    pip3 freeze
 COPY . .
 CMD ["python3", "-m", "matebot_core", "auto"]
