@@ -107,7 +107,7 @@ jobs:
         python3 -m venv venv
         venv/bin/python3 -m pip install matebot_core-*.tar.gz
         mkdir cwd/ && cd cwd/
-        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --create-all
+        ../venv/bin/python3 -m matebot_core init --database sqlite:///test.db --community-name Community
         ../venv/bin/python3 -m matebot_core apps add --app app --password password
         ../venv/bin/python3 -m matebot_core run &
         sleep 3
@@ -129,5 +129,8 @@ jobs:
           context: .
           tags: matebot_core:latest
 
-      - name: Run Docker image
-        run: which docker && timeout -v --preserve-status 10s docker run --rm -e DATABASE_CONNECTION=sqlite:///test.db matebot_core:latest
+      - name: Run Docker image shortly
+        run: timeout -v --preserve-status 10s docker run --rm -e DATABASE_CONNECTION=sqlite:///test.db matebot_core:latest
+
+      - name: Run the tests in the image
+        run: docker run --rm --entrypoint bash -e DATABASE_CONNECTION=sqlite:///test.db matebot_core:latest -c "python3 -m unittest tests -v"
