@@ -11,6 +11,7 @@ from typing import List, Optional
 from collections import OrderedDict
 
 import uvicorn
+import alembic.config
 import sqlalchemy.exc
 
 from matebot_core import settings as _settings
@@ -113,9 +114,9 @@ def get_parser(program: str) -> argparse.ArgumentParser:
         help="Don't create the community user if it doesn't exist (not recommended)"
     )
     parser_init.add_argument(
-        "--create-all",
+        "--no-migrations",
         action="store_true",
-        help="Create all database models of the current revision, ignoring migrations (not recommended)"
+        help="Do not apply migrations automatically (not recommended)"
     )
 
     parser_apps_show.add_argument(
@@ -369,15 +370,15 @@ def run_server(args: argparse.Namespace):
     )
 
 
-def init_project(args: argparse.Namespace) -> int:
+def _setup_config(db: Optional[str] = None, init: bool = False) -> _settings.Settings:
     try:
         settings = _settings.Settings()
     except SystemExit:
-        print("No settings file found. A basic config will be created now interactively.")
+        print("No settings file found. A basic config will be created now.")
         settings = _settings.read_settings_from_json_source(create=True)
 
-        if args.database:
-            settings["database"]["connection"] = args.database
+        if db:
+            settings["database"]["connection"] = db
         else:
             print(
                 "\nEnter the full database connection string below. It's required to make the "
@@ -390,24 +391,29 @@ def init_project(args: argparse.Namespace) -> int:
         with open(_settings.CONFIG_PATHS[0], "w") as f:
             json.dump(settings, f, indent=4)
         settings = _settings.Settings()
-
     else:
-        print(
-            "A config file has been found and will be used. If you want a fresh installation, "
-            "you should remove the config file and clear the database, then run this command again."
-        )
+        if init:
+            print(
+                "A config file has been found and will be used. If you want a fresh installation, "
+                "you should remove the config file and clear the database, then run this command again."
+            )
+    return settings
 
+
+def init_project(args: argparse.Namespace) -> int:
+    settings = _setup_config(args.database or os.environ.get("DATABASE_CONNECTION", None), True)
     config = settings
-    database.init(config.database.connection, config.database.debug_sql, args.create_all)
+    if not args.no_migrations:
+        alembic.config.main(argv=["upgrade", "head"])
+    database.init(config.database.connection, config.database.debug_sql, create_all=False)
     session = database.get_new_session()
 
     try:
         session.query(models.User).all()
     except sqlalchemy.exc.DatabaseError:
         print(
-            "No table 'users' found in the database. Please initialize the database first. Either "
-            "perform the necessary database migrations using the 'alembic upgrade head' command "
-            "or use the insecure '--create-all' switch (which makes later migrations much harder!).",
+            "No table 'users' found in the database. Please initialize the database first. "
+            "Perform the necessary database migrations using the 'alembic upgrade head' command .",
             file=sys.stderr
         )
         return 1
@@ -419,13 +425,14 @@ def init_project(args: argparse.Namespace) -> int:
         if len(specials) == 0:
             name = args.community_name
             if args.community_name is None:
+                default_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
                 print(
                     "No community username has been specified! The default value "
-                    f"{DEFAULT_COMMUNITY_NAME!r} will be used. This value can be changed "
+                    f"{default_name!r} will be used. This value can be changed "
                     f"later via the API using the 'POST /v1/users/setName' endpoint.",
                     file=sys.stderr
                 )
-                name = DEFAULT_COMMUNITY_NAME
+                name = default_name
             session.add(models.User(
                 name=name,
                 active=True,
@@ -623,7 +630,69 @@ def handle_users(args: argparse.Namespace) -> int:
 
 
 def run_in_auto_mode(args: argparse.Namespace) -> int:
-    raise NotImplementedError
+    # Setup the configuration file
+    db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", None))
+    if db is None:
+        print(
+            "Unable to proceed in auto mode. One of the following environment variables "
+            "must be set correctly: 'DATABASE__CONNECTION', 'DATABASE_CONNECTION'!",
+            file=sys.stderr
+        )
+        return 1
+    conf = _setup_config(db, False)
+
+    # Perform database migrations after the config file has been created successfully
+    alembic.config.main(argv=["upgrade", "head"])
+
+    # Create the first application if no app currently exists
+    database.init(db, conf.database.debug_sql, create_all=False)
+    with database.get_new_session() as session:
+        apps = len(session.query(models.Application).all())
+    if apps == 0:
+        initial_username = os.environ.get("INITIAL_APP_USERNAME", None)
+        initial_password = os.environ.get("INITIAL_APP_PASSWORD", None)
+        if initial_username is None or initial_password is None:
+            print(
+                "You need to set the environment variables 'INITIAL_APP_USERNAME' and "
+                "'INITIAL_APP_PASSWORD' in auto mode to create the first authenticated application.",
+                file=sys.stderr
+            )
+        else:
+            app_args = argparse.Namespace()
+            app_args.app = initial_username
+            app_args.password = initial_password
+            result = add_app(app_args)
+            if result != 0:
+                return result
+
+    # Ensure the database has the community user
+    init_args = argparse.Namespace()
+    init_args.database = db
+    init_args.community_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
+    init_args.no_community = False
+    init_args.no_migrations = False
+    result = init_project(init_args)
+    if result != 0:
+        return result
+
+    # Run the API server
+    settings = _settings.Settings()
+    if args.debug_sql:
+        settings.database.debug_sql = args.debug_sql
+    port = args.port or settings.server.port
+    host = args.host or settings.server.host
+    app = create_app(settings=settings)
+    logging.getLogger("matebot_core").info(f"Server running at host {host} port {port}")
+    uvicorn.run(
+        app,
+        port=port,
+        host=host,
+        reload=False,
+        workers=1,
+        log_config=settings.logging.dict(),
+        proxy_headers=True,
+        root_path=args.root_path
+    )
 
 
 if __name__ == '__main__':
