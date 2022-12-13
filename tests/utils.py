@@ -16,7 +16,7 @@ import subprocess
 import http.server
 import urllib.parse
 import json as _json
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
+from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Tuple, Type, Union
 
 import pydantic
 import requests
@@ -24,8 +24,7 @@ import sqlalchemy.orm
 from sqlalchemy.engine import Engine as _Engine
 
 from matebot_core import schemas as _schemas, settings as _settings
-from matebot_core.api import auth
-from matebot_core.persistence import database, models
+from matebot_core.persistence import models
 
 from . import conf
 
@@ -53,6 +52,9 @@ class BaseTest(unittest.TestCase):
     database_url: Optional[str] = None
     database_type: Optional[DatabaseType] = None
     _database_file: Optional[str] = None
+
+    SUBPROCESS_CATCH_STDERR: ClassVar[bool] = True
+    SUBPROCESS_CATCH_STDOUT: ClassVar[bool] = True
 
     def setUp(self) -> None:
         self.config_file = f"config_{os.getpid()}_{secrets.token_hex(8)}.json"
@@ -387,40 +389,28 @@ class BaseAPITests(BaseTest):
             self.fail(f"Failed to login ({response.status_code})")
 
     def _start_api_server(self):
-        def _mk_args(port, conf_path) -> list:
-            return [
-                sys.executable, "-m", "matebot_core", "run", "--port", str(port),
-                "--config", conf_path, "--host", "127.0.0.1", "--workers", "1"
-            ]
-
-        config = _schemas.config.CoreConfig(**_settings.get_default_config())
-        if conf.SERVER_LOGGING_OVERWRITE:
-            config.logging = conf.SERVER_LOGGING_OVERWRITE
-        config.database.debug_sql = conf.SQLALCHEMY_ECHOING
-        config.database.connection = self.database_url
-        config.server.password_iterations = 1
-        with open(self.config_file, "w") as f:
-            f.write(config.json())
-
         self.auth = ("application", secrets.token_urlsafe(16))
-        config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
-        database.PRINT_SQLITE_WARNING = False
-        database.init(config.database.connection, config.database.debug_sql)
-        session = database.get_new_session()
-        salt = secrets.token_urlsafe(16)
-        session.add(models.Application(name=self.auth[0], password=auth.hash_password(self.auth[1], salt), salt=salt))
-        session.commit()
-        session.flush()
-        session.close()
-
         self.server_port = random.randint(10000, 20000)
+        env = {
+            "CONFIG_PATH": self.config_file,
+            "SERVER__HOST": "127.0.0.1",
+            "SERVER__PASSWORD_ITERATIONS": "1",
+            "INITIAL_APP_USERNAME": self.auth[0],
+            "INITIAL_APP_PASSWORD": self.auth[1],
+            "DATABASE__DEBUG_SQL": str(conf.SQLALCHEMY_ECHOING),
+            "DATABASE__CONNECTION": self.database_url
+        }
+        if conf.SERVER_LOGGING_OVERWRITE:
+            env["LOGGING"] = conf.SERVER_LOGGING_OVERWRITE
 
         for i in range(conf.MAX_SERVER_START_RETRIES):
+            env["SERVER__PORT"] = str(self.server_port)
             self.server_process = subprocess.Popen(
-                _mk_args(self.server_port, self.config_file),
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                start_new_session=True
+                [sys.executable, "-m", "matebot_core", "auto"],
+                stderr=subprocess.PIPE if type(self).SUBPROCESS_CATCH_STDERR else subprocess.DEVNULL,
+                stdout=subprocess.PIPE if type(self).SUBPROCESS_CATCH_STDOUT else subprocess.DEVNULL,
+                start_new_session=False,
+                env=env
             )
 
             for j in range(conf.MAX_SERVER_WAIT_RETRIES):
