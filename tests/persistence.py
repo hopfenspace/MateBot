@@ -4,7 +4,7 @@ MateBot database unit tests
 
 import datetime
 import unittest as _unittest
-from typing import List, Type
+from typing import List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -15,16 +15,6 @@ from matebot_core.api import auth
 from matebot_core.persistence import models
 
 from . import conf, utils
-
-
-persistence_suite = _unittest.TestSuite()
-
-
-def _tested(cls: Type):
-    global persistence_suite
-    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        persistence_suite.addTest(cls(fixture))
-    return cls
 
 
 class _BaseDatabaseTests(utils.BaseTest):
@@ -62,7 +52,6 @@ class _BaseDatabaseTests(utils.BaseTest):
         ]
 
 
-@_tested
 class DatabaseUsabilityTests(utils.BasePersistenceTests):
     """
     Database test cases checking the correct usability of the models
@@ -435,7 +424,6 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(m3.schema.total_amount, 140)
 
 
-@_tested
 class DatabaseRestrictionTests(utils.BasePersistenceTests):
     """
     Database test cases checking restrictions on certain operations (constraints)

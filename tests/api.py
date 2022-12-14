@@ -5,7 +5,7 @@ MateBot unit tests for the whole API in certain user actions
 import time
 import urllib.parse
 import unittest as _unittest
-from typing import List, Type
+from typing import List
 
 from matebot_core import schemas as _schemas
 from matebot_core.persistence import models
@@ -13,27 +13,7 @@ from matebot_core.persistence import models
 from . import utils
 
 
-api_suite = _unittest.TestSuite()
-
-
-def _tested(cls: Type):
-    global api_suite
-    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        api_suite.addTest(cls(fixture))
-    return cls
-
-
-@_tested
 class APITests(utils.BaseAPITests):
-    def _edit_user(self, user_id: int, **kwargs):
-        session = self.get_db_session()
-        user_model = session.query(models.User).get(user_id)
-        for k, v in kwargs.items():
-            setattr(user_model, k, v)
-        session.add(user_model)
-        session.commit()
-        session.close()
-
     def test_basic_endpoints_and_redirects_to_docs(self):
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),

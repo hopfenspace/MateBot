@@ -5,8 +5,6 @@ MateBot load testing of the API endpoints
 import time
 import asyncio
 import threading
-import unittest as _unittest
-from typing import Type
 
 import aiohttp
 
@@ -15,17 +13,6 @@ from matebot_core import schemas as _schemas
 from . import conf, utils
 
 
-load_suite = _unittest.TestSuite()
-
-
-def _tested(cls: Type):
-    global load_suite
-    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        load_suite.addTest(cls(fixture))
-    return cls
-
-
-@_tested
 class LoadTests(utils.BaseAPITests):
     SUBPROCESS_CATCH_STDERR = False
     SUBPROCESS_CATCH_STDOUT = False

@@ -439,12 +439,13 @@ class BaseAPITests(BaseTest):
             outs, errs = self.server_process.communicate()
             return_code = self.server_process.poll()
             self._quit_api_server()
-            self.fail(
-                f"Failed to successfully start the API server after {conf.MAX_SERVER_WAIT_RETRIES} "
-                f"tries. Server process returned code {return_code}.\n"
-                f"{' STDERR '.center(80, '=')}\n{errs.decode('UTF-8')}\n"
-                f"{' STDOUT '.center(80, '=')}\n{outs.decode('UTF-8')}"
-            )
+            msg = f"Failed to successfully start the API server after {conf.MAX_SERVER_WAIT_RETRIES} " \
+                  f"tries. Server process returned code {return_code}."
+            if type(self).SUBPROCESS_CATCH_STDERR and errs:
+                msg += f"\n{' STDERR '.center(80, '=')}\n{errs.decode('UTF-8')}"
+            if type(self).SUBPROCESS_CATCH_STDOUT and outs:
+                msg += f"\n{' STDOUT '.center(80, '=')}\n{outs.decode('UTF-8')}"
+            self.fail(msg)
 
     def _run_callback_server(self):
         self.CallbackHandler.event_queue = self.callback_event_queue
@@ -478,8 +479,10 @@ class BaseAPITests(BaseTest):
             self.server_process.wait(conf.API_SUBPROCESS_KILL_TIMEOUT)
         except subprocess.TimeoutExpired:
             pass
-        self.server_process.stdout.close()
-        self.server_process.stderr.close()
+        if type(self).SUBPROCESS_CATCH_STDOUT:
+            self.server_process.stdout.close()
+        if type(self).SUBPROCESS_CATCH_STDERR:
+            self.server_process.stderr.close()
 
     def get_db_session(self) -> sqlalchemy.orm.Session:
         opts = {"echo": conf.SQLALCHEMY_ECHOING}
@@ -491,6 +494,15 @@ class BaseAPITests(BaseTest):
             autoflush=False,
             bind=engine
         )()
+
+    def _edit_user(self, user_id: int, **kwargs):
+        session = self.get_db_session()
+        user_model = session.query(models.User).get(user_id)
+        for k, v in kwargs.items():
+            setattr(user_model, k, v)
+        session.add(user_model)
+        session.commit()
+        session.close()
 
     def make_special_user(self):
         session = self.get_db_session()

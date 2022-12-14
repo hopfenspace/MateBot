@@ -4,8 +4,6 @@ MateBot unit tests for helpers and other miscellaneous features
 
 import random
 import logging
-import unittest as _unittest
-from typing import Type
 
 from matebot_core.persistence import database, models
 from matebot_core.misc import transactions
@@ -13,17 +11,6 @@ from matebot_core.misc import transactions
 from . import utils
 
 
-misc_suite = _unittest.TestSuite()
-
-
-def _tested(cls: Type):
-    global misc_suite
-    for fixture in filter(lambda f: f.startswith("test_"), dir(cls)):
-        misc_suite.addTest(cls(fixture))
-    return cls
-
-
-@_tested
 class TransactionTests(utils.BasePersistenceTests):
     def setUp(self) -> None:
         super().setUp()
