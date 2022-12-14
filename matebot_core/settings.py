@@ -19,7 +19,7 @@ from .schemas import config
 
 CONFIG_PATHS = ["config.json", os.path.join("..", "config.json")]
 if os.environ.get("CONFIG_PATH"):
-    CONFIG_PATHS.insert(0, os.environ.get("CONFIG_PATH"))
+    CONFIG_PATHS = [os.environ.get("CONFIG_PATH")]
 
 
 def read_settings_from_json_source(create: bool = False) -> Optional[Dict[str, Any]]:
