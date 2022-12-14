@@ -11,8 +11,7 @@ from typing import ClassVar, List, Optional
 
 import aiohttp
 
-from ..api import dependency
-from ..persistence import models
+from ..persistence import database, models
 from .. import schemas
 
 
@@ -30,6 +29,12 @@ class Callback:
     shutdown_event: ClassVar[threading.Event] = threading.Event()
     _thread: ClassVar[Optional[threading.Thread]] = None
     _session: ClassVar[Optional[aiohttp.ClientSession]] = None
+
+    @classmethod
+    def wait_stop(cls, timeout: float = None):
+        cls.shutdown_event.set()
+        if cls._thread:
+            cls._thread.join(timeout=timeout)
 
     @classmethod
     def created(cls, *args, **kwargs):
@@ -83,8 +88,7 @@ class Callback:
                     events.append(cls.queue.get(block=True, timeout=EVENT_QUEUE_BUFFER_TIME))
                 except Empty:
                     break
-            callbacks = []
-            for session in dependency.get_session():
+            with database.get_new_session() as session:
                 callbacks = [
                     (obj.application_id, obj.url, obj.shared_secret)
                     for obj in session.query(models.Callback).all()

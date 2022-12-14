@@ -7,7 +7,7 @@ import logging
 import unittest as _unittest
 from typing import Type
 
-from matebot_core.persistence import models
+from matebot_core.persistence import database, models
 from matebot_core.misc import transactions
 
 from . import utils
@@ -27,8 +27,18 @@ def _tested(cls: Type):
 class TransactionTests(utils.BasePersistenceTests):
     def setUp(self) -> None:
         super().setUp()
+        self.logger = logging.getLogger("err-only")
+        self.logger.setLevel("ERROR")
+        database._logger.setLevel("ERROR")
+        database.init(self.database_url, echo=False, create_all=False)
         self.session.add_all(self.get_sample_users())
         self.session.commit()
+
+    def tearDown(self) -> None:
+        transactions.Callback.wait_stop()
+        database._engine = None
+        database._make_session = None
+        super().tearDown()
 
     def test_single_transactions(self):
         user1 = self.session.query(models.User).get(1)
@@ -39,17 +49,17 @@ class TransactionTests(utils.BasePersistenceTests):
         # Negative or zero amount is forbidden
         for v in [0, -1, -2, -52, 0.3, 0.9, -1e7]:
             with self.assertRaises(ValueError):
-                transactions.create_transaction(user1, user4, v, "", self.session, logging.getLogger())
+                transactions.create_transaction(user1, user4, v, "", self.session, self.logger)
         self.assertEqual(user1_balance, user1.balance)
         self.assertEqual(user4_balance, user4.balance)
 
         # Don't allow transactions of unknown users
         with self.assertRaises(ValueError):
-            transactions.create_transaction(models.User(), user1, 42, "", self.session, logging.getLogger())
+            transactions.create_transaction(models.User(), user1, 42, "", self.session, self.logger)
 
         total = 0
         for i, v in enumerate([3, 41, 51, 9, 3]):
-            t = transactions.create_transaction(user4, user1, v, "", self.session, logging.getLogger())
+            t = transactions.create_transaction(user4, user1, v, "", self.session, self.logger)
             total += v
             self.assertEqual(t.id, i+1)
             self.assertEqual(t.amount, v)
@@ -69,10 +79,10 @@ class TransactionTests(utils.BasePersistenceTests):
         ]:
             if direction:
                 def f(one, many, amount):
-                    return func(one, many, amount, "foo", self.session, logging.getLogger())
+                    return func(one, many, amount, "foo", self.session, self.logger)
             else:
                 def f(one, many, amount):
-                    return func(many, one, amount, "foo", self.session, logging.getLogger())
+                    return func(many, one, amount, "foo", self.session, self.logger)
 
             # At least one valid user with quantity > 1 must be present
             with self.assertRaises(ValueError, msg=func):
@@ -108,12 +118,12 @@ class TransactionTests(utils.BasePersistenceTests):
             if switch:
                 def f(a, b, amount, **kwargs):
                     return transactions.create_one_to_many_transaction_by_base(
-                        a, b, amount, "foo", self.session, logging.getLogger(), **kwargs
+                        a, b, amount, "foo", self.session, self.logger, **kwargs
                     )
             else:
                 def f(a, b, amount, **kwargs):
                     return transactions.create_many_to_one_transaction_by_base(
-                        b, a, amount, "foo", self.session, logging.getLogger(), **kwargs
+                        b, a, amount, "foo", self.session, self.logger, **kwargs
                     )
 
             # Base amount, total amount, (ID, change) of the one, list of (ID, quantity, change) of the many
@@ -157,7 +167,7 @@ class TransactionTests(utils.BasePersistenceTests):
             5,
             "foo",
             self.session,
-            logging.getLogger(),
+            self.logger,
             "{reason}{n}"
         )
         self.assertEqual(m.id, 1)
@@ -175,7 +185,7 @@ class TransactionTests(utils.BasePersistenceTests):
             3,
             "bar",
             self.session,
-            logging.getLogger(),
+            self.logger,
             "{n}_{reason}"
         )
         for i, t in enumerate(ts):
@@ -192,7 +202,7 @@ class TransactionTests(utils.BasePersistenceTests):
             4,
             "foo",
             self.session,
-            logging.getLogger()
+            self.logger
         )
         self.assertEqual(0, len(ts))
         self.assertEqual(0, len(m.transactions))
@@ -204,7 +214,7 @@ class TransactionTests(utils.BasePersistenceTests):
             4,
             "foo",
             self.session,
-            logging.getLogger()
+            self.logger
         )
         self.assertEqual(0, len(ts))
         self.assertEqual(0, len(m.transactions))
@@ -223,7 +233,7 @@ class TransactionTests(utils.BasePersistenceTests):
             227,
             "foo",
             self.session,
-            logging.getLogger()
+            self.logger
         )
         self.assertEqual(m.base_amount, 12)
         self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
@@ -252,7 +262,7 @@ class TransactionTests(utils.BasePersistenceTests):
                 total,
                 "foo",
                 self.session,
-                logging.getLogger()
+                self.logger
             )
             self.assertEqual(m.base_amount, base)
             self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
@@ -281,7 +291,7 @@ class TransactionTests(utils.BasePersistenceTests):
                 total,
                 "foo",
                 self.session,
-                logging.getLogger()
+                self.logger
             )
             self.assertEqual(m.base_amount, base)
             self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
@@ -296,7 +306,7 @@ class TransactionTests(utils.BasePersistenceTests):
             1337,
             "bar",
             self.session,
-            logging.getLogger()
+            self.logger
         )
         self.assertEqual(m.base_amount, 223)
         self.assertEqual(sum(t.amount for t in m.transactions), sum(t.amount for t in ts))
@@ -325,7 +335,7 @@ class TransactionTests(utils.BasePersistenceTests):
                 base_amount,
                 "foo",
                 self.session,
-                logging.getLogger()
+                self.logger
             )
             m_to, ts_to = transactions.create_many_to_one_transaction_by_base(
                 rs,
@@ -333,7 +343,7 @@ class TransactionTests(utils.BasePersistenceTests):
                 base_amount,
                 "bar",
                 self.session,
-                logging.getLogger()
+                self.logger
             )
 
             self.assertEqual(m_from.base_amount, m_to.base_amount)
