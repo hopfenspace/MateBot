@@ -4,9 +4,9 @@ import os
 import sys
 import json
 import getpass
-import logging
 import secrets
 import argparse
+import logging.config
 from typing import List, Optional
 from collections import OrderedDict
 
@@ -372,13 +372,17 @@ def run_server(args: argparse.Namespace):
 
 def _setup_config(db: Optional[str] = None, init: bool = False) -> _settings.Settings:
     try:
+        _settings.INTERACTIVE_MODE = init
         settings = _settings.Settings()
-    except SystemExit:
-        print("No settings file found. A basic config will be created now.")
+    except RuntimeError as exc:
+        if init:
+            print("No settings file found. A basic config will be created now.")
         settings = _settings.read_settings_from_json_source(create=True)
 
         if db:
             settings["database"]["connection"] = db
+        elif not init:
+            raise RuntimeError("Non-interactive mode without 'db' argument is invalid") from exc
         else:
             print(
                 "\nEnter the full database connection string below. It's required to make the "
@@ -397,15 +401,18 @@ def _setup_config(db: Optional[str] = None, init: bool = False) -> _settings.Set
                 "A config file has been found and will be used. If you want a fresh installation, "
                 "you should remove the config file and clear the database, then run this command again."
             )
+    finally:
+        _settings.INTERACTIVE_MODE = True
     return settings
 
 
-def init_project(args: argparse.Namespace) -> int:
+def init_project(args: argparse.Namespace, no_db_init: bool = False, no_hint: bool = False) -> int:
     settings = _setup_config(args.database or os.environ.get("DATABASE_CONNECTION", None), True)
     config = settings
     if not args.no_migrations:
         alembic.config.main(argv=["upgrade", "head"])
-    database.init(config.database.connection, config.database.debug_sql, create_all=False)
+    if not no_db_init:
+        database.init(config.database.connection, config.database.debug_sql, create_all=False)
     session = database.get_new_session()
 
     try:
@@ -443,7 +450,7 @@ def init_project(args: argparse.Namespace) -> int:
             session.commit()
             session.flush()
 
-    if len(session.query(models.Application).all()) == 0:
+    if len(session.query(models.Application).all()) == 0 and not no_hint:
         print(
             "\nThere's no registered application yet. Nobody can use the API "
             "without an application account, because the authentication procedure "
@@ -453,7 +460,8 @@ def init_project(args: argparse.Namespace) -> int:
         )
 
     session.close()
-    print("Done.")
+    if not no_hint:
+        print("Done.")
     return 0
 
 
@@ -630,18 +638,29 @@ def handle_users(args: argparse.Namespace) -> int:
 
 
 def run_in_auto_mode(args: argparse.Namespace) -> int:
-    # Setup the configuration file
-    db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", None))
-    if db is None:
-        print(
-            "Unable to proceed in auto mode. One of the following environment variables "
-            "must be set correctly: 'DATABASE__CONNECTION', 'DATABASE_CONNECTION'!",
-            file=sys.stderr
-        )
-        return 1
-    conf = _setup_config(db, False)
+    logger = logging.getLogger("auto")
 
-    # Perform database migrations after the config file has been created successfully
+    # Setup the configuration
+    _settings.INTERACTIVE_MODE = False
+    try:
+        conf = _settings.Settings()
+        db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", conf.database.connection))
+    except RuntimeError:
+        db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", None))
+        if db is None:
+            print(
+                "Unable to proceed in auto mode. One of the following environment variables "
+                "must be set correctly: 'DATABASE__CONNECTION', 'DATABASE_CONNECTION'!",
+                file=sys.stderr
+            )
+            return 1
+        conf = _setup_config(db, False)
+    _settings.INTERACTIVE_MODE = True
+
+    # Configure logging as early as feasible
+    logging.config.dictConfig(conf.logging.dict())
+
+    # Perform database migrations after the config file has been loaded successfully
     alembic.config.main(argv=["upgrade", "head"])
 
     # Create the first application if no app currently exists
@@ -652,10 +671,9 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
         initial_username = os.environ.get("INITIAL_APP_USERNAME", None)
         initial_password = os.environ.get("INITIAL_APP_PASSWORD", None)
         if initial_username is None or initial_password is None:
-            print(
+            logger.warning(
                 "You need to set the environment variables 'INITIAL_APP_USERNAME' and "
                 "'INITIAL_APP_PASSWORD' in auto mode to create the first authenticated application.",
-                file=sys.stderr
             )
         else:
             app_args = argparse.Namespace()
@@ -670,8 +688,8 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
     init_args.database = db
     init_args.community_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
     init_args.no_community = False
-    init_args.no_migrations = False
-    result = init_project(init_args)
+    init_args.no_migrations = True
+    result = init_project(init_args, no_db_init=True, no_hint=True)
     if result != 0:
         return result
 

@@ -17,6 +17,7 @@ from pydantic.env_settings import SettingsSourceCallable as _SettingsSourceCalla
 from .schemas import config
 
 
+INTERACTIVE_MODE: bool = True  # when set to False, read_settings_from_config_file doesn't exit the program
 CONFIG_PATHS = ["config.json", os.path.join("..", "config.json")]
 if os.environ.get("CONFIG_PATH"):
     CONFIG_PATHS = [os.environ.get("CONFIG_PATH")]
@@ -61,13 +62,16 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
 
 def read_settings_from_config_file(_: Optional[pydantic.BaseSettings]) -> Dict[str, Any]:
     settings = read_settings_from_json_source(create=False)
-    if not settings:
+    if not settings and INTERACTIVE_MODE:
         print(
-            f"No config file found! Use the 'init' command to create a basic configuration file. "
-            f"Afterwards, apply the database migrations and use 'init' once again.",
+            "No config file found! Use the 'init' command to create a basic configuration file. "
+            "Afterwards, apply the database migrations and use 'init' once again. Alternatively, "
+            "use the 'auto' mode which does all the setup by environment variables automatically.",
             file=sys.stderr
         )
         sys.exit(1)
+    elif not settings:
+        raise RuntimeError("Settings not found")
     return settings
 
 
