@@ -60,4 +60,9 @@ API_SUBPROCESS_KILL_TIMEOUT = 0.01
 API_SUBPROCESS_TERMINATE_TIMEOUT = 0.1
 
 # Seconds to wait for the API server to start in a single iteration
-API_SUBPROCESS_START_WAIT_TIMEOUT = 0.2
+API_SUBPROCESS_START_WAIT_TIMEOUT = 0.25
+
+# The following values define max limits for the load tests in seconds
+LOAD_TEST_INVALID_REQUESTS = 15.0
+LOAD_TEST_GET_USERS = 8.0
+LOAD_TEST_MAKE_TRANSACTIONS = 30.0

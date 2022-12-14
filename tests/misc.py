@@ -2,9 +2,9 @@
 MateBot unit tests for helpers and other miscellaneous features
 """
 
-import unittest as _unittest
 import random
 import logging
+import unittest as _unittest
 from typing import Type
 
 from matebot_core.persistence import models
