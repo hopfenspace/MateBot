@@ -30,16 +30,8 @@ async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
     Return some information about the current status of the server, the database and whatsoever
     """
 
-    project_version_list = __version__.split(".") + [0, 0]
-    project_version = schemas.VersionInfo(
-        major=project_version_list[0],
-        minor=project_version_list[1],
-        micro=project_version_list[2]
-    )
-
     return schemas.Status(
         api_version=1,
-        project_version=project_version,
         localtime=datetime.datetime.now(),
         timestamp=datetime.datetime.now().timestamp()
     )

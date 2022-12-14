@@ -32,7 +32,6 @@ class VersionInfo(pydantic.BaseModel):
 class Status(pydantic.BaseModel):
     startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
     api_version: pydantic.PositiveInt
-    project_version: VersionInfo
     timezone: str = time.localtime().tm_zone
     localtime: datetime.datetime
     timestamp: pydantic.NonNegativeInt

@@ -191,7 +191,7 @@ def create_app(
 
     def shutdown_server():
         logger.info("Shutting down...")
-        notifier.Callback.shutdown_event.set()
+        notifier.Callback.wait_stop()
 
     if settings is None:
         settings = Settings()

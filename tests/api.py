@@ -28,6 +28,12 @@ class APITests(utils.BaseAPITests):
             self.assertQuery(("GET", "/docs"), r_is_json=False, no_version=True).content
         )
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
+        self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"}, no_version=True)
+
+        self.assertQuery(("GET", "/status"), 401)
+        self.login()
+        r = self.assertQuery(("GET", "/status"), 200, r_headers={"Content-Type": "application/json"}).json()
+        self.assertEqual(self.latest_api_version, r["api_version"])
 
     def test_special_user(self):
         self.login()
