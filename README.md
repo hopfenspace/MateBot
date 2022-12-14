@@ -76,6 +76,21 @@ migrations. Ideally, the upgrade procedure would contain those steps:
 5. Run `venv/bin/alembic upgrade head`.
 6. Start the web server again.
 
+### Using the auto mode
+
+The steps mentioned in the setup and execution sections are combined into
+one command that can be executed only based on environment variables.
+The so-called *auto mode* searches (and possibly creates) config files,
+configures the database, applies migrations and starts the API server.
+Take a look at the documentation about which environment variables are best
+suited to use this mode. The two most recommended variables are `CONFIG_PATH`
+to specify the location of the config file and `DATABASE_CONNECTION` to
+set the initial database connection string. A simple example looks like this:
+
+```shell
+CONFIG_PATH=my_conf.json DATABASE_CONNECTION=sqlite:///my_db.sqlite python3 -m matebot_core auto
+```
+
 ### Creating a systemd service
 
 On systemd-enabled systems, it's recommended to add a systemd service to
@@ -93,10 +108,8 @@ sudo systemctl start matebot_core
 
 ## Documentation
 
-See the `docs/` folder or [our deployed documentation](https://docs.hopfenspace.org/matebot).
-
-**Note that the documentation is currently outdated!**
+See the `docs` folder for more details.
 
 ## License
 
-See [GPLv3 license](LICENSE).
+See [AGPLv3 license](LICENSE).
