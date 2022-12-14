@@ -15,6 +15,9 @@ from . import utils
 
 class APITests(utils.BaseAPITests):
     def test_basic_endpoints_and_redirects_to_docs(self):
+        for _ in range(64):
+            self.assertEqual({}, self.assertQuery(("GET", "/health"), 200).json())
+
         self.assertIn("docs", self.assertQuery(
             ("GET", "/"),
             [302, 303, 307],
@@ -30,10 +33,8 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"})
         self.assertQuery(("GET", "/openapi.json"), r_headers={"Content-Type": "application/json"}, no_version=True)
 
-        self.assertQuery(("GET", "/status"), 401)
-        self.login()
-        r = self.assertQuery(("GET", "/status"), 200, r_headers={"Content-Type": "application/json"}).json()
-        self.assertEqual(self.latest_api_version, r["api_version"])
+        self.assertQuery(("GET", "/status"), 404)
+        self.assertQuery(("POST", "/status"), 404)
 
     def test_special_user(self):
         self.login()

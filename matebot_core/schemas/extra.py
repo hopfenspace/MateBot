@@ -29,14 +29,6 @@ class VersionInfo(pydantic.BaseModel):
     micro: pydantic.NonNegativeInt
 
 
-class Status(pydantic.BaseModel):
-    startup: pydantic.NonNegativeInt = int(datetime.datetime.now().timestamp())
-    api_version: pydantic.PositiveInt
-    timezone: str = time.localtime().tm_zone
-    localtime: datetime.datetime
-    timestamp: pydantic.NonNegativeInt
-
-
 class Callback(pydantic.BaseModel):
     id: pydantic.NonNegativeInt
     url: pydantic.stricturl(max_length=255, tld_required=False, allowed_schemes=_URL_SCHEMES)

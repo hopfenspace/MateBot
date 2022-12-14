@@ -2,15 +2,23 @@
 MateBot router module generic functionalities
 """
 
-import datetime
-
+import pydantic
 from fastapi import Depends
 
 from ._router import router
-from ..dependency import LocalRequestData
+from ..dependency import LocalRequestData, MinimalRequestData
 from .. import versioning
 from ...schemas import config
-from ... import schemas, __version__
+
+
+@router.get("/health", tags=["Generic"], response_model=pydantic.BaseModel)
+@versioning.versions(1)
+async def verify_running_backend(_: MinimalRequestData = Depends(MinimalRequestData)):
+    """
+    Return 200 OK with an empty object as body to only verify that the service and the middlewares work
+    """
+
+    return {}
 
 
 @router.get("/settings", tags=["Generic"], response_model=config.GeneralConfig)
@@ -21,17 +29,3 @@ async def get_settings(local: LocalRequestData = Depends(LocalRequestData)):
     """
 
     return local.config.general
-
-
-@router.get("/status", tags=["Generic"], response_model=schemas.Status)
-@versioning.versions(1)
-async def get_status(_: LocalRequestData = Depends(LocalRequestData)):
-    """
-    Return some information about the current status of the server, the database and whatsoever
-    """
-
-    return schemas.Status(
-        api_version=1,
-        localtime=datetime.datetime.now(),
-        timestamp=datetime.datetime.now().timestamp()
-    )
