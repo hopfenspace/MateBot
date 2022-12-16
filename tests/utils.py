@@ -55,6 +55,7 @@ class BaseTest(unittest.TestCase):
 
     SUBPROCESS_CATCH_STDERR: ClassVar[bool] = True
     SUBPROCESS_CATCH_STDOUT: ClassVar[bool] = True
+    SUBPROCESS_POOL: ClassVar[List[subprocess.Popen]] = []
 
     def setUp(self) -> None:
         self.config_file = f"config_{os.getpid()}_{secrets.token_hex(8)}.json"
@@ -128,6 +129,16 @@ class BaseTest(unittest.TestCase):
         if self.config_file and os.path.exists(self.config_file):
             os.remove(self.config_file)
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        for process in cls.SUBPROCESS_POOL:
+            process.terminate()
+            try:
+                process.wait(timeout=conf.SUBPROCESS_TERMINATE_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=conf.SUBPROCESS_KILL_TIMEOUT)
+
 
 class BasePersistenceTests(BaseTest):
     engine: _Engine
@@ -185,6 +196,8 @@ class BaseAPITests(BaseTest):
     callback_server_port: Optional[int] = None
     callback_server_thread: Optional[threading.Thread] = None
     callback_event_queue = queue.Queue()  # type: queue.Queue[Tuple[str, int, Dict[str, Any]]]
+
+    EXTRA_API_SERVER_ENV_VARS: ClassVar[Dict[str, str]] = {}
 
     class CallbackHandler(http.server.BaseHTTPRequestHandler):
         event_queue = queue.Queue()  # type: queue.Queue[Tuple[str, int, Dict[str, Any]]]
@@ -402,6 +415,7 @@ class BaseAPITests(BaseTest):
         }
         if conf.SERVER_LOGGING_OVERWRITE:
             env["LOGGING"] = conf.SERVER_LOGGING_OVERWRITE
+        env.update(type(self).EXTRA_API_SERVER_ENV_VARS)
 
         for i in range(conf.MAX_SERVER_START_RETRIES):
             env["SERVER__PORT"] = str(self.server_port)
@@ -412,10 +426,11 @@ class BaseAPITests(BaseTest):
                 start_new_session=False,
                 env=env
             )
+            type(self).SUBPROCESS_POOL.append(self.server_process)
 
             for j in range(conf.MAX_SERVER_WAIT_RETRIES):
                 try:
-                    self.server_process.wait(conf.API_SUBPROCESS_START_WAIT_TIMEOUT)
+                    self.server_process.wait(conf.SUBPROCESS_START_WAIT_TIMEOUT)
                 except subprocess.TimeoutExpired:
                     pass
                 else:
@@ -471,12 +486,12 @@ class BaseAPITests(BaseTest):
             return
         self.server_process.terminate()
         try:
-            self.server_process.wait(conf.API_SUBPROCESS_TERMINATE_TIMEOUT)
+            self.server_process.wait(conf.SUBPROCESS_TERMINATE_TIMEOUT)
         except subprocess.TimeoutExpired:
             pass
         self.server_process.kill()
         try:
-            self.server_process.wait(conf.API_SUBPROCESS_KILL_TIMEOUT)
+            self.server_process.wait(conf.SUBPROCESS_KILL_TIMEOUT)
         except subprocess.TimeoutExpired:
             pass
         if type(self).SUBPROCESS_CATCH_STDOUT:

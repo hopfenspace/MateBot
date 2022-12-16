@@ -36,23 +36,6 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(("GET", "/status"), 404)
         self.assertQuery(("POST", "/status"), 404)
 
-    def test_special_user(self):
-        self.login()
-        self.assertEqual([], self.assertQuery(("GET", "/users"), 200).json())
-        self.assertEqual([], self.assertQuery(("GET", "/users?community=y"), 200).json())
-        self.make_special_user()
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
-        self.make_special_user()
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
-        self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
-
     def test_pagination(self):
         def _test(**kwargs) -> List[int]:
             path = "/users"
@@ -119,7 +102,10 @@ class APITests(utils.BaseAPITests):
 
     def test_username_changes(self):
         self.login()
-        self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
+        self.assertEqual(
+            self.assertQuery(("GET", "/users"), 200).json(),
+            self.assertQuery(("GET", "/users?community=true"), 200).json()
+        )
 
         users = []
         for i in range(10):
@@ -137,40 +123,41 @@ class APITests(utils.BaseAPITests):
                 del x["modified"]
                 return x
             users[index]["name"] = name
-            self.assertListEqual(users, [q(e) for e in self.assertQuery(("GET", "/users"), 200).json()])
+            self.assertListEqual(users, [q(e) for e in self.assertQuery(("GET", "/users?community=false"), 200).json()])
 
         self.assertEqual("foo", self.assertQuery(
-            ("POST", "/users/setName"), 200, json={"issuer": 1, "name": "foo"}, r_schema=_schemas.User
+            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "foo"}, r_schema=_schemas.User
         ).json()["name"])
         f(0, "foo")
         self.assertEqual("bar", self.assertQuery(
-            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "bar"}, r_schema=_schemas.User
+            ("POST", "/users/setName"), 200, json={"issuer": 3, "name": "bar"}, r_schema=_schemas.User
         ).json()["name"])
         f(1, "bar")
         self.assertEqual("baz", self.assertQuery(
-            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "baz"}, r_schema=_schemas.User
+            ("POST", "/users/setName"), 200, json={"issuer": 3, "name": "baz"}, r_schema=_schemas.User
         ).json()["name"])
         f(1, "baz")
         self.assertEqual("bar", self.assertQuery(
-            ("POST", "/users/setName"), 200, json={"issuer": 2, "name": "bar"}, r_schema=_schemas.User
+            ("POST", "/users/setName"), 200, json={"issuer": 3, "name": "bar"}, r_schema=_schemas.User
         ).json()["name"])
         f(1, "bar")
         self.assertIn("not available", self.assertQuery(
-            ("POST", "/users/setName"), 400, json={"issuer": 3, "name": "bar"}, r_schema=_schemas.APIError
+            ("POST", "/users/setName"), 400, json={"issuer": 4, "name": "bar"}, r_schema=_schemas.APIError
         ).json()["message"])
         f(1, "bar")
         self.assertIn("not available", self.assertQuery(
-            ("POST", "/users/setName"), 400, json={"issuer": 6, "name": "user4"}, r_schema=_schemas.APIError
+            ("POST", "/users/setName"), 400, json={"issuer": 7, "name": "user4"}, r_schema=_schemas.APIError
         ).json()["message"])
         f(1, "bar")
 
     def test_users(self):
         self.login()
-        self.assertListEqual([], self.assertQuery(("GET", "/users"), 200).json())
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
+        self.assertListEqual([], self.assertQuery(("GET", "/users?community=false"), 200).json())
 
         # Creating a set of test users
         users = []
-        for i in range(10):
+        for i in range(1, 11):
             user = self.assertQuery(("POST", "/users"), 201, json={"name": f"user{i}"}, r_schema=_schemas.User).json()
             self.assertEqual(i+1, user["id"])
             self.assertEqual(
@@ -181,7 +168,7 @@ class APITests(utils.BaseAPITests):
             users.append(user)
             self.assertEqual(
                 users,
-                self.assertQuery(("GET", "/users"), 200).json()
+                self.assertQuery(("GET", "/users?community=false"), 200).json()
             )
 
         # Adding the callback server for testing
@@ -337,7 +324,7 @@ class APITests(utils.BaseAPITests):
         users.pop(0)
         users.pop(1)
 
-        self.assertEqual(len(self.assertQuery(("GET", "/users"), 200).json()), 10, "Might I miss something?")
+        self.assertEqual(len(self.assertQuery(("GET", "/users?community=false"), 200).json()), 10)
 
         # Check that deleting users with positive balance transfers the remaining amount to the community user
         self.make_special_user()
@@ -953,11 +940,11 @@ class APITests(utils.BaseAPITests):
         self.assertListEqual([communism1], self.assertQuery(("GET", "/communisms?id=1"), 200).json())
         self.assertEvent("communism_created", {"id": 1, "amount": 1, "user": user1["id"], "participants": 1})
 
-        # User referenced by participant 2 doesn't exist, then it's created
+        # User referenced by participant 3 doesn't exist, then it's created
         self.assertQuery(
             ("POST", "/communisms"),
             400,
-            json={"amount": 42, "description": "description2", "creator": 2}
+            json={"amount": 42, "description": "description2", "creator": 3}
         ).json()
         user2 = self.assertQuery(("POST", "/users"), 201, json={"name": "bar"}, r_schema=_schemas.User).json()
 
@@ -1004,7 +991,7 @@ class APITests(utils.BaseAPITests):
             communism3_changed = self.assertQuery(
                 ("POST", "/communisms/increaseParticipation"),
                 200,
-                json={"id": 3, "user": 1},
+                json={"id": 3, "user": user1["id"]},
                 r_schema=_schemas.Communism
             ).json()
             self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
@@ -1015,7 +1002,7 @@ class APITests(utils.BaseAPITests):
         communism3_changed = self.assertQuery(
             ("POST", "/communisms/decreaseParticipation"),
             200,
-            json={"id": 3, "user": 1},
+            json={"id": 3, "user": user1["id"]},
             r_schema=_schemas.Communism
         ).json()
         self.assertListEqual([communism3_changed], self.assertQuery(("GET", "/communisms?id=3"), 200).json())
@@ -1027,7 +1014,7 @@ class APITests(utils.BaseAPITests):
         communism3_changed = self.assertQuery(
             ("POST", "/communisms/increaseParticipation"),
             200,
-            json={"id": 3, "user": 1},
+            json={"id": 3, "user": user1["id"]},
             r_schema=_schemas.Communism
         ).json()
         query = "/communisms?active=true&unique_participants=2"
@@ -1050,23 +1037,23 @@ class APITests(utils.BaseAPITests):
         )
 
         # Add another new user to the communism
-        self.assertQuery(("POST", "/users"), 201, json={"name": "baz"}, r_schema=_schemas.User).json()
+        user3_id = self.assertQuery(("POST", "/users"), 201, json={"name": "baz"}, r_schema=_schemas.User).json()["id"]
         self.assertQuery(
             ("POST", "/users/setVoucher"),
             200,
-            json={"debtor": 3, "voucher": 1, "issuer": 1},
+            json={"debtor": user3_id, "voucher": user1["id"], "issuer": user1["id"]},
             r_schema=_schemas.VoucherUpdateResponse
         )
-        self.assertEvent("voucher_updated", {"id": 3, "voucher": 1})
+        self.assertEvent("voucher_updated", {"id": user3_id, "voucher": user1["id"]})
         self.assertQuery(
             ("POST", "/communisms/decreaseParticipation"),
             400,
-            json={"id": 3, "user": 3}
+            json={"id": 3, "user": user3_id}
         ).json()
         self.assertQuery(
             ("POST", "/communisms/increaseParticipation"),
             200,
-            json={"id": 3, "user": 3},
+            json={"id": 3, "user": user3_id},
             r_schema=_schemas.Communism
         ).json()
         self.assertEvent("communism_updated", {"id": 3, "participants": 24})
@@ -1080,23 +1067,28 @@ class APITests(utils.BaseAPITests):
         self.assertQuery(
             ("POST", "/communisms/close"),
             400,
+            json={"id": 3, "issuer": user1["id"]}
+        )
+        self.assertQuery(
+            ("POST", "/communisms/close"),
+            400,
             json={"id": 3, "issuer": 10}
         )
 
         # Close the third communism and expect all balances to be adjusted (creator is participant!)
-        users = self.assertQuery(("GET", "/users"), 200).json()
+        users = self.assertQuery(("GET", "/users?community=false"), 200).json()
         self.assertEqual(self.assertQuery(("GET", "/transactions"), 200).json(), [])
         communism3_changed = self.assertQuery(
             ("POST", "/communisms/close"),
             200,
-            json={"id": 3, "issuer": 2},
+            json={"id": 3, "issuer": user2["id"]},
             r_schema=_schemas.Communism
         ).json()
         self.assertFalse(communism3_changed["active"])
         self.assertIsNotNone(communism3_changed["modified"])
         self.assertIsNotNone(communism3_changed["created"])
         self.assertEvent("communism_closed", {"id": 3, "transactions": 2, "aborted": False, "participants": 24})
-        users_updated = self.assertQuery(("GET", "/users"), 200).json()
+        users_updated = self.assertQuery(("GET", "/users?community=false"), 200).json()
         transactions = self.assertQuery(("GET", "/transactions"), 200).json()
         for t in transactions:
             del t["timestamp"]
@@ -1233,6 +1225,51 @@ class APITests(utils.BaseAPITests):
             "reason": "test"
         })
 
+    def test_callbacks(self):
+        self.assertEqual(0, self.callback_event_queue.qsize())
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            401,
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
+        )
+        self.login()
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"url": f"http://localhost:{self.callback_server_port}/"}
+        )
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"url": "http://localhost:64000"}
+        )
+        self.assertQuery(
+            ("POST", "/callbacks"),
+            201,
+            json={"url": "http://localhost:65000", "app": 1}
+        )
+
+
+class UninitializedAPITests(utils.BaseAPITests):
+    EXTRA_API_SERVER_ENV_VARS = {"SKIP_INITIALIZATION": "yes"}
+
+    def test_special_user(self):
+        self.login()
+        self.assertEqual([], self.assertQuery(("GET", "/users"), 200).json())
+        self.assertEqual([], self.assertQuery(("GET", "/users?community=y"), 200).json())
+        self.make_special_user()
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
+        self.make_special_user()
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=1"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=TRUE"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=true"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users?community=y"), 200).json()))
+        self.assertEqual(1, len(self.assertQuery(("GET", "/users"), 200).json()))
+
     def test_user_search(self):
         self.login()
 
@@ -1320,30 +1357,6 @@ class APITests(utils.BaseAPITests):
         comp(0, "alias_confirmed=true&alias_username=baz&id=1")
 
         session.close()
-
-    def test_callbacks(self):
-        self.assertEqual(0, self.callback_event_queue.qsize())
-        self.assertQuery(
-            ("POST", "/callbacks"),
-            401,
-            json={"url": f"http://localhost:{self.callback_server_port}/"}
-        )
-        self.login()
-        self.assertQuery(
-            ("POST", "/callbacks"),
-            201,
-            json={"url": f"http://localhost:{self.callback_server_port}/"}
-        )
-        self.assertQuery(
-            ("POST", "/callbacks"),
-            201,
-            json={"url": "http://localhost:64000"}
-        )
-        self.assertQuery(
-            ("POST", "/callbacks"),
-            201,
-            json={"url": "http://localhost:65000", "app": 1}
-        )
 
 
 if __name__ == '__main__':

@@ -53,14 +53,14 @@ MAX_SERVER_START_RETRIES: int = 8
 # Maximum number of retries to connect to the API and callback servers during startup
 MAX_SERVER_WAIT_RETRIES: int = 10
 
-# Seconds to wait for the API server kill command to complete
-API_SUBPROCESS_KILL_TIMEOUT = 0.01
+# Seconds to wait for a subprocess (e.g. the API server) to be killed
+SUBPROCESS_KILL_TIMEOUT = 0.01
 
-# Seconds to wait for the API server terminate command to complete before killing it
-API_SUBPROCESS_TERMINATE_TIMEOUT = 0.1
+# Seconds to wait for a subprocess (e.g. the API server) to terminate before killing it
+SUBPROCESS_TERMINATE_TIMEOUT = 0.1
 
-# Seconds to wait for the API server to start in a single iteration
-API_SUBPROCESS_START_WAIT_TIMEOUT = 0.25
+# Seconds to wait for a subprocess (e.g. the API server) to start in a single iteration
+SUBPROCESS_START_WAIT_TIMEOUT = 0.25
 
 # The following values define max limits for the load tests in seconds
 LOAD_TEST_INVALID_REQUESTS = 15.0
