@@ -31,6 +31,7 @@ Environment variable     Mode (= subcommand) Meaning
 ``CONFIG_PATH``          every mode          overwrite the path to the configuration file (default ``config.json``)
 ``COMMUNITY_NAME``       ``init``, ``auto``  overwrite the initial default community name
 ``DATABASE_CONNECTION``  ``init``, ``auto``  overwrite the default database connection on first run
+``SKIP_INITIALIZATION``  ``auto``            if set, skip basic data initialization (database migrations are done!)
 ``INITIAL_APP_USERNAME`` ``auto``            specify an initial application username (only when no app is found)
 ``INITIAL_APP_PASSWORD`` ``auto``            specify an initial application password (only when no app is found)
 

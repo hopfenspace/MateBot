@@ -407,7 +407,7 @@ def _setup_config(db: Optional[str] = None, init: bool = False) -> _settings.Set
 
 
 def init_project(args: argparse.Namespace, no_db_init: bool = False, no_hint: bool = False) -> int:
-    settings = _setup_config(args.database or os.environ.get("DATABASE_CONNECTION", None), True)
+    settings = _setup_config(args.database or os.environ.get("DATABASE_CONNECTION", None), not (no_db_init or no_hint))
     config = settings
     if not args.no_migrations:
         alembic.config.main(argv=["upgrade", "head"])
@@ -671,10 +671,11 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
         initial_username = os.environ.get("INITIAL_APP_USERNAME", None)
         initial_password = os.environ.get("INITIAL_APP_PASSWORD", None)
         if initial_username is None or initial_password is None:
-            logger.warning(
-                "You need to set the environment variables 'INITIAL_APP_USERNAME' and "
-                "'INITIAL_APP_PASSWORD' in auto mode to create the first authenticated application.",
-            )
+            if os.environ.get("SKIP_INITIALIZATION", None) is None:
+                logger.warning(
+                    "You need to set the environment variables 'INITIAL_APP_USERNAME' and "
+                    "'INITIAL_APP_PASSWORD' in auto mode to create the first authenticated application.",
+                )
         else:
             app_args = argparse.Namespace()
             app_args.app = initial_username
@@ -684,14 +685,15 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
                 return result
 
     # Ensure the database has the community user
-    init_args = argparse.Namespace()
-    init_args.database = db
-    init_args.community_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
-    init_args.no_community = False
-    init_args.no_migrations = True
-    result = init_project(init_args, no_db_init=True, no_hint=True)
-    if result != 0:
-        return result
+    if os.environ.get("SKIP_INITIALIZATION", None) is None:
+        init_args = argparse.Namespace()
+        init_args.database = db
+        init_args.community_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
+        init_args.no_community = False
+        init_args.no_migrations = True
+        result = init_project(init_args, no_db_init=True, no_hint=True)
+        if result != 0:
+            return result
 
     # Run the API server
     settings = _settings.Settings()
