@@ -4,7 +4,8 @@ MateBot core settings provider
 
 import os
 import sys
-from typing import Any, Dict, Optional, Tuple
+import functools
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 try:
     import ujson as json
@@ -17,22 +18,39 @@ from pydantic.env_settings import SettingsSourceCallable as _SettingsSourceCalla
 from .schemas import config
 
 
-INTERACTIVE_MODE: bool = True  # when set to False, read_settings_from_config_file doesn't exit the program
-CONFIG_PATHS = ["config.json", os.path.join("..", "config.json")]
+SETTINGS_CREATE_NONEXISTENT: bool = True
+"""
+switch to create a new configuration file if no existing file has been found
+"""
+
+SETTINGS_EXIT_ON_ERROR: bool = True
+"""
+switch to call ``exit(1)`` for failed config loading (use all defaults otherwise)
+"""
+
+SETTINGS_LOG_ERROR_FUNCTION: Optional[Callable[[str], Any]] = functools.partial(print, file=sys.stderr)
+"""
+optional function to accept log messages on failure
+"""
+
+SETTINGS_LOG_INFO_FUNCTION: Optional[Callable[[str], Any]] = None
+"""
+optional function to accept log messages when creating a new configuration file
+"""
+
+CONFIG_PATHS: List[str] = ["config.json", os.path.join("..", "config.json")]
+"""
+list of search paths for the config file, can be overwritten by the env variable ``CONFIG_PATH``
+"""
+
 if os.environ.get("CONFIG_PATH"):
     CONFIG_PATHS = [os.environ.get("CONFIG_PATH")]
 
 
-def read_settings_from_json_source(create: bool = False) -> Optional[Dict[str, Any]]:
-    for path in CONFIG_PATHS:
-        if os.path.exists(path):
-            with open(path, "r", encoding="UTF-8") as file:
-                return json.load(file)
-    if not create:
-        return
-    with open(CONFIG_PATHS[0], "w") as f:
-        json.dump(get_default_config(), f, indent=4)
-    return read_settings_from_json_source(False)
+def get_db_from_env(db_override: Optional[str] = None) -> Optional[str]:
+    if db_override:
+        return db_override
+    return os.environ.get("DATABASE_CONNECTION", os.environ.get("DATABASE__CONNECTION", None))
 
 
 class Settings(pydantic.BaseSettings, config.CoreConfig):
@@ -57,28 +75,54 @@ class Settings(pydantic.BaseSettings, config.CoreConfig):
                 env_settings: _SettingsSourceCallable,
                 file_secret_settings: _SettingsSourceCallable
         ) -> Tuple[_SettingsSourceCallable, ...]:
-            return env_settings, file_secret_settings, read_settings_from_config_file, init_settings
+            return env_settings, file_secret_settings, read_settings_from_file, init_settings, get_default_config
 
 
-def read_settings_from_config_file(_: Optional[pydantic.BaseSettings]) -> Dict[str, Any]:
-    settings = read_settings_from_json_source(create=False)
-    if not settings and INTERACTIVE_MODE:
-        print(
-            "No config file found! Use the 'init' command to create a basic configuration file. "
-            "Afterwards, apply the database migrations and use 'init' once again. Alternatively, "
-            "use the 'auto' mode which does all the setup by environment variables automatically.",
-            file=sys.stderr
-        )
-        sys.exit(1)
-    elif not settings:
-        raise RuntimeError("Settings not found")
-    return settings
+def store_configuration(conf: Optional[config.CoreConfig] = None, path: Optional[str] = None) -> config.CoreConfig:
+    p = path or os.path.abspath(CONFIG_PATHS[0])
+    conf = conf or get_default_core_config(get_db_from_env())
+    with open(p, "w") as f:
+        json.dump(conf.dict(), f, indent=4)
+    SETTINGS_LOG_INFO_FUNCTION and SETTINGS_LOG_INFO_FUNCTION(f"A new config file has been created as {p!r}.")
+    return conf
 
 
-def get_default_config() -> Dict[str, Any]:
-    return config.CoreConfig(
+def read_settings_from_file(_: Optional[pydantic.BaseSettings]) -> Dict[str, Any]:
+    for path in CONFIG_PATHS:
+        if os.path.exists(path):
+            with open(path, "r", encoding="UTF-8") as file:
+                return json.load(file)
+
+    if not SETTINGS_CREATE_NONEXISTENT:
+        if SETTINGS_LOG_ERROR_FUNCTION:
+            SETTINGS_LOG_ERROR_FUNCTION(
+                "No config file found! Use the 'init' command to create a basic configuration file or "
+                "use the 'auto' mode which does all the setup by environment variables automatically."
+            )
+        if SETTINGS_EXIT_ON_ERROR:
+            sys.exit(1)
+        return get_default_core_config(
+            os.environ.get("DATABASE_CONNECTION", os.environ.get("DATABASE__CONNECTION", None))
+        ).dict()
+
+    else:
+        conf = store_configuration()
+        if SETTINGS_EXIT_ON_ERROR:
+            sys.exit(1)
+        return conf.dict()
+
+
+def get_default_core_config(database_override: Optional[str] = None) -> config.CoreConfig:
+    c = config.CoreConfig(
         general=config.GeneralConfig(),
         server=config.ServerConfig(),
         logging=config.LoggingConfig(),
         database=config.DatabaseConfig()
-    ).dict()
+    )
+    if database_override:
+        c.database.connection = database_override
+    return c
+
+
+def get_default_config(_: Optional[pydantic.BaseSettings] = None) -> Dict[str, Any]:
+    return get_default_core_config().dict()

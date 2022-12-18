@@ -7,7 +7,7 @@ import getpass
 import secrets
 import argparse
 import logging.config
-from typing import List, Optional
+from typing import Callable, List, Optional
 from collections import OrderedDict
 
 import uvicorn
@@ -116,7 +116,12 @@ def get_parser(program: str) -> argparse.ArgumentParser:
     parser_init.add_argument(
         "--no-migrations",
         action="store_true",
-        help="Do not apply migrations automatically (not recommended)"
+        help="Don't apply migrations automatically (not recommended)"
+    )
+    parser_init.add_argument(
+        "--no-hint",
+        action="store_true",
+        help="Don't print helpful hint message during startup"
     )
 
     parser_apps_show.add_argument(
@@ -370,78 +375,41 @@ def run_server(args: argparse.Namespace):
     )
 
 
-def _setup_config(db: Optional[str] = None, init: bool = False) -> _settings.Settings:
+def _handle_config(db: Optional[str], handle_missing_db: Callable[[], Optional[str]]) -> _settings.Settings:
+    # Attempt to load existing configuration files
+    _settings.SETTINGS_LOG_ERROR_FUNCTION, old_error_log = None, _settings.SETTINGS_LOG_ERROR_FUNCTION
     try:
-        _settings.INTERACTIVE_MODE = init
-        settings = _settings.Settings()
-    except RuntimeError as exc:
-        if init:
-            print("No settings file found. A basic config will be created now.")
-        settings = _settings.read_settings_from_json_source(create=True)
+        _settings.SETTINGS_EXIT_ON_ERROR = True
+        _settings.SETTINGS_CREATE_NONEXISTENT = False
+        _settings.Settings()
 
-        if db:
-            settings["database"]["connection"] = db
-        elif not init:
-            raise RuntimeError("Non-interactive mode without 'db' argument is invalid") from exc
-        else:
-            print(
-                "\nEnter the full database connection string below. It's required to make the "
-                "project persistent. It uses an in-memory sqlite3 database by default (press "
-                "Enter to use that default). Note that the in-memory database does not work "
-                "properly in all environments. A persistent database is highly recommended."
-            )
-            settings["database"]["connection"] = input("> ") or settings["database"]["connection"]
+    # If loading fails, a new config file should be created
+    except SystemExit:
+        _settings.SETTINGS_LOG_ERROR_FUNCTION = old_error_log
+        _settings.SETTINGS_CREATE_NONEXISTENT = True
+        _settings.SETTINGS_EXIT_ON_ERROR = False
+        _settings.SETTINGS_LOG_INFO_FUNCTION = print
+        db = _settings.get_db_from_env(db) or handle_missing_db()
+        _settings.store_configuration(_settings.get_default_core_config(db))
 
-        with open(_settings.CONFIG_PATHS[0], "w") as f:
-            json.dump(settings, f, indent=4)
-        settings = _settings.Settings()
-    else:
-        if init:
-            print(
-                "A config file has been found and will be used. If you want a fresh installation, "
-                "you should remove the config file and clear the database, then run this command again."
-            )
+    # Finally restore the config loader settings
     finally:
-        _settings.INTERACTIVE_MODE = True
-    return settings
+        _settings.SETTINGS_LOG_ERROR_FUNCTION = old_error_log
+        _settings.SETTINGS_CREATE_NONEXISTENT = True
+        _settings.SETTINGS_EXIT_ON_ERROR = True
+        _settings.SETTINGS_LOG_INFO_FUNCTION = None
+
+    return _settings.Settings()
 
 
-def init_project(args: argparse.Namespace, no_db_init: bool = False, no_hint: bool = False) -> int:
-    settings = _setup_config(args.database or os.environ.get("DATABASE_CONNECTION", None), not (no_db_init or no_hint))
-    config = settings
-    if not args.no_migrations:
-        alembic.config.main(argv=["upgrade", "head"])
-    if not no_db_init:
-        database.init(config.database.connection, config.database.debug_sql, create_all=False)
-    session = database.get_new_session()
-
-    try:
-        session.query(models.User).all()
-    except sqlalchemy.exc.DatabaseError:
-        print(
-            "No table 'users' found in the database. Please initialize the database first. "
-            "Perform the necessary database migrations using the 'alembic upgrade head' command .",
-            file=sys.stderr
-        )
-        return 1
-
-    if not args.no_community:
+def _mk_community_user(get_name: Callable[[], str]):
+    with database.get_new_session() as session:
         specials = session.query(models.User).filter_by(special=True).all()
         if len(specials) > 1:
-            raise RuntimeError("Multiple community users found. Please drop a bug report.")
+            raise RuntimeError("Multiple community users found. Please file a bug report!")
         if len(specials) == 0:
-            name = args.community_name
-            if args.community_name is None:
-                default_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
-                print(
-                    "No community username has been specified! The default value "
-                    f"{default_name!r} will be used. This value can be changed "
-                    f"later via the API using the 'POST /v1/users/setName' endpoint.",
-                    file=sys.stderr
-                )
-                name = default_name
             session.add(models.User(
-                name=name,
+                name=get_name(),
                 active=True,
                 special=True,
                 external=False,
@@ -450,18 +418,62 @@ def init_project(args: argparse.Namespace, no_db_init: bool = False, no_hint: bo
             session.commit()
             session.flush()
 
-    if len(session.query(models.Application).all()) == 0 and not no_hint:
-        print(
-            "\nThere's no registered application yet. Nobody can use the API "
-            "without an application account, because the authentication procedure "
-            "makes use of those accounts. Re-run this utility with the 'add-app' "
-            "option to add new application accounts to the database to be "
-            "able to login to the API via application name and password."
-        )
 
-    session.close()
-    if not no_hint:
-        print("Done.")
+def init_project(args: argparse.Namespace, no_db_mod_init: bool = False) -> int:
+    def _handle() -> str:
+        print(
+            "Enter the full database connection string below. It's required to make the project "
+            "persistent. It uses an in-memory sqlite3 database by default (press Enter to "
+            "use that default). Note that the in-memory database does not work properly in "
+            "all environments. A persistent database, even SQLite, is highly recommended!"
+        )
+        return input("> ").strip() or None
+    settings = _handle_config(args.database, _handle)
+
+    # Perform database migrations
+    if not args.no_migrations:
+        logging.config.dictConfig(settings.logging.dict())
+        alembic.config.main(argv=["upgrade", "head"])
+    if not no_db_mod_init:
+        database.init(settings.database.connection, settings.database.debug_sql, create_all=False)
+
+    # Check that the database has been set up
+    try:
+        with database.get_new_session() as session:
+            session.query(models.User).all()
+    except sqlalchemy.exc.DatabaseError:
+        print(
+            "No table 'users' found in the database. Please initialize the database first. "
+            "Perform the necessary database migrations using the 'alembic upgrade head' command .",
+            file=sys.stderr
+        )
+        return 0
+
+    # Set up the community user if not forbidden
+    if not args.no_community:
+        def _get_name() -> str:
+            if args.community_name is None:
+                default_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
+                print(
+                    "No community username has been specified! The default value "
+                    f"{default_name!r} will be used. This value can be changed "
+                    f"later via the API using the 'POST /v1/users/setName' endpoint.",
+                    file=sys.stderr
+                )
+                return default_name
+            return args.community_name
+        _mk_community_user(_get_name)
+
+    # Check if there are any applications, otherwise print some info
+    with database.get_new_session() as session:
+        if len(session.query(models.Application).all()) == 0 and not args.no_hint:
+            print(
+                "\nThere's no registered application yet. Nobody can use the API "
+                "without an application account, because the authentication procedure "
+                "makes use of those accounts. Re-run this utility with the 'add-app' "
+                "subcommand to add new application accounts to the database to be "
+                "able to login to the API via application name and password."
+            )
     return 0
 
 
@@ -638,33 +650,36 @@ def handle_users(args: argparse.Namespace) -> int:
 
 
 def run_in_auto_mode(args: argparse.Namespace) -> int:
-    logger = logging.getLogger("auto")
-
-    # Setup the configuration
-    _settings.INTERACTIVE_MODE = False
-    try:
-        conf = _settings.Settings()
-        db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", conf.database.connection))
-    except RuntimeError:
-        db = os.environ.get("DATABASE__CONNECTION", os.environ.get("DATABASE_CONNECTION", None))
-        if db is None:
-            print(
-                "Unable to proceed in auto mode. One of the following environment variables "
-                "must be set correctly: 'DATABASE__CONNECTION', 'DATABASE_CONNECTION'!",
-                file=sys.stderr
-            )
-            return 1
-        conf = _setup_config(db, False)
-    _settings.INTERACTIVE_MODE = True
+    # Handle loading and creation of the database
+    def _handle():
+        print(
+            "Unable to proceed in auto mode. One of the following environment variables "
+            "must be set correctly: 'DATABASE__CONNECTION', 'DATABASE_CONNECTION'!",
+            file=sys.stderr
+        )
+        sys.exit(1)
+    conf = _handle_config(None, _handle)
 
     # Configure logging as early as feasible
     logging.config.dictConfig(conf.logging.dict())
+    logger = logging.getLogger("auto")
 
     # Perform database migrations after the config file has been loaded successfully
     alembic.config.main(argv=["upgrade", "head"])
+    database.init(conf.database.connection, conf.database.debug_sql, create_all=False)
+
+    # Ensure the database has the community user
+    if os.environ.get("SKIP_INITIALIZATION", None) is None:
+        def _get_name() -> str:
+            name = os.environ.get("COMMUNITY_NAME", None)
+            if name is None:
+                name = DEFAULT_COMMUNITY_NAME
+                logger.info(f"Using {name!r} as the default community user name")
+            return name
+        _mk_community_user(_get_name)
 
     # Create the first application if no app currently exists
-    database.init(db, conf.database.debug_sql, create_all=False)
+    database.init(conf.database.connection, conf.database.debug_sql, create_all=False)
     with database.get_new_session() as session:
         apps = len(session.query(models.Application).all())
     if apps == 0:
@@ -683,17 +698,6 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
             result = add_app(app_args)
             if result != 0:
                 return result
-
-    # Ensure the database has the community user
-    if os.environ.get("SKIP_INITIALIZATION", None) is None:
-        init_args = argparse.Namespace()
-        init_args.database = db
-        init_args.community_name = os.environ.get('COMMUNITY_NAME', DEFAULT_COMMUNITY_NAME)
-        init_args.no_community = False
-        init_args.no_migrations = True
-        result = init_project(init_args, no_db_init=True, no_hint=True)
-        if result != 0:
-            return result
 
     # Run the API server
     settings = _settings.Settings()
