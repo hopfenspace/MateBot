@@ -122,7 +122,7 @@ class BaseTest(unittest.TestCase):
         if conf.DATABASE_URL is not None and conf.COMMAND_CLEANUP_DATABASE:
             subprocess.run(conf.COMMAND_CLEANUP_DATABASE)
 
-        elif self.database_url != conf.DATABASE_FALLBACK_URL and self._database_file:
+        if self.database_url != conf.DATABASE_FALLBACK_URL and self._database_file:
             if os.path.exists(self._database_file):
                 os.remove(self._database_file)
 

@@ -4,6 +4,7 @@ MateBot core unit tests
 
 import unittest
 from .api import APITests, UninitializedAPITests
+from .cli import StandaloneCLITests
 from .load import LoadTests
 from .misc import TransactionTests
 from .persistence import DatabaseRestrictionTests, DatabaseUsabilityTests
@@ -14,6 +15,7 @@ TEST_CLASSES = [
     DatabaseRestrictionTests,
     DatabaseUsabilityTests,
     LoadTests,
+    StandaloneCLITests,
     TransactionTests,
     UninitializedAPITests,
 ]
