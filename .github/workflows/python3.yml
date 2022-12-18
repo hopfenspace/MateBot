@@ -122,13 +122,13 @@ jobs:
 
     - name: Prepare config for pymysql
       run: |
-        python3 -m matebot_core init --database mysql+pymysql://username:password@127.0.0.1/db?charset=utf8mb4 || echo "Fail on purpose"
+        python3 -m matebot_core init --database mysql+pymysql://username:password@127.0.0.1/db?charset=utf8mb4 --no-migrations --no-community
         echo -e '\nDATABASE_URL = "mysql+pymysql://username:password@127.0.0.1/db?charset=utf8mb4"' >> tests/conf.py
       if: ${{ matrix.python-lib == 'pymysql' }}
 
     - name: Prepare config for mysqlclient
       run: |
-        python3 -m matebot_core init --database mysql+mysqldb://username:password@127.0.0.1/db?charset=utf8mb4 || echo "Fail on purpose"
+        python3 -m matebot_core init --database mysql+mysqldb://username:password@127.0.0.1/db?charset=utf8mb4 --no-migrations --no-community
         echo -e '\nDATABASE_URL = "mysql+mysqldb://username:password@127.0.0.1/db?charset=utf8mb4"' >> tests/conf.py
       if: ${{ matrix.python-lib == 'mysqlclient' }}
 

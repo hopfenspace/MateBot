@@ -368,6 +368,7 @@ def run_server(args: argparse.Namespace):
 
 def _handle_config(db: Optional[str], handle_missing_db: Callable[[], Optional[str]]) -> _settings.Settings:
     # Attempt to load existing configuration files
+    old_info_log = _settings.SETTINGS_LOG_INFO_FUNCTION
     _settings.SETTINGS_LOG_ERROR_FUNCTION, old_error_log = None, _settings.SETTINGS_LOG_ERROR_FUNCTION
     try:
         _settings.SETTINGS_EXIT_ON_ERROR = True
@@ -379,16 +380,17 @@ def _handle_config(db: Optional[str], handle_missing_db: Callable[[], Optional[s
         _settings.SETTINGS_LOG_ERROR_FUNCTION = old_error_log
         _settings.SETTINGS_CREATE_NONEXISTENT = True
         _settings.SETTINGS_EXIT_ON_ERROR = False
-        _settings.SETTINGS_LOG_INFO_FUNCTION = print
+        if _settings.SETTINGS_LOG_INFO_FUNCTION is None:
+            _settings.SETTINGS_LOG_INFO_FUNCTION = print
         db = _settings.get_db_from_env(db) or handle_missing_db()
         _settings.store_configuration(_settings.get_default_core_config(db))
 
     # Finally restore the config loader settings
     finally:
+        _settings.SETTINGS_LOG_INFO_FUNCTION = old_info_log
         _settings.SETTINGS_LOG_ERROR_FUNCTION = old_error_log
         _settings.SETTINGS_CREATE_NONEXISTENT = True
         _settings.SETTINGS_EXIT_ON_ERROR = True
-        _settings.SETTINGS_LOG_INFO_FUNCTION = None
 
     return _settings.Settings()
 
@@ -504,7 +506,7 @@ def add_app(args: argparse.Namespace) -> int:
         print("Empty app names are not allowed.", file=sys.stderr)
         return 1
 
-    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    config = _settings.Settings()
     database.init(config.database.connection, config.database.debug_sql)
     session = database.get_new_session()
 
@@ -532,7 +534,7 @@ def add_app(args: argparse.Namespace) -> int:
 
 def del_app(args: argparse.Namespace) -> int:
     app = args.app
-    config = _settings.config.CoreConfig(**_settings.read_settings_from_json_source(False))
+    config = _settings.Settings()
     database.init(config.database.connection, config.database.debug_sql)
     session = database.get_new_session()
 
@@ -649,11 +651,27 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
             file=sys.stderr
         )
         sys.exit(1)
-    conf = _handle_config(None, _handle)
+
+    # Catch log messages to defer the message until logging has been set up
+    def _catch_msg(msg: str):
+        nonlocal _msg
+        _msg = msg
+    _msg = None
+
+    try:
+        _settings.SETTINGS_LOG_INFO_FUNCTION = _catch_msg
+        conf = _handle_config(None, _handle)
+        _settings.SETTINGS_LOG_INFO_FUNCTION = None
+    except:
+        if _msg is not None:
+            logging.getLogger("auto").error(_msg)
+        raise
 
     # Configure logging as early as feasible
     logging.config.dictConfig(conf.logging.dict())
     logger = logging.getLogger("auto")
+    if _msg is not None:
+        logger.info(_msg)
 
     # Perform database migrations after the config file has been loaded successfully
     alembic.config.main(argv=["upgrade", "head"])
@@ -671,6 +689,7 @@ def run_in_auto_mode(args: argparse.Namespace) -> int:
 
     # Create the first application if no app currently exists
     database.init(conf.database.connection, conf.database.debug_sql, create_all=False)
+    database.PRINT_SQLITE_WARNING = False
     with database.get_new_session() as session:
         apps = len(session.query(models.Application).all())
     if apps == 0:
