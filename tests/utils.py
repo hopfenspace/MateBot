@@ -57,6 +57,43 @@ class BaseTest(unittest.TestCase):
     SUBPROCESS_CATCH_STDOUT: ClassVar[bool] = True
     SUBPROCESS_POOL: ClassVar[List[subprocess.Popen]] = []
 
+    def _run_cmd(
+            self,
+            return_code: Optional[int],
+            *args,
+            timeout: float = 2.5,
+            expect_timeout: bool = False,
+            no_defaults: bool = False,
+            catch_stdout: Optional[bool] = False,
+            catch_stderr: Optional[bool] = False,
+            terminate_process: bool = True,
+            **kwargs
+    ):
+        env = {} if no_defaults else {"CONFIG_PATH": self.config_file, "DATABASE__CONNECTION": self.database_url}
+        env.update(kwargs)
+        if catch_stdout is None:
+            catch_stdout = type(self).SUBPROCESS_CATCH_STDOUT
+        if catch_stderr is None:
+            catch_stderr = type(self).SUBPROCESS_CATCH_STDERR
+        p = subprocess.Popen(
+            [sys.executable, "-m", "matebot_core", *args],
+            stderr=subprocess.PIPE if catch_stderr else subprocess.DEVNULL,
+            stdout=subprocess.PIPE if catch_stdout else subprocess.DEVNULL,
+            start_new_session=False,
+            env=env
+        )
+        type(self).SUBPROCESS_POOL.append(p)
+        if expect_timeout:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                p.wait(timeout)
+        else:
+            p.wait(timeout)
+            if return_code:
+                self.assertEqual(return_code, p.poll())
+        if terminate_process:
+            p.terminate()
+        return p
+
     def setUp(self) -> None:
         self.config_file = f"config_{os.getpid()}_{secrets.token_hex(8)}.json"
         _settings.CONFIG_PATHS = [self.config_file]

@@ -286,15 +286,6 @@ def get_parser(program: str) -> argparse.ArgumentParser:
 
 
 def handle_systemd(args: argparse.Namespace) -> int:
-    python_executable = sys.executable
-    if sys.executable is None or sys.executable == "":
-        python_executable = "python3"
-        print(
-            "Revise the 'ExecStart' parameter, since the Python "
-            "interpreter path could not be determined reliably.",
-            file=sys.stderr
-        )
-
     if not os.path.exists("matebot_core"):
         print("Path 'matebot_core' not found!", file=sys.stderr)
         return 1
@@ -306,7 +297,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart={python_executable} -m matebot_core run
+ExecStart={sys.executable} -m matebot_core run
 User={getpass.getuser()}
 WorkingDirectory={os.path.abspath(".")}
 Restart=always
