@@ -141,9 +141,17 @@ jobs:
       run: |
         echo 'COMMAND_INITIALIZE_DATABASE = ["/bin/bash", ".github/workflows/test_mysql_setup.sh"]' >> tests/conf.py
         echo 'COMMAND_CLEANUP_DATABASE = ["/bin/bash", ".github/workflows/test_mysql_teardown.sh"]' >> tests/conf.py
+        bash .github/workflows/test_mysql_setup.sh
+        bash .github/workflows/test_mysql_teardown.sh
+        sync
 
     - name: Run unittests
       run: python3 -X tracemalloc=5 -m unittest tests -v
+
+    - name: Read log file
+      run: |
+        if [ -f mysql.log ]; then cat mysql.log; fi
+        rm -fv mysql.log
 
   docker:
     runs-on: ubuntu-latest

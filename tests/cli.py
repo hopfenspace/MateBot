@@ -27,7 +27,7 @@ class StandaloneCLITests(utils.BaseTest):
         self._run_cmd(0, "systemd", "--help", no_defaults=True)
 
     def test_auto_mode(self):
-        self._run_cmd(None, "auto", expect_timeout=True, terminate_process=False, SERVER__PORT="58888")
+        self._run_cmd(1, "auto", expect_timeout=True, terminate_process=False, SERVER__PORT="58888")
         self.assertTrue(requests.get("http://localhost:58888/v1").ok)
 
     def test_auto_mode_missing_db(self):
@@ -40,8 +40,8 @@ class StandaloneCLITests(utils.BaseTest):
     def test_run_apps_utilities(self):
         self._run_cmd(0, "init", "--database", self.database_url, no_defaults=True)
         self._run_cmd(0, "apps", "show", no_defaults=True)
-        self._run_cmd(0, "apps", "add", "--app", "foo", "--password", "foo", no_defaults=True)
-        self._run_cmd(0, "apps", "add", "--app", "bar", "--password", "bar", no_defaults=True)
+        self._run_cmd(0, "apps", "add", "--app", "foo", "--password", "foo", timeout=10, no_defaults=True)
+        self._run_cmd(0, "apps", "add", "--app", "bar", "--password", "bar", timeout=10, no_defaults=True)
         self._run_cmd(0, "apps", "show", no_defaults=True)
         self._run_cmd(0, "apps", "del", "bar", no_defaults=True)
         self._run_cmd(0, "apps", "show", no_defaults=True)

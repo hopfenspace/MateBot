@@ -54,7 +54,7 @@ MAX_SERVER_START_RETRIES: int = 8
 MAX_SERVER_WAIT_RETRIES: int = 10
 
 # Seconds to wait for a subprocess (e.g. the API server) to be killed
-SUBPROCESS_KILL_TIMEOUT = 0.01
+SUBPROCESS_KILL_TIMEOUT = 0.1
 
 # Seconds to wait for a subprocess (e.g. the API server) to terminate before killing it
 SUBPROCESS_TERMINATE_TIMEOUT = 0.1
