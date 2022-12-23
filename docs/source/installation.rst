@@ -9,8 +9,9 @@ Installation
 System requirements
 -------------------
 
-Around 80 MiB of RAM and a single CPU core are totally fine,
-but the more the better. However, note that a SQLite database
+Around 80 MiB of RAM and a single CPU core are totally fine, but the
+more the better. Keep in mind that password checks using Argon2 require
+64 MiB for a single operation. Also, note that a SQLite database
 and the Python GIL may be a bottleneck. Consider a full database
 server deployment and adapt the uvicorn configuration to use
 multiple worker processes to improve response times and speed.

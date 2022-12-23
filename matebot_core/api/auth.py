@@ -23,9 +23,13 @@ def hash_password(password: str) -> str:
 
 
 async def check_app_credentials(application: str, password: str, session: Session) -> bool:
+    """
+    Check the correctness of a password for a given application, raise some error otherwise
+    """
+
     checker = _get_password_check()
     apps = session.query(models.Application).filter_by(name=application).all()
-    if len(apps) != 1:
+    if len(apps) > 1:
         raise RuntimeError(f"Multiple apps with name {application!r} found!")
     app = apps[0]
     checker.verify(app.hashed_password, password)
