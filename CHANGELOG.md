@@ -1,3 +1,22 @@
+# MateBot core v0.6 (2022-12-24)
+
+- **New feature** of a fully usable CLI to manage users and applications, which
+  also solved the "first user problem" by being able to promote them manually
+- **New feature** of the "auto mode", which can be used to bootstrap the MateBot
+  core API in just a single command (mainly configured by environment variables)
+- **Breaking change** by switching from SHA512-hashed passwords with multiple
+  iterations to Argon2, which also fixed a GitHub security notice; however,
+  this breaks the current login workflow for existing applications -- therefore,
+  all applications must be re-created after this release has been applied (#122)
+- **Notable change** by replacing the `GET /status` endpoint with the
+  unauthenticated `GET /health` endpoint (#102)
+- Added support for Docker (#119)
+- Allow overwriting almost all config settings environment variables
+- Extended the unittest suite to perform load tests and CLI tests as well
+- Fixed three failing unittests (#118)
+
+Merry Christmas :)
+
 # MateBot core v0.5.4 (2022-12-11)
 
 - **Notable change** by not exposing shared secrets via the API
