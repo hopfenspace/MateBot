@@ -197,7 +197,6 @@ class BasePersistenceTests(BaseTest):
         config = _schemas.config.CoreConfig(**_settings.get_default_config())
         config.database.debug_sql = conf.SQLALCHEMY_ECHOING
         config.database.connection = self.database_url
-        config.server.password_iterations = 1
         with open(self.config_file, "w") as f:
             f.write(config.json())
 
@@ -444,7 +443,7 @@ class BaseAPITests(BaseTest):
         env = {
             "CONFIG_PATH": self.config_file,
             "SERVER__HOST": "127.0.0.1",
-            "SERVER__PASSWORD_ITERATIONS": "1",
+            "SERVER__ALLOW_WEAK_INSECURE_PASSWORD_HASHES": "true",
             "INITIAL_APP_USERNAME": self.auth[0],
             "INITIAL_APP_PASSWORD": self.auth[1],
             "DATABASE__DEBUG_SQL": str(conf.SQLALCHEMY_ECHOING),

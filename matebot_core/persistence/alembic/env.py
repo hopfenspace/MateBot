@@ -21,7 +21,7 @@ settings = Settings()
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if "alembic" in sys.executable.lower():
+if "alembic" in sys.argv[0].lower():
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here

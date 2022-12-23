@@ -2,34 +2,63 @@
 Authentication helper library for the core REST API
 """
 
-import hashlib
-import secrets
 import datetime
+from typing import Optional
 
 from jose import jwt
 from sqlalchemy.orm import Session
+from argon2 import PasswordHasher, profiles
 
 from . import base
-from ..persistence import models
+from .. import schemas
+from ..persistence import database, models
 from ..settings import Settings
 
 
-def hash_password(password: str, salt: str) -> str:
-    h = hashlib.sha512(hashlib.sha512(password.encode("UTF-8")).digest() + salt.encode("UTF-8"))
-    for _ in range(Settings().server.password_iterations):
-        h = hashlib.sha512(h.digest())
-    return h.hexdigest()
+_password_check: Optional[PasswordHasher] = None
+
+
+def hash_password(password: str) -> str:
+    return _get_password_check().hash(password)
 
 
 async def check_app_credentials(application: str, password: str, session: Session) -> bool:
+    """
+    Check the correctness of a password for a given application, raise some error otherwise
+    """
+
+    checker = _get_password_check()
     apps = session.query(models.Application).filter_by(name=application).all()
-    if len(apps) != 1:
-        return False
+    if len(apps) > 1:
+        raise RuntimeError(f"Multiple apps with name {application!r} found!")
     app = apps[0]
-    if not getattr(app, "password", None):
-        return False
-    salted_hash = hash_password(password, app.salt)
-    return secrets.compare_digest(salted_hash, app.password)
+    checker.verify(app.hashed_password, password)
+    if checker.check_needs_rehash(app.hashed_password):
+        app.hashed_password = checker.hash(password)
+        with database.get_new_session() as s:
+            s.add(app)
+            s.commit()
+    return True
+
+
+def create_application(name: str, password: str) -> schemas.Application:
+    with database.get_new_session() as session:
+        app = models.Application(name=name, hashed_password=hash_password(password))
+        session.add(app)
+        session.commit()
+        return app.schema
+
+
+def _get_password_check() -> PasswordHasher:
+    global _password_check
+    if _password_check is not None:
+        return _password_check
+    config = Settings()
+    if config.server.allow_weak_insecure_password_hashes:
+        _password_check = PasswordHasher.from_parameters(profiles.CHEAPEST)
+    else:
+        _password_check = PasswordHasher.from_parameters(profiles.RFC_9106_LOW_MEMORY)
+    return _password_check
 
 
 def create_access_token(username: str, expiration_minutes: int = 120) -> str:

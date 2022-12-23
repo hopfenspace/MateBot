@@ -8,6 +8,7 @@ import unittest as _unittest
 from typing import List
 
 from matebot_core import schemas as _schemas
+from matebot_core.api.auth import hash_password
 from matebot_core.persistence import models
 
 from . import utils
@@ -355,9 +356,9 @@ class APITests(utils.BaseAPITests):
             session.add(models.User(name="B", external=True))
             session.commit()
 
-            session.add(models.Application(name="app1", password="app1", salt="app1"))
-            session.add(models.Application(name="app2", password="app2", salt="app2"))
-            session.add(models.Application(name="app3", password="app3", salt="app3"))
+            session.add(models.Application(name="app1", hashed_password=hash_password("app1")))
+            session.add(models.Application(name="app2", hashed_password=hash_password("app2")))
+            session.add(models.Application(name="app3", hashed_password=hash_password("app3")))
             session.commit()
 
             session.add(models.Alias(user_id=2, application_id=1, username="2-1", confirmed=True))
@@ -1334,7 +1335,7 @@ class UninitializedAPITests(utils.BaseAPITests):
         comp(3, "external=false&active=true")
         comp(2, "external=false&active=false")
 
-        session.add(models.Application(name="app", password="password", salt="salt"))
+        session.add(models.Application(name="app", hashed_password=hash_password("password")))
         session.commit()
 
         session.add(models.Alias(user_id=3, application_id=1, username="foo"))
