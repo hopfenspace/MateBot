@@ -20,9 +20,9 @@ class GeneralConfig(pydantic.BaseModel):
 
 
 class ServerConfig(pydantic.BaseModel):
+    allow_weak_insecure_password_hashes: bool = False
     host: str = "127.0.0.1"
     port: pydantic.conint(gt=0, lt=65536) = 8000
-    password_iterations: int = 2**20
     public_base_url: Optional[pydantic.AnyHttpUrl] = None
 
 

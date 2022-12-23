@@ -525,9 +525,7 @@ def add_app(args: argparse.Namespace) -> int:
         print("A password is mandatory. No new application account created!", file=sys.stderr)
         return 1
     elif args.app and passwd:
-        salt = secrets.token_urlsafe(16)
-        session.add(models.Application(name=args.app, password=auth.hash_password(passwd, salt), salt=salt))
-        session.commit()
+        auth.create_application(args.app, passwd)
         print(f"Successfully created new application {args.app!r}.")
         return 0
 
