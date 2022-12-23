@@ -167,8 +167,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
         self.assertEqual(len(self.get_sample_users()), len(self.session.query(models.User).all()))
 
-        app1 = models.Application(name="app1", password=auth.hash_password("password1", "salt"), salt="salt")
-        app2 = models.Application(name="app2", password=auth.hash_password("password2", "salt"), salt="salt")
+        app1 = models.Application(name="app1", hashed_password=auth.hash_password("password1"))
+        app2 = models.Application(name="app2", hashed_password=auth.hash_password("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -194,8 +194,8 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertEqual(0, len(self.session.query(models.Alias).all()))
 
     def test_add_applications_and_aliases(self):
-        app1 = models.Application(name="app1", password=auth.hash_password("password1", "salt"), salt="salt")
-        app2 = models.Application(name="app2", password=auth.hash_password("password2", "salt"), salt="salt")
+        app1 = models.Application(name="app1", hashed_password=auth.hash_password("password1"))
+        app2 = models.Application(name="app2", hashed_password=auth.hash_password("password2"))
         self.session.add_all([app1, app2])
         self.session.commit()
 
@@ -207,7 +207,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.session.commit()
 
     def test_applications_and_callbacks(self):
-        app1 = models.Application(name="app1", password=auth.hash_password("password1", "salt"), salt="salt")
+        app1 = models.Application(name="app1", hashed_password=auth.hash_password("password1"))
         self.session.add(app1)
         self.session.commit()
 
@@ -228,7 +228,7 @@ class DatabaseUsabilityTests(utils.BasePersistenceTests):
         self.assertTrue(isinstance(app1.callbacks, list))
         self.assertEqual([], app1.callbacks)
 
-        app2 = models.Application(name="app2", password=auth.hash_password("password2", "salt"), salt="salt")
+        app2 = models.Application(name="app2", hashed_password=auth.hash_password("password2"))
         self.session.add(app2)
         self.session.commit()
 
@@ -482,7 +482,7 @@ class DatabaseRestrictionTests(utils.BasePersistenceTests):
             self.session.rollback()
 
         # Creating an application
-        self.session.add(models.Application(name="app", password="password", salt="salt"))
+        self.session.add(models.Application(name="app", hashed_password=auth.hash_password("password")))
         self.session.commit()
 
         # Now, the alias can be created
