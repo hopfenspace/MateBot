@@ -77,8 +77,7 @@ class Application(Base):
 
     id: int = Column(Integer, nullable=False, primary_key=True, autoincrement=True, unique=True)
     name: str = Column(String(255), unique=True, nullable=False)
-    password: str = Column(String(255), nullable=False)
-    salt: str = Column(String(255), nullable=False)
+    hashed_password: str = Column(String(255), nullable=False)
     created: datetime.datetime = Column(DateTime, server_default=func.now())
 
     callbacks: List["Callback"] = relationship("Callback", back_populates="app", cascade="all,delete")
