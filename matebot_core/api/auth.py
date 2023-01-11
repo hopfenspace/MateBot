@@ -30,7 +30,9 @@ async def check_app_credentials(application: str, password: str, session: Sessio
     checker = _get_password_check()
     apps = session.query(models.Application).filter_by(name=application).all()
     if len(apps) > 1:
-        raise RuntimeError(f"Multiple apps with name {application!r} found!")
+        raise ValueError(f"Multiple apps with name {application!r} found!")
+    if len(apps) == 0:
+        raise ValueError(f"Unknown app {application!r}!")
     app = apps[0]
     checker.verify(app.hashed_password, password)
     if checker.check_needs_rehash(app.hashed_password):
