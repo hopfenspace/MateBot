@@ -86,7 +86,7 @@ async def create_new_refund(
 
     model = models.Refund(
         amount=refund.amount,
-        description=refund.description,
+        description=refund.description if refund.description.startswith("refund:") else f"refund: {refund.description}",
         creator=creator,
         active=True,
         ballot=models.Ballot()
