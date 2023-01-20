@@ -1,3 +1,9 @@
+# MateBot core v0.6.1 (2022-01-21)
+
+- **Changed API** by adding a field `emoji` to the `Consumable` schema; this
+  field can be used by frontend applications to show the same symbol to users
+- Added explicit refund labeling to its transactions
+
 # MateBot core v0.6 (2022-12-24)
 
 - **New feature** of a fully usable CLI to manage users and applications, which
