@@ -110,6 +110,7 @@ class Consumable(pydantic.BaseModel):
     name: pydantic.constr(max_length=255)
     description: pydantic.constr(max_length=255)
     price: pydantic.PositiveInt
+    emoji: pydantic.constr(max_length=2)
 
 
 class Consumption(pydantic.BaseModel):

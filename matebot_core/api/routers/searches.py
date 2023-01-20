@@ -66,6 +66,7 @@ async def search_for_consumables(
     Return all consumables that fulfill *all* constraints given as query parameters
     """
 
+    # Filtering by the emoji, which is part of the response, wasn't added on purpose
     return [
         consumable for consumable in local.config.consumables
         if (name is None or consumable.name == name)
