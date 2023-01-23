@@ -94,6 +94,8 @@ async def send_money_between_two_users(
     receiver = await helpers.resolve_user_spec(transaction.receiver, local)
     amount = transaction.amount
     reason = transaction.reason
+    if not reason.startswith("send: "):
+        reason = f"send: {reason}"
 
     if sender.id == receiver.id:
         raise BadRequest("You can't send money to yourself.")
