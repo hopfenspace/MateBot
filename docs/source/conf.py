@@ -20,11 +20,11 @@ print(os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'MateBot core API'
-copyright = '2022, myOmikron, Crsi, gammelalf'
+copyright = '2022-2024, myOmikron, Crsi, gammelalf'
 author = 'myOmikron, Crsi, gammelalf'
 
 # The full version, including alpha/beta/rc tags
-release = '0.5'
+release = '0.6.1'
 
 
 # -- General configuration ---------------------------------------------------
