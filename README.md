@@ -15,7 +15,7 @@ amount of consumables and vouch for other users in case of high debts.
 
 ### Pre-requirements
 
-- Python >= 3.7
+- Python >= 3.8
 - pip >= 18
 
 ### Installation & configuration

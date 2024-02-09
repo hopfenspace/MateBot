@@ -35,31 +35,32 @@ setuptools.setup(
     install_requires=[
         "aiohttp>=3.8,<4.0",
         "alembic>=1.7.6,<2.0",
-        "fastapi==0.74.1",
-        "pydantic>=1.8.2,<2.0",
+        "fastapi==0.88.0",
+        "pydantic>=1.10.0,<2.0",
         "python-jose>=3.3.0,<4.0",
-        "python-multipart==0.0.5",
-        "requests>=2.26.0,<3.0",
+        "python-multipart>=0.0.7",
+        "requests>=2.27.0,<3.0",
         "SQLAlchemy>=1.4.30,<2.0",
-        "uvicorn>=0.17.0,<1.0"
+        "uvicorn>=0.20.0,<1.0"
     ],
     extra_requires={
         "full": [
             "aiofiles>=0.8.0,<1.0",
-            "ujson>=4.0,<5.0"
+            "ujson>=5.2,<6.0"
         ]
     },
     project_urls={},
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     classifiers=[
         "Operating System :: OS Independent",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Development Status :: 3 - Alpha"
     ]
 )
