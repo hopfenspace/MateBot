@@ -1,5 +1,5 @@
-FROM python:3.12-bookworm
-ENV LANG C.UTF-8
+FROM python:3.14
+ENV LANG=C.UTF-8
 RUN	apt update && \
 	apt install default-libmysqlclient-dev build-essential -y && \
 	rm -rf /var/cache/apt/archives/*.deb /var/lib/apt/lists/*
