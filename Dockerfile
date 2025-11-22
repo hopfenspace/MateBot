@@ -1,4 +1,4 @@
-FROM python:3.14
+FROM python:3.13
 ENV LANG=C.UTF-8
 RUN	apt update && \
 	apt install default-libmysqlclient-dev build-essential -y && \
