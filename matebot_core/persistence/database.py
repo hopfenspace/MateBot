@@ -47,6 +47,7 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
         _engine = create_engine(
             database_url,
             echo=echo,
+            pool_pre_ping=True,
             connect_args={"check_same_thread": False}
         )
         if PRINT_SQLITE_WARNING:
@@ -58,7 +59,8 @@ def init(database_url: str, echo: bool = True, create_all: bool = True):
     else:
         _engine = create_engine(
             database_url,
-            echo=echo
+            echo=echo,
+            pool_pre_ping=True
         )
 
     if create_all:
